@@ -203,11 +203,11 @@ elif para_birimi == "EUR":
 st.sidebar.subheader("🤝 Kat Karşılığı & Paylaşım Oranı")
 kat_karsiligi_oran = st.sidebar.slider(
     "Arsa Payı / Kat Karşılığı Oranı (%)", 
-    min_value=20, 
-    max_value=80, 
+    min_value=10, 
+    max_value=90, 
     value=60, 
     step=1,
-    help="Arsa sahibine verilecek toplam inşaat alanı yüzdesi."
+    help="Arsa sahibinin kesin inşaat alanı payı yüzdesi."
 )
 
 st.sidebar.subheader("📐 Mimari Metraj Ayarları")
@@ -260,15 +260,17 @@ if uploaded_pdfs:
         else:
             yapi_etiketi = "Villa" if yapi_kategorisi == "villa" else "Daire"
 
-        # --- %100 HASSAS M2 VE TAM SAYI BÖLÜŞÜM ALGORİTMASI ---
+        # --- ORAN SABİT - HASSAS M2 VE ÜNİTE BÖLÜŞÜM ALGORİTMASI ---
         arsa_sahibi_payi_m2 = toplam_brut_insaat * (kat_karsiligi_oran / 100.0)
         yuklenici_payi_m2 = toplam_brut_insaat - arsa_sahibi_payi_m2
 
         toplam_konsept_m2 = hedef_m2_input + havuz_m2_hedef
         
+        # Tarafların kendi paylarından kaçar adet ünite çıkacağı
         arsa_sahibi_adet = max(1, round(arsa_sahibi_payi_m2 / toplam_konsept_m2))
         yuklenici_adet = max(1, round(yuklenici_payi_m2 / toplam_konsept_m2))
         
+        # Tarafların kendi m2'lerini tam kullanacakları ünite başı brüt m2'leri
         arsa_sahibi_birim_brut = (arsa_sahibi_payi_m2 / arsa_sahibi_adet) - havuz_m2_hedef
         yuklenici_birim_brut = (yuklenici_payi_m2 / yuklenici_adet) - havuz_m2_hedef
 
@@ -309,28 +311,28 @@ if uploaded_pdfs:
 
         with tab2:
             st.subheader("Kat Karşılığı & Anlaşma Dağıtım Modeli")
-            st.info(f"🤝 Anlaşma Oranı: **%{kat_karsiligi_oran} Arsa Sahibi / %{100-kat_karsiligi_oran} Müteahhit**")
+            st.info(f"🤝 Anlaşma Oranı (Kesin): **%{kat_karsiligi_oran} Arsa Sahibi ({fmt_tr(arsa_sahibi_payi_m2, 2)} m²) / %{100-kat_karsiligi_oran} Müteahhit ({fmt_tr(yuklenici_payi_m2, 2)} m²)**")
             
             k1, k2 = st.columns(2)
 
             with k1:
-                st.write(f"### 🏗️ Müteahhit Payı (%{100-kat_karsiligi_oran:.1f})")
-                st.metric("Müteahhit Toplam Alan", f"{fmt_tr(yuklenici_payi_m2, 2)} m²")
-                st.success(f"**Müteahhit Bağımsız Bölüm:** {yuklenici_adet} Adet {yapi_etiketi}")
+                st.write(f"### 🏗️ Müteahhit Payı (%{100-kat_karsiligi_oran})")
+                st.metric("Müteahhit Toplam İnşaat Alanı", f"{fmt_tr(yuklenici_payi_m2, 2)} m²")
+                st.success(f"**Hesaplanan Bölüm:** {yuklenici_adet} Adet {yapi_etiketi}")
                 st.write(f"• Ünite Başı Brüt İnşaat: **{fmt_tr(yuklenici_birim_brut, 2)} m²**")
                 if havuz_opsiyonu:
-                    st.write(f"• Tahsis Edilen Havuz: **{yuklenici_adet} Adet ({fmt_tr(yuklenici_adet * havuz_m2_hedef, 2)} m²)**")
+                    st.write(f"• Tahsis Edilen Havuz: **{yuklenici_adet} Adet (Ünite Başı {fmt_tr(havuz_m2_hedef, 2)} m²)**")
 
             with k2:
-                st.write(f"### 🏡 Arsa Sahibi Payı (%{kat_karsiligi_oran:.1f})")
-                st.metric("Arsa Sahibi Toplam Alan", f"{fmt_tr(arsa_sahibi_payi_m2, 2)} m²")
-                st.success(f"**Arsa Sahibi Bağımsız Bölüm:** {arsa_sahibi_adet} Adet {yapi_etiketi}")
+                st.write(f"### 🏡 Arsa Sahibi Payı (%{kat_karsiligi_oran})")
+                st.metric("Arsa Sahibi Toplam İnşaat Alanı", f"{fmt_tr(arsa_sahibi_payi_m2, 2)} m²")
+                st.success(f"**Hesaplanan Bölüm:** {arsa_sahibi_adet} Adet {yapi_etiketi}")
                 st.write(f"• Ünite Başı Brüt İnşaat: **{fmt_tr(arsa_sahibi_birim_brut, 2)} m²**")
                 if havuz_opsiyonu:
-                    st.write(f"• Tahsis Edilen Havuz: **{arsa_sahibi_adet} Adet ({fmt_tr(arsa_sahibi_adet * havuz_m2_hedef, 2)} m²)**")
+                    st.write(f"• Tahsis Edilen Havuz: **{arsa_sahibi_adet} Adet (Ünite Başı {fmt_tr(havuz_m2_hedef, 2)} m²)**")
 
             st.markdown("---")
-            st.caption(f"💡 *Not: Toplam {fmt_tr(toplam_brut_insaat, 2)} m² inşaat alanının tam %{kat_karsiligi_oran}'i ({fmt_tr(arsa_sahibi_payi_m2, 2)} m²) Arsa Sahibine, %{100-kat_karsiligi_oran}'i ({fmt_tr(yuklenici_payi_m2, 2)} m²) Müteahhite verilerek %100 metraj küsuratsız dağıtılmıştır.*")
+            st.caption(f"💡 *Özet: Toplam {fmt_tr(toplam_brut_insaat, 2)} m² inşaat alanının tam %{kat_karsiligi_oran}'i olan {fmt_tr(arsa_sahibi_payi_m2, 2)} m² Arsa Sahibine ({arsa_sahibi_adet} Adet {yapi_etiketi}), kalan %{100-kat_karsiligi_oran}'i olan {fmt_tr(yuklenici_payi_m2, 2)} m² Müteahhite ({yuklenici_adet} Adet {yapi_etiketi}) atanarak metraj sıfırlanmıştır.*")
 
         with tab3:
             st.subheader(f"Fizibilite Özeti ({para_birimi} Cinsinden)")
