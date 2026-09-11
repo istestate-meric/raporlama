@@ -198,9 +198,17 @@ if para_birimi == "USD":
 elif para_birimi == "EUR":
     kur_katsayisi = 1.0 / kurlar["EUR"]
 
-st.sidebar.subheader("📐 Mimari Bölüm Otomasyonu")
-otomatik_m2_modu = st.sidebar.checkbox("🤖 Metrajı Otomatik Sıfırla (Küsüratsız Dağıtım)", value=True)
+st.sidebar.subheader("🤝 Kat Karşılığı & Paylaşım Oranı")
+kat_karsiligi_oran = st.sidebar.slider(
+    "Arsa Payı / Kat Karşılığı Oranı (%)", 
+    min_value=20, 
+    max_value=80, 
+    value=50, 
+    step=5,
+    help="Arsa sahibine verilecek toplam bağımsız bölüm veya inşaat alanı yüzdesi."
+)
 
+st.sidebar.subheader("📐 Mimari Metraj Ayarları")
 proje_tipi = st.sidebar.radio("Konut Proje Konsepti", ["Villa Projesi", "Konut / Daire Projesi"])
 
 if proje_tipi == "Villa Projesi":
@@ -214,11 +222,7 @@ else:
     havuz_opsiyonu = False
     havuz_m2_hedef = 0
 
-if not otomatik_m2_modu:
-    hedef_m2_input = st.sidebar.number_input("Birim Brüt m² (Manuel)", value=hedef_m2_varsayilan, step=10)
-
-st.sidebar.subheader("🤝 Kat Karşılığı & Paylaşım")
-kat_karsiligi_oran = st.sidebar.slider("Arsa Payı / Kat Karşılığı Oranı (%)", min_value=20, max_value=70, value=50, step=5)
+hedef_m2_input = st.sidebar.number_input("Hedef Birim Brüt m²", value=hedef_m2_varsayilan, step=10)
 genel_gider_orani = st.sidebar.slider("Pazarlama & Şantiye Gideri (%)", min_value=0, max_value=15, value=5)
 
 # MAIN APP
@@ -251,30 +255,36 @@ if uploaded_pdfs:
         if ana_fonksiyon == "TİCARİ ALAN":
             yapi_kategorisi = "ticari"
             yapi_etiketi = "Ticari Ünite"
-            hedef_m2_varsayilan = 150
         else:
             yapi_etiketi = "Villa" if yapi_kategorisi == "villa" else "Daire"
 
-        # Otomatik Küsuratsız Dağıtım Motoru
-        if otomatik_m2_modu:
-            hedef_m2_kullanilacak = hedef_m2_varsayilan
-            
-            # Toplam Adet Hesabı
-            toplam_adet = max(1, math.floor(toplam_brut_insaat / (hedef_m2_kullanilacak + havuz_m2_hedef)))
-            
-            # Bütün m²'yi ünitelere tam bölüp artık alan bırakmama
-            birim_brut_m2 = (toplam_brut_insaat / toplam_adet) - havuz_m2_hedef
-        else:
-            birim_brut_m2 = hedef_m2_input
-            toplam_adet = max(1, math.floor(toplam_brut_insaat / (birim_brut_m2 + havuz_m2_hedef)))
+        # --- KAT KARŞILIĞI BAZLI TAM SAYI ADET VE KÜSÜRATSIZ METRAJ ALGORİTMASI ---
+        toplam_konsept_m2 = hedef_m2_input + havuz_m2_hedef
+        
+        # 1. Toplam Ünite Sayısını Bul
+        toplam_adet = max(1, math.floor(toplam_brut_insaat / toplam_konsept_m2)) if toplam_konsept_m2 > 0 else 1
+        
+        # 2. Kat Karşılığı Oranına Göre Arsa Sahibi ve Müteahhit Tam Sayı Adet Dağılımı
+        arsa_sahibi_adet = round(toplam_adet * (kat_karsiligi_oran / 100.0))
+        
+        # Sınır kontrolleri (Müteahhit veya Arsa sahibi 0 adet alamaz)
+        if arsa_sahibi_adet >= toplam_adet and toplam_adet > 1:
+            arsa_sahibi_adet = toplam_adet - 1
+        elif arsa_sahibi_adet == 0 and kat_karsiligi_oran > 0:
+            arsa_sahibi_adet = 1
 
-        # Kat Karşılığı Paylaşım (Küsuratsız Adetler)
-        arsa_sahibi_adet = math.floor(toplam_adet * (kat_karsiligi_oran / 100))
         yuklenici_adet = toplam_adet - arsa_sahibi_adet
 
+        # 3. Metrajın %100'ünü Küsuratsız Olarak Tam Sayı Ünitelere Bölüşüm
+        birim_brut_m2 = (toplam_brut_insaat / toplam_adet) - havuz_m2_hedef
+        
         yuklenici_payi_m2 = yuklenici_adet * (birim_brut_m2 + havuz_m2_hedef)
         arsa_sahibi_payi_m2 = arsa_sahibi_adet * (birim_brut_m2 + havuz_m2_hedef)
 
+        fiili_arsa_sahibi_orani = (arsa_sahibi_payi_m2 / toplam_brut_insaat) * 100
+        fiili_yuklenici_orani = 100.0 - fiili_arsa_sahibi_orani
+
+        # --- FİNANSAL HESAPLAMALAR ---
         mahalle_veri = mahalle_piyasa_verisi_getir(otomatik_mahalle)[yapi_kategorisi]
         oto_maliyet_tl = mahalle_veri["maliyet"]
         oto_satis_tl = mahalle_veri["satis"]
@@ -310,24 +320,29 @@ if uploaded_pdfs:
             c4.metric("Toplam Brüt İnşaat (m²)", fmt_tr(toplam_brut_insaat, 2, "TL"))
 
         with tab2:
-            st.subheader("Kat Karşılığı & Mimari Dağıtım Modeli")
-            st.success(f"⚡ Toplam **{fmt_tr(toplam_brut_insaat, 2, 'TL')} m²** inşaat alanının **%100'ü** küsuratsız olarak **{toplam_adet} Adet {yapi_etiketi}** ünitesine paylaştırılmıştır.")
+            st.subheader("Kat Karşılığı & Anlaşma Dağıtım Modeli")
+            st.info(f"🤝 Anlaşma Hedef Oranı: **%{kat_karsiligi_oran} Arsa Sahibi / %{100-kat_karsiligi_oran} Müteahhit**")
             
             k1, k2 = st.columns(2)
 
             with k1:
-                st.info(f"**Yüklenici Payı (%{100 - (arsa_sahibi_adet/toplam_adet*100):.1f}):** {fmt_tr(yuklenici_payi_m2, 2, 'TL')} m²")
-                st.write(f"• Müteahhit Ünite Sayısı: **{yuklenici_adet} Adet {yapi_etiketi}**")
-                st.write(f"• Ünite Başı Net/Brüt Alan: **{fmt_tr(birim_brut_m2, 2, 'TL')} m²**")
+                st.write(f"### 🏗️ Müteahhit Payı (%{fiili_yuklenici_orani:.1f})")
+                st.metric("Müteahhit Toplam Alan", f"{fmt_tr(yuklenici_payi_m2, 2, 'TL')} m²")
+                st.success(f"**Müteahhit Bağımsız Bölüm:** {yuklenici_adet} Adet {yapi_etiketi}")
+                st.write(f"• Ünite Başı Brüt İnşaat: **{fmt_tr(birim_brut_m2, 2, 'TL')} m²**")
                 if havuz_opsiyonu:
-                    st.write(f"• Havuz Tahsisi: **{yuklenici_adet} Adet ({fmt_tr(yuklenici_adet * havuz_m2_hedef, 2, 'TL')} m²)**")
+                    st.write(f"• Tahsis Edilen Havuz: **{yuklenici_adet} Adet ({fmt_tr(yuklenici_adet * havuz_m2_hedef, 2, 'TL')} m²)**")
 
             with k2:
-                st.success(f"**Arsa Sahibi Payı (%{(arsa_sahibi_adet/toplam_adet*100):.1f}):** {fmt_tr(arsa_sahibi_payi_m2, 2, 'TL')} m²")
-                st.write(f"• Arsa Sahibi Ünite Sayısı: **{arsa_sahibi_adet} Adet {yapi_etiketi}**")
-                st.write(f"• Ünite Başı Net/Brüt Alan: **{fmt_tr(birim_brut_m2, 2, 'TL')} m²**")
+                st.write(f"### 🏡 Arsa Sahibi Payı (%{fiili_arsa_sahibi_orani:.1f})")
+                st.metric("Arsa Sahibi Toplam Alan", f"{fmt_tr(arsa_sahibi_payi_m2, 2, 'TL')} m²")
+                st.success(f"**Arsa Sahibi Bağımsız Bölüm:** {arsa_sahibi_adet} Adet {yapi_etiketi}")
+                st.write(f"• Ünite Başı Brüt İnşaat: **{fmt_tr(birim_brut_m2, 2, 'TL')} m²**")
                 if havuz_opsiyonu:
-                    st.write(f"• Havuz Tahsisi: **{arsa_sahibi_adet} Adet ({fmt_tr(arsa_sahibi_adet * havuz_m2_hedef, 2, 'TL')} m²)**")
+                    st.write(f"• Tahsis Edilen Havuz: **{arsa_sahibi_adet} Adet ({fmt_tr(arsa_sahibi_adet * havuz_m2_hedef, 2, 'TL')} m²)**")
+
+            st.markdown("---")
+            st.caption(f"💡 *Not: Toplam {fmt_tr(toplam_brut_insaat, 2, 'TL')} m² inşaat alanı %100 oranında tam {toplam_adet} Adet bağımsız bölüme küsuratsız dağıtılmıştır.*")
 
         with tab3:
             st.subheader(f"Fizibilite Özeti ({para_birimi} Cinsinden)")
