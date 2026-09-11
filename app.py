@@ -7,7 +7,6 @@ import pdfplumber
 import requests
 import xml.etree.ElementTree as ET
 import streamlit as st
-from weasyprint import HTML
 
 # Page Setup
 st.set_page_config(
@@ -36,6 +35,12 @@ PARSEL_VERITABANI = {
     "29": {"Nitelik": "Arsa",  "Alan": 4618.21, "Net_Alan": 3068.47},
     "33": {"Nitelik": "Arsa",  "Alan": 675.30,  "Net_Alan": 664.22}
 }
+
+# Hatalı Başlık Filtresi
+GEÇERSİZ_TERİMLER = [
+    "pafta", "ada", "parsel", "alan", "idari", "cadde", "sokak", 
+    "cadde / sokak", "kapı", "kapı no", "mahalle", "ilçe", "ili"
+]
 
 # --- HELPER FUNCTIONS ---
 def metin_sayi_cevir(val_str):
@@ -72,7 +77,6 @@ def fmt_tr(val, decimals=2, para_birimi="TL"):
 # --- DÖVİZ KURLARI VE MAHALLE VERİSİ MOTORU ---
 @st.cache_data(ttl=14400)
 def tcmb_kurlari_getir():
-    """TCMB canlı kurlarını çeker, hata alırsa varsayılan kurları döner."""
     try:
         url = "https://www.tcmb.gov.tr/kurlar/today.xml"
         response = requests.get(url, timeout=5)
@@ -86,7 +90,6 @@ def tcmb_kurlari_getir():
 
 @st.cache_data(ttl=86400)
 def mahalle_piyasa_verisi_getir(mahalle_adi):
-    """Mahalle bazlı imalat maliyeti ve satış değerleri (TL)"""
     MAHALLE_VERITABANI = {
         "Çiftlik": {"maliyet": 32500.0, "satis": 110000.0},
         "Acarlar": {"maliyet": 42000.0, "satis": 175000.0},
@@ -114,40 +117,38 @@ def tek_pdf_analiz_et(uploaded_file):
     try:
         with pdfplumber.open(uploaded_file) as pdf:
             tam_metin = ""
-            # 1. YÖNTEM: Tablo Yapısını Doğrudan Oku
             for page in pdf.pages:
-                tables = page.extract_tables()
-                for table in tables:
-                    for row in table:
-                        row_str = [str(cell) for cell in row if cell]
-                        # Mahalle ve Pafta/Ada bilgilerini barındıran hücreyi ara
-                        for i, cell in enumerate(row_str):
-                            if "Mahalle" in cell:
-                                # Yanındaki veya altındaki hücrede mahalle ismini al
-                                if i < len(row_str) - 1:
-                                    val = row_str[i+1].strip()
-                                    # Sadece Pafta/Ada vb. başlıkları hariç tut
-                                    val_clean = re.sub(r'(Pafta|Ada|Parsel|Alan).*', '', val, flags=re.DOTALL).strip()
-                                    if val_clean and val_clean.lower() not in ["pafta", "ada", "parsel", "mahalle"]:
-                                        mahalle = val_clean.split('\n')[0].capitalize()
-                                        break
+                # 1. Kelime Konumu Tespiti: "Mahalle" kelimesinin tam altındaki metni okuma
+                words = page.extract_words()
+                for w in words:
+                    if w['text'] == "Mahalle":
+                        # Mahalle etiketinin hemen alt bölgesi için bbox tanımı
+                        crop_box = (w['x0'] - 5, w['bottom'], w['x1'] + 120, w['bottom'] + 25)
+                        cropped_page = page.crop(crop_box)
+                        text_under = cropped_page.extract_text()
+                        if text_under:
+                            candidate = text_under.strip().split('\n')[0].split(' ')[0].capitalize()
+                            if candidate.lower() not in GEÇERSİZ_TERİMLER:
+                                mahalle = candidate
+                                break
+
                 text = page.extract_text()
                 if text:
                     tam_metin += text + "\n"
 
-            # 2. YÖNTEM: Tablodan okuma başarısızsa Regex ile kesin konum bul
+            # 2. Yedek Yöntem: Metin Bazlı Nokta Atışı Okuma
             if mahalle == "Bilinmiyor":
-                # 'İmar Durumu Bilgileri' başlığının hemen sonrasını kesip al
-                imar_bilgileri_metin = tam_metin
-                if "İmar Durumu Bilgileri" in tam_metin:
-                    imar_bilgileri_metin = tam_metin.split("İmar Durumu Bilgileri")[-1]
-                
-                # "Mahalle" etiketi sonrası ilk düzgün kelime
-                match_m = re.search(r'Mahalle[^\n]*\n+([A-Za-zÇĞİÖŞÜçğıöşü]+)', imar_bilgileri_metin)
-                if match_m:
-                    found = match_m.group(1).capitalize()
-                    if found.lower() not in ["pafta", "ada", "parsel", "idari"]:
-                        mahalle = found
+                lines = tam_metin.split('\n')
+                for idx, line in enumerate(lines):
+                    if "Mahalle" in line and "Pafta" in line:
+                        if idx + 1 < len(lines):
+                            next_line = lines[idx + 1].strip()
+                            parts = [p.strip() for p in next_line.split('|') if p.strip()]
+                            if parts:
+                                candidate = parts[0].capitalize()
+                                if candidate.lower() not in GEÇERSİZ_TERİMLER:
+                                    mahalle = candidate
+                                    break
 
     except Exception as e:
         st.error(f"Okuma hatası ({uploaded_file.name}): {e}")
@@ -313,22 +314,22 @@ if uploaded_pdfs:
             )
 
             c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Toplam Arazi (m²)", fmt_tr(df['Parsel_Alani'].sum()))
-            c2.metric("Toplam Net Arazi (m²)", fmt_tr(toplam_net_alan))
-            c3.metric("Ortalama KAKS", fmt_tr(df['KAKS'].mean(), 2))
-            c4.metric("Toplam Brüt İnşaat (m²)", fmt_tr(toplam_brut_insaat))
+            c1.metric("Toplam Arazi (m²)", fmt_tr(df['Parsel_Alani'].sum(), 2, "TL"))
+            c2.metric("Toplam Net Arazi (m²)", fmt_tr(toplam_net_alan, 2, "TL"))
+            c3.metric("Ortalama KAKS", f"{df['KAKS'].mean():.2f}")
+            c4.metric("Toplam Brüt İnşaat (m²)", fmt_tr(toplam_brut_insaat, 2, "TL"))
 
         with tab2:
             st.subheader("Kat Karşılığı & Paylaşım Modeli")
             k1, k2 = st.columns(2)
 
             with k1:
-                st.info(f"**Yüklenici Payı (%{100-kat_karsiligi_oran}):** {fmt_tr(yuklenici_payi_m2)} m²")
+                st.info(f"**Yüklenici Payı (%{100-kat_karsiligi_oran}):** {fmt_tr(yuklenici_payi_m2, 2, 'TL')} m²")
                 st.write(f"• Müteahhit Villa Adedi: **{yuklenici_v_adet} Adet**")
                 st.write(f"• Müteahhit Daire Adedi: **{int(d_adet * ((100-kat_karsiligi_oran)/100))} Adet**")
 
             with k2:
-                st.success(f"**Arsa Sahibi Payı (%{kat_karsiligi_oran}):** {fmt_tr(arsa_sahibi_payi_m2)} m²")
+                st.success(f"**Arsa Sahibi Payı (%{kat_karsiligi_oran}):** {fmt_tr(arsa_sahibi_payi_m2, 2, 'TL')} m²")
                 st.write(f"• Arsa Sahibi Villa Adedi: **{arsa_sahibi_v_adet} Adet**")
                 st.write(f"• Arsa Sahibi Daire Adedi: **{d_adet - int(d_adet * ((100-kat_karsiligi_oran)/100))} Adet**")
 
@@ -355,7 +356,7 @@ if uploaded_pdfs:
                     f"{fmt_tr(toplam_insaat_maliyeti, 0, para_birimi)} ({fmt_tr(maliyet_m2, 0, para_birimi)}/m²)",
                     f"{fmt_tr(pazarlama_operasyon_maliyet, 0, para_birimi)}",
                     f"{fmt_tr(toplam_proje_maliyeti, 0, para_birimi)}",
-                    f"{fmt_tr(yuklenici_payi_m2)} m²",
+                    f"{fmt_tr(yuklenici_payi_m2, 2, 'TL')} m²",
                     f"{fmt_tr(toplam_yuklenici_ciro, 0, para_birimi)} ({fmt_tr(satis_m2, 0, para_birimi)}/m²)",
                     f"{fmt_tr(net_kar, 0, para_birimi)}"
                 ]
