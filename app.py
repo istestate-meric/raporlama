@@ -112,7 +112,7 @@ def mahalle_piyasa_verisi_getir(mahalle_adi):
             return MAHALLE_VERITABANI[key]
     return MAHALLE_VERITABANI["Bilinmiyor"]
 
-def tek_pdf_analiz_et(uploaded_file):
+def tek_pdf_analiz_et(uploaded_file, koruma_kusagi="Göl Koruma Alanı", yesil_kusaklama_var_mi=False):
     mahalle = "Bilinmiyor"
     ada = "Bilinmiyor"
     parsel = "Bilinmiyor"
@@ -151,10 +151,22 @@ def tek_pdf_analiz_et(uploaded_file):
         parsel = match_parsel.group(2)
         rapor_alani = metin_sayi_cevir(match_parsel.group(3))
 
-    kaks_val = 0.3
-    match_kaks = re.search(r'(?:Kaks|Emsal)[^\d]*([\d.,]+)', metin_tum, re.IGNORECASE)
-    if match_kaks:
-        kaks_val = metin_sayi_cevir(match_kaks.group(1))
+    # --- PLAN NOTLARINA GÖRE DİNAMİK TAKS / KAKS DÜZENLEMESİ ---
+    if koruma_kusagi == "Kontrollü Kullanım Bölgesi":
+        taks_val = 0.20
+        kaks_val = 0.20
+    elif koruma_kusagi == "Göl Koruma Alanı":
+        taks_val = 0.30
+        kaks_val = 0.30
+    elif koruma_kusagi == "Yakın Mesafe Koruma Alanı":
+        taks_val = 0.30
+        kaks_val = 0.40
+    elif koruma_kusagi == "Uzak Mesafe Koruma Alanı":
+        taks_val = 0.30
+        kaks_val = 0.45
+    else:
+        taks_val = 0.30
+        kaks_val = 0.30
 
     p_info = PARSEL_VERITABANI.get(str(parsel), None)
     if p_info:
@@ -166,7 +178,12 @@ def tek_pdf_analiz_et(uploaded_file):
         parsel_alani = rapor_alani
         net_alan = parsel_alani * 0.70
 
-    hesaba_alinan = parsel_alani * 0.70
+    # PLAN NOTU B.3: Göl Yeşil Kuşaklama Alanında kalan taşınmazlarda %30 kesinti yapılmaz, net alan esas alınır.
+    if yesil_kusaklama_var_mi:
+        hesaba_alinan = parsel_alani
+    else:
+        hesaba_alinan = parsel_alani * 0.70
+
     net_insaat = hesaba_alinan * kaks_val
     brut_insaat = net_insaat * 1.30
 
@@ -179,6 +196,7 @@ def tek_pdf_analiz_et(uploaded_file):
         "Hesaba_Alinan": hesaba_alinan,
         "Net_Alan": net_alan,
         "Fonksiyon": fonksiyon,
+        "TAKS": taks_val,
         "KAKS": kaks_val,
         "Net_Insaat": net_insaat,
         "Brut_Insaat": brut_insaat,
@@ -249,6 +267,25 @@ if para_birimi == "USD":
 elif para_birimi == "EUR":
     kur_katsayisi = 1.0 / kurlar["EUR"]
 
+st.sidebar.subheader("📜 Plan Notları & Havza Kuralları")
+koruma_kusagi = st.sidebar.selectbox(
+    "Elmalı Havzası Koruma Kuşağı",
+    [
+        "Göl Koruma Alanı (KAKS: 0.30)",
+        "Kontrollü Kullanım Bölgesi (KAKS: 0.20)",
+        "Yakın Mesafe Koruma Alanı (KAKS: 0.40)",
+        "Uzak Mesafe Koruma Alanı (KAKS: 0.45)"
+    ],
+    index=0
+)
+secilen_kusak_adi = koruma_kusagi.split(" (")[0]
+
+yesil_kusaklama = st.sidebar.checkbox(
+    "🌿 Taşınmaz Göl Yeşil Kuşaklama Alanında mı?", 
+    value=False,
+    help="Plan Notu B.3 uyarınca Göl Yeşil Kuşaklama Alanında %30 DOP kesintisi yapılmaz."
+)
+
 st.sidebar.subheader("🤝 Kat Karşılığı & Paylaşım Oranı")
 kat_karsiligi_oran = st.sidebar.slider(
     "Arsa Payı / Kat Karşılığı Oranı (%)", 
@@ -277,7 +314,7 @@ with col_right:
 if uploaded_pdfs:
     tum_veriler = []
     for pdf in uploaded_pdfs:
-        res = tek_pdf_analiz_et(pdf)
+        res = tek_pdf_analiz_et(pdf, koruma_kusagi=secilen_kusak_adi, yesil_kusaklama_var_mi=yesil_kusaklama)
         if res:
             tum_veriler.extend(res)
 
@@ -288,6 +325,7 @@ if uploaded_pdfs:
 
         toplam_brut_insaat = df['Brut_Insaat'].sum()
         toplam_net_alan = df['Net_Alan'].sum()
+        toplam_parsel_alani = df['Parsel_Alani'].sum()
 
         hesaplanan_gider_orani = otomatik_gider_orani_hesapla(toplam_brut_insaat)
         
@@ -355,16 +393,16 @@ if uploaded_pdfs:
         net_kar = toplam_yuklenici_ciro - toplam_proje_maliyeti
         roi = (net_kar / toplam_proje_maliyeti * 100) if toplam_proje_maliyeti > 0 else 0
 
-        tab1, tab2, tab3 = st.tabs(["📊 Parsel & İmar Özeti", "📐 Kat Karşılığı & Mimari", "💵 Finansal Fizibilite"])
+        tab1, tab2, tab3, tab4 = st.tabs(["📊 Parsel & İmar Özeti", "📐 Kat Karşılığı & Mimari", "💵 Finansal Fizibilite", "⚠️ Plan Notu Uyum Denetimi"])
 
         with tab1:
-            st.subheader(f"Konum: {otomatik_mahalle} Mahallesi | İmar: {ana_fonksiyon}")
-            st.dataframe(df[['Mahalle', 'Ada', 'Parsel', 'Nitelik', 'Parsel_Alani', 'Hesaba_Alinan', 'Net_Alan', 'KAKS', 'Brut_Insaat']], use_container_width=True)
+            st.subheader(f"Konum: {otomatik_mahalle} Mahallesi | İmar: {ana_fonksiyon} | Kuşak: {secilen_kusak_adi}")
+            st.dataframe(df[['Mahalle', 'Ada', 'Parsel', 'Nitelik', 'Parsel_Alani', 'Hesaba_Alinan', 'Net_Alan', 'TAKS', 'KAKS', 'Brut_Insaat']], use_container_width=True)
 
             c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Toplam Arazi (m²)", fmt_tr(df['Parsel_Alani'].sum(), 2))
+            c1.metric("Toplam Arazi (m²)", fmt_tr(toplam_parsel_alani, 2))
             c2.metric("Toplam Net Arazi (m²)", fmt_tr(toplam_net_alan, 2))
-            c3.metric("Ortalama KAKS", f"{df['KAKS'].mean():.2f}")
+            c3.metric("Uygulanan KAKS", f"{df['KAKS'].mean():.2f}")
             c4.metric("Toplam Brüt İnşaat (m²)", fmt_tr(toplam_brut_insaat, 2))
 
         with tab2:
@@ -426,6 +464,28 @@ if uploaded_pdfs:
                 ]
             }
             st.table(pd.DataFrame(fizibilite_data))
+
+        with tab4:
+            st.subheader("⚖️ Beykoz 1/1000 Revizyon İmar Plan Notları Denetim Özeti")
+            
+            # KONTROL 1: İfraz Şartı
+            if toplam_parsel_alani < 600.0:
+                st.warning("⚠️ **İfraz Sınırı Riski (B.21):** Toplam arsa alanı 600 m² altında olduğu için bu parsel ifraz edilemez/bölünemez. Tek parsel olarak ruhsatlandırılmalıdır.")
+            else:
+                st.success("✅ **İfraz Şartı Uyumlu (B.21):** Arsa alanı 600 m² min. ifraz alanının üzerindedir.")
+
+            # KONTROL 2: Kat Sınırlaması
+            st.info("📏 **Maksimum Kat Yüksekliği (C.1):** Bölgede Yençok = 2 Kat sınırlaması vardır. Bodrum katlar dahil görünen kat adedi 3'ü geçemez.")
+
+            # KONTROL 3: Bina Cephe Sınırı
+            st.info("📐 **Maksimum Cephe Sınırı (C.1 / C.2.1):** Blok tasarımı yapılırken konut binalarında maks. bina cephesi **20 m**, ticari binalarda **30 m** ile sınırlandırılmalıdır.")
+
+            # KONTROL 4: Sert Zemin Sınırlaması
+            st.warning("🌱 **Peyzaj ve Sert Zemin Kısıtı (C.1):** Elmalı Havzası ve Göl Koruma Alanı'nda bina oturumu dışındaki bahçe alanlarında **sert zemin yasaktır**, geçirimli yüzey tasarlanmalıdır.")
+
+            # KONTROL 5: Otopark Şartı
+            toplam_unite_sayisi = yuk_adet + arsa_adet
+            st.info(f"🚗 **Otopark Zorunluluğu (B.14):** Bağımsız bölüm oluşturmamak şartıyla araç başına 20 m²'den en az **{toplam_unite_sayisi} araçlık otopark** alanının parsel içinde ayrılması zorunludur.")
 
 else:
     st.info("👆 Lütfen analiz yapmak istediğiniz imar raporu PDF dosyalarını yükleyin.")
