@@ -122,31 +122,46 @@ def tek_pdf_analiz_et(uploaded_file):
         st.error(f"Okuma hatası ({uploaded_file.name}): {e}")
         return []
 
-    metin_tek_satir = re.sub(r'\s+', ' ', tam_metin)
+    # Plan Adı kısmındaki toplu mahalle listesinin algılamayı bozmasını engelliyoruz
+    metin_temiz = re.sub(r'Plan Adı.*', '', tam_metin, flags=re.DOTALL | re.IGNORECASE)
+    metin_tek_satir = re.sub(r'\s+', ' ', metin_temiz)
 
-    # 1. Bilinen mahalle isimlerini arama (Pafta çakışmasını engeller)
-    bilinen_mahalleler = ["Çiftlik", "Acarlar", "Görele", "Rüzgarlıbahçe", "Kavacık", "Çengeldere", "Yavuztürk"]
-    for m in bilinen_mahalleler:
-        if m.lower() in tam_metin.lower():
-            mahalle = m
-            break
+    # 1. Öncelikli Yaklaşım: Doğrudan Mahalle/Pafta tablosundaki değeri yakala
+    # "Mahalle" ile başlayan ve hemen altında/yanında yer alan ilk geçerli ismi alır
+    match_tablo = re.search(r'Mahalle(?:\s+Pafta)?\s*[\|\:\s]*([A-Za-zÇĞİÖŞÜçğıöşü]+)', metin_tek_satir, re.IGNORECASE)
+    if match_tablo:
+        bulunan = match_tablo.group(1).capitalize()
+        if bulunan.lower() not in ["pafta", "ada", "parsel", "ilçe", "ili"]:
+            mahalle = bulunan
 
-    # 2. Esnek Regex kontrolü ve terim eleme
+    # 2. Alternatif Yaklaşım: İdari Mahalle alanını kontrol et (Örn: ÇAVUŞBAŞI ÇİFTLİK)
     if mahalle == "Bilinmiyor":
-        match_mahalle = re.search(r'Mahalles?i?\s*:?\s*([A-Za-zÇĞİÖŞÜçğıöşü]+)', metin_tek_satir, re.IGNORECASE)
-        if match_mahalle:
-            bulunan = match_mahalle.group(1).capitalize()
-            if bulunan.lower() not in ["pafta", "ada", "parsel", "ilçe", "ili"]:
-                mahalle = bulunan
+        match_idari = re.search(r'İdari Mahalle\s*[\|\:\s]*([A-Za-zÇĞİÖŞÜçğıöşü\s]+)', metin_tek_satir, re.IGNORECASE)
+        if match_idari:
+            idari_str = match_idari.group(1)
+            bilinen_mahalleler = ["Çiftlik", "Acarlar", "Görele", "Rüzgarlıbahçe", "Kavacık", "Çengeldere", "Yavuztürk"]
+            for m in bilinen_mahalleler:
+                if m.lower() in idari_str.lower():
+                    mahalle = m
+                    break
 
-    match_parsel = re.search(r'(\d+)\s+(\d+)\s+([\d.,]+)\s*m²', metin_tek_satir)
+    # 3. Son Çare: Temizlenmiş metinde bilinen mahalle isimlerini ara
+    if mahalle == "Bilinmiyor":
+        bilinen_mahalleler = ["Çiftlik", "Acarlar", "Görele", "Rüzgarlıbahçe", "Kavacık", "Çengeldere", "Yavuztürk"]
+        for m in bilinen_mahalleler:
+            if m.lower() in metin_temiz.lower():
+                mahalle = m
+                break
+
+    metin_tum = re.sub(r'\s+', ' ', tam_metin)
+    match_parsel = re.search(r'(\d+)\s+(\d+)\s+([\d.,]+)\s*m²', metin_tum)
     if match_parsel:
         ada = match_parsel.group(1)
         parsel = match_parsel.group(2)
         rapor_alani = metin_sayi_cevir(match_parsel.group(3))
 
     kaks_val = 0.3
-    match_kaks = re.search(r'(?:Kaks|Emsal)[^\d]*([\d.,]+)', metin_tek_satir, re.IGNORECASE)
+    match_kaks = re.search(r'(?:Kaks|Emsal)[^\d]*([\d.,]+)', metin_tum, re.IGNORECASE)
     if match_kaks:
         kaks_val = metin_sayi_cevir(match_kaks.group(1))
 
