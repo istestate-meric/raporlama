@@ -215,16 +215,16 @@ proje_tipi = st.sidebar.radio("Konut Proje Konsepti", ["Villa Projesi", "Konut /
 
 if proje_tipi == "Villa Projesi":
     yapi_kategorisi = "villa"
-    hedef_m2_varsayilan = 200
-    havuz_opsiyonu = st.sidebar.checkbox("Villalara Havuz Ekle", value=True)
+    # Min 75 m2 taban x 2 Kat = Min 150 m2 kuralı
+    hedef_m2_input = st.sidebar.number_input("Hedef Birim Brüt m² (Min 150 m²)", value=200, min_value=150, step=10)
+    havuz_opsiyonu = st.sidebar.checkbox("Villalara Havuz Ekle (Alan Elverirse)", value=True)
     havuz_m2_hedef = st.sidebar.number_input("Villa Başı Havuz m²", value=35, step=5) if havuz_opsiyonu else 0
 else:
     yapi_kategorisi = "daire"
-    hedef_m2_varsayilan = 120
+    hedef_m2_input = st.sidebar.number_input("Hedef Birim Brüt m²", value=120, min_value=50, step=10)
     havuz_opsiyonu = False
     havuz_m2_hedef = 0
 
-hedef_m2_input = st.sidebar.number_input("Hedef Birim Brüt m²", value=hedef_m2_varsayilan, step=10)
 genel_gider_orani = st.sidebar.slider("Pazarlama & Şantiye Gideri (%)", min_value=0, max_value=15, value=5)
 
 # MAIN APP
@@ -260,19 +260,47 @@ if uploaded_pdfs:
         else:
             yapi_etiketi = "Villa" if yapi_kategorisi == "villa" else "Daire"
 
-        # --- ORAN SABİT - HASSAS M2 VE ÜNİTE BÖLÜŞÜM ALGORİTMASI ---
+        # --- ORAN SABİT - AKILLI MİMARİ BÖLÜŞÜM ALGORİTMASI ---
         arsa_sahibi_payi_m2 = toplam_brut_insaat * (kat_karsiligi_oran / 100.0)
         yuklenici_payi_m2 = toplam_brut_insaat - arsa_sahibi_payi_m2
 
-        toplam_konsept_m2 = hedef_m2_input + havuz_m2_hedef
-        
-        # Tarafların kendi paylarından kaçar adet ünite çıkacağı
-        arsa_sahibi_adet = max(1, round(arsa_sahibi_payi_m2 / toplam_konsept_m2))
-        yuklenici_adet = max(1, round(yuklenici_payi_m2 / toplam_konsept_m2))
-        
-        # Tarafların kendi m2'lerini tam kullanacakları ünite başı brüt m2'leri
-        arsa_sahibi_birim_brut = (arsa_sahibi_payi_m2 / arsa_sahibi_adet) - havuz_m2_hedef
-        yuklenici_birim_brut = (yuklenici_payi_m2 / yuklenici_adet) - havuz_m2_hedef
+        min_unite_m2 = 150.0 if yapi_kategorisi == "villa" else 50.0
+
+        # MÜTEAHHİT ÜNİTE & HAVUZ HESABI
+        if yuklenici_payi_m2 >= min_unite_m2:
+            yuklenici_adet = max(1, math.floor(yuklenici_payi_m2 / (hedef_m2_input + havuz_m2_hedef)))
+            if yuklenici_adet == 0:
+                yuklenici_adet = 1
+        else:
+            yuklenici_adet = 1
+
+        yuklenici_toplam_birim_m2 = yuklenici_payi_m2 / yuklenici_adet
+        if havuz_opsiyonu and (yuklenici_toplam_birim_m2 - havuz_m2_hedef) >= min_unite_m2:
+            yuklenici_havuz_m2 = havuz_m2_hedef
+            yuklenici_birim_brut = yuklenici_toplam_birim_m2 - havuz_m2_hedef
+            yuklenici_havuz_durum = f"{yuklenici_adet} Adet ({fmt_tr(havuz_m2_hedef, 2)} m²)"
+        else:
+            yuklenici_havuz_m2 = 0.0
+            yuklenici_birim_brut = yuklenici_toplam_birim_m2
+            yuklenici_havuz_durum = "Metraj Yetersiz (Eklenecek Havuz Yok)"
+
+        # ARSA SAHİBİ ÜNİTE & HAVUZ HESABI
+        if arsa_sahibi_payi_m2 >= min_unite_m2:
+            arsa_sahibi_adet = max(1, math.floor(arsa_sahibi_payi_m2 / (hedef_m2_input + havuz_m2_hedef)))
+            if arsa_sahibi_adet == 0:
+                arsa_sahibi_adet = 1
+        else:
+            arsa_sahibi_adet = 1
+
+        arsa_sahibi_toplam_birim_m2 = arsa_sahibi_payi_m2 / arsa_sahibi_adet
+        if havuz_opsiyonu and (arsa_sahibi_toplam_birim_m2 - havuz_m2_hedef) >= min_unite_m2:
+            arsa_sahibi_havuz_m2 = havuz_m2_hedef
+            arsa_sahibi_birim_brut = arsa_sahibi_toplam_birim_m2 - havuz_m2_hedef
+            arsa_sahibi_havuz_durum = f"{arsa_sahibi_adet} Adet ({fmt_tr(havuz_m2_hedef, 2)} m²)"
+        else:
+            arsa_sahibi_havuz_m2 = 0.0
+            arsa_sahibi_birim_brut = arsa_sahibi_toplam_birim_m2
+            arsa_sahibi_havuz_durum = "Metraj Yetersiz (Eklenecek Havuz Yok)"
 
         # --- FİNANSAL HESAPLAMALAR ---
         mahalle_veri = mahalle_piyasa_verisi_getir(otomatik_mahalle)[yapi_kategorisi]
@@ -320,19 +348,21 @@ if uploaded_pdfs:
                 st.metric("Müteahhit Toplam İnşaat Alanı", f"{fmt_tr(yuklenici_payi_m2, 2)} m²")
                 st.success(f"**Hesaplanan Bölüm:** {yuklenici_adet} Adet {yapi_etiketi}")
                 st.write(f"• Ünite Başı Brüt İnşaat: **{fmt_tr(yuklenici_birim_brut, 2)} m²**")
-                if havuz_opsiyonu:
-                    st.write(f"• Tahsis Edilen Havuz: **{yuklenici_adet} Adet (Ünite Başı {fmt_tr(havuz_m2_hedef, 2)} m²)**")
+                if yapi_kategorisi == "villa":
+                    st.write(f"• Taban Oturumu (2 Kat): **{fmt_tr(yuklenici_birim_brut / 2, 2)} m²**")
+                    st.write(f"• Havuz Durumu: **{yuklenici_havuz_durum}**")
 
             with k2:
                 st.write(f"### 🏡 Arsa Sahibi Payı (%{kat_karsiligi_oran})")
                 st.metric("Arsa Sahibi Toplam İnşaat Alanı", f"{fmt_tr(arsa_sahibi_payi_m2, 2)} m²")
                 st.success(f"**Hesaplanan Bölüm:** {arsa_sahibi_adet} Adet {yapi_etiketi}")
                 st.write(f"• Ünite Başı Brüt İnşaat: **{fmt_tr(arsa_sahibi_birim_brut, 2)} m²**")
-                if havuz_opsiyonu:
-                    st.write(f"• Tahsis Edilen Havuz: **{arsa_sahibi_adet} Adet (Ünite Başı {fmt_tr(havuz_m2_hedef, 2)} m²)**")
+                if yapi_kategorisi == "villa":
+                    st.write(f"• Taban Oturumu (2 Kat): **{fmt_tr(arsa_sahibi_birim_brut / 2, 2)} m²**")
+                    st.write(f"• Havuz Durumu: **{arsa_sahibi_havuz_durum}**")
 
             st.markdown("---")
-            st.caption(f"💡 *Özet: Toplam {fmt_tr(toplam_brut_insaat, 2)} m² inşaat alanının tam %{kat_karsiligi_oran}'i olan {fmt_tr(arsa_sahibi_payi_m2, 2)} m² Arsa Sahibine ({arsa_sahibi_adet} Adet {yapi_etiketi}), kalan %{100-kat_karsiligi_oran}'i olan {fmt_tr(yuklenici_payi_m2, 2)} m² Müteahhite ({yuklenici_adet} Adet {yapi_etiketi}) atanarak metraj sıfırlanmıştır.*")
+            st.caption(f"💡 *Kural Uyarınca: Villalar için minimum taban alanı 75 m² (2 Kat = Min 150 m² Brüt) baz alınmıştır. İnşaat alanının %{kat_karsiligi_oran}'i ({fmt_tr(arsa_sahibi_payi_m2, 2)} m²) Arsa Sahibine, %{100-kat_karsiligi_oran}'i ({fmt_tr(yuklenici_payi_m2, 2)} m²) Müteahhite verilerek tam bölünmüştür.*")
 
         with tab3:
             st.subheader(f"Fizibilite Özeti ({para_birimi} Cinsinden)")
