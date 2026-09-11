@@ -36,10 +36,9 @@ PARSEL_VERITABANI = {
     "33": {"Nitelik": "Arsa",  "Alan": 675.30,  "Net_Alan": 664.22}
 }
 
-# Hatalı Başlık Filtresi
-GEÇERSİZ_TERİMLER = [
-    "pafta", "ada", "parsel", "alan", "idari", "cadde", "sokak", 
-    "cadde / sokak", "kapı", "kapı no", "mahalle", "ilçe", "ili"
+BEYKOZ_MAHALLELERI = [
+    "Çiftlik", "Acarlar", "Görele", "Rüzgarlıbahçe", "Kavacık", 
+    "Çengeldere", "Yavuztürk", "Baklacı", "Fatih", "Yavuzselim"
 ]
 
 # --- HELPER FUNCTIONS ---
@@ -118,37 +117,34 @@ def tek_pdf_analiz_et(uploaded_file):
         with pdfplumber.open(uploaded_file) as pdf:
             tam_metin = ""
             for page in pdf.pages:
-                # 1. Kelime Konumu Tespiti: "Mahalle" kelimesinin tam altındaki metni okuma
-                words = page.extract_words()
-                for w in words:
-                    if w['text'] == "Mahalle":
-                        # Mahalle etiketinin hemen alt bölgesi için bbox tanımı
-                        crop_box = (w['x0'] - 5, w['bottom'], w['x1'] + 120, w['bottom'] + 25)
-                        cropped_page = page.crop(crop_box)
-                        text_under = cropped_page.extract_text()
-                        if text_under:
-                            candidate = text_under.strip().split('\n')[0].split(' ')[0].capitalize()
-                            if candidate.lower() not in GEÇERSİZ_TERİMLER:
-                                mahalle = candidate
-                                break
-
                 text = page.extract_text()
                 if text:
                     tam_metin += text + "\n"
 
-            # 2. Yedek Yöntem: Metin Bazlı Nokta Atışı Okuma
+            # 1. Aşama: Bilinen Mahalle Listesi ile Doğrudan Doğrulama
+            # "İmar Durumu Bilgileri" tablosundan sonraki metne bakılır
+            imar_bolumu = tam_metin
+            if "İmar Durumu Bilgileri" in tam_metin:
+                imar_bolumu = tam_metin.split("İmar Durumu Bilgileri")[-1]
+            
+            # İdari Mahalle kısmını keserek sadece ana Mahalle satırını koru
+            if "İdari Mahalle" in imar_bolumu:
+                imar_bolumu_ust = imar_bolumu.split("İdari Mahalle")[0]
+            else:
+                imar_bolumu_ust = imar_bolumu
+
+            for m_adi in BEYKOZ_MAHALLELERI:
+                if re.search(rf'\b{m_adi}\b', imar_bolumu_ust, re.IGNORECASE):
+                    mahalle = m_adi.capitalize()
+                    break
+
+            # 2. Aşama: Bilinen listede yokse Regex ile Satır Ayrıştırma
             if mahalle == "Bilinmiyor":
-                lines = tam_metin.split('\n')
-                for idx, line in enumerate(lines):
-                    if "Mahalle" in line and "Pafta" in line:
-                        if idx + 1 < len(lines):
-                            next_line = lines[idx + 1].strip()
-                            parts = [p.strip() for p in next_line.split('|') if p.strip()]
-                            if parts:
-                                candidate = parts[0].capitalize()
-                                if candidate.lower() not in GEÇERSİZ_TERİMLER:
-                                    mahalle = candidate
-                                    break
+                match_m = re.search(r'Mahalle[^\n]*\n+([A-Za-zÇĞİÖŞÜçğıöşü]+)', imar_bolumu_ust)
+                if match_m:
+                    found = match_m.group(1).strip()
+                    if len(found) > 2 and found.lower() not in ["pafta", "ada", "parsel", "idari", "cadde"]:
+                        mahalle = found.capitalize()
 
     except Exception as e:
         st.error(f"Okuma hatası ({uploaded_file.name}): {e}")
