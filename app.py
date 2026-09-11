@@ -72,7 +72,7 @@ def fmt_tr(val, decimals=2, para_birimi="TL"):
 # --- DÖVİZ KURLARI VE MAHALLE VERİSİ MOTORU ---
 @st.cache_data(ttl=14400)
 def tcmb_kurlari_getir():
-    """TCMB canlı kurlarını çeker, hata alırsa güncel sabit kur verir."""
+    """TCMB canlı kurlarını çeker, hata alırsa varsayılan kurları döner."""
     try:
         url = "https://www.tcmb.gov.tr/kurlar/today.xml"
         response = requests.get(url, timeout=5)
@@ -82,11 +82,11 @@ def tcmb_kurlari_getir():
         eur = float(root.find("./Currency[@CurrencyCode='EUR']/BanknoteSelling").text)
         return {"USD": usd, "EUR": eur}
     except Exception:
-        return {"USD": 38.50, "EUR": 41.20} # Yedek güncel kurlar
+        return {"USD": 38.50, "EUR": 41.20}
 
 @st.cache_data(ttl=86400)
 def mahalle_piyasa_verisi_getir(mahalle_adi):
-    """Mahalle bazlı imalat maliyeti ve gayrimenkul m² satış değerleri (TL)"""
+    """Mahalle bazlı imalat maliyeti ve satış değerleri (TL)"""
     MAHALLE_VERITABANI = {
         "Çiftlik": {"maliyet": 32500.0, "satis": 110000.0},
         "Acarlar": {"maliyet": 42000.0, "satis": 175000.0},
@@ -98,7 +98,6 @@ def mahalle_piyasa_verisi_getir(mahalle_adi):
         "Bilinmiyor": {"maliyet": 32000.0, "satis": 100000.0}
     }
     
-    # Kısmi isim eşleşmesi kontrolü (Örn: "Çiftlik Mah." -> "Çiftlik")
     for key in MAHALLE_VERITABANI.keys():
         if key.lower() in mahalle_adi.lower():
             return MAHALLE_VERITABANI[key]
@@ -125,10 +124,20 @@ def tek_pdf_analiz_et(uploaded_file):
 
     metin_tek_satir = re.sub(r'\s+', ' ', tam_metin)
 
-    # Otomatik Mahalle Tespiti
-    match_mahalle = re.search(r'Mahalles?i?\s*:?\s*([A-Za-zÇĞİÖŞÜçğıöşü]+)', metin_tek_satir, re.IGNORECASE)
-    if match_mahalle:
-        mahalle = match_mahalle.group(1).capitalize()
+    # 1. Bilinen mahalle isimlerini arama (Pafta çakışmasını engeller)
+    bilinen_mahalleler = ["Çiftlik", "Acarlar", "Görele", "Rüzgarlıbahçe", "Kavacık", "Çengeldere", "Yavuztürk"]
+    for m in bilinen_mahalleler:
+        if m.lower() in tam_metin.lower():
+            mahalle = m
+            break
+
+    # 2. Esnek Regex kontrolü ve terim eleme
+    if mahalle == "Bilinmiyor":
+        match_mahalle = re.search(r'Mahalles?i?\s*:?\s*([A-Za-zÇĞİÖŞÜçğıöşü]+)', metin_tek_satir, re.IGNORECASE)
+        if match_mahalle:
+            bulunan = match_mahalle.group(1).capitalize()
+            if bulunan.lower() not in ["pafta", "ada", "parsel", "ilçe", "ili"]:
+                mahalle = bulunan
 
     match_parsel = re.search(r'(\d+)\s+(\d+)\s+([\d.,]+)\s*m²', metin_tek_satir)
     if match_parsel:
@@ -177,11 +186,9 @@ if os.path.exists("assets/istestate_logo.png"):
 
 st.sidebar.title("⚙️ Analiz Parametreleri")
 
-# Para Birimi Seçimi
 para_birimi = st.sidebar.selectbox("💱 Raporlama Para Birimi", ["TL", "USD", "EUR"], index=0)
 kurlar = tcmb_kurlari_getir()
 
-# Para birimi katsayısı hesabı
 kur_katsayisi = 1.0
 if para_birimi == "USD":
     kur_katsayisi = 1.0 / kurlar["USD"]
@@ -224,17 +231,14 @@ if uploaded_pdfs:
     if tum_veriler:
         df = pd.DataFrame(tum_veriler)
         
-        # PDF'ten TESPİT EDİLEN MAHALLE
         otomatik_mahalle = df['Mahalle'].iloc[0]
         st.sidebar.subheader(f"📍 Otomatik Tespit Edilen Konum")
         st.sidebar.success(f"**Mahalle:** {otomatik_mahalle}")
 
-        # Mahalle Fiyat Verilerini Çek
         mahalle_veri = mahalle_piyasa_verisi_getir(otomatik_mahalle)
         oto_maliyet_tl = mahalle_veri["maliyet"]
         oto_satis_tl = mahalle_veri["satis"]
 
-        # Özel Proje Girişi Onay Kutusu
         ozel_giris_aktif = st.sidebar.checkbox(
             "✏️ Özel Proje Girişi Yap (Veriyi Ez)", 
             value=False
@@ -266,19 +270,16 @@ if uploaded_pdfs:
         toplam_brut_insaat = df['Brut_Insaat'].sum()
         toplam_net_alan = df['Net_Alan'].sum()
 
-        # Mimari Hesaplamalar
         hedef_v_m2 = v_m2 + h_m2
         v_adet = int(toplam_brut_insaat // hedef_v_m2) if hedef_v_m2 > 0 else 0
         d_adet = int(toplam_brut_insaat // d_m2) if d_m2 > 0 else 0
 
-        # Kat Karşılığı Dağılım
         yuklenici_payi_m2 = toplam_brut_insaat * ((100 - kat_karsiligi_oran) / 100)
         arsa_sahibi_payi_m2 = toplam_brut_insaat * (kat_karsiligi_oran / 100)
 
         yuklenici_v_adet = int(v_adet * ((100 - kat_karsiligi_oran) / 100))
         arsa_sahibi_v_adet = v_adet - yuklenici_v_adet
 
-        # Finansal Fizibilite Hesapları (Seçilen Para Birimiyle)
         toplam_insaat_maliyeti = toplam_brut_insaat * maliyet_m2
         pazarlama_operasyon_maliyet = toplam_insaat_maliyeti * (genel_gider_orani / 100)
         toplam_proje_maliyeti = toplam_insaat_maliyeti + pazarlama_operasyon_maliyet
@@ -287,7 +288,6 @@ if uploaded_pdfs:
         net_kar = toplam_yuklenici_ciro - toplam_proje_maliyeti
         roi = (net_kar / toplam_proje_maliyeti * 100) if toplam_proje_maliyeti > 0 else 0
 
-        # --- SEKMELER ---
         tab1, tab2, tab3 = st.tabs(["📊 Parsel & İmar Özeti", "📐 Kat Karşılığı & Mimari", "💵 Finansal Fizibilite"])
 
         with tab1:
