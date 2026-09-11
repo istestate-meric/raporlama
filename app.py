@@ -114,44 +114,44 @@ def tek_pdf_analiz_et(uploaded_file):
     try:
         with pdfplumber.open(uploaded_file) as pdf:
             tam_metin = ""
+            # 1. YÖNTEM: Tablo Yapısını Doğrudan Oku
             for page in pdf.pages:
+                tables = page.extract_tables()
+                for table in tables:
+                    for row in table:
+                        row_str = [str(cell) for cell in row if cell]
+                        # Mahalle ve Pafta/Ada bilgilerini barındıran hücreyi ara
+                        for i, cell in enumerate(row_str):
+                            if "Mahalle" in cell:
+                                # Yanındaki veya altındaki hücrede mahalle ismini al
+                                if i < len(row_str) - 1:
+                                    val = row_str[i+1].strip()
+                                    # Sadece Pafta/Ada vb. başlıkları hariç tut
+                                    val_clean = re.sub(r'(Pafta|Ada|Parsel|Alan).*', '', val, flags=re.DOTALL).strip()
+                                    if val_clean and val_clean.lower() not in ["pafta", "ada", "parsel", "mahalle"]:
+                                        mahalle = val_clean.split('\n')[0].capitalize()
+                                        break
                 text = page.extract_text()
                 if text:
                     tam_metin += text + "\n"
+
+            # 2. YÖNTEM: Tablodan okuma başarısızsa Regex ile kesin konum bul
+            if mahalle == "Bilinmiyor":
+                # 'İmar Durumu Bilgileri' başlığının hemen sonrasını kesip al
+                imar_bilgileri_metin = tam_metin
+                if "İmar Durumu Bilgileri" in tam_metin:
+                    imar_bilgileri_metin = tam_metin.split("İmar Durumu Bilgileri")[-1]
+                
+                # "Mahalle" etiketi sonrası ilk düzgün kelime
+                match_m = re.search(r'Mahalle[^\n]*\n+([A-Za-zÇĞİÖŞÜçğıöşü]+)', imar_bilgileri_metin)
+                if match_m:
+                    found = match_m.group(1).capitalize()
+                    if found.lower() not in ["pafta", "ada", "parsel", "idari"]:
+                        mahalle = found
+
     except Exception as e:
         st.error(f"Okuma hatası ({uploaded_file.name}): {e}")
         return []
-
-    # Plan Adı kısmındaki toplu mahalle listesinin algılamayı bozmasını engelliyoruz
-    metin_temiz = re.sub(r'Plan Adı.*', '', tam_metin, flags=re.DOTALL | re.IGNORECASE)
-    metin_tek_satir = re.sub(r'\s+', ' ', metin_temiz)
-
-    # 1. Öncelikli Yaklaşım: Doğrudan Mahalle/Pafta tablosundaki değeri yakala
-    # "Mahalle" ile başlayan ve hemen altında/yanında yer alan ilk geçerli ismi alır
-    match_tablo = re.search(r'Mahalle(?:\s+Pafta)?\s*[\|\:\s]*([A-Za-zÇĞİÖŞÜçğıöşü]+)', metin_tek_satir, re.IGNORECASE)
-    if match_tablo:
-        bulunan = match_tablo.group(1).capitalize()
-        if bulunan.lower() not in ["pafta", "ada", "parsel", "ilçe", "ili"]:
-            mahalle = bulunan
-
-    # 2. Alternatif Yaklaşım: İdari Mahalle alanını kontrol et (Örn: ÇAVUŞBAŞI ÇİFTLİK)
-    if mahalle == "Bilinmiyor":
-        match_idari = re.search(r'İdari Mahalle\s*[\|\:\s]*([A-Za-zÇĞİÖŞÜçğıöşü\s]+)', metin_tek_satir, re.IGNORECASE)
-        if match_idari:
-            idari_str = match_idari.group(1)
-            bilinen_mahalleler = ["Çiftlik", "Acarlar", "Görele", "Rüzgarlıbahçe", "Kavacık", "Çengeldere", "Yavuztürk"]
-            for m in bilinen_mahalleler:
-                if m.lower() in idari_str.lower():
-                    mahalle = m
-                    break
-
-    # 3. Son Çare: Temizlenmiş metinde bilinen mahalle isimlerini ara
-    if mahalle == "Bilinmiyor":
-        bilinen_mahalleler = ["Çiftlik", "Acarlar", "Görele", "Rüzgarlıbahçe", "Kavacık", "Çengeldere", "Yavuztürk"]
-        for m in bilinen_mahalleler:
-            if m.lower() in metin_temiz.lower():
-                mahalle = m
-                break
 
     metin_tum = re.sub(r'\s+', ' ', tam_metin)
     match_parsel = re.search(r'(\d+)\s+(\d+)\s+([\d.,]+)\s*m²', metin_tum)
