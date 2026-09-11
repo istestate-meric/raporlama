@@ -185,6 +185,53 @@ def tek_pdf_analiz_et(uploaded_file):
         "Dosya_Adı": uploaded_file.name
     }]
 
+# TAM OTOMATİK MİMARİ VE HAVUZ OPTİMİZASYON KERNEL'İ
+def tam_otomatik_villa_mimarisi(toplam_m2):
+    MIN_VILLA_BRUT = 150.0  # Min. 75 m2 taban x 2 kat
+    MIN_HAVUZ_M2 = 30.0
+
+    if toplam_m2 < MIN_VILLA_BRUT:
+        return 1, toplam_m2, 0.0, "Özel Ölçekli Tek Villa (Min. Sınır Altı Metraj)"
+
+    # Optimizasyon Seviyeleri
+    if toplam_m2 < 300.0:
+        # Dar Alan: Havuz yerine maksimum villa brütü
+        adet = 1
+        villa_brut = toplam_m2
+        havuz_m2 = 0.0
+        not_str = "Dar Metraj: Havuz Yerine Geniş Villa Alanı Tercih Edildi"
+    elif toplam_m2 < 800.0:
+        # Orta Alan: Standardize 180 m2 villa + 30 m2 Havuz Kombinasyonu
+        hedef_paket = 180.0 + MIN_HAVUZ_M2
+        adet = math.floor(toplam_m2 / hedef_paket)
+        if adet < 1:
+            adet = 1
+        
+        kalan_m2 = toplam_m2 - (adet * MIN_HAVUZ_M2)
+        villa_brut = kalan_m2 / adet
+
+        if villa_brut >= MIN_VILLA_BRUT:
+            havuz_m2 = MIN_HAVUZ_M2
+            not_str = "Optimum Denge: Standardize Villa + 30 m² Havuz"
+        else:
+            # Villa ufalıyorsa havuzu iptal et
+            villa_brut = toplam_m2 / adet
+            havuz_m2 = 0.0
+            not_str = "Villa Boyutunu Korumak İçin Havuz İptal Edildi"
+    else:
+        # Geniş Alan: Lüks Seviye 220 m2 villa + 40 m2 Havuz
+        hedef_paket = 220.0 + 40.0
+        adet = math.floor(toplam_m2 / hedef_paket)
+        if adet < 1:
+            adet = 1
+
+        kalan_m2 = toplam_m2 - (adet * 40.0)
+        villa_brut = kalan_m2 / adet
+        havuz_m2 = 40.0
+        not_str = "Geniş Metraj: Lüks Segment Villa + 40 m² Havuz"
+
+    return adet, villa_brut, havuz_m2, not_str
+
 # SIDEBAR
 if os.path.exists("assets/istestate_logo.png"):
     st.sidebar.image("assets/istestate_logo.png", use_container_width=True)
@@ -210,64 +257,9 @@ kat_karsiligi_oran = st.sidebar.slider(
     help="Arsa sahibinin kesin inşaat alanı payı yüzdesi."
 )
 
-st.sidebar.subheader("📐 Mimari Metraj Ayarları")
-proje_tipi = st.sidebar.radio("Konut Proje Konsepti", ["Villa Projesi", "Konut / Daire Projesi"])
-
-if proje_tipi == "Villa Projesi":
-    yapi_kategorisi = "villa"
-    hedef_m2_input = st.sidebar.number_input("Hedef Birim Brüt m² (Min 150 m²)", value=200, min_value=150, step=10)
-    havuz_tercihi = st.sidebar.radio("Havuz Stratejisi", ["Havuzlu (Metraj İzin Verirse)", "Havuzlu (Gerekirse Villa Sayısını Eksilt)", "Kesinlikle Havuzsuz"])
-    havuz_m2_hedef = st.sidebar.number_input("Villa Başı Havuz m² (Min 30 m²)", value=35, min_value=30, step=5) if "Havuzlu" in havuz_tercihi else 0
-else:
-    yapi_kategorisi = "daire"
-    hedef_m2_input = st.sidebar.number_input("Hedef Birim Brüt m²", value=120, min_value=50, step=10)
-    havuz_tercihi = "Kesinlikle Havuzsuz"
-    havuz_m2_hedef = 0
-
+st.sidebar.subheader("📐 Mimari Modelleme")
+proje_tipi = st.sidebar.radio("Konut Proje Konsepti", ["Villa Projesi (Tam Otomatik)", "Konut / Daire Projesi"])
 genel_gider_orani = st.sidebar.slider("Pazarlama & Şantiye Gideri (%)", min_value=0, max_value=15, value=5)
-
-# OTOMATİK MİMARİ OTURUM HESAPLAYICI DOKTRİNİ
-def otomatik_villa_havuz_hesapla(toplam_m2, hedef_villa_m2, istenen_havuz_m2, strateji):
-    MIN_VILLA_M2 = 150.0  # 75 m2 taban x 2 kat
-    MIN_HAVUZ_M2 = 30.0   # Minimum havuz alanı
-
-    if toplam_m2 < MIN_VILLA_M2:
-        return 1, toplam_m2, 0.0, "Özel Büyüklükte Tek Ünite (Min Sınır Altı)"
-
-    # Maksimum çıkabilecek teorik villa adedi
-    max_adet = math.floor(toplam_m2 / MIN_VILLA_M2)
-    if max_adet < 1:
-        max_adet = 1
-
-    # Başlangıç hedef adedi
-    baslangic_adet = math.floor(toplam_m2 / hedef_villa_m2)
-    baslangic_adet = max(1, baslangic_adet)
-
-    if strateji == "Kesinlikle Havuzsuz" or istenen_havuz_m2 < MIN_HAVUZ_M2:
-        birim_m2 = toplam_m2 / baslangic_adet
-        return baslangic_adet, birim_m2, 0.0, "Havuzsuz Tasarım"
-
-    # 1. Aşama: Mevcut hedef adet ile havuz sığıyor mu?
-    kalan_m2 = toplam_m2 - (baslangic_adet * MIN_VILLA_M2)
-    gerekli_havuz_toplam = baslangic_adet * istenen_havuz_m2
-
-    if kalan_m2 >= gerekli_havuz_toplam:
-        birim_m2 = (toplam_m2 - gerekli_havuz_toplam) / baslangic_adet
-        return baslangic_adet, birim_m2, istenen_havuz_m2, f"{baslangic_adet} Adet Havuzlu Villa"
-
-    # 2. Aşama: Eğer villa sayısı eksiltilerek havuz eklenebiliyorsa
-    if strateji == "Havuzlu (Gerekirse Villa Sayısını Eksilt)" and baslangic_adet > 1:
-        yeni_adet = baslangic_adet - 1
-        kalan_m2_yeni = toplam_m2 - (yeni_adet * MIN_VILLA_M2)
-        gerekli_havuz_yeni = yeni_adet * istenen_havuz_m2
-
-        if kalan_m2_yeni >= gerekli_havuz_yeni:
-            birim_m2 = (toplam_m2 - gerekli_havuz_yeni) / yeni_adet
-            return yeni_adet, birim_m2, istenen_havuz_m2, f"1 Villa Eksiltildi -> {yeni_adet} Adet Havuzlu Villa"
-
-    # 3. Aşama: Havuz için metraj yetersiz kaldı, havuzsuz modele dönülüyor
-    birim_m2 = toplam_m2 / baslangic_adet
-    return baslangic_adet, birim_m2, 0.0, "Metraj Yetersiz (Otomatik Havuzsuz Model)"
 
 # MAIN APP
 st.title("🏢 Beykoz İmar Analizi ve Fizibilite Portalı")
@@ -300,29 +292,27 @@ if uploaded_pdfs:
             yapi_kategorisi = "ticari"
             yapi_etiketi = "Ticari Ünite"
         else:
+            yapi_kategorisi = "villa" if "Villa" in proje_tipi else "daire"
             yapi_etiketi = "Villa" if yapi_kategorisi == "villa" else "Daire"
 
-        # --- DİNAMİK ORAN & OTOMATİK HAVUZLU VİLLA HESAPLAMALARI ---
+        # --- ORAN SABİT - TAM OTOMATİK MİMARİ DAĞITIM ---
         arsa_sahibi_payi_m2 = toplam_brut_insaat * (kat_karsiligi_oran / 100.0)
         yuklenici_payi_m2 = toplam_brut_insaat - arsa_sahibi_payi_m2
 
         if yapi_kategorisi == "villa":
-            yuk_adet, yuk_brut_m2, yuk_havuz_m2, yuk_not = otomatik_villa_havuz_hesapla(
-                yuklenici_payi_m2, hedef_m2_input, havuz_m2_hedef, havuz_tercihi
-            )
-            arsa_adet, arsa_brut_m2, arsa_havuz_m2, arsa_not = otomatik_villa_havuz_hesapla(
-                arsa_sahibi_payi_m2, hedef_m2_input, havuz_m2_hedef, havuz_tercihi
-            )
+            yuk_adet, yuk_brut_m2, yuk_havuz_m2, yuk_not = tam_otomatik_villa_mimarisi(yuklenici_payi_m2)
+            arsa_adet, arsa_brut_m2, arsa_havuz_m2, arsa_not = tam_otomatik_villa_mimarisi(arsa_sahibi_payi_m2)
         else:
-            yuk_adet = max(1, math.floor(yuklenici_payi_m2 / hedef_m2_input))
+            hedef_daire_m2 = 120.0
+            yuk_adet = max(1, math.floor(yuklenici_payi_m2 / hedef_daire_m2))
             yuk_brut_m2 = yuklenici_payi_m2 / yuk_adet
             yuk_havuz_m2 = 0.0
-            yuk_not = "Standart Daire Projesi"
+            yuk_not = "Standart Daire Konsepti"
 
-            arsa_adet = max(1, math.floor(arsa_sahibi_payi_m2 / hedef_m2_input))
+            arsa_adet = max(1, math.floor(arsa_sahibi_payi_m2 / hedef_daire_m2))
             arsa_brut_m2 = arsa_sahibi_payi_m2 / arsa_adet
             arsa_havuz_m2 = 0.0
-            arsa_not = "Standart Daire Projesi"
+            arsa_not = "Standart Daire Konsepti"
 
         # --- FİNANSAL HESAPLAMALAR ---
         mahalle_veri = mahalle_piyasa_verisi_getir(otomatik_mahalle)[yapi_kategorisi]
@@ -368,25 +358,25 @@ if uploaded_pdfs:
             with k1:
                 st.write(f"### 🏗️ Müteahhit Payı (%{100-kat_karsiligi_oran})")
                 st.metric("Müteahhit Toplam İnşaat Alanı", f"{fmt_tr(yuklenici_payi_m2, 2)} m²")
-                st.success(f"**Sonuç:** {yuk_adet} Adet {yapi_etiketi}")
+                st.success(f"**Otomatik Sonuç:** {yuk_adet} Adet {yapi_etiketi}")
                 st.write(f"• Ünite Başı Brüt İnşaat: **{fmt_tr(yuk_brut_m2, 2)} m²**")
                 if yapi_kategorisi == "villa":
                     st.write(f"• Taban Oturumu (2 Kat): **{fmt_tr(yuk_brut_m2 / 2, 2)} m²**")
-                    st.write(f"• Havuz Tahsisi: **{f'{yuk_adet} Adet ({fmt_tr(yuk_havuz_m2, 2)} m²)' if yuk_havuz_m2 > 0 else 'Havuz Yok'}**")
-                    st.caption(f"📌 *Algoritma Notu: {yuk_not}*")
+                    st.write(f"• Otomatik Havuz Durumu: **{f'{yuk_adet} Adet ({fmt_tr(yuk_havuz_m2, 2)} m²)' if yuk_havuz_m2 > 0 else 'Havuzsuz'}**")
+                    st.caption(f"🤖 *Yapay Zeka Kararı: {yuk_not}*")
 
             with k2:
                 st.write(f"### 🏡 Arsa Sahibi Payı (%{kat_karsiligi_oran})")
                 st.metric("Arsa Sahibi Toplam İnşaat Alanı", f"{fmt_tr(arsa_sahibi_payi_m2, 2)} m²")
-                st.success(f"**Sonuç:** {arsa_adet} Adet {yapi_etiketi}")
+                st.success(f"**Otomatik Sonuç:** {arsa_adet} Adet {yapi_etiketi}")
                 st.write(f"• Ünite Başı Brüt İnşaat: **{fmt_tr(arsa_brut_m2, 2)} m²**")
                 if yapi_kategorisi == "villa":
                     st.write(f"• Taban Oturumu (2 Kat): **{fmt_tr(arsa_brut_m2 / 2, 2)} m²**")
-                    st.write(f"• Havuz Tahsisi: **{f'{arsa_adet} Adet ({fmt_tr(arsa_havuz_m2, 2)} m²)' if arsa_havuz_m2 > 0 else 'Havuz Yok'}**")
-                    st.caption(f"📌 *Algoritma Notu: {arsa_not}*")
+                    st.write(f"• Otomatik Havuz Durumu: **{f'{arsa_adet} Adet ({fmt_tr(arsa_havuz_m2, 2)} m²)' if arsa_havuz_m2 > 0 else 'Havuzsuz'}**")
+                    st.caption(f"🤖 *Yapay Zeka Kararı: {arsa_not}*")
 
             st.markdown("---")
-            st.caption(f"💡 *Sistem Min. 150 m² Brüt Villa (75 m² Taban) ve Min. 30 m² Havuz şartlarını denetleyerek tarafların %{kat_karsiligi_oran} / %{100-kat_karsiligi_oran} haklarını tam sıfırlayacak şekilde dağıtmıştır.*")
+            st.caption(f"💡 *Sistem, toplam inşaat alanının büyüklüğüne göre villa ebatlarını ve minimum 30 m²'lik havuzların eklenip eklenmeyeceğini otomatik optimize etmiştir.*")
 
         with tab3:
             st.subheader(f"Fizibilite Özeti ({para_birimi} Cinsinden)")
