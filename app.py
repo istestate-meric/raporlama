@@ -185,23 +185,19 @@ def tek_pdf_analiz_et(uploaded_file):
         "Dosya_Adı": uploaded_file.name
     }]
 
-# TAM OTOMATİK MİMARİ VE HAVUZ OPTİMİZASYON KERNEL'İ
 def tam_otomatik_villa_mimarisi(toplam_m2):
-    MIN_VILLA_BRUT = 150.0  # Min. 75 m2 taban x 2 kat
+    MIN_VILLA_BRUT = 150.0
     MIN_HAVUZ_M2 = 30.0
 
     if toplam_m2 < MIN_VILLA_BRUT:
         return 1, toplam_m2, 0.0, "Özel Ölçekli Tek Villa (Min. Sınır Altı Metraj)"
 
-    # Optimizasyon Seviyeleri
     if toplam_m2 < 300.0:
-        # Dar Alan: Havuz yerine maksimum villa brütü
         adet = 1
         villa_brut = toplam_m2
         havuz_m2 = 0.0
         not_str = "Dar Metraj: Havuz Yerine Geniş Villa Alanı Tercih Edildi"
     elif toplam_m2 < 800.0:
-        # Orta Alan: Standardize 180 m2 villa + 30 m2 Havuz Kombinasyonu
         hedef_paket = 180.0 + MIN_HAVUZ_M2
         adet = math.floor(toplam_m2 / hedef_paket)
         if adet < 1:
@@ -214,12 +210,10 @@ def tam_otomatik_villa_mimarisi(toplam_m2):
             havuz_m2 = MIN_HAVUZ_M2
             not_str = "Optimum Denge: Standardize Villa + 30 m² Havuz"
         else:
-            # Villa ufalıyorsa havuzu iptal et
             villa_brut = toplam_m2 / adet
             havuz_m2 = 0.0
             not_str = "Villa Boyutunu Korumak İçin Havuz İptal Edildi"
     else:
-        # Geniş Alan: Lüks Seviye 220 m2 villa + 40 m2 Havuz
         hedef_paket = 220.0 + 40.0
         adet = math.floor(toplam_m2 / hedef_paket)
         if adet < 1:
@@ -231,6 +225,15 @@ def tam_otomatik_villa_mimarisi(toplam_m2):
         not_str = "Geniş Metraj: Lüks Segment Villa + 40 m² Havuz"
 
     return adet, villa_brut, havuz_m2, not_str
+
+# OTOMATİK PAZARLAMA & ŞANTİYE GİDERİ HESAPLAMA
+def otomatik_gider_orani_hesapla(toplam_brut_m2):
+    if toplam_brut_m2 < 1000.0:
+        return 8.0
+    elif toplam_brut_m2 <= 3000.0:
+        return 6.0
+    else:
+        return 4.0
 
 # SIDEBAR
 if os.path.exists("assets/istestate_logo.png"):
@@ -252,14 +255,13 @@ kat_karsiligi_oran = st.sidebar.slider(
     "Arsa Payı / Kat Karşılığı Oranı (%)", 
     min_value=10, 
     max_value=90, 
-    value=60, 
+    value=50, 
     step=1,
-    help="Arsa sahibinin kesin inşaat alanı payı yüzdesi."
+    help="Arsa sahibinin kesin inşaat ve arsa payı yüzdesi."
 )
 
 st.sidebar.subheader("📐 Mimari Modelleme")
 proje_tipi = st.sidebar.radio("Konut Proje Konsepti", ["Villa Projesi (Tam Otomatik)", "Konut / Daire Projesi"])
-genel_gider_orani = st.sidebar.slider("Pazarlama & Şantiye Gideri (%)", min_value=0, max_value=15, value=5)
 
 # MAIN APP
 st.title("🏢 Beykoz İmar Analizi ve Fizibilite Portalı")
@@ -288,6 +290,17 @@ if uploaded_pdfs:
         toplam_brut_insaat = df['Brut_Insaat'].sum()
         toplam_net_alan = df['Net_Alan'].sum()
 
+        # Otomatik Pazarlama & Şantiye Gideri Hesaplama
+        hesaplanan_gider_orani = otomatik_gider_orani_hesapla(toplam_brut_insaat)
+        
+        st.sidebar.subheader("🏗️ Gider Parametreleri")
+        ozel_gider_aktif = st.sidebar.checkbox("✏️ Şantiye/Pazarlama Giderini Manuel Düzenle", value=False)
+        if ozel_gider_aktif:
+            genel_gider_orani = st.sidebar.slider("Pazarlama & Şantiye Gideri (%)", min_value=0.0, max_value=15.0, value=hesaplanan_gider_orani, step=0.5)
+        else:
+            genel_gider_orani = hesaplanan_gider_orani
+            st.sidebar.info(f"🤖 Otomatik Şantiye/Pazarlama Gideri: **%{genel_gider_orani:.1f}**")
+
         if ana_fonksiyon == "TİCARİ ALAN":
             yapi_kategorisi = "ticari"
             yapi_etiketi = "Ticari Ünite"
@@ -295,9 +308,12 @@ if uploaded_pdfs:
             yapi_kategorisi = "villa" if "Villa" in proje_tipi else "daire"
             yapi_etiketi = "Villa" if yapi_kategorisi == "villa" else "Daire"
 
-        # --- ORAN SABİT - TAM OTOMATİK MİMARİ DAĞITIM ---
+        # --- ARSA VE İNŞAAT PAYI DAĞITIMI ---
         arsa_sahibi_payi_m2 = toplam_brut_insaat * (kat_karsiligi_oran / 100.0)
         yuklenici_payi_m2 = toplam_brut_insaat - arsa_sahibi_payi_m2
+
+        arsa_sahibi_net_arsa_m2 = toplam_net_alan * (kat_karsiligi_oran / 100.0)
+        yuklenici_net_arsa_m2 = toplam_net_alan - arsa_sahibi_net_arsa_m2
 
         if yapi_kategorisi == "villa":
             yuk_adet, yuk_brut_m2, yuk_havuz_m2, yuk_not = tam_otomatik_villa_mimarisi(yuklenici_payi_m2)
@@ -330,7 +346,7 @@ if uploaded_pdfs:
             satis_m2 = oto_satis_tl * kur_katsayisi
 
         toplam_insaat_maliyeti = toplam_brut_insaat * maliyet_m2
-        pazarlama_operasyon_maliyet = toplam_insaat_maliyeti * (genel_gider_orani / 100)
+        pazarlama_operasyon_maliyet = toplam_insaat_maliyeti * (genel_gider_orani / 100.0)
         toplam_proje_maliyeti = toplam_insaat_maliyeti + pazarlama_operasyon_maliyet
 
         toplam_yuklenici_ciro = yuklenici_payi_m2 * satis_m2
@@ -351,13 +367,14 @@ if uploaded_pdfs:
 
         with tab2:
             st.subheader("Kat Karşılığı & Anlaşma Dağıtım Modeli")
-            st.info(f"🤝 Anlaşma Oranı (Kesin): **%{kat_karsiligi_oran} Arsa Sahibi ({fmt_tr(arsa_sahibi_payi_m2, 2)} m²) / %{100-kat_karsiligi_oran} Müteahhit ({fmt_tr(yuklenici_payi_m2, 2)} m²)**")
+            st.info(f"🤝 Anlaşma Oranı (Kesin): **%{100-kat_karsiligi_oran} Müteahhit / %{kat_karsiligi_oran} Arsa Sahibi**")
             
             k1, k2 = st.columns(2)
 
             with k1:
                 st.write(f"### 🏗️ Müteahhit Payı (%{100-kat_karsiligi_oran})")
                 st.metric("Müteahhit Toplam İnşaat Alanı", f"{fmt_tr(yuklenici_payi_m2, 2)} m²")
+                st.write(f"• **Net Arsa Payı:** **{fmt_tr(yuklenici_net_arsa_m2, 2)} m²**")
                 st.success(f"**Otomatik Sonuç:** {yuk_adet} Adet {yapi_etiketi}")
                 st.write(f"• Ünite Başı Brüt İnşaat: **{fmt_tr(yuk_brut_m2, 2)} m²**")
                 if yapi_kategorisi == "villa":
@@ -368,6 +385,7 @@ if uploaded_pdfs:
             with k2:
                 st.write(f"### 🏡 Arsa Sahibi Payı (%{kat_karsiligi_oran})")
                 st.metric("Arsa Sahibi Toplam İnşaat Alanı", f"{fmt_tr(arsa_sahibi_payi_m2, 2)} m²")
+                st.write(f"• **Net Arsa Payı:** **{fmt_tr(arsa_sahibi_net_arsa_m2, 2)} m²**")
                 st.success(f"**Otomatik Sonuç:** {arsa_adet} Adet {yapi_etiketi}")
                 st.write(f"• Ünite Başı Brüt İnşaat: **{fmt_tr(arsa_brut_m2, 2)} m²**")
                 if yapi_kategorisi == "villa":
@@ -376,7 +394,7 @@ if uploaded_pdfs:
                     st.caption(f"🤖 *Yapay Zeka Kararı: {arsa_not}*")
 
             st.markdown("---")
-            st.caption(f"💡 *Sistem, toplam inşaat alanının büyüklüğüne göre villa ebatlarını ve minimum 30 m²'lik havuzların eklenip eklenmeyeceğini otomatik optimize etmiştir.*")
+            st.caption(f"💡 *Sistem, net arsa alanını ve toplam inşaat alanını belirlenen kat karşılığı oranına göre tam yetkiyle hesaplayıp entegre eder.*")
 
         with tab3:
             st.subheader(f"Fizibilite Özeti ({para_birimi} Cinsinden)")
@@ -390,7 +408,7 @@ if uploaded_pdfs:
             fizibilite_data = {
                 "Kalem": [
                     f"Birim İnşaat Maliyeti ({yapi_etiketi})",
-                    "Pazarlama ve Şantiye Giderleri",
+                    f"Pazarlama ve Şantiye Giderleri (%{genel_gider_orani:.1f})",
                     "Toplam Yatırım Maliyeti",
                     "Yükleniciye Kalan Brüt Satış Alanı",
                     f"Hesaplanan Toplam Ciro ({yapi_etiketi})",
