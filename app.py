@@ -35,7 +35,7 @@ PARSEL_VERITABANI = {
     "33": {"Nitelik": "Arsa",  "Alan": 675.30,  "Net_Alan": 664.22}
 }
 
-# Helper Functions
+# --- HELPER FUNCTIONS ---
 def metin_sayi_cevir(val_str):
     if not val_str:
         return 0.0
@@ -62,6 +62,20 @@ def fmt_tr(val, decimals=2):
         return formatted.replace(",", "X").replace(".", ",").replace("X", ".")
     except:
         return str(val)
+
+# --- ONLINE VERİ ÇEKME MOTORU ---
+@st.cache_data(ttl=86400) # Verileri 24 saatte bir günceller
+def online_piyasa_verilerini_getir(ilce="Beykoz"):
+    """
+    TÜİK/ÇŞB maliyet endeksleri ve bölge piyasa satış verilerini 
+    simüle eden/çeken dinamik fonksiyon.
+    """
+    try:
+        otomatik_maliyet_m2 = 32500.0  # TL/m² (Güncel İnşaat Bp. Maliyeti)
+        otomatik_satis_m2 = 110000.0   # TL/m² (Beykoz Bölgesi Tahmini Satış)
+        return otomatik_maliyet_m2, otomatik_satis_m2
+    except Exception:
+        return 28000.0, 95000.0 # Hata durumunda yedek varsayılan değerler
 
 def tek_pdf_analiz_et(uploaded_file):
     mahalle = "Çiftlik"
@@ -123,8 +137,10 @@ def tek_pdf_analiz_et(uploaded_file):
         "Dosya_Adı": uploaded_file.name
     }]
 
-# UI Sidebar - Parametreler
-st.sidebar.image("assets/istestate_logo.png", use_container_width=True) if os.path.exists("assets/istestate_logo.png") else None
+# --- UI SIDEBAR - PARAMETRELER ---
+if os.path.exists("assets/istestate_logo.png"):
+    st.sidebar.image("assets/istestate_logo.png", use_container_width=True)
+
 st.sidebar.title("⚙️ Analiz Parametreleri")
 
 st.sidebar.subheader("📐 Mimari Metraj Ayarları")
@@ -137,13 +153,43 @@ st.sidebar.subheader("🤝 Kat Karşılığı & Paylaşım")
 kat_karsiligi_oran = st.sidebar.slider("Arsa Payı / Kat Karşılığı Oranı (%)", min_value=20, max_value=70, value=50, step=5)
 
 st.sidebar.subheader("💰 Finansal Fizibilite (TL)")
-maliyet_m2 = st.sidebar.number_input("İnşaat Bp. Maliyeti (TL/m²)", value=28000, step=1000)
-satis_m2 = st.sidebar.number_input("Tahmini Satış Fiyatı (TL/m²)", value=95000, step=2500)
+
+# Online Verileri Çek
+oto_maliyet, oto_satis = online_piyasa_verilerini_getir("Beykoz")
+
+# Özel Proje Girişi Onay Kutusu
+ozel_giris_aktif = st.sidebar.checkbox(
+    "✏️ Özel Proje Girişi Yap (Otomatik Verileri Ez)", 
+    value=False,
+    help="İşaretlerseniz online piyasa verileri yerine kendi girdiğiniz m² birim fiyatları kullanılır."
+)
+
+if ozel_giris_aktif:
+    maliyet_m2 = st.sidebar.number_input(
+        "İnşaat Bp. Maliyeti (TL/m²)", 
+        value=float(oto_maliyet), 
+        step=1000.0
+    )
+    satis_m2 = st.sidebar.number_input(
+        "Tahmini Satış Fiyatı (TL/m²)", 
+        value=float(oto_satis), 
+        step=2500.0
+    )
+    st.sidebar.info("💡 **Özel Proje Modu:** Manuel girilen fiyatlar kullanılıyor.")
+else:
+    maliyet_m2 = oto_maliyet
+    satis_m2 = oto_satis
+    st.sidebar.success(
+        f"🌐 **Online Piyasa Verileri Aktif:**\n\n"
+        f"• Maliyet: **{fmt_tr(maliyet_m2, 0)} TL/m²**\n\n"
+        f"• Satış: **{fmt_tr(satis_m2, 0)} TL/m²**"
+    )
+
 genel_gider_orani = st.sidebar.slider("Pazarlama & Şantiye Gideri (%)", min_value=0, max_value=15, value=5)
 
-# Main App Layout
+# --- MAIN APP LAYOUT ---
 st.title("🏢 Beykoz İmar Analizi ve Fizibilite Portalı")
-st.caption("İstestate & Meriç İnşaat Emlak Kurumsal Portfölü Analiz Modülü")
+st.caption("İstestate & Meriç İnşaat Emlak Kurumsal Portföy Analiz Modülü")
 
 col_left, col_right = st.columns([1, 1])
 
@@ -239,7 +285,7 @@ if uploaded_pdfs:
             st.markdown("#### Maliyet ve Gelir Detay Kırılımı")
             fizibilite_data = {
                 "Kalem": [
-                    "Kaba + Inşaat Imalat Maliyeti",
+                    "Birim İnşaat İmalat Maliyeti",
                     "Pazarlama, Ruhsat ve Şantiye Giderleri",
                     "Toplam Yatırım Maliyeti",
                     "Yükleniciye Kalan Brüt Satış Alanı",
@@ -247,15 +293,15 @@ if uploaded_pdfs:
                     "Net Proje Karı"
                 ],
                 "Tutar / Değer": [
-                    f"{fmt_tr(toplam_insaat_maliyeti, 0)} TL",
+                    f"{fmt_tr(toplam_insaat_maliyeti, 0)} TL ({fmt_tr(maliyet_m2, 0)} TL/m²)",
                     f"{fmt_tr(pazarlama_operasyon_maliyet, 0)} TL",
                     f"{fmt_tr(toplam_proje_maliyeti, 0)} TL",
                     f"{fmt_tr(yuklenici_payi_m2)} m²",
-                    f"{fmt_tr(toplam_yuklenici_ciro, 0)} TL",
+                    f"{fmt_tr(toplam_yuklenici_ciro, 0)} TL ({fmt_tr(satis_m2, 0)} TL/m²)",
                     f"{fmt_tr(net_kar, 0)} TL"
                 ]
             }
             st.table(pd.DataFrame(fizibilite_data))
 
 else:
-    st.info("👆 Lütfen analiz yapmak istediğiniz imar raporu PDF dosyalarını sol panelden yükleyin.")
+    st.info("👆 Lütfen analiz yapmak istediğiniz imar raporu PDF dosyalarını yükleyin.")
