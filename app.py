@@ -63,19 +63,27 @@ def fmt_tr(val, decimals=2):
     except:
         return str(val)
 
-# --- ONLINE VERİ ÇEKME MOTORU ---
-@st.cache_data(ttl=86400) # Verileri 24 saatte bir günceller
-def online_piyasa_verilerini_getir(ilce="Beykoz"):
+# --- MAHALLE BAZLI REEL PIYASA MATRİSİ ---
+@st.cache_data(ttl=86400)
+def mahalle_piyasa_verisi_getir(mahalle_adi="Çiftlik"):
     """
-    TÜİK/ÇŞB maliyet endeksleri ve bölge piyasa satış verilerini 
-    simüle eden/çeken dinamik fonksiyon.
+    Çalışılan mahalleye göre nokta atışı m² imalat maliyeti ve 
+    ortalama gayrimenkul satış m² fiyatlarını getirir.
     """
-    try:
-        otomatik_maliyet_m2 = 32500.0  # TL/m² (Güncel İnşaat Bp. Maliyeti)
-        otomatik_satis_m2 = 110000.0   # TL/m² (Beykoz Bölgesi Tahmini Satış)
-        return otomatik_maliyet_m2, otomatik_satis_m2
-    except Exception:
-        return 28000.0, 95000.0 # Hata durumunda yedek varsayılan değerler
+    # Beykoz Mahalle Bazlı Piyasa Veri Tablosu (TL/m²)
+    MAHALLE_VERITABANI = {
+        "Çiftlik": {"maliyet": 32500.0, "satis": 110000.0},
+        "Acarlar": {"maliyet": 42000.0, "satis": 175000.0},
+        "Görele": {"maliyet": 35000.0, "satis": 130000.0},
+        "Rüzgarlıbahçe": {"maliyet": 31000.0, "satis": 95000.0},
+        "Kavacık": {"maliyet": 33000.0, "satis": 105000.0},
+        "Çengeldere": {"maliyet": 30000.0, "satis": 85000.0},
+        "Yavuztürk": {"maliyet": 29000.0, "satis": 78000.0},
+        "Varsayılan": {"maliyet": 32000.0, "satis": 100000.0}
+    }
+    
+    # Aranan mahalle veritabanında yoksa genel varsayılan değer verilir
+    return MAHALLE_VERITABANI.get(mahalle_adi, MAHALLE_VERITABANI["Varsayılan"])
 
 def tek_pdf_analiz_et(uploaded_file):
     mahalle = "Çiftlik"
@@ -137,11 +145,19 @@ def tek_pdf_analiz_et(uploaded_file):
         "Dosya_Adı": uploaded_file.name
     }]
 
-# --- UI SIDEBAR - PARAMETRELER ---
+# --- UI SIDEBAR ---
 if os.path.exists("assets/istestate_logo.png"):
     st.sidebar.image("assets/istestate_logo.png", use_container_width=True)
 
 st.sidebar.title("⚙️ Analiz Parametreleri")
+
+st.sidebar.subheader("📍 Konum ve Mahalle Seçimi")
+secilen_mahalle = st.sidebar.selectbox(
+    "Çalışılacak Mahalle", 
+    ["Çiftlik", "Acarlar", "Görele", "Rüzgarlıbahçe", "Kavacık", "Çengeldere", "Yavuztürk"],
+    index=0,
+    help="Seçilen mahalleye özel m² imalat ve satış fiyatı verileri otomatik yüklenecektir."
+)
 
 st.sidebar.subheader("📐 Mimari Metraj Ayarları")
 v_m2 = st.sidebar.number_input("Villa Brüt m²", value=250, step=10)
@@ -154,14 +170,16 @@ kat_karsiligi_oran = st.sidebar.slider("Arsa Payı / Kat Karşılığı Oranı (
 
 st.sidebar.subheader("💰 Finansal Fizibilite (TL)")
 
-# Online Verileri Çek
-oto_maliyet, oto_satis = online_piyasa_verilerini_getir("Beykoz")
+# Mahalle Bazlı Veriyi Çek
+mahalle_veri = mahalle_piyasa_verisi_getir(secilen_mahalle)
+oto_maliyet = mahalle_veri["maliyet"]
+oto_satis = mahalle_veri["satis"]
 
 # Özel Proje Girişi Onay Kutusu
 ozel_giris_aktif = st.sidebar.checkbox(
-    "✏️ Özel Proje Girişi Yap (Otomatik Verileri Ez)", 
+    "✏️ Özel Proje / Lüks İmalat Girişi (Veriyi Ez)", 
     value=False,
-    help="İşaretlerseniz online piyasa verileri yerine kendi girdiğiniz m² birim fiyatları kullanılır."
+    help="İşaretlerseniz seçilen mahalle ortalaması yerine kendi belirlediğiniz m² fiyatları kullanılır."
 )
 
 if ozel_giris_aktif:
@@ -175,21 +193,21 @@ if ozel_giris_aktif:
         value=float(oto_satis), 
         step=2500.0
     )
-    st.sidebar.info("💡 **Özel Proje Modu:** Manuel girilen fiyatlar kullanılıyor.")
+    st.sidebar.info(f"💡 **Özel Proje Modu:** {secilen_mahalle} mahalle ortalaması yerine manuel değerler kullanılıyor.")
 else:
     maliyet_m2 = oto_maliyet
     satis_m2 = oto_satis
     st.sidebar.success(
-        f"🌐 **Online Piyasa Verileri Aktif:**\n\n"
-        f"• Maliyet: **{fmt_tr(maliyet_m2, 0)} TL/m²**\n\n"
-        f"• Satış: **{fmt_tr(satis_m2, 0)} TL/m²**"
+        f"📍 **{secilen_mahalle} Mahallesi Güncel Verileri:**\n\n"
+        f"• İnşaat Maliyeti: **{fmt_tr(maliyet_m2, 0)} TL/m²**\n\n"
+        f"• Hedef Satış Fiyatı: **{fmt_tr(satis_m2, 0)} TL/m²**"
     )
 
 genel_gider_orani = st.sidebar.slider("Pazarlama & Şantiye Gideri (%)", min_value=0, max_value=15, value=5)
 
 # --- MAIN APP LAYOUT ---
 st.title("🏢 Beykoz İmar Analizi ve Fizibilite Portalı")
-st.caption("İstestate & Meriç İnşaat Emlak Kurumsal Portföy Analiz Modülü")
+st.caption(f"İstestate & Meriç İnşaat Emlak — **{secilen_mahalle} Mahallesi** Portföy Analizi")
 
 col_left, col_right = st.columns([1, 1])
 
@@ -209,6 +227,10 @@ if uploaded_pdfs:
 
     if tum_veriler:
         df = pd.DataFrame(tum_veriler)
+        
+        # Seçilen mahalleyi rapor tablosuna yansıt
+        df['Mahalle'] = secilen_mahalle
+        
         df['Ada_Num'] = pd.to_numeric(df['Ada'], errors='coerce').fillna(0)
         df['Parsel_Num'] = pd.to_numeric(df['Parsel'], errors='coerce').fillna(0)
         df = df.sort_values(by=['Ada_Num', 'Parsel_Num']).reset_index(drop=True)
@@ -242,7 +264,7 @@ if uploaded_pdfs:
         tab1, tab2, tab3 = st.tabs(["📊 Parsel & İmar Özeti", "📐 Kat Karşılığı & Mimari", "💵 Finansal Fizibilite"])
 
         with tab1:
-            st.subheader("Parsel Bazlı İmar Listesi")
+            st.subheader(f"{secilen_mahalle} Mahallesi Parsel Bazlı İmar Listesi")
             st.dataframe(
                 df[['Mahalle', 'Ada', 'Parsel', 'Nitelik', 'Parsel_Alani', 'Hesaba_Alinan', 'Net_Alan', 'KAKS', 'Brut_Insaat']],
                 use_container_width=True
@@ -274,7 +296,7 @@ if uploaded_pdfs:
             st.write(f"• **Tam Daire Konfigürasyonu:** ~{d_adet} Adet (Brüt {d_m2} m²)")
 
         with tab3:
-            st.subheader("Müteahhit Kar/Zarar ve Fizibilite Metrikleri")
+            st.subheader(f"Müteahhit Kar/Zarar ve Fizibilite Metrikleri ({secilen_mahalle})")
 
             f1, f2, f3 = st.columns(3)
             f1.metric("Toplam Proje Maliyeti", f"{fmt_tr(toplam_proje_maliyeti, 0)} TL")
@@ -285,11 +307,11 @@ if uploaded_pdfs:
             st.markdown("#### Maliyet ve Gelir Detay Kırılımı")
             fizibilite_data = {
                 "Kalem": [
-                    "Birim İnşaat İmalat Maliyeti",
+                    f"Birim İnşaat Maliyeti ({secilen_mahalle})",
                     "Pazarlama, Ruhsat ve Şantiye Giderleri",
                     "Toplam Yatırım Maliyeti",
                     "Yükleniciye Kalan Brüt Satış Alanı",
-                    "Hesaplanan Toplam Ciro",
+                    f"Hesaplanan Toplam Ciro ({secilen_mahalle})",
                     "Net Proje Karı"
                 ],
                 "Tutar / Değer": [
