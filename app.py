@@ -1,5 +1,6 @@
 import os
 import re
+import math
 import pandas as pd
 import pdfplumber
 import requests
@@ -39,7 +40,6 @@ BEYKOZ_MAHALLELERI = [
     "Çengeldere", "Yavuztürk", "Baklacı", "Fatih", "Yavuzselim"
 ]
 
-# --- HELPER FUNCTIONS ---
 def metin_sayi_cevir(val_str):
     if not val_str:
         return 0.0
@@ -63,10 +63,8 @@ def fmt_tr(val, decimals=2, para_birimi="TL"):
             return "-"
         v = float(val)
         formatted = f"{v:,.{decimals}f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        
         simge_map = {"TL": "TL", "USD": "$", "EUR": "€"}
         simge = simge_map.get(para_birimi, "TL")
-        
         return f"{formatted} {simge}" if para_birimi == "TL" else f"{simge}{formatted}"
     except:
         return str(val)
@@ -77,7 +75,6 @@ def tcmb_kurlari_getir():
         url = "https://www.tcmb.gov.tr/kurlar/today.xml"
         response = requests.get(url, timeout=5)
         root = ET.fromstring(response.content)
-        
         usd = float(root.find("./Currency[@CurrencyCode='USD']/BanknoteSelling").text)
         eur = float(root.find("./Currency[@CurrencyCode='EUR']/BanknoteSelling").text)
         return {"USD": usd, "EUR": eur}
@@ -86,7 +83,6 @@ def tcmb_kurlari_getir():
 
 @st.cache_data(ttl=86400)
 def mahalle_piyasa_verisi_getir(mahalle_adi):
-    # Villa, Daire ve Ticari için ayrı maliyet ve satış fiyatları (TL/m²)
     MAHALLE_VERITABANI = {
         "Çiftlik": {
             "villa": {"maliyet": 38000.0, "satis": 145000.0},
@@ -109,11 +105,9 @@ def mahalle_piyasa_verisi_getir(mahalle_adi):
             "ticari": {"maliyet": 33000.0, "satis": 115000.0}
         }
     }
-    
     for key in MAHALLE_VERITABANI.keys():
         if key.lower() in mahalle_adi.lower():
             return MAHALLE_VERITABANI[key]
-            
     return MAHALLE_VERITABANI["Bilinmiyor"]
 
 def tek_pdf_analiz_et(uploaded_file):
@@ -134,7 +128,6 @@ def tek_pdf_analiz_et(uploaded_file):
             imar_bolumu = tam_metin
             if "İmar Durumu Bilgileri" in tam_metin:
                 imar_bolumu = tam_metin.split("İmar Durumu Bilgileri")[-1]
-            
             imar_bolumu_ust = imar_bolumu.split("İdari Mahalle")[0] if "İdari Mahalle" in imar_bolumu else imar_bolumu
 
             for m_adi in BEYKOZ_MAHALLELERI:
@@ -162,7 +155,6 @@ def tek_pdf_analiz_et(uploaded_file):
         kaks_val = metin_sayi_cevir(match_kaks.group(1))
 
     p_info = PARSEL_VERITABANI.get(str(parsel), None)
-
     if p_info:
         nitelik = p_info["Nitelik"]
         parsel_alani = p_info["Alan"]
@@ -191,7 +183,7 @@ def tek_pdf_analiz_et(uploaded_file):
         "Dosya_Adı": uploaded_file.name
     }]
 
-# --- UI SIDEBAR ---
+# SIDEBAR
 if os.path.exists("assets/istestate_logo.png"):
     st.sidebar.image("assets/istestate_logo.png", use_container_width=True)
 
@@ -206,26 +198,30 @@ if para_birimi == "USD":
 elif para_birimi == "EUR":
     kur_katsayisi = 1.0 / kurlar["EUR"]
 
-st.sidebar.subheader("🏗️ Proje Tipi & Metraj Ayarları")
+st.sidebar.subheader("📐 Mimari Bölüm Otomasyonu")
+otomatik_m2_modu = st.sidebar.checkbox("🤖 Metrajı Otomatik Sıfırla (Küsüratsız Dağıtım)", value=True)
+
 proje_tipi = st.sidebar.radio("Konut Proje Konsepti", ["Villa Projesi", "Konut / Daire Projesi"])
 
 if proje_tipi == "Villa Projesi":
-    birim_m2 = st.sidebar.number_input("Villa Brüt m²", value=200, step=10)
-    h_ekle = st.sidebar.checkbox("Villalara Havuz Ekle", value=True)
-    h_m2 = st.sidebar.number_input("Havuz m² (Villa Başı)", value=35, step=5) if h_ekle else 0
-    toplam_birim_m2 = birim_m2 + h_m2
     yapi_kategorisi = "villa"
+    hedef_m2_varsayilan = 200
+    havuz_opsiyonu = st.sidebar.checkbox("Villalara Havuz Ekle", value=True)
+    havuz_m2_hedef = st.sidebar.number_input("Villa Başı Havuz m²", value=35, step=5) if havuz_opsiyonu else 0
 else:
-    toplam_birim_m2 = st.sidebar.number_input("Daire Brüt m²", value=120, step=5)
     yapi_kategorisi = "daire"
+    hedef_m2_varsayilan = 120
+    havuz_opsiyonu = False
+    havuz_m2_hedef = 0
 
-ticari_m2 = st.sidebar.number_input("Ticari Ünite Brüt m²", value=150, step=10)
+if not otomatik_m2_modu:
+    hedef_m2_input = st.sidebar.number_input("Birim Brüt m² (Manuel)", value=hedef_m2_varsayilan, step=10)
 
 st.sidebar.subheader("🤝 Kat Karşılığı & Paylaşım")
 kat_karsiligi_oran = st.sidebar.slider("Arsa Payı / Kat Karşılığı Oranı (%)", min_value=20, max_value=70, value=50, step=5)
 genel_gider_orani = st.sidebar.slider("Pazarlama & Şantiye Gideri (%)", min_value=0, max_value=15, value=5)
 
-# --- MAIN APP LAYOUT ---
+# MAIN APP
 st.title("🏢 Beykoz İmar Analizi ve Fizibilite Portalı")
 
 col_left, col_right = st.columns([1, 1])
@@ -246,18 +242,38 @@ if uploaded_pdfs:
 
     if tum_veriler:
         df = pd.DataFrame(tum_veriler)
-        
         otomatik_mahalle = df['Mahalle'].iloc[0]
         ana_fonksiyon = df['Fonksiyon'].iloc[0]
-        
-        # Fonksiyona göre yapı kategorisini optimize et
+
+        toplam_brut_insaat = df['Brut_Insaat'].sum()
+        toplam_net_alan = df['Net_Alan'].sum()
+
         if ana_fonksiyon == "TİCARİ ALAN":
             yapi_kategorisi = "ticari"
-            hedef_m2 = ticari_m2
             yapi_etiketi = "Ticari Ünite"
+            hedef_m2_varsayilan = 150
         else:
-            hedef_m2 = toplam_birim_m2
             yapi_etiketi = "Villa" if yapi_kategorisi == "villa" else "Daire"
+
+        # Otomatik Küsuratsız Dağıtım Motoru
+        if otomatik_m2_modu:
+            hedef_m2_kullanilacak = hedef_m2_varsayilan
+            
+            # Toplam Adet Hesabı
+            toplam_adet = max(1, math.floor(toplam_brut_insaat / (hedef_m2_kullanilacak + havuz_m2_hedef)))
+            
+            # Bütün m²'yi ünitelere tam bölüp artık alan bırakmama
+            birim_brut_m2 = (toplam_brut_insaat / toplam_adet) - havuz_m2_hedef
+        else:
+            birim_brut_m2 = hedef_m2_input
+            toplam_adet = max(1, math.floor(toplam_brut_insaat / (birim_brut_m2 + havuz_m2_hedef)))
+
+        # Kat Karşılığı Paylaşım (Küsuratsız Adetler)
+        arsa_sahibi_adet = math.floor(toplam_adet * (kat_karsiligi_oran / 100))
+        yuklenici_adet = toplam_adet - arsa_sahibi_adet
+
+        yuklenici_payi_m2 = yuklenici_adet * (birim_brut_m2 + havuz_m2_hedef)
+        arsa_sahibi_payi_m2 = arsa_sahibi_adet * (birim_brut_m2 + havuz_m2_hedef)
 
         mahalle_veri = mahalle_piyasa_verisi_getir(otomatik_mahalle)[yapi_kategorisi]
         oto_maliyet_tl = mahalle_veri["maliyet"]
@@ -272,22 +288,6 @@ if uploaded_pdfs:
         else:
             maliyet_m2 = oto_maliyet_tl * kur_katsayisi
             satis_m2 = oto_satis_tl * kur_katsayisi
-            st.sidebar.info(
-                f"• Seçilen Tip: **{yapi_etiketi}**\n\n"
-                f"• İnşaat Maliyeti: **{fmt_tr(maliyet_m2, 0, para_birimi)}/m²**\n\n"
-                f"• Satış Fiyatı: **{fmt_tr(satis_m2, 0, para_birimi)}/m²**"
-            )
-
-        toplam_brut_insaat = df['Brut_Insaat'].sum()
-        toplam_net_alan = df['Net_Alan'].sum()
-
-        # Doğru M² Paylaşım Hesabı
-        arsa_sahibi_payi_m2 = toplam_brut_insaat * (kat_karsiligi_oran / 100)
-        yuklenici_payi_m2 = toplam_brut_insaat - arsa_sahibi_payi_m2
-
-        # Taraf Başına Gerçekleşen Adet ve Küsurat
-        yuklenici_adet = yuklenici_payi_m2 / hedef_m2 if hedef_m2 > 0 else 0
-        arsa_sahibi_adet = arsa_sahibi_payi_m2 / hedef_m2 if hedef_m2 > 0 else 0
 
         toplam_insaat_maliyeti = toplam_brut_insaat * maliyet_m2
         pazarlama_operasyon_maliyet = toplam_insaat_maliyeti * (genel_gider_orani / 100)
@@ -310,16 +310,24 @@ if uploaded_pdfs:
             c4.metric("Toplam Brüt İnşaat (m²)", fmt_tr(toplam_brut_insaat, 2, "TL"))
 
         with tab2:
-            st.subheader("Kat Karşılığı & Paylaşım Modeli")
+            st.subheader("Kat Karşılığı & Mimari Dağıtım Modeli")
+            st.success(f"⚡ Toplam **{fmt_tr(toplam_brut_insaat, 2, 'TL')} m²** inşaat alanının **%100'ü** küsuratsız olarak **{toplam_adet} Adet {yapi_etiketi}** ünitesine paylaştırılmıştır.")
+            
             k1, k2 = st.columns(2)
 
             with k1:
-                st.info(f"**Yüklenici Payı (%{100-kat_karsiligi_oran}):** {fmt_tr(yuklenici_payi_m2, 2, 'TL')} m²")
-                st.write(f"• Müteahhit {yapi_etiketi} Hakkı: **{yuklenici_adet:.2f} Adet** ({int(yuklenici_adet)} Tam + {fmt_tr(yuklenici_payi_m2 % hedef_m2)} m² Kalan)")
+                st.info(f"**Yüklenici Payı (%{100 - (arsa_sahibi_adet/toplam_adet*100):.1f}):** {fmt_tr(yuklenici_payi_m2, 2, 'TL')} m²")
+                st.write(f"• Müteahhit Ünite Sayısı: **{yuklenici_adet} Adet {yapi_etiketi}**")
+                st.write(f"• Ünite Başı Net/Brüt Alan: **{fmt_tr(birim_brut_m2, 2, 'TL')} m²**")
+                if havuz_opsiyonu:
+                    st.write(f"• Havuz Tahsisi: **{yuklenici_adet} Adet ({fmt_tr(yuklenici_adet * havuz_m2_hedef, 2, 'TL')} m²)**")
 
             with k2:
-                st.success(f"**Arsa Sahibi Payı (%{kat_karsiligi_oran}):** {fmt_tr(arsa_sahibi_payi_m2, 2, 'TL')} m²")
-                st.write(f"• Arsa Sahibi {yapi_etiketi} Hakkı: **{arsa_sahibi_adet:.2f} Adet** ({int(arsa_sahibi_adet)} Tam + {fmt_tr(arsa_sahibi_payi_m2 % hedef_m2)} m² Kalan)")
+                st.success(f"**Arsa Sahibi Payı (%{(arsa_sahibi_adet/toplam_adet*100):.1f}):** {fmt_tr(arsa_sahibi_payi_m2, 2, 'TL')} m²")
+                st.write(f"• Arsa Sahibi Ünite Sayısı: **{arsa_sahibi_adet} Adet {yapi_etiketi}**")
+                st.write(f"• Ünite Başı Net/Brüt Alan: **{fmt_tr(birim_brut_m2, 2, 'TL')} m²**")
+                if havuz_opsiyonu:
+                    st.write(f"• Havuz Tahsisi: **{arsa_sahibi_adet} Adet ({fmt_tr(arsa_sahibi_adet * havuz_m2_hedef, 2, 'TL')} m²)**")
 
         with tab3:
             st.subheader(f"Fizibilite Özeti ({para_birimi} Cinsinden)")
@@ -343,7 +351,7 @@ if uploaded_pdfs:
                     f"{fmt_tr(toplam_insaat_maliyeti, 0, para_birimi)} ({fmt_tr(maliyet_m2, 0, para_birimi)}/m²)",
                     f"{fmt_tr(pazarlama_operasyon_maliyet, 0, para_birimi)}",
                     f"{fmt_tr(toplam_proje_maliyeti, 0, para_birimi)}",
-                    f"{fmt_tr(yuklenici_payi_m2, 2, 'TL')} m²",
+                    f"{fmt_tr(yuklenici_payi_m2, 2, 'TL')} m² ({yuklenici_adet} Adet)",
                     f"{fmt_tr(toplam_yuklenici_ciro, 0, para_birimi)} ({fmt_tr(satis_m2, 0, para_birimi)}/m²)",
                     f"{fmt_tr(net_kar, 0, para_birimi)}"
                 ]
