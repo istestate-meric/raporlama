@@ -1,7 +1,5 @@
 import os
 import re
-import tempfile
-from datetime import datetime, timedelta
 import pandas as pd
 import pdfplumber
 import requests
@@ -73,7 +71,6 @@ def fmt_tr(val, decimals=2, para_birimi="TL"):
     except:
         return str(val)
 
-# --- DÖVİZ KURLARI VE MAHALLE VERİSİ MOTORU ---
 @st.cache_data(ttl=14400)
 def tcmb_kurlari_getir():
     try:
@@ -89,15 +86,28 @@ def tcmb_kurlari_getir():
 
 @st.cache_data(ttl=86400)
 def mahalle_piyasa_verisi_getir(mahalle_adi):
+    # Villa, Daire ve Ticari için ayrı maliyet ve satış fiyatları (TL/m²)
     MAHALLE_VERITABANI = {
-        "Çiftlik": {"maliyet": 32500.0, "satis": 110000.0},
-        "Acarlar": {"maliyet": 42000.0, "satis": 175000.0},
-        "Görele": {"maliyet": 35000.0, "satis": 130000.0},
-        "Rüzgarlıbahçe": {"maliyet": 31000.0, "satis": 95000.0},
-        "Kavacık": {"maliyet": 33000.0, "satis": 105000.0},
-        "Çengeldere": {"maliyet": 30000.0, "satis": 85000.0},
-        "Yavuztürk": {"maliyet": 29000.0, "satis": 78000.0},
-        "Bilinmiyor": {"maliyet": 32000.0, "satis": 100000.0}
+        "Çiftlik": {
+            "villa": {"maliyet": 38000.0, "satis": 145000.0},
+            "daire": {"maliyet": 30000.0, "satis": 95000.0},
+            "ticari": {"maliyet": 35000.0, "satis": 130000.0}
+        },
+        "Acarlar": {
+            "villa": {"maliyet": 48000.0, "satis": 210000.0},
+            "daire": {"maliyet": 36000.0, "satis": 130000.0},
+            "ticari": {"maliyet": 42000.0, "satis": 180000.0}
+        },
+        "Görele": {
+            "villa": {"maliyet": 40000.0, "satis": 160000.0},
+            "daire": {"maliyet": 31000.0, "satis": 100000.0},
+            "ticari": {"maliyet": 36000.0, "satis": 140000.0}
+        },
+        "Bilinmiyor": {
+            "villa": {"maliyet": 36000.0, "satis": 130000.0},
+            "daire": {"maliyet": 28000.0, "satis": 85000.0},
+            "ticari": {"maliyet": 33000.0, "satis": 115000.0}
+        }
     }
     
     for key in MAHALLE_VERITABANI.keys():
@@ -106,11 +116,11 @@ def mahalle_piyasa_verisi_getir(mahalle_adi):
             
     return MAHALLE_VERITABANI["Bilinmiyor"]
 
-# --- PDF METİN VE MAHALLE OKUMA MOTORU ---
 def tek_pdf_analiz_et(uploaded_file):
     mahalle = "Bilinmiyor"
     ada = "Bilinmiyor"
     parsel = "Bilinmiyor"
+    fonksiyon = "KONUT ALANI"
     rapor_alani = 0.0
 
     try:
@@ -121,30 +131,19 @@ def tek_pdf_analiz_et(uploaded_file):
                 if text:
                     tam_metin += text + "\n"
 
-            # 1. Aşama: Bilinen Mahalle Listesi ile Doğrudan Doğrulama
-            # "İmar Durumu Bilgileri" tablosundan sonraki metne bakılır
             imar_bolumu = tam_metin
             if "İmar Durumu Bilgileri" in tam_metin:
                 imar_bolumu = tam_metin.split("İmar Durumu Bilgileri")[-1]
             
-            # İdari Mahalle kısmını keserek sadece ana Mahalle satırını koru
-            if "İdari Mahalle" in imar_bolumu:
-                imar_bolumu_ust = imar_bolumu.split("İdari Mahalle")[0]
-            else:
-                imar_bolumu_ust = imar_bolumu
+            imar_bolumu_ust = imar_bolumu.split("İdari Mahalle")[0] if "İdari Mahalle" in imar_bolumu else imar_bolumu
 
             for m_adi in BEYKOZ_MAHALLELERI:
                 if re.search(rf'\b{m_adi}\b', imar_bolumu_ust, re.IGNORECASE):
                     mahalle = m_adi.capitalize()
                     break
 
-            # 2. Aşama: Bilinen listede yokse Regex ile Satır Ayrıştırma
-            if mahalle == "Bilinmiyor":
-                match_m = re.search(r'Mahalle[^\n]*\n+([A-Za-zÇĞİÖŞÜçğıöşü]+)', imar_bolumu_ust)
-                if match_m:
-                    found = match_m.group(1).strip()
-                    if len(found) > 2 and found.lower() not in ["pafta", "ada", "parsel", "idari", "cadde"]:
-                        mahalle = found.capitalize()
+            if "TİCARET" in tam_metin.upper():
+                fonksiyon = "TİCARİ ALAN"
 
     except Exception as e:
         st.error(f"Okuma hatası ({uploaded_file.name}): {e}")
@@ -185,7 +184,7 @@ def tek_pdf_analiz_et(uploaded_file):
         "Parsel_Alani": parsel_alani,
         "Hesaba_Alinan": hesaba_alinan,
         "Net_Alan": net_alan,
-        "Fonksiyon": "KONUT ALANI",
+        "Fonksiyon": fonksiyon,
         "KAKS": kaks_val,
         "Net_Insaat": net_insaat,
         "Brut_Insaat": brut_insaat,
@@ -207,18 +206,23 @@ if para_birimi == "USD":
 elif para_birimi == "EUR":
     kur_katsayisi = 1.0 / kurlar["EUR"]
 
-if para_birimi != "TL":
-    st.sidebar.caption(f"ℹ️ Canlı Kur: 1 USD = {kurlar['USD']:.2f} TL | 1 EUR = {kurlar['EUR']:.2f} TL")
+st.sidebar.subheader("🏗️ Proje Tipi & Metraj Ayarları")
+proje_tipi = st.sidebar.radio("Konut Proje Konsepti", ["Villa Projesi", "Konut / Daire Projesi"])
 
-st.sidebar.subheader("📐 Mimari Metraj Ayarları")
-v_m2 = st.sidebar.number_input("Villa Brüt m²", value=250, step=10)
-d_m2 = st.sidebar.number_input("Daire Brüt m²", value=120, step=5)
-h_ekle = st.sidebar.checkbox("Villalara Havuz Ekle", value=True)
-h_m2 = st.sidebar.number_input("Havuz m² (Villa Başı)", value=35, step=5) if h_ekle else 0
+if proje_tipi == "Villa Projesi":
+    birim_m2 = st.sidebar.number_input("Villa Brüt m²", value=200, step=10)
+    h_ekle = st.sidebar.checkbox("Villalara Havuz Ekle", value=True)
+    h_m2 = st.sidebar.number_input("Havuz m² (Villa Başı)", value=35, step=5) if h_ekle else 0
+    toplam_birim_m2 = birim_m2 + h_m2
+    yapi_kategorisi = "villa"
+else:
+    toplam_birim_m2 = st.sidebar.number_input("Daire Brüt m²", value=120, step=5)
+    yapi_kategorisi = "daire"
+
+ticari_m2 = st.sidebar.number_input("Ticari Ünite Brüt m²", value=150, step=10)
 
 st.sidebar.subheader("🤝 Kat Karşılığı & Paylaşım")
 kat_karsiligi_oran = st.sidebar.slider("Arsa Payı / Kat Karşılığı Oranı (%)", min_value=20, max_value=70, value=50, step=5)
-
 genel_gider_orani = st.sidebar.slider("Pazarlama & Şantiye Gideri (%)", min_value=0, max_value=15, value=5)
 
 # --- MAIN APP LAYOUT ---
@@ -244,53 +248,46 @@ if uploaded_pdfs:
         df = pd.DataFrame(tum_veriler)
         
         otomatik_mahalle = df['Mahalle'].iloc[0]
-        st.sidebar.subheader(f"📍 Otomatik Tespit Edilen Konum")
-        st.sidebar.success(f"**Mahalle:** {otomatik_mahalle}")
+        ana_fonksiyon = df['Fonksiyon'].iloc[0]
+        
+        # Fonksiyona göre yapı kategorisini optimize et
+        if ana_fonksiyon == "TİCARİ ALAN":
+            yapi_kategorisi = "ticari"
+            hedef_m2 = ticari_m2
+            yapi_etiketi = "Ticari Ünite"
+        else:
+            hedef_m2 = toplam_birim_m2
+            yapi_etiketi = "Villa" if yapi_kategorisi == "villa" else "Daire"
 
-        mahalle_veri = mahalle_piyasa_verisi_getir(otomatik_mahalle)
+        mahalle_veri = mahalle_piyasa_verisi_getir(otomatik_mahalle)[yapi_kategorisi]
         oto_maliyet_tl = mahalle_veri["maliyet"]
         oto_satis_tl = mahalle_veri["satis"]
 
-        ozel_giris_aktif = st.sidebar.checkbox(
-            "✏️ Özel Proje Girişi Yap (Veriyi Ez)", 
-            value=False
-        )
+        st.sidebar.subheader("📍 Piyasa Değerleri")
+        ozel_giris_aktif = st.sidebar.checkbox("✏️ Özel Fiyat Girişi Yap", value=False)
 
         if ozel_giris_aktif:
-            maliyet_m2 = st.sidebar.number_input(
-                f"İnşaat Bp. Maliyeti ({para_birimi}/m²)", 
-                value=float(oto_maliyet_tl * kur_katsayisi), 
-                step=100.0
-            )
-            satis_m2 = st.sidebar.number_input(
-                f"Tahmini Satış Fiyatı ({para_birimi}/m²)", 
-                value=float(oto_satis_tl * kur_katsayisi), 
-                step=500.0
-            )
+            maliyet_m2 = st.sidebar.number_input(f"İnşaat Bp. Maliyeti ({para_birimi}/m²)", value=float(oto_maliyet_tl * kur_katsayisi), step=100.0)
+            satis_m2 = st.sidebar.number_input(f"Tahmini Satış Fiyatı ({para_birimi}/m²)", value=float(oto_satis_tl * kur_katsayisi), step=500.0)
         else:
             maliyet_m2 = oto_maliyet_tl * kur_katsayisi
             satis_m2 = oto_satis_tl * kur_katsayisi
             st.sidebar.info(
+                f"• Seçilen Tip: **{yapi_etiketi}**\n\n"
                 f"• İnşaat Maliyeti: **{fmt_tr(maliyet_m2, 0, para_birimi)}/m²**\n\n"
                 f"• Satış Fiyatı: **{fmt_tr(satis_m2, 0, para_birimi)}/m²**"
             )
 
-        df['Ada_Num'] = pd.to_numeric(df['Ada'], errors='coerce').fillna(0)
-        df['Parsel_Num'] = pd.to_numeric(df['Parsel'], errors='coerce').fillna(0)
-        df = df.sort_values(by=['Ada_Num', 'Parsel_Num']).reset_index(drop=True)
-
         toplam_brut_insaat = df['Brut_Insaat'].sum()
         toplam_net_alan = df['Net_Alan'].sum()
 
-        hedef_v_m2 = v_m2 + h_m2
-        v_adet = int(toplam_brut_insaat // hedef_v_m2) if hedef_v_m2 > 0 else 0
-        d_adet = int(toplam_brut_insaat // d_m2) if d_m2 > 0 else 0
-
-        yuklenici_payi_m2 = toplam_brut_insaat * ((100 - kat_karsiligi_oran) / 100)
+        # Doğru M² Paylaşım Hesabı
         arsa_sahibi_payi_m2 = toplam_brut_insaat * (kat_karsiligi_oran / 100)
+        yuklenici_payi_m2 = toplam_brut_insaat - arsa_sahibi_payi_m2
 
-        yuklenici_v_adet = int(v_adet * ((100 - kat_karsiligi_oran) / 100))
-        arsa_sahibi_v_adet = v_adet - yuklenici_v_adet
+        # Taraf Başına Gerçekleşen Adet ve Küsurat
+        yuklenici_adet = yuklenici_payi_m2 / hedef_m2 if hedef_m2 > 0 else 0
+        arsa_sahibi_adet = arsa_sahibi_payi_m2 / hedef_m2 if hedef_m2 > 0 else 0
 
         toplam_insaat_maliyeti = toplam_brut_insaat * maliyet_m2
         pazarlama_operasyon_maliyet = toplam_insaat_maliyeti * (genel_gider_orani / 100)
@@ -303,11 +300,8 @@ if uploaded_pdfs:
         tab1, tab2, tab3 = st.tabs(["📊 Parsel & İmar Özeti", "📐 Kat Karşılığı & Mimari", "💵 Finansal Fizibilite"])
 
         with tab1:
-            st.subheader(f"Otomatik Tespit Edilen Konum: {otomatik_mahalle} Mahallesi")
-            st.dataframe(
-                df[['Mahalle', 'Ada', 'Parsel', 'Nitelik', 'Parsel_Alani', 'Hesaba_Alinan', 'Net_Alan', 'KAKS', 'Brut_Insaat']],
-                use_container_width=True
-            )
+            st.subheader(f"Konum: {otomatik_mahalle} Mahallesi | İmar: {ana_fonksiyon}")
+            st.dataframe(df[['Mahalle', 'Ada', 'Parsel', 'Nitelik', 'Parsel_Alani', 'Hesaba_Alinan', 'Net_Alan', 'KAKS', 'Brut_Insaat']], use_container_width=True)
 
             c1, c2, c3, c4 = st.columns(4)
             c1.metric("Toplam Arazi (m²)", fmt_tr(df['Parsel_Alani'].sum(), 2, "TL"))
@@ -321,13 +315,11 @@ if uploaded_pdfs:
 
             with k1:
                 st.info(f"**Yüklenici Payı (%{100-kat_karsiligi_oran}):** {fmt_tr(yuklenici_payi_m2, 2, 'TL')} m²")
-                st.write(f"• Müteahhit Villa Adedi: **{yuklenici_v_adet} Adet**")
-                st.write(f"• Müteahhit Daire Adedi: **{int(d_adet * ((100-kat_karsiligi_oran)/100))} Adet**")
+                st.write(f"• Müteahhit {yapi_etiketi} Hakkı: **{yuklenici_adet:.2f} Adet** ({int(yuklenici_adet)} Tam + {fmt_tr(yuklenici_payi_m2 % hedef_m2)} m² Kalan)")
 
             with k2:
                 st.success(f"**Arsa Sahibi Payı (%{kat_karsiligi_oran}):** {fmt_tr(arsa_sahibi_payi_m2, 2, 'TL')} m²")
-                st.write(f"• Arsa Sahibi Villa Adedi: **{arsa_sahibi_v_adet} Adet**")
-                st.write(f"• Arsa Sahibi Daire Adedi: **{d_adet - int(d_adet * ((100-kat_karsiligi_oran)/100))} Adet**")
+                st.write(f"• Arsa Sahibi {yapi_etiketi} Hakkı: **{arsa_sahibi_adet:.2f} Adet** ({int(arsa_sahibi_adet)} Tam + {fmt_tr(arsa_sahibi_payi_m2 % hedef_m2)} m² Kalan)")
 
         with tab3:
             st.subheader(f"Fizibilite Özeti ({para_birimi} Cinsinden)")
@@ -338,14 +330,13 @@ if uploaded_pdfs:
             f3.metric("Net Kar", fmt_tr(net_kar, 0, para_birimi), delta=f"%{roi:.1f} ROI")
 
             st.markdown("---")
-            st.markdown(f"#### Maliyet ve Gelir Detay Kırılımı ({para_birimi})")
             fizibilite_data = {
                 "Kalem": [
-                    f"Birim İnşaat Maliyeti ({otomatik_mahalle})",
-                    "Pazarlama, Ruhsat ve Şantiye Giderleri",
+                    f"Birim İnşaat Maliyeti ({yapi_etiketi})",
+                    "Pazarlama ve Şantiye Giderleri",
                     "Toplam Yatırım Maliyeti",
                     "Yükleniciye Kalan Brüt Satış Alanı",
-                    f"Hesaplanan Toplam Ciro ({otomatik_mahalle})",
+                    f"Hesaplanan Toplam Ciro ({yapi_etiketi})",
                     "Net Proje Karı"
                 ],
                 "Tutar / Değer": [
