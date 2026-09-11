@@ -226,7 +226,6 @@ def tam_otomatik_villa_mimarisi(toplam_m2):
 
     return adet, villa_brut, havuz_m2, not_str
 
-# OTOMATİK PAZARLAMA & ŞANTİYE GİDERİ HESAPLAMA
 def otomatik_gider_orani_hesapla(toplam_brut_m2):
     if toplam_brut_m2 < 1000.0:
         return 8.0
@@ -290,7 +289,6 @@ if uploaded_pdfs:
         toplam_brut_insaat = df['Brut_Insaat'].sum()
         toplam_net_alan = df['Net_Alan'].sum()
 
-        # Otomatik Pazarlama & Şantiye Gideri Hesaplama
         hesaplanan_gider_orani = otomatik_gider_orani_hesapla(toplam_brut_insaat)
         
         st.sidebar.subheader("🏗️ Gider Parametreleri")
@@ -329,6 +327,10 @@ if uploaded_pdfs:
             arsa_brut_m2 = arsa_sahibi_payi_m2 / arsa_adet
             arsa_havuz_m2 = 0.0
             arsa_not = "Standart Daire Konsepti"
+
+        # Ünite Başı Net Arsa Payı Hesabı
+        yuk_unite_basi_net_arsa = yuklenici_net_arsa_m2 / yuk_adet if yuk_adet > 0 else 0.0
+        arsa_unite_basi_net_arsa = arsa_sahibi_net_arsa_m2 / arsa_adet if arsa_adet > 0 else 0.0
 
         # --- FİNANSAL HESAPLAMALAR ---
         mahalle_veri = mahalle_piyasa_verisi_getir(otomatik_mahalle)[yapi_kategorisi]
@@ -374,9 +376,9 @@ if uploaded_pdfs:
             with k1:
                 st.write(f"### 🏗️ Müteahhit Payı (%{100-kat_karsiligi_oran})")
                 st.metric("Müteahhit Toplam İnşaat Alanı", f"{fmt_tr(yuklenici_payi_m2, 2)} m²")
-                st.write(f"• **Net Arsa Payı:** **{fmt_tr(yuklenici_net_arsa_m2, 2)} m²**")
                 st.success(f"**Otomatik Sonuç:** {yuk_adet} Adet {yapi_etiketi}")
                 st.write(f"• Ünite Başı Brüt İnşaat: **{fmt_tr(yuk_brut_m2, 2)} m²**")
+                st.write(f"• **Ünite Başı Net Arsa Payı:** **{fmt_tr(yuk_unite_basi_net_arsa, 2)} m²**")
                 if yapi_kategorisi == "villa":
                     st.write(f"• Taban Oturumu (2 Kat): **{fmt_tr(yuk_brut_m2 / 2, 2)} m²**")
                     st.write(f"• Otomatik Havuz Durumu: **{f'{yuk_adet} Adet ({fmt_tr(yuk_havuz_m2, 2)} m²)' if yuk_havuz_m2 > 0 else 'Havuzsuz'}**")
@@ -385,16 +387,16 @@ if uploaded_pdfs:
             with k2:
                 st.write(f"### 🏡 Arsa Sahibi Payı (%{kat_karsiligi_oran})")
                 st.metric("Arsa Sahibi Toplam İnşaat Alanı", f"{fmt_tr(arsa_sahibi_payi_m2, 2)} m²")
-                st.write(f"• **Net Arsa Payı:** **{fmt_tr(arsa_sahibi_net_arsa_m2, 2)} m²**")
                 st.success(f"**Otomatik Sonuç:** {arsa_adet} Adet {yapi_etiketi}")
                 st.write(f"• Ünite Başı Brüt İnşaat: **{fmt_tr(arsa_brut_m2, 2)} m²**")
+                st.write(f"• **Ünite Başı Net Arsa Payı:** **{fmt_tr(arsa_unite_basi_net_arsa, 2)} m²**")
                 if yapi_kategorisi == "villa":
                     st.write(f"• Taban Oturumu (2 Kat): **{fmt_tr(arsa_brut_m2 / 2, 2)} m²**")
                     st.write(f"• Otomatik Havuz Durumu: **{f'{arsa_adet} Adet ({fmt_tr(arsa_havuz_m2, 2)} m²)' if arsa_havuz_m2 > 0 else 'Havuzsuz'}**")
                     st.caption(f"🤖 *Yapay Zeka Kararı: {arsa_not}*")
 
             st.markdown("---")
-            st.caption(f"💡 *Sistem, net arsa alanını ve toplam inşaat alanını belirlenen kat karşılığı oranına göre tam yetkiyle hesaplayıp entegre eder.*")
+            st.caption(f"💡 *Sistem, net arsa alanını ve toplam inşaat alanını belirlenen kat karşılığı oranına göre bölerek ünite başı net arsa paylarını hesaplar.*")
 
         with tab3:
             st.subheader(f"Fizibilite Özeti ({para_birimi} Cinsinden)")
