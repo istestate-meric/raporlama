@@ -83,19 +83,20 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, usd_rate):
     base_tl = mahalle_base_tl.get(clean_mahalle, mahalle_base_tl["VARSAYILAN"])
     
     proje_carpanlari = {
-        "Lüks Villa / Müstakil Proje": {"satis_mod": 1.55, "maliyet_mod": 1350},
-        "Üst Segment Konut / Rezidans": {"satis_mod": 1.25, "maliyet_mod": 1100},
-        "Standart Konut / Apartman": {"satis_mod": 1.00, "maliyet_mod": 900},
-        "Ticari / Ofis Kompleksi": {"satis_mod": 1.35, "maliyet_mod": 1050},
-        "Karma Proje (Konut + Ticari)": {"satis_mod": 1.20, "maliyet_mod": 1000}
+        "Lüks Villa / Müstakil Proje": {"satis_mod": 1.55, "maliyet_mod": 1350, "bodrum_deger_orani": 0.60},
+        "Üst Segment Konut / Rezidans": {"satis_mod": 1.25, "maliyet_mod": 1100, "bodrum_deger_orani": 0.50},
+        "Standart Konut / Apartman": {"satis_mod": 1.00, "maliyet_mod": 900, "bodrum_deger_orani": 0.40},
+        "Ticari / Ofis Kompleksi": {"satis_mod": 1.35, "maliyet_mod": 1050, "bodrum_deger_orani": 0.70},
+        "Karma Proje (Konut + Ticari)": {"satis_mod": 1.20, "maliyet_mod": 1000, "bodrum_deger_orani": 0.50}
     }
     
     p_conf = proje_carpanlari.get(proje_tipi, proje_carpanlari["Standart Konut / Apartman"])
     
     satis_fiyati_usd = round((base_tl * p_conf["satis_mod"]) / usd_rate, 2)
     maliyet_fiyati_usd = float(p_conf["maliyet_mod"])
+    bodrum_orani = float(p_conf["bodrum_deger_orani"])
     
-    return satis_fiyati_usd, maliyet_fiyati_usd
+    return satis_fiyati_usd, maliyet_fiyati_usd, bodrum_orani
 
 def parse_tr_float(val_str):
     if not val_str:
@@ -423,8 +424,6 @@ if selected_keys:
         # Mimari alandaki bodrum hesap mantığı ile senkronize bodrum alanı
         simulated_bodrum_alani = (yasal_max_emsal_alani - (curr_hb * 30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 if curr_hp == "Ortak / Sosyal Tesis Havuzu" else 0.0))) * 0.50
 
-        st.success(f"⚡ **Canlı TCMB Dolar Kuru:** 1 USD = {rates['USD']:.2f} TL | **Yasal Emsal Tavanı:** {yasal_max_emsal_alani:,.2f} m² | **Havuz Modeli:** {curr_hp}")
-        
         first_parcel = list(active_parcel_db.values())[0]
         detected_mahalle = first_parcel.get("mahalle", "VARSAYILAN").upper()
         
@@ -457,16 +456,11 @@ if selected_keys:
             st.caption(f"📍 Referans Lokasyon: **{detected_mahalle}**")
             manual_override = st.checkbox("Özel / Manuel Fiyat Girişi Yap", value=False)
 
-        real_satis_usd, real_maliyet_usd = get_realistic_market_pricing(detected_mahalle, selected_proje_tipi, rates["USD"])
+        real_satis_usd, real_maliyet_usd, otomatik_bodrum_orani = get_realistic_market_pricing(detected_mahalle, selected_proje_tipi, rates["USD"])
+
+        st.success(f"⚡ **Canlı TCMB Dolar Kuru:** 1 USD = {rates['USD']:.2f} TL | **Yasal Emsal Tavanı:** {yasal_max_emsal_alani:,.2f} m² | **Otomatik Bodrum Kat Ciro Katsayısı:** %{int(otomatik_bodrum_orani*100)}")
 
         st.markdown("---")
-        
-        # Bodrum Satış Ayarları
-        st.markdown("#### 🏢 Satış ve Alan Parametreleri (Bodrum Kat Dahiliyeti)")
-        b_col_opt1, b_col_opt2 = st.columns(2)
-        bodrum_satisa_dahil = b_col_opt1.checkbox("Bodrum Katlarını Satış Ciroya Dahil Et", value=True)
-        bodrum_fiyat_orani = b_col_opt2.slider("Bodrum M² Satış Fiyatı Oranı (Normal Fiyata Göre %)", min_value=20, max_value=90, value=50, step=5)
-
         col_f1, col_f2, col_f3 = st.columns(3)
         
         if manual_override:
@@ -484,13 +478,13 @@ if selected_keys:
             arsa_payi_orani = 0.0
             col_f3.info("ℹ️ Doğrudan Satılık modelinde arsa bedeli doğrudan yatırım maliyetine eklenir.")
 
-        # Maliyet hesabı: Hem normal inşaat alanı hem de bodrum inşaat alanı maliyete tam olarak yansır
+        # Maliyet hesabı: Toplam inşaat alanı (emsal + bodrum) zaten yapı maliyetine dahildir (Tekrar maliyet bindirilmez)
         toplam_insaat_maliyet_alani = yasal_max_emsal_alani + simulated_bodrum_alani
         toplam_maliyet_usd = (toplam_insaat_maliyet_alani * birim_maliyet) + arsa_bonus_usd
         
-        # Ciro hesabı: Normal emsal alanı + (Eğer seçildiyse) İskontolu bodrum alanı cirosu
+        # Ciro hesabı: Normal emsal alanı cirosu + Proje tipine göre otomatik hesaplanan iskontolu bodrum alanı cirosu
         normal_ciro = yasal_max_emsal_alani * birim_satis
-        bodrum_ciro = (simulated_bodrum_alani * birim_satis * (bodrum_fiyat_orani / 100.0)) if bodrum_satisa_dahil else 0.0
+        bodrum_ciro = simulated_bodrum_alani * birim_satis * otomatik_bodrum_orani
         toplam_ciro_usd = normal_ciro + bodrum_ciro
         
         if "Kat Karşılığı" in is_modeli:
