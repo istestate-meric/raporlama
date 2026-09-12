@@ -1,4 +1,6 @@
 import re
+import os
+import json
 import urllib.request
 import xml.etree.ElementTree as ET
 import pdfplumber
@@ -11,8 +13,27 @@ st.set_page_config(
     layout="wide"
 )
 
+# --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ ---
+DB_FILE = "imar_veritabani.json"
+
+def load_persistent_db():
+    if os.path.exists(DB_FILE):
+        try:
+            with open(DB_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+def save_persistent_db(db_data):
+    try:
+        with open(DB_FILE, "w", encoding="utf-8") as f:
+            json.dump(db_data, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        st.error(f"Veritabanı kaydedilirken hata oluştu: {e}")
+
 if "parcel_db" not in st.session_state:
-    st.session_state["parcel_db"] = {}
+    st.session_state["parcel_db"] = load_persistent_db()
 
 # --- 1. TCMB CANLI DÖVİZ KURU SERVİSİ ---
 @st.cache_data(ttl=300)
@@ -40,10 +61,6 @@ def get_live_exchange_rates():
 
 # --- 2. BEYKOZ GERÇEKÇİ PİYASA VE PROJE TİPİ MATRİSİ ---
 def get_realistic_market_pricing(mahalle_adi, proje_tipi, usd_rate):
-    """
-    Beykoz bölge dinamiklerine uygun gerçekçi satış ve inşaat maliyeti matrisi.
-    """
-    # Mahalle bazlı baz arsa/konut prim katsayıları (TL/m² eşdeğer bazları)
     mahalle_base_tl = {
         "ACARLAR": 140000,
         "ANADOLU HİSARI": 130000,
@@ -65,7 +82,6 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, usd_rate):
     clean_mahalle = mahalle_adi.upper().strip()
     base_tl = mahalle_base_tl.get(clean_mahalle, mahalle_base_tl["VARSAYILAN"])
     
-    # Proje Tipi Çarpanları (Satış ve Maliyet için)
     proje_carpanlari = {
         "Lüks Villa / Müstakil Proje": {"satis_mod": 1.55, "maliyet_mod": 1350},
         "Üst Segment Konut / Rezidans": {"satis_mod": 1.25, "maliyet_mod": 1100},
@@ -76,7 +92,6 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, usd_rate):
     
     p_conf = proje_carpanlari.get(proje_tipi, proje_carpanlari["Standart Konut / Apartman"])
     
-    # Canlı USD kuru üzerinden hesaplanan gerçekçi satış fiyatı
     satis_fiyati_usd = round((base_tl * p_conf["satis_mod"]) / usd_rate, 2)
     maliyet_fiyati_usd = float(p_conf["maliyet_mod"])
     
@@ -116,7 +131,7 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
         if kalip in text_upper:
             return False
 
-    terkli_kaliplar = ["TERKİ YAPILMIŞTIR", "TERKİ YAPILMIŞ", "TERK YAPILMIŞTIR", "KAMUYA TERK EDİLMİŞTİR", "DOP TERKİ YAPILMIŞTIR"]
+    terkli_kaliplar = ["TERKİ YAPILMIŞTIR", "TERKİ YAPILMIŞ", "TERK YAPILMIŞTIR", "KAMUYA TERK EDİLMİŞTİR", "DOP TERKİ YAPILMAMIŞTIR"]
     for kalip in terkli_kaliplar:
         if kalip in text_upper:
             return True
@@ -222,8 +237,8 @@ def parse_imar_pdf(uploaded_file):
     return parcel_data
 
 # --- STREAMLIT ARAYÜZÜ ---
-st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK</h2>", unsafe_allow_html=True)
-st.markdown("<h4 style='text-align: center; color: #475569;'>Gerçekçi Piyasa Verili Fizibilite Portalı</h4>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT Emlak</h2>", unsafe_allow_html=True)
+st.markdown("<h4 style='text-align: center; color: #475569;'>Kalıcı Veritabanı Destekli Fizibilite Portalı</h4>", unsafe_allow_html=True)
 st.divider()
 
 rates = get_live_exchange_rates()
@@ -236,7 +251,10 @@ if uploaded_files:
         p_data = parse_imar_pdf(uploaded_file)
         unique_key = f"{p_data['mahalle']}_{p_data['ada']}_{p_data['parsel']}"
         st.session_state["parcel_db"][unique_key] = p_data
-    st.sidebar.success(f"{len(uploaded_files)} Adet Belge İşlendi!")
+    
+    # Değişiklikleri kalıcı JSON dosyasına kaydet
+    save_persistent_db(st.session_state["parcel_db"])
+    st.sidebar.success(f"{len(uploaded_files)} Adet Belge Kalıcı Olarak İşlendi!")
 
 st.sidebar.subheader("🗄️ Veritabanındaki Parseller")
 if st.session_state["parcel_db"]:
@@ -245,9 +263,10 @@ if st.session_state["parcel_db"]:
         col_s1.write(f"📍 {key}")
         if col_s2.button("Sil", key=f"del_{key}"):
             del st.session_state["parcel_db"][key]
+            save_persistent_db(st.session_state["parcel_db"])
             st.rerun()
 else:
-    st.sidebar.info("Henüz belge yüklenmedi.")
+    st.sidebar.info("Henüz kaydedilmiş belge yok.")
 
 if st.session_state["parcel_db"]:
     tab1, tab2, tab3 = st.tabs(["📊 İmar Durumu Özeti", "📐 İnşaat Alanı Hesabı", "💰 Proje Tipi & Piyasa Fizibilitesi"])
@@ -340,7 +359,6 @@ if st.session_state["parcel_db"]:
                 index=0
             )
         
-        # Seçilen proje tipi ve mahalleye göre gerçekçi piyasa fiyatlarını hesapla
         real_satis_usd, real_maliyet_usd = get_realistic_market_pricing(detected_mahalle, selected_proje_tipi, rates["USD"])
 
         with col_opt2:
@@ -358,7 +376,6 @@ if st.session_state["parcel_db"]:
 
         arsa_payi_orani = col_f3.slider("Arsa Payı / Kat Karşılığı Oranı (%)", min_value=0, max_value=70, value=40)
         
-        # FİNANSAL HESAPLAMALAR
         toplam_maliyet_usd = total_inşaat_alani * birim_maliyet
         toplam_ciro_usd = total_inşaat_alani * birim_satis
         arsa_sahibi_payi_usd = toplam_ciro_usd * (arsa_payi_orani / 100)
@@ -377,4 +394,4 @@ if st.session_state["parcel_db"]:
         f_col3.metric("Arsa Sahibi Payı", f"${arsa_sahibi_payi_usd:,.2f}")
         f_col4.metric("Müteahhit Net Karı", f"${mutaahhit_net_kar_usd:,.2f}", f"₺{mutaahhit_net_kar_tl:,.2f} (%{roi:.1f} ROI)")
 
-        st.caption("İstestate Gayrimenkul & Meriç İnşaat Emlak - Proje Tipi Destekli Gerçekçi Fizibilite Motoru")
+        st.caption("İstestate Gayrimenkul & Meriç İnşaat Emlak - Kalıcı Dosya Tabanlı Fizibilite Motoru")
