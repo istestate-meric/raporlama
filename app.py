@@ -415,14 +415,14 @@ if selected_keys:
             bodrum_acikta_mi = st.checkbox("Bodrum katların herhangi bir cephesi tabi zemine göre 120 cm'den fazla mı açığa çıkıyor? (Evet ise Emsale Dahil, Hayır ise Emsal Dışı)", value=False)
             if bodrum_acikta_mi:
                 bodrum_emsal_dahil_mi = True
-                st.info("ℹ️ Plan notu gereği 120 cm'den fazla açığa çıkan bodrum katlar emsale dahil edildi[cite: 1].")
+                st.info("ℹ️ Plan notu gereği 120 cm'den fazla açığa çıkan bodrum katlar emsale dahil edildi.")
             else:
-                st.info("ℹ️ Bodrum katlar 120 cm'den az açıkta olduğundan emsal dışı kabul edildi, sadece maliyete yansıtıldı[cite: 1].")
+                st.info("ℹ️ Bodrum katlar 120 cm'den az açıkta olduğundan emsal dışı kabul edildi, sadece maliyete yansıtıldı.")
 
         # Havuz hesaplama (Emsal ve Maliyete dahil)
         havuz_alani = havuz_birim_m2 if otomatik_havuz_aktif else 0.0
         if otomatik_havuz_aktif:
-            st.info("ℹ️ Havuzlar plan kuralları gereği emsal alanına ve toplam maliyete otomatik olarak dahil edilmiştir[cite: 1].")
+            st.info("ℹ️ Havuzlar plan kuralları gereği emsal alanına ve toplam maliyete otomatik olarak dahil edilmiştir.")
 
         real_satis_usd, real_maliyet_usd = get_realistic_market_pricing(detected_mahalle, selected_proje_tipi, rates["USD"])
 
@@ -481,4 +481,3 @@ if selected_keys:
         st.caption("İstestate Gayrimenkul & Meriç İnşaat Emlak - Kurumsal Raporlama ve Fizibilite Modülü")
 else:
     st.warning("⚠️ Lütfen sol menüden raporlanmasını istediğiniz ada ve parselleri seçin.")
-```[cite: 1]
