@@ -65,13 +65,52 @@ def parse_tr_float(val_str):
     except ValueError:
         return 0.0
 
-def detect_terk_status(text):
+def detect_terk_status(text, toplam_alan, fonksiyonlar):
+    """
+    Terk durumunu hem metin analizi hem de Arsa Alanı / Fonksiyon Alanı eşitliği ile belirler.
+    """
     text_upper = text.upper()
-    if "YOLA TERK VE KAMUYA AYRILAN KISIMLAR KAMU ELİNE GEÇMEDEN" in text_upper or "TERK YAPILMAMIŞ" in text_upper:
-        return False
-    elif "TERKİ YAPILMIŞTIR" in text_upper or "DOP TERKİ YAPILMIŞ" in text_upper:
-        return True
-    return False
+    
+    # 1. Metin Üzerinden Olumsuz Şart Tespiti
+    terksiz_kaliplar = [
+        "YOLA TERK VE KAMUYA AYRILAN KISIMLAR KAMU ELİNE GEÇMEDEN",
+        "TERK YAPILMAMIŞ",
+        "TERKİ YAPILMAMIŞ",
+        "TERK YAPILMADAN",
+        "TERKİ YAPILMADAN",
+        "DOP TERKİ YAPILMAMIŞ"
+    ]
+    for kalip in terksiz_kaliplar:
+        if kalip in text_upper:
+            return False, "Metin İfadesi (Terksiz)"
+
+    # 2. Metin Üzerinden Olumlu Şart Tespiti
+    terkli_kaliplar = [
+        "TERKİ YAPILMIŞTIR",
+        "TERKİ YAPILMIŞ",
+        "TERK YAPILMIŞTIR",
+        "KAMUYA TERK EDİLMİŞTIR",
+        "DOP TERKİ YAPILMIŞTIR"
+    ]
+    for kalip in terkli_kaliplar:
+        if kalip in text_upper:
+            return True, "Metin İfadesi (Terkli)"
+
+    # 3. Alan Eşitliği Kontrolü (Metinde ibare yoksa)
+    # Toplam inşaat yapılabilir fonksiyon alanlarının toplamı alınır
+    toplam_fonksiyon_m2 = sum(
+        f["giren_m2"] for f in fonksiyonlar 
+        if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"])
+    )
+    
+    # Alanlar birbirine eşitse veya çok yakınsa (küsurat farkı tolare edilir) terk yapılmıştır
+    if toplam_alan > 0 and toplam_fonksiyon_m2 > 0:
+        if abs(toplam_alan - toplam_fonksiyon_m2) < 1.0 or (toplam_fonksiyon_m2 / toplam_alan) >= 0.99:
+            return True, "Alan Eşitliği Otomatik Tespiti (Net)"
+        else:
+            return False, "Arsa/Fonksiyon Farkı Tespiti (Brüt)"
+
+    return False, "Varsayılan (Brüt)"
 
 def parse_imar_pdf(uploaded_file):
     parcel_data = {
@@ -81,6 +120,7 @@ def parse_imar_pdf(uploaded_file):
         "parsel": "0",
         "toplam_alan": 0.0,
         "terk_yapilmis_mi": False,
+        "terk_tespit_nedeni": "",
         "fonksiyonlar": []
     }
     
@@ -145,8 +185,6 @@ def parse_imar_pdf(uploaded_file):
                                 "giren_m2": giren_m2
                             })
 
-    parcel_data["terk_yapilmis_mi"] = detect_terk_status(full_text)
-    
     if parcel_data["mahalle"] == "BİLİNMİYOR" or parcel_data["ada"] == "0":
         m_m = re.search(r"Mahalle\s*\|\s*([A-ZÇĞİÖŞÜa-zçğıöşü]+)", full_text)
         a_m = re.search(r"Ada\s*\|\s*(\d+)", full_text)
@@ -158,6 +196,11 @@ def parse_imar_pdf(uploaded_file):
         if p_m: parcel_data["parsel"] = p_m.group(1)
         if al_m and parcel_data["toplam_alan"] == 0.0:
             parcel_data["toplam_alan"] = parse_tr_float(al_m.group(1))
+
+    # Terk durumunu alan karşılaştırması desteğiyle tespit et
+    is_terk, reason = detect_terk_status(full_text, parcel_data["toplam_alan"], parcel_data["fonksiyonlar"])
+    parcel_data["terk_yapilmis_mi"] = is_terk
+    parcel_data["terk_tespit_nedeni"] = reason
 
     return parcel_data
 
@@ -208,7 +251,8 @@ if st.session_state["parcel_db"]:
                     "TAKS": f["taks"],
                     "KAKS (Emsal)": f["kaks"],
                     "Fonksiyon Alanı (m²)": f"{f['giren_m2']:,.2f}",
-                    "Otomatik Terk Durumu": terk_lbl
+                    "Terk Durumu": terk_lbl,
+                    "Terk Tespit Dayanağı": p["terk_tespit_nedeni"]
                 })
         st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
 
@@ -223,7 +267,7 @@ if st.session_state["parcel_db"]:
 
         for key, p in st.session_state["parcel_db"].items():
             toplam_brut_m2 = p["toplam_alan"]
-            is_terkli = p["terk_yapilmis_mi"]  # PDF'ten otomatik okunan durum
+            is_terkli = p["terk_yapilmis_mi"]
             
             for f in p["fonksiyonlar"]:
                 if any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
@@ -233,13 +277,11 @@ if st.session_state["parcel_db"]:
                     terk_durum_text = "-"
                 else:
                     if not is_terkli:
-                        # Terki yapılmamış arazi: Brüt Arsa x 0.70 x KAKS x Emsal Artışı
                         esas_m2 = toplam_brut_m2
                         satilabilir_m2 = esas_m2 * 0.70 * f["kaks"] * emsal_artis_orani
                         hesap_turu = "Brüt Arsa x 0.70 x Emsal"
                         terk_durum_text = "Terki Yapılmamış (Brüt)"
                     else:
-                        # Terki yapılmış arazi: Net Fonksiyon Alanı x KAKS x Emsal Artışı
                         esas_m2 = f["giren_m2"]
                         satilabilir_m2 = esas_m2 * f["kaks"] * emsal_artis_orani
                         hesap_turu = "Net Alan x Emsal"
@@ -249,7 +291,7 @@ if st.session_state["parcel_db"]:
                 calc_results.append({
                     "Parsel Kimliği": key,
                     "Fonksiyon": f["fonksiyon_adi"],
-                    "Otomatik Terk Durumu": terk_durum_text,
+                    "Terk Durumu": terk_durum_text,
                     "Hesap Formülü": hesap_turu,
                     "Hesaba Esas Alan (m²)": f"{esas_m2:,.2f}",
                     "Emsal (KAKS)": f["kaks"],
