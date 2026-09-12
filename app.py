@@ -237,7 +237,15 @@ def parse_imar_pdf(uploaded_file):
     parcel_data["terk_yapilmis_mi"] = detect_terk_status(full_text, parcel_data["toplam_alan"], parcel_data["fonksiyonlar"])
     return parcel_data
 
-# --- STREAMLIT ARAYÜZÜ ---
+# --- STREAMLIT ARAYÜZÜ & KURUMSAL LOGO YERLEŞİMİ ---
+col_logo1, col_logo2 = st.columns(2)
+with col_logo1:
+    if os.path.exists("istestate_logo.png"):
+        st.image("istestate_logo.png", width=320)
+with col_logo2:
+    if os.path.exists("meric_insaat_emlak_logo.png"):
+        st.image("meric_insaat_emlak_logo.png", width=320)
+
 st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK</h2>", unsafe_allow_html=True)
 st.markdown("<h4 style='text-align: center; color: #475569;'>Ada Bazlı Akıllı Fizibilite Portalı</h4>", unsafe_allow_html=True)
 st.divider()
@@ -247,40 +255,47 @@ rates = get_live_exchange_rates()
 st.sidebar.header("📁 İmar Belgesi Yükleme")
 uploaded_files = st.sidebar.file_uploader("İmar Durum Raporu (PDF) Seçin", type=["pdf"], accept_multiple_files=True)
 
+# Yeni yüklenen dosyaları hafızaya ve veritabanına ekleyelim
+just_uploaded_keys = []
 if uploaded_files:
     for uploaded_file in uploaded_files:
         p_data = parse_imar_pdf(uploaded_file)
         unique_key = f"{p_data['mahalle']} | Ada: {p_data['ada']} - Parsel: {p_data['parsel']}"
         st.session_state["parcel_db"][unique_key] = p_data
+        just_uploaded_keys.append(unique_key)
     
     save_persistent_db(st.session_state["parcel_db"])
     st.sidebar.success(f"{len(uploaded_files)} Adet Belge Arşive Eklendi!")
 
 st.sidebar.divider()
-st.sidebar.subheader("🎯 Rapor İçin Parsel Seçimi")
+st.sidebar.subheader("🎯 Rapor İçin Parsel Seçimi & Arama")
 
 all_db_keys = list(st.session_state["parcel_db"].keys())
 
 if all_db_keys:
     unique_adas = sorted(list(set([str(p_data.get("ada", "0")).strip() for p_data in st.session_state["parcel_db"].values()])))
     
-    selected_ada_filter = st.sidebar.selectbox("Ada Numarasına Göre Filtrele:", options=["Tümü"] + unique_adas)
+    selected_ada_filter = st.sidebar.selectbox("Ada Numarasına Göre Filtrele:", options=["Seçiniz..."] + unique_adas)
     
-    if selected_ada_filter == "Tümü":
-        filtered_keys = all_db_keys
-    else:
+    if selected_ada_filter != "Seçiniz...":
         filtered_keys = [
             k for k, p_data in st.session_state["parcel_db"].items() 
             if str(p_data.get("ada", "")).strip() == str(selected_ada_filter).strip()
         ]
+    else:
+        filtered_keys = []
+
+    # Eğer yeni dosya yüklendiyse varsayılan olarak onları seçili getirelim, aksi halde boş başlasın
+    default_selection = just_uploaded_keys if just_uploaded_keys else []
 
     selected_keys = st.sidebar.multiselect(
-        "Ada-Parsel Seçin:",
-        options=filtered_keys,
-        default=filtered_keys
+        "Raporlanacak Ada-Parsel Seçin:",
+        options=filtered_keys if selected_ada_filter != "Seçiniz..." else [],
+        default=default_selection,
+        help="Önce yukarıdan Ada filtresi seçin, ardından listelenen parselleri işaretleyin."
     )
 else:
-    st.sidebar.info("Arşivde henüz kayıtlı parsel yok. Lütfen PDF yükleyin.")
+    st.sidebar.info("Arşivde henüz kayıtlı parsel yok. Lütfen sol üstten PDF imar belgesi yükleyin.")
     selected_keys = []
 
 if selected_keys:
@@ -421,7 +436,6 @@ if selected_keys:
         curr_hb = st.session_state["hedef_bagimsiz_bolum"]
         curr_hp = st.session_state["havuz_tercihi"]
         
-        # Mimari alandaki bodrum hesap mantığı ile senkronize bodrum alanı
         simulated_bodrum_alani = (yasal_max_emsal_alani - (curr_hb * 30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 if curr_hp == "Ortak / Sosyal Tesis Havuzu" else 0.0))) * 0.50
 
         first_parcel = list(active_parcel_db.values())[0]
@@ -478,10 +492,10 @@ if selected_keys:
             arsa_payi_orani = 0.0
             col_f3.info("ℹ️ Doğrudan Satılık modelinde arsa bedeli doğrudan yatırım maliyetine eklenir.")
 
-        # DÜZELTME: İnşaat maliyeti mükerrer olmaması için sadece yasal emsal alanı üzerinden hesaplanır (Bodrum maliyeti ana maliyetin içinde kabul edilir)
+        # İnşaat maliyeti yalnızca yasal emsal alanı üzerinden hesaplanır (mükerrer bodrum maliyeti yoktur)
         toplam_maliyet_usd = (yasal_max_emsal_alani * birim_maliyet) + arsa_bonus_usd
         
-        # Ciro hesabı: Normal emsal alanı cirosu + Proje tipine göre otomatik hesaplanan iskontolu bodrum alanı cirosu
+        # Ciro hesabı: Normal emsal cirosu + Proje tipine göre otomatik oranlanan bodrum cirosu
         normal_ciro = yasal_max_emsal_alani * birim_satis
         bodrum_ciro = simulated_bodrum_alani * birim_satis * otomatik_bodrum_orani
         toplam_ciro_usd = normal_ciro + bodrum_ciro
@@ -516,4 +530,4 @@ if selected_keys:
         st.markdown("---")
         st.caption("İstestate Gayrimenkul & Meriç İnşaat Emlak - Kurumsal Raporlama ve Fizibilite Modülü")
 else:
-    st.warning("⚠️ Lütfen sol menüden raporlanmasını istediğiniz ada ve parselleri seçin.")
+    st.info("👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden bir **Ada** seçip ilgili parselleri işaretleyin veya yeni bir imar belgesi (PDF) yükleyin.")
