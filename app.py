@@ -238,42 +238,40 @@ def parse_imar_pdf(uploaded_file):
     parcel_data["terk_yapilmis_mi"] = detect_terk_status(full_text, parcel_data["toplam_alan"], parcel_data["fonksiyonlar"])
     return parcel_data
 
-# --- GÖRSELLERİ BASE64 FORMATINA ÇEVİRME FONKSİYONU ---
-def get_base64_image(image_path):
-    if os.path.exists(image_path):
-        with open(image_path, "rb") as f:
-            data = f.read()
-        return base64.b64encode(data).decode("utf-8")
-    return ""
+# --- STREAMLIT NATIVE PROFESYONEL BANNER ALANI ---
+st.markdown("""
+    <style>
+        .banner-container {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 20px 30px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
-img1_base64 = get_base64_image("istestate_logo.png")
-img2_base64 = get_base64_image("meric_insaat_emlak_logo.png")
-
-# --- STREAMLIT ARAYÜZÜ & PROFESYONEL KURUMSAL BANNER ALANI ---
-logo_html = f"""
-    <div style="
-        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-        border: 1px solid #e2e8f0;
-        border-radius: 16px;
-        padding: 24px 30px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
-        margin-bottom: 25px;">
+with st.container():
+    st.markdown('<div class="banner-container">', unsafe_allow_html=True)
+    b_col1, b_col_div, b_col2 = st.columns([5, 1, 5])
+    
+    with b_col1:
+        if os.path.exists("istestate_logo.png"):
+            st.image("istestate_logo.png", use_container_width=True)
+        else:
+            st.markdown("<h3 style='text-align:center; color:#d97706;'>İSTESTATE</h3>", unsafe_allow_html=True)
+            
+    with b_col_div:
+        st.markdown("<div style='border-left: 1px solid #cbd5e1; height: 70px; margin: auto;'></div>", unsafe_allow_html=True)
         
-        <div style="text-align: center; flex: 1; display: flex; justify-content: center; align-items: center;">
-            <img src="data:image/png;base64,{img1_base64}" style="max-height: 85px; width: auto; object-fit: contain;" />
-        </div>
-        
-        <div style="width: 1px; height: 60px; background-color: #cbd5e1; margin: 0 20px;"></div>
-        
-        <div style="text-align: center; flex: 1; display: flex; justify-content: center; align-items: center;">
-            <img src="data:image/png;base64,{img2_base64}" style="max-height: 85px; width: auto; object-fit: contain;" />
-        </div>
-    </div>
-"""
-st.markdown(logo_html, unsafe_allow_html=True)
+    with b_col2:
+        if os.path.exists("meric_insaat_emlak_logo.png"):
+            st.image("meric_insaat_emlak_logo.png", use_container_width=True)
+        else:
+            st.markdown("<h3 style='text-align:center; color:#1d4ed8;'>MERİÇ İNŞAAT</h3>", unsafe_allow_html=True)
+            
+    st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("""
     <div style='text-align: center; margin-bottom: 30px;'>
