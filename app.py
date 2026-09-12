@@ -238,51 +238,57 @@ def parse_imar_pdf(uploaded_file):
     parcel_data["terk_yapilmis_mi"] = detect_terk_status(full_text, parcel_data["toplam_alan"], parcel_data["fonksiyonlar"])
     return parcel_data
 
-# --- YÜKSEK KONTRASTLI VE OKUNAKLI KURUMSAL BANNER ALANI ---
+# --- ŞIK, BEYAZ ZEMİNLİ KURUMSAL HEADER ALANI ---
 st.markdown("""
     <style>
-        .banner-box {
+        .header-container {
             background: #ffffff;
-            border: 2px solid #cbd5e1;
+            border: 1px solid #cbd5e1;
             border-radius: 16px;
-            padding: 25px 35px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 25px;
+            padding: 30px 40px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
         }
     </style>
 """, unsafe_allow_html=True)
 
 with st.container():
-    st.markdown('<div class="banner-box">', unsafe_allow_html=True)
-    b_col1, b_col_div, b_col2 = st.columns([5, 1, 5])
+    st.markdown('<div class="header-container">', unsafe_allow_html=True)
     
-    with b_col1:
+    # 1. Satır: Logolar ve Aradaki Çizgi
+    logo_col1, logo_col_div, logo_col2 = st.columns([5, 1, 5])
+    
+    with logo_col1:
         if os.path.exists("istestate_logo.png"):
             st.image("istestate_logo.png", use_container_width=True)
         else:
             st.markdown("<h2 style='text-align:center; color:#1e3a8a; font-weight:800;'>İSTESTATE</h2>", unsafe_allow_html=True)
             
-    with b_col_div:
-        st.markdown("<div style='border-left: 2px solid #94a3b8; height: 85px; margin: auto;'></div>", unsafe_allow_html=True)
+    with logo_col_div:
+        st.markdown("<div style='border-left: 2px solid #cbd5e1; height: 90px; margin: auto;'></div>", unsafe_allow_html=True)
         
-    with b_col2:
+    with logo_col2:
         if os.path.exists("meric_insaat_emlak_logo.png"):
             st.image("meric_insaat_emlak_logo.png", use_container_width=True)
         else:
             st.markdown("<h2 style='text-align:center; color:#1e3a8a; font-weight:800;'>MERİÇ İNŞAAT</h2>", unsafe_allow_html=True)
             
+    st.markdown("<hr style='margin: 25px 0 20px 0; border: none; border-top: 1px solid #e2e8f0;'>", unsafe_allow_html=True)
+    
+    # 2. Satır: Başlık ve Alt Açıklama (Beyaz Kutu İçinde)
+    st.markdown("""
+        <div style='text-align: center;'>
+            <h1 style='color: #0f172a; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px;'>
+                İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK
+            </h1>
+            <p style='color: #475569; font-size: 16px; font-weight: 600; margin: 0;'>
+                Ada Bazlı Akıllı Fizibilite ve Proje Kapasite Modülü
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+    
     st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown("""
-    <div style='text-align: center; margin-bottom: 35px;'>
-        <h1 style='color: #0f172a; font-size: 30px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px;'>
-            İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK
-        </h1>
-        <p style='color: #334155; font-size: 17px; font-weight: 600; margin: 0;'>
-            Ada Bazlı Akıllı Fizibilite ve Proje Kapasite Modülü
-        </p>
-    </div>
-""", unsafe_allow_html=True)
 st.divider()
 
 rates = get_live_exchange_rates()
