@@ -261,12 +261,10 @@ st.sidebar.subheader("🎯 Rapor İçin Parsel Seçimi")
 all_db_keys = list(st.session_state["parcel_db"].keys())
 
 if all_db_keys:
-    # Benzersiz Ada numaralarını ayıklayalım
-    unique_adas = sorted(list(set([p_data.get("ada", "0") for p_data in st.session_state["parcel_db"].values()])))
+    unique_adas = sorted(list(set([str(p_data.get("ada", "0")) for p_data in st.session_state["parcel_db"].values()])))
     
     selected_ada_filter = st.sidebar.selectbox("Ada Numarasına Göre Filtrele:", options=["Tümü"] + unique_adas)
     
-    # Filtreye göre gösterilecek parsel listesini belirleme
     if selected_ada_filter == "Tümü":
         filtered_keys = all_db_keys
     else:
