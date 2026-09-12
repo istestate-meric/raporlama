@@ -142,7 +142,6 @@ def parse_imar_pdf(uploaded_file):
                                     elif "Alan" in head and val:
                                         parcel_data["toplam_alan"] = parse_tr_float(val)
 
-                    # Fonksiyon tablosu satır bazlı tam eşleme ve ayıklama
                     if "Fonksiyon Adı" in row_str:
                         fonk_name = ""
                         taks_val = 0.30
@@ -254,18 +253,13 @@ if st.session_state["parcel_db"]:
             toplam_brut_m2 = p["toplam_alan"]
             is_terkli = p["terk_yapilmis_mi"]
             
-            # Toplam giren fonksiyon alanlarının toplamı (Oran hesabı için)
             toplam_giren_fonk_m2 = sum(f["giren_m2"] for f in p["fonksiyonlar"])
             
             for f in p["fonksiyonlar"]:
-                # Kamu alanlarını inşaat hesabından muaf tut
                 if any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                     continue
                 
                 if not is_terkli:
-                    # Terksiz Parsel:
-                    # Çoklu fonksiyonda her fonksiyonun toplam fonksiyon alanındaki payı (oranı) bulunur.
-                    # Brüt Arsa bu oranla dağıtılarak terk düşülür (Brüt Arsa Payı x 0.70 x KAKS x Emsal Artışı)
                     if toplam_giren_fonk_m2 > 0:
                         fonk_pay_orani = f["giren_m2"] / toplam_giren_fonk_m2
                     else:
@@ -274,8 +268,7 @@ if st.session_state["parcel_db"]:
                     esas_m2 = toplam_brut_m2 * fonk_pay_orani
                     satilabilir_m2 = esas_m2 * 0.70 * f["kaks"] * emsal_artis_orani
                 else:
-                    # Terkli Parsel:
- mevcuttaki net giren m2 x KAKS x Emsal Artışı
+                    # Terkli Parsel: Mevcuttaki net giren m2 x KAKS x Emsal Artışı
                     esas_m2 = f["giren_m2"]
                     satilabilir_m2 = esas_m2 * f["kaks"] * emsal_artis_orani
                 
