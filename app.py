@@ -12,30 +12,31 @@ st.set_page_config(
 if "parcel_db" not in st.session_state:
     st.session_state["parcel_db"] = {}
 
-def clean_turkish_number(val_str):
+def parse_turkish_float(val_str):
     """
-    Türkçe sayı formatlarını (örn: 5.051,15 veya 762,54) float sayı tipine hatasız dönüştürür.
+    Beykoz imar PDF'lerindeki '5.051,15 m²' veya '%78.94' formatındaki 
+    sayıları hatasız şekilde float tipe çevirir.
     """
     if not val_str:
         return 0.0
-    # Sadece sayı, nokta ve virgülü tut
-    val_str = re.sub(r'[^\d\.,]', '', str(val_str)).strip()
-    if not val_str:
+    # İçindeki m², % ve boşlukları temizle
+    clean = re.sub(r'[^\d\.,]', '', str(val_str)).strip()
+    if not clean:
         return 0.0
     
-    # 5.051,15 -> 5051.15 dönüşümü
-    if "." in val_str and "," in val_str:
-        val_str = val_str.replace(".", "").replace(",", ".")
-    elif "," in val_str:
-        val_str = val_str.replace(",", ".")
-    elif "." in val_str:
-        # Binlik nokta kontrolü (örn: 5.051 -> 5051)
-        parts = val_str.split(".")
-        if len(parts) > 1 and len(parts[-1]) != 2:
-            val_str = val_str.replace(".", "")
+    # Metin hem nokta hem virgül içeriyorsa (Örn: 5.051,15)
+    if "." in clean and "," in clean:
+        clean = clean.replace(".", "").replace(",", ".")
+    elif "," in clean:
+        clean = clean.replace(",", ".")
+    elif "." in clean:
+        # Eğer noktadan sonra 3 hane varsa binlik ayracıdır (Örn: 6.398)
+        parts = clean.split(".")
+        if len(parts[-1]) == 3:
+            clean = clean.replace(".", "")
             
     try:
-        return float(val_str)
+        return float(clean)
     except ValueError:
         return 0.0
 
@@ -49,77 +50,84 @@ def parse_imar_pdf(uploaded_file):
     }
     
     with pdfplumber.open(uploaded_file) as pdf:
-        full_text = ""
-        for page in pdf.pages:
-            t = page.extract_text()
-            if t:
-                full_text += "\n" + t
-                
-        # 1. Mahalle, Ada, Parsel, Toplam Arsa Alanı Parsing
-        mah_m = re.search(r"Mahalle\s*\|\s*([A-ZÇĞİÖŞÜa-zçğıöşü]+)", full_text)
-        ada_m = re.search(r"Ada\s*\|\s*(\d+)", full_text)
-        par_m = re.search(r"Parsel\s*\|\s*(\d+)", full_text)
-        alan_m = re.search(r"Alan\s*\*?\s*\|\s*([\d\.,]+)\s*m²", full_text)
-        
-        if mah_m: parcel_data["mahalle"] = mah_m.group(1).upper()
-        if ada_m: parcel_data["ada"] = ada_m.group(1)
-        if par_m: parcel_data["parsel"] = par_m.group(1)
-        if alan_m: parcel_data["toplam_alan"] = clean_turkish_number(alan_m.group(1))
-
-        # 2. Sayfa Sayfa Tablo Analizi (Multi-Zone & Dynamic KAKS/TAKS)
         for page in pdf.pages:
             tables = page.extract_tables()
             for table in tables:
-                table_text = " ".join([" ".join([str(c) for c in row if c]) for row in table])
-                
-                if "Fonksiyon Adı" in table_text:
-                    fonk_adi = ""
-                    taks_val = 0.30
-                    kaks_val = 0.40
-                    giren_m2 = parcel_data["toplam_alan"]
+                for row_idx, row in enumerate(table):
+                    cells = [str(c).strip().replace('\n', ' ') if c is not None else '' for c in row]
                     
-                    for row in table:
-                        row_str = " ".join([str(c) for c in row if c])
-                        
-                        # Fonksiyon Adı Çekimi
-                        if "Fonksiyon Adı" in row_str:
-                            for c in row:
-                                clean_c = str(c).strip()
-                                if clean_c and "Fonksiyon Adı" not in clean_c and clean_c != "|":
-                                    fonk_adi = clean_c
-                                    break
-                        
-                        # TAKS / KAKS Çekimi
-                        taks_m = re.search(r"Taks\s*\|?\s*([\d\.]+)", row_str, re.IGNORECASE)
-                        kaks_m = re.search(r"Kaks\s*\(Emsal\)\s*\|?\s*([\d\.]+)", row_str, re.IGNORECASE)
-                        if taks_m: taks_val = float(taks_m.group(1))
-                        if kaks_m: kaks_val = float(kaks_m.group(1))
-                        
-                        # Fonksiyon Alanı M2 Çekimi (örn: %78.94 - 5.051,15 m² veya 762,54 m²)
-                        if "m²" in row_str or "Fonksiyon Alanına" in row_str:
-                            m2_m = re.search(r"([\d\.,]+)\s*m²", row_str)
-                            if m2_m:
-                                giren_m2 = clean_turkish_number(m2_m.group(1))
-                    
-                    if fonk_adi and not any(f['fonksiyon_adi'] == fonk_adi for f in parcel_data["fonksiyonlar"]):
-                        parcel_data["fonksiyonlar"].append({
-                            "fonksiyon_adi": fonk_adi,
-                            "taks": taks_val,
-                            "kaks": kaks_val,
-                            "giren_m2": giren_m2
-                        })
+                    # 1. Başlık Hücrelerinden Mahalle / Ada / Parsel / Alan Okuma
+                    if any("Mahalle" in c for c in cells) and any("Ada" in c for c in cells):
+                        if row_idx + 1 < len(table):
+                            val_row = [str(c).strip().replace('\n', ' ') if c is not None else '' for c in table[row_idx + 1]]
+                            for idx, head in enumerate(cells):
+                                if idx < len(val_row):
+                                    val = val_row[idx]
+                                    if "Mahalle" in head and val and val.upper() != "MAHALLE":
+                                        parcel_data["mahalle"] = val.upper()
+                                    elif "Ada" in head and val and val.upper() != "ADA":
+                                        parcel_data["ada"] = val
+                                    elif "Parsel" in head and val and val.upper() != "PARSEL":
+                                        parcel_data["parsel"] = val
+                                    elif "Alan" in head and val and "m²" in val:
+                                        parcel_data["toplam_alan"] = parse_turkish_float(val)
 
-    if not parcel_data["fonksiyonlar"]:
-        parcel_data["fonksiyonlar"].append({
-            "fonksiyon_adi": "KONUT ALANI",
-            "taks": 0.30,
-            "kaks": 0.40,
-            "giren_m2": parcel_data["toplam_alan"]
-        })
+                    # 2. Fonksiyon Adı, TAKS, KAKS ve Fonksiyon Alanı Okuma
+                    row_str = " ".join(cells)
+                    if "Fonksiyon Adı" in row_str:
+                        fonk_name = ""
+                        taks_val = 0.30
+                        kaks_val = 0.40
+                        giren_m2 = parcel_data["toplam_alan"]
+
+                        # Alt satırlarda gezerek değerleri eşleştir
+                        for sub_idx in range(row_idx, min(row_idx + 6, len(table))):
+                            sub_cells = [str(c).strip().replace('\n', ' ') if c is not None else '' for c in table[sub_idx]]
+                            sub_str = " ".join(sub_cells)
+
+                            if "Fonksiyon Adı" in sub_str:
+                                for c in sub_cells:
+                                    if c and "Fonksiyon Adı" not in c and c != "|":
+                                        fonk_name = c
+                                        break
+
+                            t_m = re.search(r"Taks\s*\|?\s*([\d\.]+)", sub_str, re.IGNORECASE)
+                            k_m = re.search(r"Kaks\s*\(Emsal\)\s*\|?\s*([\d\.]+)", sub_str, re.IGNORECASE)
+                            if t_m: taks_val = parse_turkish_float(t_m.group(1))
+                            if k_m: kaks_val = parse_turkish_float(k_m.group(1))
+
+                            # Fonksiyon Alanına Giren m²
+                            if "m²" in sub_str or "%" in sub_str:
+                                m2_m = re.search(r"([\d\.,]+)\s*m²", sub_str)
+                                if m2_m:
+                                    giren_m2 = parse_turkish_float(m2_m.group(1))
+
+                        if fonk_name and not any(f["fonksiyon_adi"] == fonk_name for f in parcel_data["fonksiyonlar"]):
+                            parcel_data["fonksiyonlar"].append({
+                                "fonksiyon_adi": fonk_name,
+                                "taks": taks_val,
+                                "kaks": kaks_val,
+                                "giren_m2": giren_m2
+                            })
+
+    # Düz metin yedeği (Eğer tabloda başlık bulunamazsa)
+    if parcel_data["mahalle"] == "BİLİNMİYOR" or parcel_data["ada"] == "0":
+        with pdfplumber.open(uploaded_file) as pdf:
+            text = "\n".join([p.extract_text() or "" for p in pdf.pages])
+            m_m = re.search(r"Mahalle\s*\|\s*([A-ZÇĞİÖŞÜa-zçğıöşü]+)", text)
+            a_m = re.search(r"Ada\s*\|\s*(\d+)", text)
+            p_m = re.search(r"Parsel\s*\|\s*(\d+)", text)
+            al_m = re.search(r"Alan\s*\*?\s*\|\s*([\d\.,]+)\s*m²", text)
+            
+            if m_m: parcel_data["mahalle"] = m_m.group(1).upper()
+            if a_m: parcel_data["ada"] = a_m.group(1)
+            if p_m: parcel_data["parsel"] = p_m.group(1)
+            if al_m and parcel_data["toplam_alan"] == 0.0:
+                parcel_data["toplam_alan"] = parse_turkish_float(al_m.group(1))
 
     return parcel_data
 
-# --- APP UI ---
+# --- STREAMLIT ARAYÜZÜ ---
 st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK</h2>", unsafe_allow_html=True)
 st.markdown("<h4 style='text-align: center; color: #475569;'>İmar Durumu Analizi & Gayrimenkul Fizibilite Portalı</h4>", unsafe_allow_html=True)
 st.divider()
@@ -178,6 +186,7 @@ if st.session_state["parcel_db"]:
 
         for key, p in st.session_state["parcel_db"].items():
             for f in p["fonksiyonlar"]:
+                # Don't compute construction space for non-residential public zones
                 if any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                     satilabilir_m2 = 0.0
                 else:
