@@ -3,50 +3,69 @@ import pdfplumber
 import pandas as pd
 import re
 
-# Sayfa Yapılandırması
-st.set_page_config(page_title="İstestate & Meriç - İmar & Fizibilite Portalı", layout="wide")
+st.set_page_config(page_title="İstestate & Meriç - İmar Portalı", layout="wide")
 
 # ==========================================
-# 1. HASSAS PDF PARSER FONKSİYONU
+# GÜÇLENDİRİLMİŞ PDF AYRIŞTIRICI
 # ==========================================
 def parse_imar_pdf(pdf_file):
-    full_text = ""
+    mahalle, ada, parsel = "Bilinmiyor", "0", "0"
+    kaks, brut_alan = 0.40, 0.0
+
     with pdfplumber.open(pdf_file) as pdf:
         for page in pdf.pages:
-            text = page.extract_text()
-            if text:
-                full_text += text + "\n"
+            text = page.extract_text() or ""
+            
+            # 1. Metin İçi Taramalar
+            m_match = re.search(r'(YAVUZSELİM|ÇİFTLİK|GÖRELE|BAKLACI|ÇENGELDERE|FATİH|YAVUZ SELİM)', text, re.IGNORECASE)
+            if m_match:
+                mahalle = m_match.group(1).upper()
 
-    # Esnek Regex Kalıpları
-    mahalle_match = re.search(r'Mahalle\s*[\n\r]*\s*\|\s*([^\n\r\|]+)', full_text, re.IGNORECASE)
-    ada_match = re.search(r'Ada\s*[\n\r]*\s*\|\s*(\d+)', full_text, re.IGNORECASE)
-    parsel_match = re.search(r'Parsel\s*[\n\r]*\s*\|\s*(\d+)', full_text, re.IGNORECASE)
-    kaks_match = re.search(r'Kaks\s*\(Emsal\)\s*[\n\r]*\s*\|\s*([0-9\.]+)', full_text, re.IGNORECASE)
-    alan_match = re.search(r'Alan\s*\*?\s*[\n\r]*\s*\|\s*([\d\.,]+)\s*m²', full_text, re.IGNORECASE)
+            ada_match = re.search(r'Ada\s*[:\|]?\s*(\d+)', text, re.IGNORECASE)
+            if ada_match:
+                ada = ada_match.group(1)
 
-    # Alternatif Arama (Tablosuz Yapılar İçin)
-    if not kaks_match:
-        kaks_match = re.search(r'Kaks\s*\n?\s*([0-9\.]+)', full_text, re.IGNORECASE)
-    if not alan_match:
-        alan_match = re.search(r'([\d\.,]+)\s*m²', full_text, re.IGNORECASE)
+            parsel_match = re.search(r'Parsel\s*[:\|]?\s*(\d+)', text, re.IGNORECASE)
+            if parsel_match:
+                parsel = parsel_match.group(1)
 
-    # Verileri Süzme
-    mahalle = mahalle_match.group(1).strip() if mahalle_match else "Bilinmiyor"
-    ada = ada_match.group(1).strip() if ada_match else "0"
-    parsel = parsel_match.group(1).strip() if parsel_match else "0"
+            kaks_match = re.search(r'Kaks\s*\(Emsal\)\s*[:\|]?\s*([0-9\.]+)', text, re.IGNORECASE)
+            if kaks_match:
+                try:
+                    kaks = float(kaks_match.group(1))
+                except ValueError:
+                    pass
 
-    try:
-        kaks = float(kaks_match.group(1)) if kaks_match else 0.40
-    except (ValueError, AttributeError):
-        kaks = 0.40
+            # 2. Tablo Hücrelerinden Hassas Veri Çekme
+            tables = page.extract_tables()
+            for table in tables:
+                for row in table:
+                    row_str = " ".join([str(cell) for cell in row if cell])
+                    
+                    # Mahalle / Ada / Parsel / Alan Hücresi Taraması
+                    if "Mahalle" in row_str or "YAVUZSELİM" in row_str or "ÇİFTLİK" in row_str:
+                        for idx, cell in enumerate(row):
+                            if cell and any(m in str(cell).upper() for m in ["YAVUZSELİM", "ÇİFTLİK", "GÖRELE", "BAKLACI", "ÇENGELDERE", "FATİH"]):
+                                mahalle = str(cell).strip().upper()
+                    
+                    if "Alan" in row_str or "m²" in row_str:
+                        alan_find = re.search(r'([\d\.,]+)\s*m²', row_str)
+                        if alan_find:
+                            val = alan_find.group(1).replace('.', '').replace(',', '.')
+                            try:
+                                brut_alan = float(val)
+                            except ValueError:
+                                pass
 
-    brut_alan = 0.0
-    if alan_match:
-        alan_str = alan_match.group(1).replace('.', '').replace(',', '.')
-        try:
-            brut_alan = float(alan_str)
-        except ValueError:
-            brut_alan = 0.0
+            # Metin İçinde Alan Araması (Yedek)
+            if brut_alan == 0.0:
+                alan_find = re.search(r'([\d\.,]+)\s*m²', text)
+                if alan_find:
+                    val = alan_find.group(1).replace('.', '').replace(',', '.')
+                    try:
+                        brut_alan = float(val)
+                    except ValueError:
+                        pass
 
     return {
         "Mahalle": mahalle,
@@ -57,7 +76,7 @@ def parse_imar_pdf(pdf_file):
     }
 
 # ==========================================
-# 2. YAN PANEL (SIDEBAR) & HESAPLAMA AYARLARI
+# YAN PANEL (SIDEBAR)
 # ==========================================
 st.sidebar.title("🌐 Canlı Piyasalar & İmar Paneli")
 
@@ -74,7 +93,7 @@ if "pdf_data_store" not in st.session_state:
     st.session_state["pdf_data_store"] = {}
 
 # ==========================================
-# 3. ANA SAYFA & PDF YÜKLEME
+# ANA SAYFA
 # ==========================================
 st.title("🏢 İstestate & Meriç - İmar & Fizibilite Portalı")
 
@@ -89,13 +108,13 @@ if uploaded_files:
         brut_alan = parsed_info["Brut_Alan"]
         kaks = parsed_info["KAKS"]
         
-        # Terk Formülü Mantığı
+        # Formül Mantığı
         if terk_yapilmis:
             net_alan = brut_alan
-            brut_insaat = net_alan * kaks * 1.3
+            brut_insaat = net_alan * kaks * 1.30
         else:
             net_alan = brut_alan * 0.70
-            brut_insaat = brut_alan * 0.70 * kaks * 1.3
+            brut_insaat = brut_alan * 0.70 * kaks * 1.30
 
         st.session_state["pdf_data_store"][rapor_id] = {
             "Rapor_ID": rapor_id,
@@ -110,7 +129,7 @@ if uploaded_files:
         }
 
 # ==========================================
-# 4. İMAR RAPOR BELLEĞİ TABLOSU
+# İMAR RAPOR BELLEĞİ & FİZİBİLİTE
 # ==========================================
 st.subheader("📊 İmar Rapor Belleği")
 
@@ -118,15 +137,11 @@ if st.session_state["pdf_data_store"]:
     df_bellek = pd.DataFrame(list(st.session_state["pdf_data_store"].values()))
     st.dataframe(df_bellek, use_container_width=True)
 
-    # ==========================================
-    # 5. SEÇİLİ PARSEL ANALİZİ VE FİNANSAL FİZİBİLİTE
-    # ==========================================
     st.markdown("---")
     st.subheader("⚙️ İşlenecek Raporu Seçin")
     
     rapor_listesi = list(st.session_state["pdf_data_store"].keys())
     secilen_id = st.selectbox("Rapor Seçin", options=rapor_listesi)
-    
     secilen_data = st.session_state["pdf_data_store"][secilen_id]
     
     st.markdown(f"### 📍 Seçili Parsel Analizi: Beykoz / {secilen_data['Mahalle']} - Ada: {secilen_data['Ada']} Parsel: {secilen_data['Parsel']}")
@@ -175,6 +190,5 @@ if st.session_state["pdf_data_store"]:
     }
     
     st.table(pd.DataFrame(finansal_data))
-
 else:
     st.info("Lütfen analiz etmek için yukarıdaki alandan bir veya birden fazla imar PDF dosyası yükleyin.")
