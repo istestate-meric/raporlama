@@ -7,12 +7,9 @@ import re
 st.set_page_config(page_title="İstestate & Meriç - İmar & Fizibilite Portalı", layout="wide")
 
 # ==========================================
-# 1. PDF PARSER FONKSİYONU
+# 1. HASSAS PDF PARSER FONKSİYONU
 # ==========================================
 def parse_imar_pdf(pdf_file):
-    """
-    Yüklenen PDF dosyasından Mahalle, Ada, Parsel, KAKS ve Alan bilgilerini Regex ile çeker.
-    """
     full_text = ""
     with pdfplumber.open(pdf_file) as pdf:
         for page in pdf.pages:
@@ -20,31 +17,36 @@ def parse_imar_pdf(pdf_file):
             if text:
                 full_text += text + "\n"
 
-    # Regex Desenleri
-    mahalle_match = re.search(r'Mahalle\s*\n?\s*\|\s*([A-ZÇĞİÖŞÜa-zçğıöşü]+)', full_text)
-    ada_match = re.search(r'Ada\s*\n?\s*\|\s*(\d+)', full_text)
-    parsel_match = re.search(r'Parsel\s*\n?\s*\|\s*(\d+)', full_text)
-    kaks_match = re.search(r'Kaks\s*\(Emsal\)\s*\n?\s*([0-9\.]+)', full_text)
-    alan_match = re.search(r'Alan\s*\*\s*\n?\s*([\d\.,]+)\s*m²', full_text)
+    # Esnek Regex Kalıpları
+    mahalle_match = re.search(r'Mahalle\s*[\n\r]*\s*\|\s*([^\n\r\|]+)', full_text, re.IGNORECASE)
+    ada_match = re.search(r'Ada\s*[\n\r]*\s*\|\s*(\d+)', full_text, re.IGNORECASE)
+    parsel_match = re.search(r'Parsel\s*[\n\r]*\s*\|\s*(\d+)', full_text, re.IGNORECASE)
+    kaks_match = re.search(r'Kaks\s*\(Emsal\)\s*[\n\r]*\s*\|\s*([0-9\.]+)', full_text, re.IGNORECASE)
+    alan_match = re.search(r'Alan\s*\*?\s*[\n\r]*\s*\|\s*([\d\.,]+)\s*m²', full_text, re.IGNORECASE)
+
+    # Alternatif Arama (Tablosuz Yapılar İçin)
+    if not kaks_match:
+        kaks_match = re.search(r'Kaks\s*\n?\s*([0-9\.]+)', full_text, re.IGNORECASE)
+    if not alan_match:
+        alan_match = re.search(r'([\d\.,]+)\s*m²', full_text, re.IGNORECASE)
 
     # Verileri Süzme
     mahalle = mahalle_match.group(1).strip() if mahalle_match else "Bilinmiyor"
     ada = ada_match.group(1).strip() if ada_match else "0"
     parsel = parsel_match.group(1).strip() if parsel_match else "0"
-    
-    try:
-        kaks = float(kaks_match.group(1)) if kaks_match else 0.30
-    except ValueError:
-        kaks = 0.30
 
+    try:
+        kaks = float(kaks_match.group(1)) if kaks_match else 0.40
+    except (ValueError, AttributeError):
+        kaks = 0.40
+
+    brut_alan = 0.0
     if alan_match:
         alan_str = alan_match.group(1).replace('.', '').replace(',', '.')
         try:
             brut_alan = float(alan_str)
         except ValueError:
             brut_alan = 0.0
-    else:
-        brut_alan = 0.0
 
     return {
         "Mahalle": mahalle,
@@ -59,7 +61,6 @@ def parse_imar_pdf(pdf_file):
 # ==========================================
 st.sidebar.title("🌐 Canlı Piyasalar & İmar Paneli")
 
-# Terk Durumu Seçimi
 terk_yapilmis = st.sidebar.checkbox("Terk İşlemi Yapılmış (DOP Kesintisiz Net)", value=False)
 terk_durumu_str = "Terkli (Net)" if terk_yapilmis else "Terksiz (Brüt)"
 
@@ -69,7 +70,6 @@ if st.sidebar.button("🗑️ Belleği Sıfırla"):
     st.session_state["pdf_data_store"] = {}
     st.rerun()
 
-# Session State Başlatma
 if "pdf_data_store" not in st.session_state:
     st.session_state["pdf_data_store"] = {}
 
@@ -82,16 +82,14 @@ uploaded_files = st.file_uploader("PDF İmar Raporlarını Yükleyin", type=["pd
 
 if uploaded_files:
     for pdf_file in uploaded_files:
-        # Dosyayı ayrıştır
         parsed_info = parse_imar_pdf(pdf_file)
         
-        # Benzersiz Rapor ID (Örn: 1617_13)
         rapor_id = f"{parsed_info['Ada']}_{parsed_info['Parsel']}"
         
-        # Terk durumuna göre alan ve inşaat hakkı hesaplama
         brut_alan = parsed_info["Brut_Alan"]
         kaks = parsed_info["KAKS"]
         
+        # Terk Formülü Mantığı
         if terk_yapilmis:
             net_alan = brut_alan
             brut_insaat = net_alan * kaks * 1.3
@@ -99,7 +97,6 @@ if uploaded_files:
             net_alan = brut_alan * 0.70
             brut_insaat = brut_alan * 0.70 * kaks * 1.3
 
-        # Belleğe Kaydetme
         st.session_state["pdf_data_store"][rapor_id] = {
             "Rapor_ID": rapor_id,
             "Mahalle": parsed_info["Mahalle"],
@@ -120,7 +117,7 @@ st.subheader("📊 İmar Rapor Belleği")
 if st.session_state["pdf_data_store"]:
     df_bellek = pd.DataFrame(list(st.session_state["pdf_data_store"].values()))
     st.dataframe(df_bellek, use_container_width=True)
-    
+
     # ==========================================
     # 5. SEÇİLİ PARSEL ANALİZİ VE FİNANSAL FİZİBİLİTE
     # ==========================================
@@ -139,7 +136,7 @@ if st.session_state["pdf_data_store"]:
     col2.metric("Emsal (KAKS)", f"{secilen_data['KAKS']:.2f}")
     col3.metric("Hesaplanan Net Alan", f"{secilen_data['Net_Alan']:,.2f} m²")
     col4.metric("Brüt İnşaat Hakkı", f"{secilen_data['Brut_Insaat']:,.2f} m²")
-    
+
     st.markdown("---")
     st.subheader("💰 Finansal Fizibilite ve Kar-Zarar Analizi")
     
@@ -147,7 +144,6 @@ if st.session_state["pdf_data_store"]:
     birim_maliyet = col_maliyet.number_input("Birim İnşaat Maliyeti (TL/m²)", value=38000.0, step=1000.0)
     birim_satis = col_satis.number_input("Birim Satış Fiyatı (TL/m²)", value=145000.0, step=5000.0)
     
-    # Hesaplamalar
     toplam_insaat_alani = secilen_data["Brut_Insaat"]
     muteahhit_payi_m2 = toplam_insaat_alani * ((100 - kat_karsiligi_orani) / 100)
     arsa_sahibi_payi_m2 = toplam_insaat_alani * (kat_karsiligi_orani / 100)
@@ -157,7 +153,6 @@ if st.session_state["pdf_data_store"]:
     net_kar = toplam_ciro - toplam_maliyet
     kar_marji = (net_kar / toplam_ciro * 100) if toplam_ciro > 0 else 0
     
-    # Finansal Tablo
     finansal_data = {
         "Kalem": [
             "Toplam Brüt İnşaat Alanı",
