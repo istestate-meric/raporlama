@@ -17,17 +17,13 @@ import requests
 import xml.etree.ElementTree as ET
 import streamlit as st
 
-from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-
 st.set_page_config(
     page_title="İstestate & Meriç - İmar & Fizibilite Portalı",
     page_icon="🏢",
     layout="wide"
 )
 
+# OTURUM BELLEĞİ VE SIFIRLAMA
 if "imar_bellek" not in st.session_state:
     st.session_state["imar_bellek"] = []
 
@@ -85,7 +81,6 @@ def pdf_imar_analiz_et(uploaded_file, terk_yapildi_mi=False):
         st.error(f"PDF Okuma hatası: {e}")
         return None
 
-    # Ada, Parsel ve Mahalle Tespiti
     mahalle = "Yavuzselim" if "YAVUZSELİM" in tam_metin.upper() else "Beykoz"
     
     ada_match = re.search(r'Ada\s*[\|\:]?\s*(\d+)', tam_metin, re.IGNORECASE)
@@ -99,26 +94,24 @@ def pdf_imar_analiz_et(uploaded_file, terk_yapildi_mi=False):
     if alan_match:
         brut_alan = metin_sayi_cevir(alan_match.group(1))
     if brut_alan == 0.0:
-        brut_alan = 6398.86  # PDF Varsayılanı
+        brut_alan = 6398.86
 
-    # KAKS (Emsal) Ayıklama
     kaks_match = re.search(r'Kaks\s*\(Emsal\)\s*[\|\:]?\s*([\d\.\,]+)', tam_metin, re.IGNORECASE)
     kaks = metin_sayi_cevir(kaks_match.group(1)) if kaks_match else 0.40
 
-    # Konut Alanı Fonksiyon Oranı Tespiti
     konut_alan_match = re.search(r'KONUT ALANI.*?([\d\.\,]+)\s*m²', tam_metin, re.DOTALL)
     if konut_alan_match:
         efektif_alan = metin_sayi_cevir(konut_alan_match.group(1))
     else:
         efektif_alan = brut_alan
 
-    # DOĞRU HESAPLAMA MANTIĞI
+    # Formül Mantığı:
+    # Terksiz: Brüt x 0.70 x KAKS x 1.30
+    # Terkli: Net x KAKS x 1.30
     if terk_yapildi_mi:
-        # Terki Yapılmış: Net Arazi x KAKS x 1.3
         hesap_alani = efektif_alan
         brut_insaat = hesap_alani * kaks * 1.30
     else:
-        # Terki Yapılmamış: Brüt Arazi x 0.70 x KAKS x 1.3
         hesap_alani = efektif_alan * 0.70
         brut_insaat = efektif_alan * 0.70 * kaks * 1.30
 
@@ -136,9 +129,7 @@ def pdf_imar_analiz_et(uploaded_file, terk_yapildi_mi=False):
         "Dosya_Adı": uploaded_file.name
     }
 
-# UI KISMI
-st.title("🏢 İstestate & Meriç - İmar & Fizibilite Portalı")
-
+# YAN PANEL (SIDEBAR)
 st.sidebar.title("🌐 Canlı Piyasa & İmar Paneli")
 kurlar = canlı_doviz_kurlari_getir()
 st.sidebar.caption(f"Döviz Servisi: {kurlar['Durum']}")
@@ -147,26 +138,40 @@ st.sidebar.write(f"💵 **USD:** {kurlar['USD']:.2f} TL | 💶 **EUR:** {kurlar[
 para_birimi = st.sidebar.selectbox("💱 Rapor Para Birimi", ["TL", "USD", "EUR"], index=0)
 terk_durumu = st.sidebar.checkbox("✅ Terk İşlemi Yapılmış (Net Arazi)", value=False)
 
+if st.sidebar.button("🗑️ Belleği Temizle"):
+    st.session_state["imar_bellek"] = []
+    st.rerun()
+
+# ANA SAYFA
+st.title("🏢 İstestate & Meriç - İmar & Fizibilite Portalı")
+
 uploaded_pdfs = st.file_uploader("PDF İmar Raporlarını Yükleyin", type=["pdf"], accept_multiple_files=True)
 
 if uploaded_pdfs:
     for pdf in uploaded_pdfs:
         veri = pdf_imar_analiz_et(pdf, terk_yapildi_mi=terk_durumu)
-        if veri and not any(b['Dosya_Adı'] == veri['Dosya_Adı'] for b in st.session_state["imar_bellek"]):
+        if veri and not any(b.get('Dosya_Adı') == veri['Dosya_Adı'] for b in st.session_state["imar_bellek"]):
             st.session_state["imar_bellek"].append(veri)
 
 if st.session_state["imar_bellek"]:
     st.markdown("---")
     st.subheader("🗄️ İmar Rapor Belleği")
+    
     bellek_df = pd.DataFrame(st.session_state["imar_bellek"])
-    st.dataframe(bellek_df[['Rapor_ID', 'Mahalle', 'Ada', 'Parsel', 'Terk_Durumu', 'KAKS', 'Brut_Alan', 'Brut_Insaat']], use_container_width=True)
+    
+    # Hata önleyici güvenli sütun filtresi
+    beklenen_sutunlar = ['Rapor_ID', 'Mahalle', 'Ada', 'Parsel', 'Terk_Durumu', 'KAKS', 'Brut_Alan', 'Brut_Insaat']
+    mevcut_sutunlar = [c for c in beklenen_sutunlar if c in bellek_df.columns]
+    
+    st.dataframe(bellek_df[mevcut_sutunlar], use_container_width=True)
 
     secili_rapor_id = st.selectbox("İşlenecek Raporu Seçin", bellek_df['Rapor_ID'].tolist())
-    secili_veri = next(item for item in st.session_state["imar_bellek"] if item["Rapor_ID"] == secili_rapor_id)
+    secili_veri = next((item for item in st.session_state["imar_bellek"] if item["Rapor_ID"] == secili_rapor_id), None)
 
-    st.markdown(f"### 📍 Seçili Parsel: Beykoz / {secili_veri['Mahalle']} - Ada: {secili_veri['Ada']} Parsel: {secili_veri['Parsel']}")
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Arazi Tipi", secili_veri['Terk_Durumu'])
-    c2.metric("Emsal (KAKS)", f"{secili_veri['KAKS']:.2f}")
-    c3.metric("Efektif Konut Alanı", f"{fmt_tr(secili_veri['Efektif_Konut_Alani'])} m²")
-    c4.metric("Toplam Brüt İnşaat Hakkı", f"{fmt_tr(secili_veri['Brut_Insaat'])} m²")
+    if secili_veri and 'Brut_Insaat' in secili_veri:
+        st.markdown(f"### 📍 Seçili Parsel: Beykoz / {secili_veri['Mahalle']} - Ada: {secili_veri['Ada']} Parsel: {secili_veri['Parsel']}")
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Arazi Tipi", secili_veri.get('Terk_Durumu', '-'))
+        c2.metric("Emsal (KAKS)", f"{secili_veri.get('KAKS', 0):.2f}")
+        c3.metric("Efektif Konut Alanı", f"{fmt_tr(secili_veri.get('Efektif_Konut_Alani', 0))} m²")
+        c4.metric("Toplam Brüt İnşaat Hakkı", f"{fmt_tr(secili_veri.get('Brut_Insaat', 0))} m²")
