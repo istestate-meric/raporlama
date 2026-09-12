@@ -142,11 +142,12 @@ def parse_imar_pdf(uploaded_file):
                                     elif "Alan" in head and val:
                                         parcel_data["toplam_alan"] = parse_tr_float(val)
 
+                    # Fonksiyon tablosu satır bazlı tam eşleme ve ayıklama
                     if "Fonksiyon Adı" in row_str:
                         fonk_name = ""
                         taks_val = 0.30
                         kaks_val = 0.40
-                        giren_m2 = parcel_data["toplam_alan"]
+                        giren_m2 = 0.0
                         
                         for sub_idx in range(r_idx, min(r_idx + 5, len(table))):
                             sub_cells = [str(c).strip().replace('\n', ' ') if c is not None else '' for c in table[sub_idx]]
@@ -155,16 +156,16 @@ def parse_imar_pdf(uploaded_file):
                             if "Fonksiyon Adı" in sub_str:
                                 for c in sub_cells:
                                     if c and "Fonksiyon Adı" not in c and c != "|":
-                                        fonk_name = c
+                                        fonk_name = c.strip()
                                         break
                                         
-                            t_m = re.search(r"Taks\s*\|?\s*([\d\.]+)", sub_str, re.IGNORECASE)
-                            k_m = re.search(r"Kaks\s*\(Emsal\)\s*\|?\s*([\d\.]+)", sub_str, re.IGNORECASE)
+                            t_m = re.search(r"Taks\s*\|?\s*([\d\.,]+)", sub_str, re.IGNORECASE)
+                            k_m = re.search(r"Kaks\s*\(Emsal\)\s*\|?\s*([\d\.,]+)", sub_str, re.IGNORECASE)
                             if t_m: taks_val = parse_tr_float(t_m.group(1))
                             if k_m: kaks_val = parse_tr_float(k_m.group(1))
                             
-                            if "m²" in sub_str:
-                                m2_match = re.search(r"([\d\.,]+)\s*m²", sub_str)
+                            if "m²" in sub_str or "m2" in sub_str:
+                                m2_match = re.search(r"([\d\.,]+)\s*m²?", sub_str)
                                 if m2_match:
                                     giren_m2 = parse_tr_float(m2_match.group(1))
                         
@@ -173,7 +174,7 @@ def parse_imar_pdf(uploaded_file):
                                 "fonksiyon_adi": fonk_name,
                                 "taks": taks_val,
                                 "kaks": kaks_val,
-                                "giren_m2": giren_m2
+                                "giren_m2": giren_m2 if giren_m2 > 0 else parcel_data["toplam_alan"]
                             })
 
     if parcel_data["mahalle"] == "BİLİNMİYOR" or parcel_data["ada"] == "0":
@@ -231,8 +232,9 @@ if st.session_state["parcel_db"]:
             for f in p["fonksiyonlar"]:
                 table_rows.append({
                     "Parsel Bilgisi": key,
-                    "Arsa Alanı (m²)": f"{p['toplam_alan']:,.2f}",
+                    "Toplam Arsa Alanı (m²)": f"{p['toplam_alan']:,.2f}",
                     "Fonksiyon": f["fonksiyon_adi"],
+                    "Fonksiyon Alanı (m²)": f"{f['giren_m2']:,.2f}",
                     "TAKS": f"{f['taks']:.2f}",
                     "KAKS (Emsal)": f"{f['kaks']:.2f}",
                     "Terk Durumu": terk_lbl
@@ -240,7 +242,7 @@ if st.session_state["parcel_db"]:
         st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
 
     with tab2:
-        st.subheader("İnşaat Kapasite Hesabı Tablosu")
+        st.subheader("Çoklu Fonksiyon Destekli İnşaat Kapasite Hesabı")
         
         emsal_artis_orani = st.number_input("Genel Emsal Artış Katsayısı (Örn: 1.30)", value=1.30, step=0.05)
         st.markdown("---")
@@ -252,14 +254,28 @@ if st.session_state["parcel_db"]:
             toplam_brut_m2 = p["toplam_alan"]
             is_terkli = p["terk_yapilmis_mi"]
             
+            # Toplam giren fonksiyon alanlarının toplamı (Oran hesabı için)
+            toplam_giren_fonk_m2 = sum(f["giren_m2"] for f in p["fonksiyonlar"])
+            
             for f in p["fonksiyonlar"]:
+                # Kamu alanlarını inşaat hesabından muaf tut
                 if any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                     continue
                 
                 if not is_terkli:
-                    esas_m2 = toplam_brut_m2
+                    # Terksiz Parsel:
+                    # Çoklu fonksiyonda her fonksiyonun toplam fonksiyon alanındaki payı (oranı) bulunur.
+                    # Brüt Arsa bu oranla dağıtılarak terk düşülür (Brüt Arsa Payı x 0.70 x KAKS x Emsal Artışı)
+                    if toplam_giren_fonk_m2 > 0:
+                        fonk_pay_orani = f["giren_m2"] / toplam_giren_fonk_m2
+                    else:
+                        fonk_pay_orani = 1.0 / len(p["fonksiyonlar"])
+                        
+                    esas_m2 = toplam_brut_m2 * fonk_pay_orani
                     satilabilir_m2 = esas_m2 * 0.70 * f["kaks"] * emsal_artis_orani
                 else:
+                    # Terkli Parsel:
+ mevcuttaki net giren m2 x KAKS x Emsal Artışı
                     esas_m2 = f["giren_m2"]
                     satilabilir_m2 = esas_m2 * f["kaks"] * emsal_artis_orani
                 
