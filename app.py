@@ -478,9 +478,8 @@ if selected_keys:
             arsa_payi_orani = 0.0
             col_f3.info("ℹ️ Doğrudan Satılık modelinde arsa bedeli doğrudan yatırım maliyetine eklenir.")
 
-        # Maliyet hesabı: Toplam inşaat alanı (emsal + bodrum) zaten yapı maliyetine dahildir (Tekrar maliyet bindirilmez)
-        toplam_insaat_maliyet_alani = yasal_max_emsal_alani + simulated_bodrum_alani
-        toplam_maliyet_usd = (toplam_insaat_maliyet_alani * birim_maliyet) + arsa_bonus_usd
+        # DÜZELTME: İnşaat maliyeti mükerrer olmaması için sadece yasal emsal alanı üzerinden hesaplanır (Bodrum maliyeti ana maliyetin içinde kabul edilir)
+        toplam_maliyet_usd = (yasal_max_emsal_alani * birim_maliyet) + arsa_bonus_usd
         
         # Ciro hesabı: Normal emsal alanı cirosu + Proje tipine göre otomatik hesaplanan iskontolu bodrum alanı cirosu
         normal_ciro = yasal_max_emsal_alani * birim_satis
