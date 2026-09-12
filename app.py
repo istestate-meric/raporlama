@@ -237,14 +237,31 @@ def parse_imar_pdf(uploaded_file):
     parcel_data["terk_yapilmis_mi"] = detect_terk_status(full_text, parcel_data["toplam_alan"], parcel_data["fonksiyonlar"])
     return parcel_data
 
-# --- STREAMLIT ARAYÜZÜ & KURUMSAL LOGO YERLEŞİMİ ---
-col_logo1, col_logo2 = st.columns(2)
-with col_logo1:
-    if os.path.exists("istestate_logo.png"):
-        st.image("istestate_logo.png", width=320)
-with col_logo2:
-    if os.path.exists("meric_insaat_emlak_logo.png"):
-        st.image("meric_insaat_emlak_logo.png", width=320)
+# --- STREAMLIT ARAYÜZÜ & ÖZEL BANNER (LOGO ALANI) ---
+st.markdown("""
+    <style>
+    .logo-banner {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        margin-bottom: 20px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Banner konteyneri içinde logoları şık ve okunaklı gösterelim
+with st.container():
+    st.markdown('<div class="logo-banner">', unsafe_allow_html=True)
+    col_logo1, col_logo2 = st.columns(2)
+    with col_logo1:
+        if os.path.exists("istestate_logo.png"):
+            st.image("istestate_logo.png", width=340)
+    with col_logo2:
+        if os.path.exists("meric_insaat_emlak_logo.png"):
+            st.image("meric_insaat_emlak_logo.png", width=340)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK</h2>", unsafe_allow_html=True)
 st.markdown("<h4 style='text-align: center; color: #475569;'>Ada Bazlı Akıllı Fizibilite Portalı</h4>", unsafe_allow_html=True)
@@ -285,7 +302,6 @@ if all_db_keys:
     else:
         filtered_keys = []
 
-    # Eğer yeni dosya yüklendiyse varsayılan olarak onları seçili getirelim, aksi halde boş başlasın
     default_selection = just_uploaded_keys if just_uploaded_keys else []
 
     selected_keys = st.sidebar.multiselect(
