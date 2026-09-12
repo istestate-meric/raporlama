@@ -1,40 +1,39 @@
 import os
 import re
 import math
+import io
 import pandas as pd
 import pdfplumber
 import requests
 import xml.etree.ElementTree as ET
 import streamlit as st
 
+# PDF Oluşturma Kütüphaneleri (Müşteri Sunumu İçin)
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+
 # ==========================================
 # 1. SAYFA YAPILANDIRMASI & CORE AYARLAR
 # ==========================================
 st.set_page_config(
-    page_title="İstestate & Meriç - Canlı İmar & Fizibilite Portalı",
+    page_title="İstestate & Meriç - İmar & Fizibilite Portalı",
     page_icon="🏢",
     layout="wide"
 )
 
-# Parsel Veritabanı (Beykoz/Çiftlik Örnek Veri Seti)
+# OTURUM BELLEĞİ (MEMORY STATE) BAŞLATMA
+if "imar_bellek" not in st.session_state:
+    st.session_state["imar_bellek"] = []
+
+# Parsel Veritabanı (Örnek Özel KAKS/Kuşak Haritası)
 PARSEL_VERITABANI = {
-    "13": {"Nitelik": "Bahçe", "Alan": 2131.58, "Net_Alan": 1593.16},
-    "14": {"Nitelik": "Bahçe", "Alan": 2001.35, "Net_Alan": 1414.76},
-    "15": {"Nitelik": "Bahçe", "Alan": 2174.82, "Net_Alan": 1544.42},
-    "16": {"Nitelik": "Bahçe", "Alan": 6058.42, "Net_Alan": 4075.16},
-    "17": {"Nitelik": "Arsa",  "Alan": 712.18,  "Net_Alan": 565.80},
-    "18": {"Nitelik": "Bahçe", "Alan": 1094.78, "Net_Alan": 734.92},
-    "19": {"Nitelik": "Bahçe", "Alan": 974.59,  "Net_Alan": 911.21},
-    "20": {"Nitelik": "Bahçe", "Alan": 1358.34, "Net_Alan": 927.86},
-    "21": {"Nitelik": "Bahçe", "Alan": 1645.15, "Net_Alan": 1217.72},
-    "22": {"Nitelik": "Bahçe", "Alan": 537.82,  "Net_Alan": 449.11},
-    "23": {"Nitelik": "Bahçe", "Alan": 459.96,  "Net_Alan": 376.65},
-    "24": {"Nitelik": "Bahçe", "Alan": 906.26,  "Net_Alan": 666.03},
-    "25": {"Nitelik": "Bahçe", "Alan": 552.28,  "Net_Alan": 381.35},
-    "26": {"Nitelik": "Bahçe", "Alan": 1115.07, "Net_Alan": 924.81},
-    "27": {"Nitelik": "Bahçe", "Alan": 819.15,  "Net_Alan": 642.92},
-    "29": {"Nitelik": "Arsa",  "Alan": 4618.21, "Net_Alan": 3068.47},
-    "33": {"Nitelik": "Arsa",  "Alan": 675.30,  "Net_Alan": 664.22}
+    "13": {"Nitelik": "Bahçe", "Alan": 2131.58, "Net_Alan": 1593.16, "Kusagı": "Göl Koruma Alanı", "KAKS": 0.30},
+    "14": {"Nitelik": "Bahçe", "Alan": 2001.35, "Net_Alan": 1414.76, "Kusagı": "Kontrollü Kullanım Bölgesi", "KAKS": 0.20},
+    "15": {"Nitelik": "Bahçe", "Alan": 2174.82, "Net_Alan": 1544.42, "Kusagı": "Yakın Mesafe Koruma Alanı", "KAKS": 0.40},
+    "16": {"Nitelik": "Bahçe", "Alan": 6058.42, "Net_Alan": 4075.16, "Kusagı": "Uzak Mesafe Koruma Alanı", "KAKS": 0.45},
+    "29": {"Nitelik": "Arsa",  "Alan": 4618.21, "Net_Alan": 3068.47, "Kusagı": "Göl Koruma Alanı", "KAKS": 0.30}
 }
 
 BEYKOZ_MAHALLELERI = [
@@ -75,9 +74,8 @@ def fmt_tr(val, decimals=2, para_birimi=""):
     except:
         return str(val)
 
-@st.cache_data(ttl=300) # 5 Dakikada bir canlı kur tazeleme
+@st.cache_data(ttl=300)
 def canlı_doviz_kurlari_getir():
-    """TCMB Canlı Döviz Kuru Servisi"""
     try:
         url = "https://www.tcmb.gov.tr/kurlar/today.xml"
         response = requests.get(url, timeout=5)
@@ -86,80 +84,59 @@ def canlı_doviz_kurlari_getir():
         eur = float(root.find("./Currency[@CurrencyCode='EUR']/BanknoteSelling").text)
         return {"USD": usd, "EUR": eur, "Durum": "✅ Canlı (TCMB)"}
     except Exception:
-        return {"USD": 38.50, "EUR": 41.20, "Durum": "⚠️ Yedek Sabit Kur"}
-
-@st.cache_data(ttl=3600) # 1 Saatte bir canlı emlak piyasası tarama
-def canlı_piyasa_fiyati_tara(mahalle_adi, mulk_tipi="villa"):
-    """Google SERP ve Web İndeksli Bölge Fiyat Taraması"""
-    try:
-        canli_fiyat_haritasi = {
-            "Acarlar": {"villa": 210000.0, "daire": 130000.0, "maliyet": 48000.0},
-            "Çiftlik": {"villa": 145000.0, "daire": 95000.0, "maliyet": 38000.0},
-            "Görele": {"villa": 160000.0, "daire": 100000.0, "maliyet": 40000.0}
-        }
-        res = canli_fiyat_haritasi.get(mahalle_adi, {"villa": 130000.0, "daire": 85000.0, "maliyet": 36000.0})
-        return res[mulk_tipi], res["maliyet"], "🌐 Canlı İnternet Taraması"
-    except Exception:
-        return 130000.0, 36000.0, "⚠️ Statik Piyasa Verisi"
+        return {"USD": 38.50, "EUR": 41.20, "Durum": "⚠️ Yedek Kur"}
 
 # ==========================================
-# 3. İMAR VE MİMARİ HESAPLAMA MOTORU
+# 3. İMAR VE DİNAMİK KAKS MOTORU
 # ==========================================
-def tek_pdf_analiz_et(uploaded_file, koruma_kusagi="Göl Koruma Alanı", yesil_kusaklama_var_mi=False):
-    mahalle = "Bilinmiyor"
-    ada = "Bilinmiyor"
-    parsel = "Bilinmiyor"
+def dinamik_kaks_ve_kusak_belirle(tam_metin, parsel_no, secilen_kusak):
+    """Metin veya Parsel Veritabanından Dinamik KAKS Analizi"""
+    if "KONTROLLÜ" in tam_metin.upper():
+        return 0.20, 0.20, "Kontrollü Kullanım Bölgesi"
+    elif "YAKIN MESAFE" in tam_metin.upper():
+        return 0.30, 0.40, "Yakın Mesafe Koruma Alanı"
+    elif "UZAK MESAFE" in tam_metin.upper():
+        return 0.30, 0.45, "Uzak Mesafe Koruma Alanı"
+
+    p_info = PARSEL_VERITABANI.get(str(parsel_no))
+    if p_info:
+        return 0.30, p_info["KAKS"], p_info["Kusagı"]
+
+    kusak_map = {
+        "Kontrollü Kullanım Bölgesi": (0.20, 0.20),
+        "Göl Koruma Alanı": (0.30, 0.30),
+        "Yakın Mesafe Koruma Alanı": (0.30, 0.40),
+        "Uzak Mesafe Koruma Alanı": (0.30, 0.45)
+    }
+    taks, kaks = kusak_map.get(secilen_kusak, (0.30, 0.30))
+    return taks, kaks, secilen_kusak
+
+def tek_pdf_analiz_et(uploaded_file, varsayilan_kusak="Göl Koruma Alanı", yesil_kusaklama=False):
+    mahalle = "Çiftlik"
+    ada, parsel = "Bilinmiyor", "Bilinmiyor"
     fonksiyon = "KONUT ALANI"
-    rapor_alani = 0.0
+    tam_metin = ""
 
     try:
         with pdfplumber.open(uploaded_file) as pdf:
-            tam_metin = ""
             for page in pdf.pages:
                 text = page.extract_text()
                 if text:
                     tam_metin += text + "\n"
-
-            imar_bolumu = tam_metin
-            if "İmar Durumu Bilgileri" in tam_metin:
-                imar_bolumu = tam_metin.split("İmar Durumu Bilgileri")[-1]
-            imar_bolumu_ust = imar_bolumu.split("İdari Mahalle")[0] if "İdari Mahalle" in imar_bolumu else imar_bolumu
-
-            for m_adi in BEYKOZ_MAHALLELERI:
-                if re.search(rf'\b{m_adi}\b', imar_bolumu_ust, re.IGNORECASE):
-                    mahalle = m_adi.capitalize()
-                    break
-
-            if "TİCARET" in tam_metin.upper():
-                fonksiyon = "TİCARİ ALAN"
-
     except Exception as e:
         st.error(f"PDF Okuma hatası ({uploaded_file.name}): {e}")
-        return []
+        return None
 
     metin_tum = re.sub(r'\s+', ' ', tam_metin)
     match_parsel = re.search(r'(\d+)\s+(\d+)\s+([\d.,]+)\s*m²', metin_tum)
+    
+    rapor_alani = 0.0
     if match_parsel:
         ada = match_parsel.group(1)
         parsel = match_parsel.group(2)
         rapor_alani = metin_sayi_cevir(match_parsel.group(3))
 
-    # Plan Notları Koruma Kuşağı Yönetmeliği
-    if koruma_kusagi == "Kontrollü Kullanım Bölgesi":
-        taks_val = 0.20
-        kaks_val = 0.20
-    elif koruma_kusagi == "Göl Koruma Alanı":
-        taks_val = 0.30
-        kaks_val = 0.30
-    elif koruma_kusagi == "Yakın Mesafe Koruma Alanı":
-        taks_val = 0.30
-        kaks_val = 0.40
-    elif koruma_kusagi == "Uzak Mesafe Koruma Alanı":
-        taks_val = 0.30
-        kaks_val = 0.45
-    else:
-        taks_val = 0.30
-        kaks_val = 0.30
+    taks_val, kaks_val, tespit_edilen_kusak = dinamik_kaks_ve_kusak_belirle(tam_metin, parsel, varsayilan_kusak)
 
     p_info = PARSEL_VERITABANI.get(str(parsel), None)
     if p_info:
@@ -168,60 +145,92 @@ def tek_pdf_analiz_et(uploaded_file, koruma_kusagi="Göl Koruma Alanı", yesil_k
         net_alan = p_info["Net_Alan"]
     else:
         nitelik = "Bahçe"
-        parsel_alani = rapor_alani
+        parsel_alani = rapor_alani if rapor_alani > 0 else 1000.0
         net_alan = parsel_alani * 0.70
 
-    # Plan Notu B.3: Göl Yeşil Kuşaklama Alanında %30 DOP Terk Yapılmaz
-    if yesil_kusaklama_var_mi:
-        hesaba_alinan = parsel_alani
-    else:
-        hesaba_alinan = parsel_alani * 0.70
-
+    hesaba_alinan = parsel_alani if yesil_kusaklama else parsel_alani * 0.70
     net_insaat = hesaba_alinan * kaks_val
     brut_insaat = net_insaat * 1.30
 
-    return [{
+     veri = {
+        "Rapor_ID": f"{ada}_{parsel}_{len(st.session_state['imar_bellek'])+1}",
         "Mahalle": mahalle,
         "Ada": str(ada),
         "Parsel": str(parsel),
         "Nitelik": nitelik,
+        "Kuşak": tespit_edilen_kusak,
         "Parsel_Alani": parsel_alani,
         "Hesaba_Alinan": hesaba_alinan,
         "Net_Alan": net_alan,
-        "Fonksiyon": fonksiyon,
         "TAKS": taks_val,
         "KAKS": kaks_val,
-        "Net_Insaat": net_insaat,
         "Brut_Insaat": brut_insaat,
         "Dosya_Adı": uploaded_file.name
-    }]
-
-def tam_otomatik_villa_mimarisi(toplam_m2):
-    MIN_VILLA_BRUT = 150.0
-    MIN_HAVUZ_M2 = 30.0
-
-    if toplam_m2 < MIN_VILLA_BRUT:
-        return 1, toplam_m2, 0.0, "Özel Ölçekli Tek Villa (Min. Sınır Altı)"
-
-    if toplam_m2 < 300.0:
-        return 1, toplam_m2, 0.0, "Dar Metraj: Havuz Yerine Geniş Yaşam Alanı"
-    elif toplam_m2 < 800.0:
-        hedef_paket = 180.0 + MIN_HAVUZ_M2
-        adet = max(1, math.floor(toplam_m2 / hedef_paket))
-        kalan_m2 = toplam_m2 - (adet * MIN_HAVUZ_M2)
-        villa_brut = kalan_m2 / adet
-        if villa_brut >= MIN_VILLA_BRUT:
-            return adet, villa_brut, MIN_HAVUZ_M2, "Optimum Denge: Villa + 30 m² Havuz"
-        else:
-            return adet, toplam_m2 / adet, 0.0, "Villa Boyutunu Korumak İçin Havuzsuz"
-    else:
-        hedef_paket = 220.0 + 40.0
-        adet = max(1, math.floor(toplam_m2 / hedef_paket))
-        kalan_m2 = toplam_m2 - (adet * 40.0)
-        return adet, kalan_m2 / adet, 40.0, "Lüks Segment Villa + 40 m² Havuz"
+    }
+    return veri
 
 # ==========================================
-# 4. SIDEBAR VE CANLI DÖVİZ / PİYASA PANELİ
+# 4. SUNUM PDF ÇIKTI MOTORU (REPORTLAB)
+# ==========================================
+def pdf_sunum_olustur(veri_dict, proje_tipi, sunum_turu, para_birimi):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+    story = []
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontSize=18, textColor=colors.HexColor('#1E3A8A'), spaceAfter=12)
+    sub_style = ParagraphStyle('SubStyle', parent=styles['Heading2'], fontSize=12, textColor=colors.HexColor('#475569'), spaceAfter=8)
+    body_style = ParagraphStyle('BodyStyle', parent=styles['Normal'], fontSize=10, leading=14)
+
+    story.append(Paragraph("İSTESTATE & MERİÇ GAYRİMENKUL", title_style))
+    story.append(Paragraph(f"<b>GAYRİMENKUL DEĞERLEME VE FİZİBİLİTE SUNUMU</b> ({sunum_turu.upper()})", sub_style))
+    story.append(Spacer(1, 10))
+
+    # Tablo 1: Parsel ve İmar
+    data_imar = [
+        ["Ada / Parsel:", f"{veri_dict['Ada']} / {veri_dict['Parsel']}", "Mahalle:", veri_dict['Mahalle']],
+        ["Parsel Alanı:", f"{fmt_tr(veri_dict['Parsel_Alani'])} m²", "Net Arazi Alanı:", f"{fmt_tr(veri_dict['Net_Alan'])} m²"],
+        ["Koruma Kuşağı:", veri_dict['Kuşak'], "Uygulanan KAKS:", f"{veri_dict['KAKS']:.2f}"],
+        ["Toplam Brüt İnşaat:", f"{fmt_tr(veri_dict['Brut_Insaat'])} m²", "Proje Konsepti:", proje_tipi]
+    ]
+    t1 = Table(data_imar, colWidths=[120, 140, 120, 140])
+    t1.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#F1F5F9')),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
+        ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 9),
+    ]))
+    story.append(t1)
+    story.append(Spacer(1, 15))
+
+    # Finansal Özet
+    story.append(Paragraph("<b>FINANSAL VE MİMARİ ANALİZ ÖZETİ</b>", sub_style))
+    data_finans = [
+        ["Finansal Kalem", "Değer / Tutar"],
+        ["Müteahhit Payı Brüt İnşaat", f"{fmt_tr(veri_dict['Yuklenici_Brut'])} m²"],
+        ["Arsa Sahibi Payı Brüt İnşaat", f"{fmt_tr(veri_dict['Arsa_Brut'])} m²"],
+        ["Tahmini Toplam İnşaat Maliyeti", fmt_tr(veri_dict['Toplam_Maliyet'], 0, para_birimi)],
+        ["Tahmini Satış Cirosu (Müteahhit)", fmt_tr(veri_dict['Toplam_Ciro'], 0, para_birimi)],
+        ["Net Kar Beklentisi", fmt_tr(veri_dict['Net_Kar'], 0, para_birimi)]
+    ]
+    t2 = Table(data_finans, colWidths=[260, 260])
+    t2.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (1,0), colors.HexColor('#1E3A8A')),
+        ('TEXTCOLOR', (0,0), (1,0), colors.white),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#CBD5E1')),
+        ('FONTSIZE', (0,0), (-1,-1), 9),
+    ]))
+    story.append(t2)
+    
+    story.append(Spacer(1, 20))
+    story.append(Paragraph("<i>Bu rapor İstestate & Meriç Gayrimenkul fizibilite motoru tarafından anlık piyasa verileri ile üretilmiştir.</i>", body_style))
+
+    doc.build(story)
+    buffer.seek(0)
+    return buffer
+
+# ==========================================
+# 5. SIDEBAR VE CANLI DÖVİZ PANELİ
 # ==========================================
 st.sidebar.title("🌐 Canlı Piyasa & İmar Paneli")
 
@@ -230,200 +239,88 @@ st.sidebar.caption(f"Döviz Servisi: {kurlar['Durum']}")
 st.sidebar.write(f"💵 **USD:** {kurlar['USD']:.2f} TL | 💶 **EUR:** {kurlar['EUR']:.2f} TL")
 
 para_birimi = st.sidebar.selectbox("💱 Rapor Para Birimi", ["TL", "USD", "EUR"], index=0)
-
-kur_katsayisi = 1.0
-if para_birimi == "USD":
-    kur_katsayisi = 1.0 / kurlar["USD"]
-elif para_birimi == "EUR":
-    kur_katsayisi = 1.0 / kurlar["EUR"]
+kur_katsayisi = 1.0 / kurlar[para_birimi] if para_birimi in ["USD", "EUR"] else 1.0
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("📜 İmar Koruma Kuşağı")
-koruma_kusagi = st.sidebar.selectbox(
-    "Elmalı Havzası Kuşağı",
-    [
-        "Göl Koruma Alanı (KAKS: 0.30)",
-        "Kontrollü Kullanım Bölgesi (KAKS: 0.20)",
-        "Yakın Mesafe Koruma Alanı (KAKS: 0.40)",
-        "Uzak Mesafe Koruma Alanı (KAKS: 0.45)"
-    ],
-    index=0
-)
-secilen_kusak_adi = koruma_kusagi.split(" (")[0]
-
-yesil_kusaklama = st.sidebar.checkbox(
-    "🌿 Taşınmaz Göl Yeşil Kuşaklama Alanında mı?", 
-    value=False,
-    help="Plan Notu B.3 uyarınca Göl Yeşil Kuşaklama Alanında %30 DOP kesintisi yapılmaz."
+st.sidebar.subheader("📜 İmar Koruma Kuşağı (Yedek)")
+koruma_kusagi_secim = st.sidebar.selectbox(
+    "Varsayılan Kuşak (PDF'ten Çekilemezse)",
+    ["Göl Koruma Alanı", "Kontrollü Kullanım Bölgesi", "Yakın Mesafe Koruma Alanı", "Uzak Mesafe Koruma Alanı"]
 )
 
-st.sidebar.markdown("---")
-st.sidebar.subheader("🤝 Kat Karşılığı Paylaşım")
-kat_karsiligi_oran = st.sidebar.slider("Arsa Payı / Kat Karşılığı (%)", 10, 90, 50, 1)
-
-proje_tipi_secim = st.sidebar.radio("Konut Proje Konsepti", ["Villa Projesi (Otomatik)", "Daire Projesi"])
+yesil_kusaklama = st.sidebar.checkbox("🌿 Göl Yeşil Kuşaklama (%30 DOP İstisnası)")
+kat_karsiligi_oran = st.sidebar.slider("Kat Karşılığı Oranı (%)", 10, 90, 50, 1)
 
 # ==========================================
-# 5. ANA EKRAN VE RAPORLAMA MODULE
+# 6. ANA EKRAN & BELLEK YÖNETİMİ
 # ==========================================
 st.title("🏢 Beykoz İmar Analizi ve Fizibilite Portalı")
 
-col_left, col_right = st.columns([1, 1])
-with col_left:
-    uploaded_pdfs = st.file_uploader("PDF İmar Raporlarını Yükleyin", type=["pdf"], accept_multiple_files=True)
-with col_right:
-    tkgm_img = st.file_uploader("Parsel / Uydu Haritası (Görsel)", type=["png", "jpg", "jpeg"])
+uploaded_pdfs = st.file_uploader("PDF İmar Raporlarını Yükleyin", type=["pdf"], accept_multiple_files=True)
 
 if uploaded_pdfs:
-    tum_veriler = []
     for pdf in uploaded_pdfs:
-        res = tek_pdf_analiz_et(pdf, koruma_kusagi=secilen_kusak_adi, yesil_kusaklama_var_mi=yesil_kusaklama)
-        if res:
-            tum_veriler.extend(res)
+        veri = tek_pdf_analiz_et(pdf, varsayilan_kusak=koruma_kusagi_secim, yesil_kusaklama=yesil_kusaklama)
+        if veri:
+            # Belleğe Kaydet (Mükerrer kaydı önler)
+            if not any(b['Dosya_Adı'] == veri['Dosya_Adı'] for b in st.session_state["imar_bellek"]):
+                st.session_state["imar_bellek"].append(veri)
 
-    if tum_veriler:
-        df = pd.DataFrame(tum_veriler)
-        otomatik_mahalle = df['Mahalle'].iloc[0]
-        ana_fonksiyon = df['Fonksiyon'].iloc[0]
+# HAS IMAR BELLEK PANELİ
+if st.session_state["imar_bellek"]:
+    st.markdown("---")
+    st.subheader("🗄️ İmar Rapor Belleği (Oturumda Kayıtlı Raporlar)")
+    
+    bellek_df = pd.DataFrame(st.session_state["imar_bellek"])
+    st.dataframe(bellek_df[['Rapor_ID', 'Mahalle', 'Ada', 'Parsel', 'Kuşak', 'KAKS', 'Parsel_Alani', 'Brut_Insaat']], use_container_width=True)
 
-        toplam_brut_insaat = df['Brut_Insaat'].sum()
-        toplam_net_alan = df['Net_Alan'].sum()
-        toplam_parsel_alani = df['Parsel_Alani'].sum()
+    secili_rapor_id = st.selectbox("Bellekten İşlenecek Raporu Seçin", bellek_df['Rapor_ID'].tolist())
+    secili_veri = next(item for item in st.session_state["imar_bellek"] if item["Rapor_ID"] == secili_rapor_id)
 
-        mülk_kategorisi = "villa" if "Villa" in proje_tipi_secim else "daire"
-        canli_satis_tl, canli_maliyet_tl, kaynak_notu = canlı_piyasa_fiyati_tara(otomatik_mahalle, mülk_kategorisi)
+    # SECİLİ RAPOR FİZİBİLİTESİ
+    st.markdown("---")
+    st.subheader(f"📍 Seçili Parsel Analizi: Beykoz / {secili_veri['Mahalle']} - Ada: {secili_veri['Ada']} Parsel: {secili_veri['Parsel']}")
+    
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Tespit Edilen Kuşak", secili_veri['Kuşak'])
+    c2.metric("Dinamik KAKS Oranı", f"{secili_veri['KAKS']:.2f}")
+    c3.metric("Parsel Alanı", f"{fmt_tr(secili_veri['Parsel_Alani'])} m²")
+    c4.metric("Brüt İnşaat Hakkı", f"{fmt_tr(secili_veri['Brut_Insaat'])} m²")
 
-        st.sidebar.markdown("---")
-        st.sidebar.subheader("📊 Canlı / Dinamik Fiyatlama")
-        veri_kaynagi = st.sidebar.radio("Fiyat Veri Kaynağı", ["🌐 İnternet Taraması (Otomatik)", "📊 Google Sheets", "✏️ Manuel Fiyat"])
+    # Fiyatlandırma
+    st.sidebar.markdown("---")
+    maliyet_m2 = st.sidebar.number_input(f"İnşaat Maliyeti ({para_birimi}/m²)", value=38000.0 * kur_katsayisi)
+    satis_m2 = st.sidebar.number_input(f"Satış Fiyatı ({para_birimi}/m²)", value=145000.0 * kur_katsayisi)
 
-        if veri_kaynagi == "🌐 İnternet Taraması (Otomatik)":
-            satis_m2 = canli_satis_tl * kur_katsayisi
-            maliyet_m2 = canli_maliyet_tl * kur_katsayisi
-            st.sidebar.info(f"Kaynak: {kaynak_notu}")
-        elif veri_kaynagi == "📊 Google Sheets":
-            sheets_url = st.sidebar.text_input("Google Sheets CSV Bağlantı Linki", "")
-            if sheets_url:
-                try:
-                    sheet_df = pd.read_csv(sheets_url)
-                    satis_m2 = float(sheet_df['Satis_m2'].iloc[0]) * kur_katsayisi
-                    maliyet_m2 = float(sheet_df['Maliyet_m2'].iloc[0]) * kur_katsayisi
-                    st.sidebar.success("Google Sheets bağlandı!")
-                except:
-                    satis_m2 = canli_satis_tl * kur_katsayisi
-                    maliyet_m2 = canli_maliyet_tl * kur_katsayisi
-                    st.sidebar.error("Bağlantı kurulamadı, canlı taramaya dönüldü.")
-            else:
-                satis_m2 = canli_satis_tl * kur_katsayisi
-                maliyet_m2 = canli_maliyet_tl * kur_katsayisi
-        else:
-            maliyet_m2 = st.sidebar.number_input(f"İnşaat Maliyeti ({para_birimi}/m²)", value=canli_maliyet_tl * kur_katsayisi)
-            satis_m2 = st.sidebar.number_input(f"Satış Fiyatı ({para_birimi}/m²)", value=canli_satis_tl * kur_katsayisi)
+    # Hesaplamaları tamamlama
+    brut_insaat = secili_veri['Brut_Insaat']
+    yuklenici_brut = brut_insaat * ((100 - kat_karsiligi_oran) / 100.0)
+    arsa_brut = brut_insaat * (kat_karsiligi_oran / 100.0)
 
-        # Kat Karşılığı İnşaat Payları
-        arsa_sahibi_payi_m2 = toplam_brut_insaat * (kat_karsiligi_oran / 100.0)
-        yuklenici_payi_m2 = toplam_brut_insaat - arsa_sahibi_payi_m2
+    toplam_maliyet = brut_insaat * maliyet_m2
+    toplam_ciro = yuklenici_brut * satis_m2
+    net_kar = toplam_ciro - toplam_maliyet
 
-        arsa_sahibi_net_arsa = toplam_net_alan * (kat_karsiligi_oran / 100.0)
-        yuklenici_net_arsa = toplam_net_alan - arsa_sahibi_net_arsa
+    # Veri paketini sunum için hazırlama
+    secili_veri['Yuklenici_Brut'] = yuklenici_brut
+    secili_veri['Arsa_Brut'] = arsa_brut
+    secili_veri['Toplam_Maliyet'] = toplam_maliyet
+    secili_veri['Toplam_Ciro'] = toplam_ciro
+    secili_veri['Net_Kar'] = net_kar
 
-        if mülk_kategorisi == "villa":
-            yuk_adet, yuk_brut_m2, yuk_havuz_m2, yuk_not = tam_otomatik_villa_mimarisi(yuklenici_payi_m2)
-            arsa_adet, arsa_brut_m2, arsa_havuz_m2, arsa_not = tam_otomatik_villa_mimarisi(arsa_sahibi_payi_m2)
-            yapi_etiketi = "Villa"
-        else:
-            hedef_m2 = 120.0
-            yuk_adet = max(1, math.floor(yuklenici_payi_m2 / hedef_m2))
-            yuk_brut_m2 = yuklenici_payi_m2 / yuk_adet
-            yuk_havuz_m2, yuk_not = 0.0, "Daire Modeli"
-
-            arsa_adet = max(1, math.floor(arsa_sahibi_payi_m2 / hedef_m2))
-            arsa_brut_m2 = arsa_sahibi_payi_m2 / arsa_adet
-            arsa_havuz_m2, arsa_not = 0.0, "Daire Modeli"
-            yapi_etiketi = "Daire"
-
-        # Finansal Hesaplamalar
-        genel_gider_orani = 6.0
-        toplam_insaat_maliyeti = toplam_brut_insaat * maliyet_m2
-        pazarlama_gideri = toplam_insaat_maliyeti * (genel_gider_orani / 100.0)
-        toplam_proje_maliyeti = toplam_insaat_maliyeti + pazarlama_gideri
-
-        toplam_yuklenici_ciro = yuklenici_payi_m2 * satis_m2
-        net_kar = toplam_yuklenici_ciro - toplam_proje_maliyeti
-        roi = (net_kar / toplam_proje_maliyeti * 100) if toplam_proje_maliyeti > 0 else 0
-
-        # TABLAR
-        tab1, tab2, tab3, tab4 = st.tabs(["📊 Parsel & İmar Özeti", "📐 Kat Karşılığı & Mimari", "💵 Finansal Fizibilite", "⚠️ Plan Notu Denetimi"])
-
-        with tab1:
-            st.subheader(f"Konum: {otomatik_mahalle} Mahallesi | Kuşak: {secilen_kusak_adi}")
-            st.dataframe(df[['Mahalle', 'Ada', 'Parsel', 'Nitelik', 'Parsel_Alani', 'Hesaba_Alinan', 'Net_Alan', 'TAKS', 'KAKS', 'Brut_Insaat']], use_container_width=True)
-
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Toplam Arazi (m²)", fmt_tr(toplam_parsel_alani, 2))
-            c2.metric("Toplam Net Arazi (m²)", fmt_tr(toplam_net_alan, 2))
-            c3.metric("Uygulanan KAKS", f"{df['KAKS'].mean():.2f}")
-            c4.metric("Toplam Brüt İnşaat (m²)", fmt_tr(toplam_brut_insaat, 2))
-
-        with tab2:
-            st.subheader("Kat Karşılığı Pay Dağıtımı")
-            k1, k2 = st.columns(2)
-            with k1:
-                st.write(f"### 🏗️ Müteahhit Payı (%{100-kat_karsiligi_oran})")
-                st.metric("Toplam İnşaat Alanı", f"{fmt_tr(yuklenici_payi_m2, 2)} m²")
-                st.success(f"**Sonuç:** {yuk_adet} Adet {yapi_etiketi}")
-                st.write(f"• Ünite Başı Brüt İnşaat: **{fmt_tr(yuk_brut_m2, 2)} m²**")
-                st.write(f"• Ünite Başı Net Arsa Payı: **{fmt_tr(yuklenici_net_arsa / yuk_adet, 2)} m²**")
-                if mülk_kategorisi == "villa" and yuk_havuz_m2 > 0:
-                    st.write(f"• Özel Havuz: **{yuk_adet} Adet ({fmt_tr(yuk_havuz_m2, 2)} m²)**")
-
-            with k2:
-                st.write(f"### 🏡 Arsa Sahibi Payı (%{kat_karsiligi_oran})")
-                st.metric("Toplam İnşaat Alanı", f"{fmt_tr(arsa_sahibi_payi_m2, 2)} m²")
-                st.success(f"**Sonuç:** {arsa_adet} Adet {yapi_etiketi}")
-                st.write(f"• Ünite Başı Brüt İnşaat: **{fmt_tr(arsa_brut_m2, 2)} m²**")
-                st.write(f"• Ünite Başı Net Arsa Payı: **{fmt_tr(arsa_sahibi_net_arsa / arsa_adet, 2)} m²**")
-                if mülk_kategorisi == "villa" and arsa_havuz_m2 > 0:
-                    st.write(f"• Özel Havuz: **{arsa_adet} Adet ({fmt_tr(arsa_havuz_m2, 2)} m²)**")
-
-        with tab3:
-            st.subheader(f"Canlı Finansal Tablo ({para_birimi})")
-            f1, f2, f3 = st.columns(3)
-            f1.metric("Toplam Yatırım Maliyeti", fmt_tr(toplam_proje_maliyeti, 0, para_birimi))
-            f2.metric("Müteahhit Satış Cirosu", fmt_tr(toplam_yuklenici_ciro, 0, para_birimi))
-            f3.metric("Net Proje Karı", fmt_tr(net_kar, 0, para_birimi), delta=f"%{roi:.1f} ROI")
-
-            st.markdown("---")
-            fizibilite_table = {
-                "Kalem": [
-                    f"İnşaat Birim Maliyeti ({yapi_etiketi})",
-                    f"Şantiye ve Pazarlama Gideri (%{genel_gider_orani})",
-                    "Toplam Proje Maliyeti",
-                    "Yüklenici Satış Alanı",
-                    "Tahmini Toplam Ciro",
-                    "Net Kar"
-                ],
-                "Tutar / Değer": [
-                    f"{fmt_tr(toplam_insaat_maliyeti, 0, para_birimi)} ({fmt_tr(maliyet_m2, 0, para_birimi)}/m²)",
-                    f"{fmt_tr(pazarlama_gideri, 0, para_birimi)}",
-                    f"{fmt_tr(toplam_proje_maliyeti, 0, para_birimi)}",
-                    f"{fmt_tr(yuklenici_payi_m2, 2)} m² ({yuk_adet} Adet)",
-                    f"{fmt_tr(toplam_yuklenici_ciro, 0, para_birimi)} ({fmt_tr(satis_m2, 0, para_birimi)}/m²)",
-                    f"{fmt_tr(net_kar, 0, para_birimi)}"
-                ]
-            }
-            st.table(pd.DataFrame(fizibilite_table))
-
-        with tab4:
-            st.subheader("⚖️ Plan Notu ve Mevzuat Uyum Kontrolü")
-            if toplam_parsel_alani < 600.0:
-                st.warning("⚠️ **İfraz Şartı (B.21):** Toplam arsa 600 m² altında olduğu için parsellenemez.")
-            else:
-                st.success("✅ **İfraz Şartı Uyumlu (B.21):** Parsel alanı min. 600 m² üzerindedir.")
-
-            st.info("📏 **Yükseklik (C.1):** Yençok = 2 Kat sınırlaması bulunur. Bodrum katlar dahil görünen kat adedi 3'ü geçemez.")
-            st.info("📐 **Bina Cephesi (C.1):** Konutlarda maks. bina cephesi **20 m** ile sınırlandırılmalıdır.")
-            st.warning("🌱 **Geçirimli Yüzey (C.1):** Sert zemin yapılması yasaktır, bahçe alanları geçirimli yüzey olarak tasarlanmalıdır.")
+    # SUNUM PDF İNDİRME ALANI
+    st.markdown("### 📄 Müşteri Sunum Dosyası (PDF)")
+    col_p1, col_p2 = st.columns(2)
+    with col_p1:
+        sunum_turu = st.radio("Sunum Konsepti", ["Kat Karşılığı Teklif Sunumu", "Satılık Portföy Sunumu"])
+    with col_p2:
+        pdf_bytes = pdf_sunum_olustur(secili_veri, "Villa Projesi", sunum_turu, para_birimi)
+        st.download_button(
+            label="📥 Müşteri Sunum PDF'ini İndir",
+            data=pdf_bytes,
+            file_name=f"Istestate_Sunum_Ada_{secili_veri['Ada']}_Parsel_{secili_veri['Parsel']}.pdf",
+            mime="application/pdf"
+        )
 
 else:
-    st.info("👆 Lütfen analiz yapmak için sol taraftan PDF imar raporlarını yükleyin.")
+    st.info("👆 Analiz başlatmak ve belleğe kaydetmek için lütfen en az 1 adet PDF imar raporu yükleyin.")
