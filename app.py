@@ -36,7 +36,6 @@ def get_live_exchange_rates():
                 
         return {"USD": usd_rate, "EUR": eur_rate}
     except Exception:
-        # Bağlantı hatası durumunda varsayılan kurlar
         return {"USD": 34.00, "EUR": 37.50}
 
 def parse_tr_float(val_str):
@@ -67,15 +66,12 @@ def parse_tr_float(val_str):
         return 0.0
 
 def detect_terk_status(text):
-    """
-    İmar belgesi genel hükümlerinden terk yapılıp yapılmadığını otomatik algılar.
-    """
     text_upper = text.upper()
     if "YOLA TERK VE KAMUYA AYRILAN KISIMLAR KAMU ELİNE GEÇMEDEN" in text_upper or "TERK YAPILMAMIŞ" in text_upper:
-        return False  # Terki Yapılmamış (Brüt)
+        return False
     elif "TERKİ YAPILMIŞTIR" in text_upper or "DOP TERKİ YAPILMIŞ" in text_upper:
-        return True   # Terki Yapılmış (Net)
-    return False     # Varsayılan: Terki Yapılmamış
+        return True
+    return False
 
 def parse_imar_pdf(uploaded_file):
     parcel_data = {
@@ -169,7 +165,6 @@ st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>İSTESTATE GAYRİME
 st.markdown("<h4 style='text-align: center; color: #475569;'>İmar Durumu Analizi & Gayrimenkul Fizibilite Portalı</h4>", unsafe_allow_html=True)
 st.divider()
 
-# Canlı Kur Bilgilerini Çek
 rates = get_live_exchange_rates()
 
 st.sidebar.header("📁 İmar Belgesi Yükleme")
@@ -218,7 +213,6 @@ if st.session_state["parcel_db"]:
     with tab2:
         st.subheader("İnşaat Kapasite Hesabı")
         
-        # Parsellerin otomatik terk durumunu genel kontrole aktar
         auto_terk_status = all(p["terk_yapilmis_mi"] for p in st.session_state["parcel_db"].values())
         
         col_c1, col_c2 = st.columns(2)
@@ -235,20 +229,26 @@ if st.session_state["parcel_db"]:
         calc_results = []
 
         for key, p in st.session_state["parcel_db"].items():
+            toplam_brut_m2 = p["toplam_alan"]
             for f in p["fonksiyonlar"]:
                 if any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                     satilabilir_m2 = 0.0
+                    esas_m2 = f["giren_m2"]
                 else:
                     if terk_durumu == "Terki Yapılmamış Arazi (Brüt)":
-                        satilabilir_m2 = f["giren_m2"] * 0.70 * f["kaks"] * emsal_artis_orani
+                        # Terki yapılmamış arazide hesap brüt arsa alanına göre yapılır
+                        esas_m2 = toplam_brut_m2
+                        satilabilir_m2 = esas_m2 * 0.70 * f["kaks"] * emsal_artis_orani
                     else:
-                        satilabilir_m2 = f["giren_m2"] * f["kaks"] * emsal_artis_orani
+                        # Terki yapılmış arazide hesap net fonksiyona giren alana göre yapılır
+                        esas_m2 = f["giren_m2"]
+                        satilabilir_m2 = esas_m2 * f["kaks"] * emsal_artis_orani
                 
                 total_inşaat_alani += satilabilir_m2
                 calc_results.append({
                     "Parsel": key,
                     "Fonksiyon": f["fonksiyon_adi"],
-                    "Esas Alan (m²)": f"{f['giren_m2']:,.2f}",
+                    "Hesaba Esas Alan (m²)": f"{esas_m2:,.2f}",
                     "Emsal (KAKS)": f["kaks"],
                     "Toplam İnşaat Alanı (m²)": f"{satilabilir_m2:,.2f}"
                 })
@@ -272,7 +272,6 @@ if st.session_state["parcel_db"]:
         mutaahhit_net_kar_usd = toplam_ciro_usd - toplam_maliyet_usd - arsa_sahibi_payi_usd
         roi = (mutaahhit_net_kar_usd / toplam_maliyet_usd * 100) if toplam_maliyet_usd > 0 else 0
         
-        # TL Karşılıkları
         toplam_ciro_tl = toplam_ciro_usd * rates['USD']
         toplam_maliyet_tl = toplam_maliyet_usd * rates['USD']
         mutaahhit_net_kar_tl = mutaahhit_net_kar_usd * rates['USD']
