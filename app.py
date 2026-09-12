@@ -354,9 +354,8 @@ if selected_keys:
 
     with tab3:
         st.subheader("🏛️ Mimari Fizibilite ve Bağımsız Bölüm Senaryoları")
-        st.info("ℹ️ Bu sekmede projenin bağımsız bölüm (villa/daire) sayısına göre ölçeklendirmesini, havuz dağılımını ve mimari kısıtları simüle edebilirsiniz.")
+        st.info("ℹ️ Bu sekmede projenin bağımsız bölüm (villa/daire) sayısına göre ölçeklendirmesini, havuz dağılımını ve bodrum kat entegrasyonunu simüle edebilirsiniz.")
         
-        # Hesaplama için toplam inşaat alanını alalım
         temp_total_insaat = 0.0
         for key, p in active_parcel_db.items():
             toplam_brut_m2 = p["toplam_alan"]
@@ -380,18 +379,20 @@ if selected_keys:
 
         ortalama_villa_alani = temp_total_insaat / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
         
+        # Bodrum alanı: Toplam emsal alanının yarısı (2 katlı yapı varsayımıyla her ünitenin taban alanına denk gelecek şekilde)
+        simulated_bodrum_alani = temp_total_insaat * 0.50
+        ortalama_bodrum_alani = simulated_bodrum_alani / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
+
         st.markdown("---")
         m_col1, m_col2, m_col3 = st.columns(3)
-        m_col1.metric("Ortalama Bağımsız Bölüm Alanı", f"{ortalama_villa_alani:,.2f} m²")
-        
-        havuz_durum_metin = "Dahil (Her villaya özel)" if "Özel" in havuz_tercihi else ("Ortak Havuz" if "Ortak" in havuz_tercihi else "İptal Edildi")
-        m_col2.metric("Havuz Planı Durumu", havuz_durum_metin)
+        m_col1.metric("Ortalama Ünite / Villa Alanı", f"{ortalama_villa_alani:,.2f} m²")
+        m_col2.metric("Ortalama Ünite Bodrum Alanı (%50)", f"{ortalama_bodrum_alani:,.2f} m²")
         
         risk_durumu = "⚠️ RİSKLİ (Çok küçük ölçek)" if ortalama_villa_alani < 120 and hedef_bagimsiz_bolum > 1 else "✅ Uygun Ölçek"
         m_col3.metric("Mimari Ölçek Uygunluğu", risk_durumu)
 
         if ortalama_villa_alani < 120 and hedef_bagimsiz_bolum > 1:
-            st.warning("⚠️ **Uyarı:** Bağımsız bölüm ortalama alanları 120 m² altına düşmektedir. Plan notları ve piyasa talepleri doğrultusunda villa boyutlarını korumak adına havuzdan vazgeçilebilir veya bağımsız bölüm adedi düşürülebilir.")
+            st.warning("⚠️ **Uyarı:** Bağımsız bölüm ortalama alanları 120 m² altına düşmektedir. Plan notları ve piyasa talepleri doğrultusunda villa boyutlarını korumak adına bağımsız bölüm adedini düşürebilirsiniz.")
         else:
             st.success("✅ Seçilen bağımsız bölüm sayısı mimari yerleşim ve konfor kriterlerine uygundur.")
 
@@ -402,9 +403,7 @@ if selected_keys:
         first_parcel = list(active_parcel_db.values())[0]
         detected_mahalle = first_parcel.get("mahalle", "VARSAYILAN").upper()
         
-        toplam_aktif_arsa_alani = sum(p["toplam_alan"] for p in active_parcel_db.values())
-        
-        st.markdown("### 🏢 İş Modeli, Otomatik Tam Bodrum ve Havuz Yapılandırması")
+        st.markdown("### 🏢 İş Modeli, Bodrum Kat ve Havuz Yapılandırması")
         
         col_m1, col_m2, col_m3 = st.columns(3)
         
@@ -435,24 +434,21 @@ if selected_keys:
             st.caption(f"📍 Referans Lokasyon: **{detected_mahalle}**")
             manual_override = st.checkbox("Özel / Manuel Fiyat Girişi Yap", value=False)
 
-        # Otomatik Bodrum ve Havuz Entegrasyonu
         st.markdown("---")
-        st.markdown("#### 🏊‍♂️ Otomatik Havuz ve 🏗️ Tam Bodrum Kat Planı Kuralları")
+        st.markdown("#### 🏊‍♂️ Havuz ve 🏗️ Bodrum Kat Hesap Kuralları (2 Katlı Yapı Mantığı)")
         
-        max_bodrum_siniri = toplam_aktif_arsa_alani * 0.50
-        
-        col_b1, col_b2, col_b3 = st.columns(3)
+        col_b1, col_b2 = st.columns(2)
         with col_b1:
-            otomatik_bodrum_aktif = st.checkbox("Her Yapının Altına Tam Bodrum Ekle (Max %50 Sınırı)", value=True)
+            otomatik_bodrum_aktif = st.checkbox("Bodrum Katlar Dahil Edilsin (Toplam Emsal Alanının Yarısı Kadar)", value=True)
         with col_b2:
             otomatik_havuz_aktif = st.checkbox("Her Villaya/Bölüme Havuz Ekle", value=True)
-        with col_b3:
-            havuz_birim_m2 = st.number_input("Standart Havuz Alanı (m²) [Emsale Dahil]", min_value=0.0, value=30.0, step=5.0)
 
-        # Hesaplamalar
-        bodrum_alani = max_bodrum_siniri if otomatik_bodrum_aktif else 0.0
-        
-        # Bodrum 120 cm kuralı
+        havuz_birim_m2 = st.number_input("Standart Havuz Alanı (m²) [Emsale Dahil]", min_value=0.0, value=30.0, step=5.0) if otomatik_havuz_aktif else 0.0
+
+        # Bodrum alanı emsal alanının yarısı olarak hesaplanır
+        bodrum_alani = (total_inşaat_alani * 0.50) if otomatik_bodrum_aktif else 0.0
+
+        # Plan notu gereği bodrum emsale dahil mi?
         bodrum_emsal_dahil_mi = False
         if otomatik_bodrum_aktif:
             bodrum_acikta_mi = st.checkbox("Bodrum katların herhangi bir cephesi tabi zemine göre 120 cm'den fazla mı açığa çıkıyor? (Evet ise Emsale Dahil, Hayır ise Emsal Dışı)", value=False)
@@ -460,12 +456,7 @@ if selected_keys:
                 bodrum_emsal_dahil_mi = True
                 st.info("ℹ️ Plan notu gereği 120 cm'den fazla açığa çıkan bodrum katlar emsale dahil edildi.")
             else:
-                st.info("ℹ️ Bodrum katlar 120 cm'den az açıkta olduğundan emsal dışı kabul edildi, maliyete zaten dahil edildi.")
-
-        # Havuz hesaplama (Emsal ve Maliyete dahil)
-        havuz_alani = havuz_birim_m2 if otomatik_havuz_aktif else 0.0
-        if otomatik_havuz_aktif:
-            st.info("ℹ️ Havuzlar plan kuralları gereği emsal alanına ve toplam maliyete otomatik olarak dahil edilmiştir.")
+                st.info("ℹ️ Bodrum katlar standart birim maliyetin içindedir; emsal dışı tutularak ciroya yazılmamıştır, maliyette ise mükerrer maliyet oluşmaması için ayrı ekstra inşaat kalemi açılmamıştır.")
 
         real_satis_usd, real_maliyet_usd = get_realistic_market_pricing(detected_mahalle, selected_proje_tipi, rates["USD"])
 
@@ -487,11 +478,13 @@ if selected_keys:
             arsa_payi_orani = 0.0
             col_f3.info("ℹ️ Doğrudan Satılık modelinde arsa bedeli doğrudan yatırım maliyetine eklenir.")
 
-        # Maliyet hesaplanırken toplam fiziksel inşaat alanı kullanılır (Bodrumlar inşaat birim maliyetinin içindedir, mükerrer maliyet yapılmaz)
-        toplam_emsal_dahil_alan = total_inşaat_alani + havuz_alani + (bodrum_alani if bodrum_emsal_dahil_mi else 0.0)
-        toplam_fiziksel_insaat_alani = total_inşaat_alani + havuz_alani + bodrum_alani
-
-        toplam_maliyet_usd = (toplam_fiziksel_insaat_alani * birim_maliyet) + arsa_bonus_usd
+        # Ciro hesabı (Emsal dahil alanlar)
+        toplam_emsal_dahil_alan = total_inşaat_alani + havuz_birim_m2 + (bodrum_alani if bodrum_emsal_dahil_mi else 0.0)
+        
+        # Maliyet hesabı: İnşaat birim maliyetleri bodrumu zaten kapsadığı için bodrum fiziksel alanı maliyete tekrar çarpım olarak eklenmez.
+        toplam_maliyet_fiziksel_alan = total_inşaat_alani + havuz_birim_m2
+        toplam_maliyet_usd = (toplam_maliyet_fiziksel_alan * birim_maliyet) + arsa_bonus_usd
+        
         toplam_ciro_usd = toplam_emsal_dahil_alan * birim_satis
         
         if "Kat Karşılığı" in is_modeli:
