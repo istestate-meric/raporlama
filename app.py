@@ -243,7 +243,9 @@ if st.session_state["parcel_db"]:
     with tab2:
         st.subheader("Çoklu Fonksiyon Destekli İnşaat Kapasite Hesabı")
         
-        emsal_artis_orani = st.number_input("Genel Emsal Artış Katsayısı (Örn: 1.30)", value=1.30, step=0.05)
+        # Emsal Artış Katsayısı Sabit 1.30 Olarak Ayarlandı
+        emsal_artis_orani = 1.30
+        st.info("ℹ️ İnşaat hesabı sabit **1.30 Genel Emsal Artış Katsayısı** ile yürütülmektedir.")
         st.markdown("---")
         
         total_inşaat_alani = 0.0
@@ -263,9 +265,7 @@ if st.session_state["parcel_db"]:
                     continue
                 
                 if not is_terkli:
-                    # Terki YAPILMAMIŞ Arazilerde:
-                    # Hesaba Esas Alan = Brüt Arsa Alanı x (Fonksiyonun Net İmar Pay Oranı)
-                    # İnşaat Alanı = Brüt Esas Alan x 0.70 x KAKS x Emsal Artışı (1.30)
+                    # Terki YAPILMAMIŞ Arazilerde: Brüt Arazi x 0.70 x KAKS x 1.30
                     if toplam_giren_fonk_m2 > 0:
                         fonk_pay_orani = f["giren_m2"] / toplam_giren_fonk_m2
                     else:
@@ -274,9 +274,7 @@ if st.session_state["parcel_db"]:
                     esas_m2 = toplam_brut_m2 * fonk_pay_orani
                     satilabilir_m2 = esas_m2 * 0.70 * f["kaks"] * emsal_artis_orani
                 else:
-                    # Terki YAPILMIŞ Arazilerde:
-                    # Hesaba Esas Alan = Net İmarlı Alan (DOP düşülmüş)
-                    # İnşaat Alanı = Net Alan x KAKS x Emsal Artışı (1.30) [0.70 ile çarpılmaz]
+                    # Terki YAPILMIŞ Arazilerde: Net Arazi x KAKS x 1.30
                     esas_m2 = f["giren_m2"]
                     satilabilir_m2 = esas_m2 * f["kaks"] * emsal_artis_orani
                 
