@@ -114,7 +114,6 @@ def dinamik_kaks_ve_kusak_belirle(tam_metin, parsel_no, secilen_kusak):
 def tek_pdf_analiz_et(uploaded_file, varsayilan_kusak="Göl Koruma Alanı", yesil_kusaklama=False):
     mahalle = "Çiftlik"
     ada, parsel = "Bilinmiyor", "Bilinmiyor"
-    fonksiyon = "KONUT ALANI"
     tam_metin = ""
 
     try:
@@ -152,7 +151,8 @@ def tek_pdf_analiz_et(uploaded_file, varsayilan_kusak="Göl Koruma Alanı", yesi
     net_insaat = hesaba_alinan * kaks_val
     brut_insaat = net_insaat * 1.30
 
-     veri = {
+    # HATA DÜZELTİLDİ: Girinti hizalaması yapıldı
+    veri = {
         "Rapor_ID": f"{ada}_{parsel}_{len(st.session_state['imar_bellek'])+1}",
         "Mahalle": mahalle,
         "Ada": str(ada),
