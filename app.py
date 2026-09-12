@@ -261,7 +261,6 @@ st.sidebar.subheader("🎯 Rapor İçin Parsel Seçimi")
 all_db_keys = list(st.session_state["parcel_db"].keys())
 
 if all_db_keys:
-    # Ada numaralarını doğru ve güvenli şekilde ayıkla
     unique_adas = sorted(list(set([str(p_data.get("ada", "0")).strip() for p_data in st.session_state["parcel_db"].values()])))
     
     selected_ada_filter = st.sidebar.selectbox("Ada Numarasına Göre Filtrele:", options=["Tümü"] + unique_adas)
@@ -269,7 +268,6 @@ if all_db_keys:
     if selected_ada_filter == "Tümü":
         filtered_keys = all_db_keys
     else:
-        # Seçilen ada numarasına uyan anahtarları güvenli şekilde filtrele
         filtered_keys = [
             k for k, p_data in st.session_state["parcel_db"].items() 
             if str(p_data.get("ada", "")).strip() == str(selected_ada_filter).strip()
@@ -403,13 +401,15 @@ if selected_keys:
             birim_maliyet = col_f1.number_input("İnşaat M² Maliyeti ($) [Piyasa]", value=float(real_maliyet_usd), disabled=True)
             birim_satis = col_f2.number_input("M² Satış Fiyatı ($) [Piyasa]", value=float(real_satis_usd), disabled=True)
 
+        arsa_bonus_usd = 0.0
         if "Kat Karşılığı" in is_modeli:
-            arsa_payi_orani = col_f3.slider("Arsa Sahibi Payı / Kat Karşılığı Oranı (%)", min_value=0, max_value=70, value=40)
+            arsa_payi_orani = col_f3.slider("Arsa Sahibi Payı / Kat Karşılığı Oranı (%)", min_value=0, max_value=70, value=50)
+            arsa_bonus_usd = st.number_input("💵 Arsa Sahibine Verilecek Nakit Bonus / İmza Parası ($)", min_value=0.0, value=0.0, step=10000.0, format="%.2f")
         else:
             arsa_payi_orani = 0.0
             col_f3.info("ℹ️ Doğrudan Satılık modelinde arsa bedeli doğrudan yatırım maliyetine eklenir.")
 
-        toplam_maliyet_usd = total_inşaat_alani * birim_maliyet
+        toplam_maliyet_usd = (total_inşaat_alani * birim_maliyet) + arsa_bonus_usd
         toplam_ciro_usd = total_inşaat_alani * birim_satis
         
         if "Kat Karşılığı" in is_modeli:
@@ -430,7 +430,7 @@ if selected_keys:
         
         f_col1, f_col2, f_col3, f_col4 = st.columns(4)
         f_col1.metric("Toplam Tahmini Ciro", f"${toplam_ciro_usd:,.2f}", f"₺{toplam_ciro_tl:,.2f}")
-        f_col2.metric("Toplam İnşaat Maliyeti", f"${toplam_maliyet_usd:,.2f}", f"₺{toplam_maliyet_tl:,.2f}")
+        f_col2.metric("Toplam İnşaat Maliyeti + Bonus", f"${toplam_maliyet_usd:,.2f}", f"₺{toplam_maliyet_tl:,.2f}")
         
         if "Kat Karşılığı" in is_modeli:
             f_col3.metric("Arsa Sahibi Payı", f"${arsa_sahibi_payi_usd:,.2f}")
