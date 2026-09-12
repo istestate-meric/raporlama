@@ -231,9 +231,9 @@ if st.session_state["parcel_db"]:
             for f in p["fonksiyonlar"]:
                 table_rows.append({
                     "Parsel Bilgisi": key,
-                    "Toplam Arsa Alanı (m²)": f"{p['toplam_alan']:,.2f}",
+                    "Brüt Arsa Alanı (m²)": f"{p['toplam_alan']:,.2f}",
                     "Fonksiyon": f["fonksiyon_adi"],
-                    "Fonksiyon Alanı (m²)": f"{f['giren_m2']:,.2f}",
+                    "İmarlı/Net Fonksiyon Alanı (m²)": f"{f['giren_m2']:,.2f}",
                     "TAKS": f"{f['taks']:.2f}",
                     "KAKS (Emsal)": f"{f['kaks']:.2f}",
                     "Terk Durumu": terk_lbl
@@ -253,13 +253,19 @@ if st.session_state["parcel_db"]:
             toplam_brut_m2 = p["toplam_alan"]
             is_terkli = p["terk_yapilmis_mi"]
             
-            toplam_giren_fonk_m2 = sum(f["giren_m2"] for f in p["fonksiyonlar"])
+            toplam_giren_fonk_m2 = sum(
+                f["giren_m2"] for f in p["fonksiyonlar"]
+                if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"])
+            )
             
             for f in p["fonksiyonlar"]:
                 if any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                     continue
                 
                 if not is_terkli:
+                    # Terki YAPILMAMIŞ Arazilerde:
+                    # Hesaba Esas Alan = Brüt Arsa Alanı x (Fonksiyonun Net İmar Pay Oranı)
+                    # İnşaat Alanı = Brüt Esas Alan x 0.70 x KAKS x Emsal Artışı (1.30)
                     if toplam_giren_fonk_m2 > 0:
                         fonk_pay_orani = f["giren_m2"] / toplam_giren_fonk_m2
                     else:
@@ -268,7 +274,9 @@ if st.session_state["parcel_db"]:
                     esas_m2 = toplam_brut_m2 * fonk_pay_orani
                     satilabilir_m2 = esas_m2 * 0.70 * f["kaks"] * emsal_artis_orani
                 else:
-                    # Terkli Parsel: Mevcuttaki net giren m2 x KAKS x Emsal Artışı
+                    # Terki YAPILMIŞ Arazilerde:
+                    # Hesaba Esas Alan = Net İmarlı Alan (DOP düşülmüş)
+                    # İnşaat Alanı = Net Alan x KAKS x Emsal Artışı (1.30) [0.70 ile çarpılmaz]
                     esas_m2 = f["giren_m2"]
                     satilabilir_m2 = esas_m2 * f["kaks"] * emsal_artis_orani
                 
@@ -276,7 +284,8 @@ if st.session_state["parcel_db"]:
                 calc_results.append({
                     "Parsel": key,
                     "Fonksiyon": f["fonksiyon_adi"],
-                    "Hesaba Esas Alan (m²)": f"{esas_m2:,.2f}",
+                    "Terk Durumu": "Terksiz (Brüt Üzerinden %70 Düşülür)" if not is_terkli else "Terkli (Net Üzerinden Birebir)",
+                    "Hesaba Esas Arsa Payı (m²)": f"{esas_m2:,.2f}",
                     "KAKS (Emsal)": f"{f['kaks']:.2f}",
                     "Toplam Satılabilir Net İnşaat (m²)": f"{satilabilir_m2:,.2f}"
                 })
