@@ -249,30 +249,42 @@ def get_base64_image(image_path):
 img1_base64 = get_base64_image("istestate_logo.png")
 img2_base64 = get_base64_image("meric_insaat_emlak_logo.png")
 
-# --- STREAMLIT ARAYÜZÜ & GARANTİLİ BEYAZ BANNER ALANI ---
+# --- STREAMLIT ARAYÜZÜ & PROFESYONEL KURUMSAL BANNER ALANI ---
 logo_html = f"""
     <div style="
-        background-color: #ffffff; 
-        border: 1px solid #cbd5e1; 
-        border-radius: 12px; 
-        padding: 20px; 
-        display: flex; 
-        justify-content: space-around; 
-        align-items: center; 
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        margin-bottom: 20px;">
-        <div style="text-align: center; flex: 1;">
-            <img src="data:image/png;base64,{img1_base64}" style="max-height: 90px; width: auto; object-fit: contain;" />
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 24px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+        margin-bottom: 25px;">
+        
+        <div style="text-align: center; flex: 1; display: flex; justify-content: center; align-items: center;">
+            <img src="data:image/png;base64,{img1_base64}" style="max-height: 85px; width: auto; object-fit: contain;" />
         </div>
-        <div style="text-align: center; flex: 1;">
-            <img src="data:image/png;base64,{img2_base64}" style="max-height: 90px; width: auto; object-fit: contain;" />
+        
+        <div style="width: 1px; height: 60px; background-color: #cbd5e1; margin: 0 20px;"></div>
+        
+        <div style="text-align: center; flex: 1; display: flex; justify-content: center; align-items: center;">
+            <img src="data:image/png;base64,{img2_base64}" style="max-height: 85px; width: auto; object-fit: contain;" />
         </div>
     </div>
 """
 st.markdown(logo_html, unsafe_allow_html=True)
 
-st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK</h2>", unsafe_allow_html=True)
-st.markdown("<h4 style='text-align: center; color: #64748b;'>Ada Bazlı Akıllı Fizibilite Portalı</h4>", unsafe_allow_html=True)
+st.markdown("""
+    <div style='text-align: center; margin-bottom: 30px;'>
+        <h1 style='color: #0f172a; font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px;'>
+            İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK
+        </h1>
+        <p style='color: #475569; font-size: 16px; font-weight: 500; margin: 0;'>
+            Ada Bazlı Akıllı Fizibilite ve Proje Kapasite Modülü
+        </p>
+    </div>
+""", unsafe_allow_html=True)
 st.divider()
 
 rates = get_live_exchange_rates()
