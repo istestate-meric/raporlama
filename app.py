@@ -350,7 +350,7 @@ if selected_keys:
                 })
 
         st.table(pd.DataFrame(calc_results))
-        st.metric(label="🏗️ Seçilen Parseller Toplamı: Satılabilir Net İnşaat Alanı (m²)", value=f"{total_inşaat_alani:,.2f} m²")
+        st.metric(label="🏗️ Seçilen Parseller Toplamı: Standart İnşaat Alanı (m²)", value=f"{total_inşaat_alani:,.2f} m²")
 
     with tab3:
         st.subheader("📑 Proje Raporlama & İş Modeli Fizibilitesi")
@@ -359,7 +359,10 @@ if selected_keys:
         first_parcel = list(active_parcel_db.values())[0]
         detected_mahalle = first_parcel.get("mahalle", "VARSAYILAN").upper()
         
-        st.markdown("### 🏢 İş Modeli ve Proje Tipi Yapılandırması")
+        # Seçilen parsellerin toplam arsa alanı (net/brüt ortalaması veya toplamı)
+        toplam_aktif_arsa_alani = sum(p["toplam_alan"] for p in active_parcel_db.values())
+        
+        st.markdown("### 🏢 İş Modeli, Bodrum Kat ve Havuz Yapılandırması")
         
         col_m1, col_m2, col_m3 = st.columns(3)
         
@@ -390,8 +393,40 @@ if selected_keys:
             st.caption(f"📍 Referans Lokasyon: **{detected_mahalle}**")
             manual_override = st.checkbox("Özel / Manuel Fiyat Girişi Yap", value=False)
 
+        # Bodrum ve Havuz Parametreleri
+        st.markdown("---")
+        st.markdown("#### 🏊‍♂️ Havuz ve 🏗️ Bodrum Kat Parametreleri (Plan Notları Kuralları)")
+        col_b1, col_b2, col_b3 = st.columns(3)
+        
+        with col_b1:
+            havuz_alani = st.number_input("Yüzme Havuzu Alanı (m²) [Emsale Dahil]", min_value=0.0, value=0.0, step=10.0)
+            
+        with col_b2:
+            bodrum_ekle = st.checkbox("Binaya 1 Kat Bodrum Ekle", value=True)
+            
+        bodrum_emsal_dahil_mi = False
+        bodrum_alani = 0.0
+        if bodrum_ekle:
+            max_bodrum_siniri = toplam_aktif_arsa_alani * 0.50
+            with col_b3:
+                bodrum_alani = st.number_input(
+                    f"Bodrum Kat Alanı (m²) [Max: %50 = {max_bodrum_siniri:,.2f} m²]", 
+                    min_value=0.0, 
+                    max_value=float(max_bodrum_siniri if max_bodrum_siniri > 0 else 10000.0), 
+                    value=min(100.0, max_bodrum_siniri), 
+                    step=10.0
+                )
+            
+            bodrum_acikta_mi = st.checkbox("Bodrum katın herhangi bir cephesi tabi zemine göre 120 cm'den fazla mı açığa çıkıyor? (Evet ise Emsale Dahil, Hayır ise Emsal Dışı)", value=False)
+            if bodrum_acikta_mi:
+                bodrum_emsal_dahil_mi = True
+                st.info("ℹ️ Bodrum kat 120 cm'den fazla açığa çıktığı için emsal alanına eklendi.")
+            else:
+                st.info("ℹ️ Bodrum kat 120 cm'den az açıkta olduğu için emsal dışı kabul edildi (Sadece inşaat maliyetine yansır).")
+
         real_satis_usd, real_maliyet_usd = get_realistic_market_pricing(detected_mahalle, selected_proje_tipi, rates["USD"])
 
+        st.markdown("---")
         col_f1, col_f2, col_f3 = st.columns(3)
         
         if manual_override:
@@ -409,8 +444,14 @@ if selected_keys:
             arsa_payi_orani = 0.0
             col_f3.info("ℹ️ Doğrudan Satılık modelinde arsa bedeli doğrudan yatırım maliyetine eklenir.")
 
-        toplam_maliyet_usd = (total_inşaat_alani * birim_maliyet) + arsa_bonus_usd
-        toplam_ciro_usd = total_inşaat_alani * birim_satis
+        # Toplam Emsal / Satılabilir Alan Hesabı (Normal İnşaat + Havuz + Emsal Dahil Bodrum)
+        toplam_emsal_dahil_alan = total_inşaat_alani + havuz_alani + (bodrum_alani if bodrum_emsal_dahil_mi else 0.0)
+        
+        # Toplam Fiziksel İnşaat Maliyeti Alanı (Normal İnşaat + Havuz + Bodrum Katın Tümü)
+        toplam_fiziksel_insaat_alani = total_inşaat_alani + havuz_alani + (bodrum_alani if bodrum_ekle else 0.0)
+
+        toplam_maliyet_usd = (toplam_fiziksel_insaat_alani * birim_maliyet) + arsa_bonus_usd
+        toplam_ciro_usd = toplam_emsal_dahil_alan * birim_satis
         
         if "Kat Karşılığı" in is_modeli:
             arsa_sahibi_payi_usd = toplam_ciro_usd * (arsa_payi_orani / 100)
@@ -443,3 +484,4 @@ if selected_keys:
         st.caption("İstestate Gayrimenkul & Meriç İnşaat Emlak - Kurumsal Raporlama ve Fizibilite Modülü")
 else:
     st.warning("⚠️ Lütfen sol menüden raporlanmasını istediğiniz ada ve parselleri seçin.")
+```[cite: 1]
