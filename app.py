@@ -1,6 +1,7 @@
 import re
 import os
 import json
+import base64
 import urllib.request
 import xml.etree.ElementTree as ET
 import pdfplumber
@@ -237,34 +238,41 @@ def parse_imar_pdf(uploaded_file):
     parcel_data["terk_yapilmis_mi"] = detect_terk_status(full_text, parcel_data["toplam_alan"], parcel_data["fonksiyonlar"])
     return parcel_data
 
-# --- STREAMLIT ARAYÜZÜ & ÖZEL BANNER (LOGO ALANI) ---
-st.markdown("""
-    <style>
-    .logo-banner {
-        background-color: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        margin-bottom: 20px;
-    }
-    </style>
-""", unsafe_allow_html=True)
+# --- GÖRSELLERİ BASE64 FORMATINA ÇEVİRME FONKSİYONU ---
+def get_base64_image(image_path):
+    if os.path.exists(image_path):
+        with open(image_path, "rb") as f:
+            data = f.read()
+        return base64.b64encode(data).decode("utf-8")
+    return ""
 
-# Banner konteyneri içinde logoları şık ve okunaklı gösterelim
-with st.container():
-    st.markdown('<div class="logo-banner">', unsafe_allow_html=True)
-    col_logo1, col_logo2 = st.columns(2)
-    with col_logo1:
-        if os.path.exists("istestate_logo.png"):
-            st.image("istestate_logo.png", width=340)
-    with col_logo2:
-        if os.path.exists("meric_insaat_emlak_logo.png"):
-            st.image("meric_insaat_emlak_logo.png", width=340)
-    st.markdown('</div>', unsafe_allow_html=True)
+img1_base64 = get_base64_image("istestate_logo.png")
+img2_base64 = get_base64_image("meric_insaat_emlak_logo.png")
+
+# --- STREAMLIT ARAYÜZÜ & GARANTİLİ BEYAZ BANNER ALANI ---
+logo_html = f"""
+    <div style="
+        background-color: #ffffff; 
+        border: 1px solid #cbd5e1; 
+        border-radius: 12px; 
+        padding: 20px; 
+        display: flex; 
+        justify-content: space-around; 
+        align-items: center; 
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;">
+        <div style="text-align: center; flex: 1;">
+            <img src="data:image/png;base64,{img1_base64}" style="max-height: 90px; width: auto; object-fit: contain;" />
+        </div>
+        <div style="text-align: center; flex: 1;">
+            <img src="data:image/png;base64,{img2_base64}" style="max-height: 90px; width: auto; object-fit: contain;" />
+        </div>
+    </div>
+"""
+st.markdown(logo_html, unsafe_allow_html=True)
 
 st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK</h2>", unsafe_allow_html=True)
-st.markdown("<h4 style='text-align: center; color: #475569;'>Ada Bazlı Akıllı Fizibilite Portalı</h4>", unsafe_allow_html=True)
+st.markdown("<h4 style='text-align: center; color: #64748b;'>Ada Bazlı Akıllı Fizibilite Portalı</h4>", unsafe_allow_html=True)
 st.divider()
 
 rates = get_live_exchange_rates()
@@ -272,7 +280,6 @@ rates = get_live_exchange_rates()
 st.sidebar.header("📁 İmar Belgesi Yükleme")
 uploaded_files = st.sidebar.file_uploader("İmar Durum Raporu (PDF) Seçin", type=["pdf"], accept_multiple_files=True)
 
-# Yeni yüklenen dosyaları hafızaya ve veritabanına ekleyelim
 just_uploaded_keys = []
 if uploaded_files:
     for uploaded_file in uploaded_files:
@@ -317,7 +324,6 @@ else:
 if selected_keys:
     active_parcel_db = {k: st.session_state["parcel_db"][k] for k in selected_keys}
 
-    # 1. KATI YASAL EMSAL İNŞAAT ALANI HESABI (Üst Sınır / Tavan)
     emsal_artis_orani = 1.30
     yasal_max_emsal_alani = 0.0
     for key, p in active_parcel_db.items():
@@ -394,7 +400,6 @@ if selected_keys:
         st.table(pd.DataFrame(calc_results))
         st.metric(label="🏗️ Yasal Emsal Tavanı (Toplam İnşaat Alanı)", value=f"{yasal_max_emsal_alani:,.2f} m²")
 
-    # Session state ile havuz ve bağımsız bölüm tercihlerini tablar arası senkronize tutuyoruz
     if "hedef_bagimsiz_bolum" not in st.session_state:
         st.session_state["hedef_bagimsiz_bolum"] = 4
     if "havuz_tercihi" not in st.session_state:
@@ -417,7 +422,6 @@ if selected_keys:
             )
         st.session_state["havuz_tercihi"] = havuz_tercihi
 
-        # Havuz modeline göre emsal içinden harcanan alan
         if havuz_tercihi == "Her Bağımsız Bölüme 1 Özel Havuz":
             havuz_emsele_maliyet_m2 = hedef_bagimsiz_bolum * 30.0
         elif havuz_tercihi == "Ortak / Sosyal Tesis Havuzu":
@@ -425,7 +429,6 @@ if selected_keys:
         else:
             havuz_emsele_maliyet_m2 = 0.0
 
-        # Net konut/villa inşaat alanı = Yasal Tavan - Havuz Payı
         net_konut_innsaat_alani = max(0.0, yasal_max_emsal_alani - havuz_emsele_maliyet_m2)
 
         ortalama_villa_alani = net_konut_innsaat_alani / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
@@ -508,10 +511,8 @@ if selected_keys:
             arsa_payi_orani = 0.0
             col_f3.info("ℹ️ Doğrudan Satılık modelinde arsa bedeli doğrudan yatırım maliyetine eklenir.")
 
-        # İnşaat maliyeti yalnızca yasal emsal alanı üzerinden hesaplanır (mükerrer bodrum maliyeti yoktur)
         toplam_maliyet_usd = (yasal_max_emsal_alani * birim_maliyet) + arsa_bonus_usd
         
-        # Ciro hesabı: Normal emsal cirosu + Proje tipine göre otomatik oranlanan bodrum cirosu
         normal_ciro = yasal_max_emsal_alani * birim_satis
         bodrum_ciro = simulated_bodrum_alani * birim_satis * otomatik_bodrum_orani
         toplam_ciro_usd = normal_ciro + bodrum_ciro
