@@ -1,3 +1,13 @@
+import sys
+import subprocess
+
+# Eksik kütüphaneleri otomatik yükleme mekanizması
+try:
+    import reportlab
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "reportlab", "pdfplumber"])
+    import reportlab
+
 import os
 import re
 import math
@@ -151,7 +161,6 @@ def tek_pdf_analiz_et(uploaded_file, varsayilan_kusak="Göl Koruma Alanı", yesi
     net_insaat = hesaba_alinan * kaks_val
     brut_insaat = net_insaat * 1.30
 
-    # HATA DÜZELTİLDİ: Girinti hizalaması yapıldı
     veri = {
         "Rapor_ID": f"{ada}_{parsel}_{len(st.session_state['imar_bellek'])+1}",
         "Mahalle": mahalle,
@@ -262,7 +271,6 @@ if uploaded_pdfs:
     for pdf in uploaded_pdfs:
         veri = tek_pdf_analiz_et(pdf, varsayilan_kusak=koruma_kusagi_secim, yesil_kusaklama=yesil_kusaklama)
         if veri:
-            # Belleğe Kaydet (Mükerrer kaydı önler)
             if not any(b['Dosya_Adı'] == veri['Dosya_Adı'] for b in st.session_state["imar_bellek"]):
                 st.session_state["imar_bellek"].append(veri)
 
