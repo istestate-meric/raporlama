@@ -233,8 +233,8 @@ if st.session_state["parcel_db"]:
                     "Parsel Bilgisi": key,
                     "Arsa Alanı (m²)": f"{p['toplam_alan']:,.2f}",
                     "Fonksiyon": f["fonksiyon_adi"],
-                    "TAKS": f["taks"],
-                    "KAKS": f["kaks"],
+                    "TAKS": f"{f['taks']:.2f}",
+                    "KAKS (Emsal)": f"{f['kaks']:.2f}",
                     "Terk Durumu": terk_lbl
                 })
         st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
@@ -253,7 +253,6 @@ if st.session_state["parcel_db"]:
             is_terkli = p["terk_yapilmis_mi"]
             
             for f in p["fonksiyonlar"]:
-                # Kamu alanlarını doğrudan rapordan düşüyoruz
                 if any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                     continue
                 
@@ -269,7 +268,7 @@ if st.session_state["parcel_db"]:
                     "Parsel": key,
                     "Fonksiyon": f["fonksiyon_adi"],
                     "Hesaba Esas Alan (m²)": f"{esas_m2:,.2f}",
-                    "KAKS": f["kaks"],
+                    "KAKS (Emsal)": f"{f['kaks']:.2f}",
                     "Toplam Satılabilir Net İnşaat (m²)": f"{satilabilir_m2:,.2f}"
                 })
 
