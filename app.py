@@ -285,6 +285,27 @@ else:
 if selected_keys:
     active_parcel_db = {k: st.session_state["parcel_db"][k] for k in selected_keys}
 
+    # 1. TEMEL EMSAL İNŞAAT ALANI HESABI (Ortak Hesaplama Motoru)
+    emsal_artis_orani = 1.30
+    base_toplam_inşaat = 0.0
+    for key, p in active_parcel_db.items():
+        toplam_brut_m2 = p["toplam_alan"]
+        is_terkli = p["terk_yapilmis_mi"]
+        toplam_giren_fonk_m2 = sum(
+            f["giren_m2"] for f in p["fonksiyonlar"]
+            if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"])
+        )
+        for f in p["fonksiyonlar"]:
+            if any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
+                continue
+            if not is_terkli:
+                fonk_pay_orani = f["giren_m2"] / toplam_giren_fonk_m2 if toplam_giren_fonk_m2 > 0 else 1.0
+                esas_m2 = toplam_brut_m2 * fonk_pay_orani
+                base_toplam_inşaat += esas_m2 * 0.70 * f["kaks"] * emsal_artis_orani
+            else:
+                base_toplab_m2 = f["giren_m2"]
+                base_toplam_inşaat += base_toplab_m2 * f["kaks"] * emsal_artis_orani
+
     tab1, tab2, tab3, tab4 = st.tabs(["📊 Seçilen Parseller Özeti", "📐 İnşaat Alanı Hesabı", "🏛️ Mimari Fizibilite", "📑 Proje Raporu & Fizibilite"])
     
     with tab1:
@@ -307,39 +328,28 @@ if selected_keys:
 
     with tab2:
         st.subheader("Seçilen Parseller İçin Çoklu Fonksiyon Destekli İnşaat Kapasite Hesabı")
-        emsal_artis_orani = 1.30
         st.info("ℹ️ İnşaat hesabı sabit **1.30 Genel Emsal Artış Katsayısı** ile yürütülmektedir.")
         st.markdown("---")
         
-        total_inşaat_alani = 0.0
         calc_results = []
-
         for key, p in active_parcel_db.items():
             toplam_brut_m2 = p["toplam_alan"]
             is_terkli = p["terk_yapilmis_mi"]
-            
             toplam_giren_fonk_m2 = sum(
                 f["giren_m2"] for f in p["fonksiyonlar"]
                 if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"])
             )
-            
             for f in p["fonksiyonlar"]:
                 if any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                     continue
-                
                 if not is_terkli:
-                    if toplam_giren_fonk_m2 > 0:
-                        fonk_pay_orani = f["giren_m2"] / toplam_giren_fonk_m2
-                    else:
-                        fonk_pay_orani = 1.0 / len(p["fonksiyonlar"])
-                        
+                    fonk_pay_orani = f["giren_m2"] / toplam_giren_fonk_m2 if toplam_giren_fonk_m2 > 0 else 1.0
                     esas_m2 = toplam_brut_m2 * fonk_pay_orani
                     satilabilir_m2 = esas_m2 * 0.70 * f["kaks"] * emsal_artis_orani
                 else:
                     esas_m2 = f["giren_m2"]
                     satilabilir_m2 = esas_m2 * f["kaks"] * emsal_artis_orani
                 
-                total_inşaat_alani += satilabilir_m2
                 calc_results.append({
                     "Parsel": key,
                     "Fonksiyon": f["fonksiyon_adi"],
@@ -350,46 +360,54 @@ if selected_keys:
                 })
 
         st.table(pd.DataFrame(calc_results))
-        st.metric(label="🏗️ Seçilen Parseller Toplamı: Standart İnşaat Alanı (m²)", value=f"{total_inşaat_alani:,.2f} m²")
+        st.metric(label="🏗️ Seçilen Parseller Toplamı: Standart İnşaat Alanı (m²)", value=f"{base_toplam_inşaat:,.2f} m²")
+
+    # Session state ile havuz ve bağımsız bölüm tercihlerini tablar arası senkronize tutuyoruz
+    if "hedef_bagimsiz_bolum" not in st.session_state:
+        st.session_state["hedef_bagimsiz_bolum"] = 4
+    if "havuz_tercihi" not in st.session_state:
+        st.session_state["havuz_tercihi"] = "Her Bağımsız Bölüme 1 Özel Havuz"
 
     with tab3:
         st.subheader("🏛️ Mimari Fizibilite ve Bağımsız Bölüm Senaryoları")
-        st.info("ℹ️ Bu sekmede projenin bağımsız bölüm (villa/daire) sayısına göre ölçeklendirmesini, havuz dağılımını ve bodrum kat entegrasyonunu simüle edebilirsiniz.")
+        st.info("ℹ️ Bu sekmede projenin bağımsız bölüm (villa/daire) sayısına göre ölçeklendirmesini ve havuz planlama modelini simüle edebilirsiniz. Seçilen havuz modeli toplam inşaat kapasitesine ve maliyetlere doğrudan etki eder.")
         
-        temp_total_insaat = 0.0
-        for key, p in active_parcel_db.items():
-            toplam_brut_m2 = p["toplam_alan"]
-            is_terkli = p["terk_yapilmis_mi"]
-            toplam_giren_fonk_m2 = sum(f["giren_m2"] for f in p["fonksiyonlar"] if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]))
-            for f in p["fonksiyonlar"]:
-                if any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
-                    continue
-                if not is_terkli:
-                    fonk_pay_orani = f["giren_m2"] / toplam_giren_fonk_m2 if toplam_giren_fonk_m2 > 0 else 1.0
-                    esas_m2 = toplam_brut_m2 * fonk_pay_orani
-                    temp_total_insaat += esas_m2 * 0.70 * f["kaks"] * 1.30
-                else:
-                    temp_total_insaat += f["giren_m2"] * f["kaks"] * 1.30
-
         col_mims1, col_mims2 = st.columns(2)
         with col_mims1:
-            hedef_bagimsiz_bolum = st.number_input("Planlanan Bağımsız Bölüm / Villa Adedi:", min_value=1, value=4, step=1)
+            hedef_bagimsiz_bolum = st.number_input("Planlanan Bağımsız Bölüm / Villa Adedi:", min_value=1, value=st.session_state["hedef_bagimsiz_bolum"], step=1, key="hb_input")
+            st.session_state["hedef_bagimsiz_bolum"] = hedef_bagimsiz_bolum
         with col_mims2:
-            havuz_tercihi = st.selectbox("Havuz Planlama Modeli:", options=["Her Bağımsız Bölüme 1 Özel Havuz", "Ortak / Sosyal Tesis Havuzu", "Havuz İptal (Küçük Ölçek Kısıtı)"])
+            havuz_tercihi = st.selectbox(
+                "Havuz Planlama Modeli:", 
+                options=["Her Bağımsız Bölüme 1 Özel Havuz", "Ortak / Sosyal Tesis Havuzu", "Havuz İptal (Küçük Ölçek Kısıtı)"],
+                index=["Her Bağımsız Bölüme 1 Özel Havuz", "Ortak / Sosyal Tesis Havuzu", "Havuz İptal (Küçük Ölçek Kısıtı)"].index(st.session_state["havuz_tercihi"]),
+                key="hp_select"
+            )
+        st.session_state["havuz_tercihi"] = havuz_tercihi
 
-        ortalama_villa_alani = temp_total_insaat / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
-        
-        # Bodrum alanı: Toplam emsal alanının yarısı (2 katlı yapı varsayımıyla her ünitenin taban alanına denk gelecek şekilde)
-        simulated_bodrum_alani = temp_total_insaat * 0.50
+        # Havuz modeline göre toplam inşaat / proje alanına ekleme / etki faktörü
+        # Özel havuz her üniteye ortalama 30 m² havuz alanı/maliyeti ekler; Ortak havuz sabit 120 m² ekler; İptal 0 ekler.
+        if havuz_tercihi == "Her Bağımsız Bölüme 1 Özel Havuz":
+            havuz_etki_m2 = hedef_bagimsiz_bolum * 30.0
+        elif havuz_tercihi == "Ortak / Sosyal Tesis Havuzu":
+            havuz_etki_m2 = 120.0
+        else:
+            havuz_etki_m2 = 0.0
+
+        total_inşaat_alani = base_toplam_inşaat + havuz_etki_m2
+
+        ortalama_villa_alani = base_toplam_inşaat / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
+        simulated_bodrum_alani = base_toplam_inşaat * 0.50
         ortalama_bodrum_alani = simulated_bodrum_alani / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
 
         st.markdown("---")
-        m_col1, m_col2, m_col3 = st.columns(3)
+        m_col1, m_col2, m_col3, m_col4 = st.columns(4)
         m_col1.metric("Ortalama Ünite / Villa Alanı", f"{ortalama_villa_alani:,.2f} m²")
         m_col2.metric("Ortalama Ünite Bodrum Alanı (%50)", f"{ortalama_bodrum_alani:,.2f} m²")
+        m_col3.metric("Havuz Model Etkisi (Alan)", f"+{havuz_etki_m2:,.2f} m²")
         
         risk_durumu = "⚠️ RİSKLİ (Çok küçük ölçek)" if ortalama_villa_alani < 120 and hedef_bagimsiz_bolum > 1 else "✅ Uygun Ölçek"
-        m_col3.metric("Mimari Ölçek Uygunluğu", risk_durumu)
+        m_col4.metric("Mimari Ölçek Uygunluğu", risk_durumu)
 
         if ortalama_villa_alani < 120 and hedef_bagimsiz_bolum > 1:
             st.warning("⚠️ **Uyarı:** Bağımsız bölüm ortalama alanları 120 m² altına düşmektedir. Plan notları ve piyasa talepleri doğrultusunda villa boyutlarını korumak adına bağımsız bölüm adedini düşürebilirsiniz.")
@@ -398,7 +416,21 @@ if selected_keys:
 
     with tab4:
         st.subheader("📑 Proje Raporu & İş Modeli Fizibilitesi")
-        st.success(f"⚡ **Canlı TCMB Dolar Kuru:** 1 USD = {rates['USD']:.2f} TL | **Seçilen Parsel Adedi:** {len(active_parcel_db)}")
+        
+        # Aktif havuz ve bağımsız bölüm seçimlerini bu sekmede de hesaplamalara yansıtıyoruz
+        curr_hb = st.session_state["hedef_bagimsiz_bolum"]
+        curr_hp = st.session_state["havuz_tercihi"]
+        
+        if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz":
+            active_havuz_m2 = curr_hb * 30.0
+        elif curr_hp == "Ortak / Sosyal Tesis Havuzu":
+            active_havuz_m2 = 120.0
+        else:
+            active_havuz_m2 = 0.0
+            
+        total_inşaat_alani = base_toplam_inşaat + active_havuz_m2
+
+        st.success(f"⚡ **Canlı TCMB Dolar Kuru:** 1 USD = {rates['USD']:.2f} TL | **Seçilen Parsel Adedi:** {len(active_parcel_db)} | **Aktif Havuz Modeli:** {curr_hp} (+{active_havuz_m2: m²})")
         
         first_parcel = list(active_parcel_db.values())[0]
         detected_mahalle = first_parcel.get("mahalle", "VARSAYILAN").upper()
@@ -452,10 +484,8 @@ if selected_keys:
             arsa_payi_orani = 0.0
             col_f3.info("ℹ️ Doğrudan Satılık modelinde arsa bedeli doğrudan yatırım maliyetine eklenir.")
 
-        # Finansal hesaplamalarda toplam inşaat alanı baz alınır (Bodrum birim maliyetin içinde olduğu için tekrar maliyete eklenmez)
-        toplam_emsal_dahil_alan = total_inşaat_alani
         toplam_maliyet_usd = (total_inşaat_alani * birim_maliyet) + arsa_bonus_usd
-        toplam_ciro_usd = toplam_emsal_dahil_alan * birim_satis
+        toplam_ciro_usd = total_inşaat_alani * birim_satis
         
         if "Kat Karşılığı" in is_modeli:
             arsa_sahibi_payi_usd = toplam_ciro_usd * (arsa_payi_orani / 100)
@@ -475,7 +505,7 @@ if selected_keys:
         
         f_col1, f_col2, f_col3, f_col4 = st.columns(4)
         f_col1.metric("Toplam Tahmini Ciro", f"${toplam_ciro_usd:,.2f}", f"₺{toplam_ciro_tl:,.2f}")
-        f_col2.metric("Toplam İnşaat Maliyeti + Bonus", f"${toplam_maliyet_usd:,.2f}", f"₺{toplam_maliyet_tl:,.2f}")
+        f_col2.metric("Toplam İnşaat Maliyeti + Havuz + Bonus", f"${toplam_maliyet_usd:,.2f}", f"₺{toplam_maliyet_tl:,.2f}")
         
         if "Kat Karşılığı" in is_modeli:
             f_col3.metric("Arsa Sahibi Payı", f"${arsa_sahibi_payi_usd:,.2f}")
