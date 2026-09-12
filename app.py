@@ -403,8 +403,6 @@ if selected_keys:
         first_parcel = list(active_parcel_db.values())[0]
         detected_mahalle = first_parcel.get("mahalle", "VARSAYILAN").upper()
         
-        st.markdown("### 🏢 İş Modeli, Bodrum Kat ve Havuz Yapılandırması")
-        
         col_m1, col_m2, col_m3 = st.columns(3)
         
         with col_m1:
@@ -434,30 +432,6 @@ if selected_keys:
             st.caption(f"📍 Referans Lokasyon: **{detected_mahalle}**")
             manual_override = st.checkbox("Özel / Manuel Fiyat Girişi Yap", value=False)
 
-        st.markdown("---")
-        st.markdown("#### 🏊‍♂️ Havuz ve 🏗️ Bodrum Kat Hesap Kuralları (2 Katlı Yapı Mantığı)")
-        
-        col_b1, col_b2 = st.columns(2)
-        with col_b1:
-            otomatik_bodrum_aktif = st.checkbox("Bodrum Katlar Dahil Edilsin (Toplam Emsal Alanının Yarısı Kadar)", value=True)
-        with col_b2:
-            otomatik_havuz_aktif = st.checkbox("Her Villaya/Bölüme Havuz Ekle", value=True)
-
-        havuz_birim_m2 = st.number_input("Standart Havuz Alanı (m²) [Emsale Dahil]", min_value=0.0, value=30.0, step=5.0) if otomatik_havuz_aktif else 0.0
-
-        # Bodrum alanı emsal alanının yarısı olarak hesaplanır
-        bodrum_alani = (total_inşaat_alani * 0.50) if otomatik_bodrum_aktif else 0.0
-
-        # Plan notu gereği bodrum emsale dahil mi?
-        bodrum_emsal_dahil_mi = False
-        if otomatik_bodrum_aktif:
-            bodrum_acikta_mi = st.checkbox("Bodrum katların herhangi bir cephesi tabi zemine göre 120 cm'den fazla mı açığa çıkıyor? (Evet ise Emsale Dahil, Hayır ise Emsal Dışı)", value=False)
-            if bodrum_acikta_mi:
-                bodrum_emsal_dahil_mi = True
-                st.info("ℹ️ Plan notu gereği 120 cm'den fazla açığa çıkan bodrum katlar emsale dahil edildi.")
-            else:
-                st.info("ℹ️ Bodrum katlar standart birim maliyetin içindedir; emsal dışı tutularak ciroya yazılmamıştır, maliyette ise mükerrer maliyet oluşmaması için ayrı ekstra inşaat kalemi açılmamıştır.")
-
         real_satis_usd, real_maliyet_usd = get_realistic_market_pricing(detected_mahalle, selected_proje_tipi, rates["USD"])
 
         st.markdown("---")
@@ -478,13 +452,9 @@ if selected_keys:
             arsa_payi_orani = 0.0
             col_f3.info("ℹ️ Doğrudan Satılık modelinde arsa bedeli doğrudan yatırım maliyetine eklenir.")
 
-        # Ciro hesabı (Emsal dahil alanlar)
-        toplam_emsal_dahil_alan = total_inşaat_alani + havuz_birim_m2 + (bodrum_alani if bodrum_emsal_dahil_mi else 0.0)
-        
-        # Maliyet hesabı: İnşaat birim maliyetleri bodrumu zaten kapsadığı için bodrum fiziksel alanı maliyete tekrar çarpım olarak eklenmez.
-        toplam_maliyet_fiziksel_alan = total_inşaat_alani + havuz_birim_m2
-        toplam_maliyet_usd = (toplam_maliyet_fiziksel_alan * birim_maliyet) + arsa_bonus_usd
-        
+        # Finansal hesaplamalarda toplam inşaat alanı baz alınır (Bodrum birim maliyetin içinde olduğu için tekrar maliyete eklenmez)
+        toplam_emsal_dahil_alan = total_inşaat_alani
+        toplam_maliyet_usd = (total_inşaat_alani * birim_maliyet) + arsa_bonus_usd
         toplam_ciro_usd = toplam_emsal_dahil_alan * birim_satis
         
         if "Kat Karşılığı" in is_modeli:
