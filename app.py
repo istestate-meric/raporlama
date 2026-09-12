@@ -1,6 +1,5 @@
 import re
 import urllib.request
-import json
 import xml.etree.ElementTree as ET
 import pdfplumber
 import pandas as pd
@@ -39,54 +38,49 @@ def get_live_exchange_rates():
     except Exception:
         return {"USD": 34.00, "EUR": 37.50}
 
-# --- 2. GERÇEK ZAMANLI CANLI PİYASA API BAĞLANTI KATMANI ---
-@st.cache_data(ttl=300)
-def fetch_live_market_data_from_api(usd_rate, mahalle_adi):
+# --- 2. BEYKOZ GERÇEKÇİ PİYASA VE PROJE TİPİ MATRİSİ ---
+def get_realistic_market_pricing(mahalle_adi, proje_tipi, usd_rate):
     """
-    Harici gayrimenkul endeks servislerinden veya web API'lerinden (Örn: Endeksa / Sahibinden / Tapu Veri Servisleri) 
-    anlık TL/m2 rayiç bedellerini ve inşaat maliyet endekslerini canlı çeken servis fonksiyonu.
+    Beykoz bölge dinamiklerine uygun gerçekçi satış ve inşaat maliyeti matrisi.
     """
-    try:
-        # Örnek canlı dış servis simülasyon endpoint isteği (Gerçek entegrasyonda istek atılan API URL'si yer alır)
-        # api_url = f"https://api.gayrimenkul-endeks-servisi.com/v1/beykoz?mahalle={mahalle_adi}"
-        # req = urllib.request.Request(api_url, headers={'Authorization': 'Bearer CANLI_API_KEY'})
-        # with urllib.request.urlopen(req) as response:
-        #     api_response = json.loads(response.read().decode())
-        #     satis_tl_m2 = api_response['average_price_tl']
-        
-        # Canlı piyasa dalgalanmalarını ve bölgesel endeksleri yansıtan dinamik algoritmik çarpan
-        mahalle_base_factors = {
-            "ACARLAR": 5400000,
-            "ANADOLU HİSARI": 4800000,
-            "KANLICA": 4500000,
-            "GÖKSU": 4100000,
-            "GÖRELE": 4300000,
-            "RİVA": 4900000,
-            "ÇİFTLİK": 4700000,
-            "BAKLACI": 5100000,
-            "KAVACIK": 3400000,
-            "ÇENGELDERE": 4600000,
-            "YAVUZ SELİM": 3100000,
-            "FATİH": 2800000,
-            "SOĞUKSU": 4300000,
-            "PAŞABAHÇE": 3600000,
-            "VARSAYILAN": 3800000
-        }
-        
-        clean_mahalle = mahalle_adi.upper().strip()
-        factor = mahalle_base_factors.get(clean_mahalle, mahalle_base_factors["VARSAYILAN"])
-        
-        # Canlı TL m2 fiyatını anlık kur üzerinden dolara çevirme
-        satis_fiyati_tl = factor / 30.0 # Canlı endeks baz fiyat simülasyonu
-        satis_fiyati_usd = round(satis_fiyati_tl / usd_rate, 2)
-
-        # Bakanlık İnşaat Maliyet Endeksi Canlı Çarpanı (TL -> USD)
-        bakanlik_maliyet_tl = 1150000 # Güncel m2 inşaat maliyeti endeksi TL
-        maliyet_fiyati_usd = round((bakanlik_maliyet_tl / 30.0) / usd_rate, 2)
-
-        return satis_fiyati_usd, maliyet_fiyati_usd
-    except Exception:
-        return 2500.0, 850.0
+    # Mahalle bazlı baz arsa/konut prim katsayıları (TL/m² eşdeğer bazları)
+    mahalle_base_tl = {
+        "ACARLAR": 140000,
+        "ANADOLU HİSARI": 130000,
+        "KANLICA": 125000,
+        "GÖKSU": 110000,
+        "GÖRELE": 115000,
+        "RİVA": 120000,
+        "ÇİFTLİK": 115000,
+        "BAKLACI": 95000,
+        "KAVACIK": 90000,
+        "ÇENGELDERE": 105000,
+        "YAVUZ SELİM": 80000,
+        "FATİH": 75000,
+        "SOĞUKSU": 95000,
+        "PAŞABAHÇE": 90000,
+        "VARSAYILAN": 95000
+    }
+    
+    clean_mahalle = mahalle_adi.upper().strip()
+    base_tl = mahalle_base_tl.get(clean_mahalle, mahalle_base_tl["VARSAYILAN"])
+    
+    # Proje Tipi Çarpanları (Satış ve Maliyet için)
+    proje_carpanlari = {
+        "Lüks Villa / Müstakil Proje": {"satis_mod": 1.55, "maliyet_mod": 1350},
+        "Üst Segment Konut / Rezidans": {"satis_mod": 1.25, "maliyet_mod": 1100},
+        "Standart Konut / Apartman": {"satis_mod": 1.00, "maliyet_mod": 900},
+        "Ticari / Ofis Kompleksi": {"satis_mod": 1.35, "maliyet_mod": 1050},
+        "Karma Proje (Konut + Ticari)": {"satis_mod": 1.20, "maliyet_mod": 1000}
+    }
+    
+    p_conf = proje_carpanlari.get(proje_tipi, proje_carpanlari["Standart Konut / Apartman"])
+    
+    # Canlı USD kuru üzerinden hesaplanan gerçekçi satış fiyatı
+    satis_fiyati_usd = round((base_tl * p_conf["satis_mod"]) / usd_rate, 2)
+    maliyet_fiyati_usd = float(p_conf["maliyet_mod"])
+    
+    return satis_fiyati_usd, maliyet_fiyati_usd
 
 def parse_tr_float(val_str):
     if not val_str:
@@ -122,7 +116,7 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
         if kalip in text_upper:
             return False
 
-    terkli_kaliplar = ["TERKİ YAPILMIŞTIR", "TERKİ YAPILMIŞ", "TERK YAPILMIŞTIR", "KAMUYA TERK EDİLMİŞTİR", "DOP TERKİ YAPILMAMIŞTIR"]
+    terkli_kaliplar = ["TERKİ YAPILMIŞTIR", "TERKİ YAPILMIŞ", "TERK YAPILMIŞTIR", "KAMUYA TERK EDİLMİŞTİR", "DOP TERKİ YAPILMIŞTIR"]
     for kalip in terkli_kaliplar:
         if kalip in text_upper:
             return True
@@ -229,7 +223,7 @@ def parse_imar_pdf(uploaded_file):
 
 # --- STREAMLIT ARAYÜZÜ ---
 st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK</h2>", unsafe_allow_html=True)
-st.markdown("<h4 style='text-align: center; color: #475569;'>Canlı API Servis Destekli Fizibilite Portalı</h4>", unsafe_allow_html=True)
+st.markdown("<h4 style='text-align: center; color: #475569;'>Gerçekçi Piyasa Verili Fizibilite Portalı</h4>", unsafe_allow_html=True)
 st.divider()
 
 rates = get_live_exchange_rates()
@@ -256,7 +250,7 @@ else:
     st.sidebar.info("Henüz belge yüklenmedi.")
 
 if st.session_state["parcel_db"]:
-    tab1, tab2, tab3 = st.tabs(["📊 İmar Durumu Özeti", "📐 İnşaat Alanı Hesabı", "💰 Canlı API Fizibilite"])
+    tab1, tab2, tab3 = st.tabs(["📊 İmar Durumu Özeti", "📐 İnşaat Alanı Hesabı", "💰 Proje Tipi & Piyasa Fizibilitesi"])
     
     with tab1:
         st.subheader("Yüklenen Parsellerin İmar Özet Tablosu")
@@ -324,35 +318,43 @@ if st.session_state["parcel_db"]:
         st.metric(label="🏗️ Toplam Satılabilir Net İnşaat Alanı (m²)", value=f"{total_inşaat_alani:,.2f} m²")
 
     with tab3:
-        st.subheader("🌐 Canlı Web Servis & API Entegrasyonlu Fizibilite")
-        st.success(f"⚡ **Canlı TCMB Dolar Kuru:** 1 USD = {rates['USD']:.2f} TL | **Harici Piyasa API'leri Aktif**")
+        st.subheader("🏢 Proje Tipi ve Gerçekçi Bölge Fizibilitesi")
+        st.success(f"⚡ **Canlı TCMB Dolar Kuru:** 1 USD = {rates['USD']:.2f} TL | **Beykoz Gerçekçi Rayiç Motoru Aktif**")
         
-        # İlk parselin mahallesini API sorgusuna parametre olarak gönderme
         first_parcel = list(st.session_state["parcel_db"].values())[0]
         detected_mahalle = first_parcel.get("mahalle", "VARSAYILAN").upper()
         
-        # Canlı API Fonksiyonunu Çağırma
-        api_satis_usd, api_maliyet_usd = fetch_live_market_data_from_api(rates["USD"], detected_mahalle)
-
-        st.markdown("### 📡 Canlı Piyasa Veri Akışı ve Manuel Ekleme Paneli")
-        
+        st.markdown("### 🏗️ Proje Tipi ve Lokasyon Seçimi")
         col_opt1, col_opt2 = st.columns(2)
+        
         with col_opt1:
-            st.caption(f"📍 API Üzerinden Sorgulanan Mahalle: **{detected_mahalle}**")
-            st.info(f"Anlık Web Servis Satış Verisi: **${api_satis_usd:,.2f} / m²**")
+            selected_proje_tipi = st.selectbox(
+                "Proje Tipi Seçin:",
+                options=[
+                    "Lüks Villa / Müstakil Proje",
+                    "Üst Segment Konut / Rezidans",
+                    "Standart Konut / Apartman",
+                    "Ticari / Ofis Kompleksi",
+                    "Karma Proje (Konut + Ticari)"
+                ],
+                index=0
+            )
+        
+        # Seçilen proje tipi ve mahalleye göre gerçekçi piyasa fiyatlarını hesapla
+        real_satis_usd, real_maliyet_usd = get_realistic_market_pricing(detected_mahalle, selected_proje_tipi, rates["USD"])
+
         with col_opt2:
-            manual_override = st.checkbox("Özel Koşul / Manuel Fiyat Girişi Yap", value=False)
-            if manual_override:
-                st.warning("⚠️ Manuel girdi aktif: Canlı API verisi ezilerek sizin girdiğiniz değerler işleme alınacaktır.")
+            st.caption(f"📍 Analiz Edilen Mahalle: **{detected_mahalle}**")
+            manual_override = st.checkbox("Özel / Manuel Fiyat Girişi Yap (Piyasa verisini ez)", value=False)
 
         col_f1, col_f2, col_f3 = st.columns(3)
         
         if manual_override:
-            birim_maliyet = col_f1.number_input("İnşaat M² Maliyeti ($) [Özel Girdi]", value=float(api_maliyet_usd), step=50.0)
-            birim_satis = col_f2.number_input("M² Satış Fiyatı ($) [Özel Girdi]", value=float(api_satis_usd), step=100.0)
+            birim_maliyet = col_f1.number_input("İnşaat M² Maliyeti ($) [Özel]", value=float(real_maliyet_usd), step=50.0)
+            birim_satis = col_f2.number_input("M² Satış Fiyatı ($) [Özel]", value=float(real_satis_usd), step=100.0)
         else:
-            birim_maliyet = col_f1.number_input("İnşaat M² Maliyeti ($) [Canlı API]", value=float(api_maliyet_usd), disabled=True)
-            birim_satis = col_f2.number_input("M² Satış Fiyatı ($) [Canlı API]", value=float(api_satis_usd), disabled=True)
+            birim_maliyet = col_f1.number_input("İnşaat M² Maliyeti ($) [Piyasa]", value=float(real_maliyet_usd), disabled=True)
+            birim_satis = col_f2.number_input("M² Satış Fiyatı ($) [Piyasa]", value=float(real_satis_usd), disabled=True)
 
         arsa_payi_orani = col_f3.slider("Arsa Payı / Kat Karşılığı Oranı (%)", min_value=0, max_value=70, value=40)
         
@@ -368,11 +370,11 @@ if st.session_state["parcel_db"]:
         mutaahhit_net_kar_tl = mutaahhit_net_kar_usd * rates['USD']
 
         st.markdown("---")
-        st.markdown("### 📊 Canlı Finansal Tablo Özeti (USD & TL)")
+        st.markdown("### 📊 Gerçekçi Finansal Tablo Özeti (USD & TL)")
         f_col1, f_col2, f_col3, f_col4 = st.columns(4)
         f_col1.metric("Toplam Tahmini Ciro", f"${toplam_ciro_usd:,.2f}", f"₺{toplam_ciro_tl:,.2f}")
         f_col2.metric("Toplam İnşaat Maliyeti", f"${toplam_maliyet_usd:,.2f}", f"₺{toplam_maliyet_tl:,.2f}")
         f_col3.metric("Arsa Sahibi Payı", f"${arsa_sahibi_payi_usd:,.2f}")
         f_col4.metric("Müteahhit Net Karı", f"${mutaahhit_net_kar_usd:,.2f}", f"₺{mutaahhit_net_kar_tl:,.2f} (%{roi:.1f} ROI)")
 
-        st.caption("İstestate Gayrimenkul & Meriç İnşaat Emlak - Canlı API ve Web Servis Destekli Fizibilite Motoru")
+        st.caption("İstestate Gayrimenkul & Meriç İnşaat Emlak - Proje Tipi Destekli Gerçekçi Fizibilite Motoru")
