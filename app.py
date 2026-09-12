@@ -238,22 +238,22 @@ def parse_imar_pdf(uploaded_file):
 
 # --- STREAMLIT ARAYÜZÜ ---
 st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK</h2>", unsafe_allow_html=True)
-st.markdown("<h4 style='text-align: center; color: #475569;'>Çoklu Parsel Seçimli & İş Modeli Bazlı Raporlama Portalı</h4>", unsafe_allow_html=True)
+st.markdown("<h4 style='text-align: center; color: #475569;'>Ada Bazlı Akıllı Fizibilite Portalı</h4>", unsafe_allow_html=True)
 st.divider()
 
 rates = get_live_exchange_rates()
 
-st.sidebar.header("📁 İmar Belgesi Arşivi")
-uploaded_files = st.sidebar.file_uploader("Yeni İmar Durum Raporu (PDF) Yükle", type=["pdf"], accept_multiple_files=True)
+st.sidebar.header("📁 İmar Belgesi Yükleme")
+uploaded_files = st.sidebar.file_uploader("İmar Durum Raporu (PDF) Seçin", type=["pdf"], accept_multiple_files=True)
 
 if uploaded_files:
     for uploaded_file in uploaded_files:
         p_data = parse_imar_pdf(uploaded_file)
-        unique_key = f"{p_data['mahalle']}_{p_data['ada']}_{p_data['parsel']}"
+        unique_key = f"{p_data['mahalle']}_Ada:{p_data['ada']}_Parsel:{p_data['parsel']}"
         st.session_state["parcel_db"][unique_key] = p_data
     
     save_persistent_db(st.session_state["parcel_db"])
-    st.sidebar.success(f"{len(uploaded_files)} Adet Belge Arşive Kaydedildi!")
+    st.sidebar.success(f"{len(uploaded_files)} Adet Belge Arşive Eklendi!")
 
 st.sidebar.divider()
 st.sidebar.subheader("🎯 Rapor İçin Parsel Seçimi")
@@ -261,28 +261,27 @@ st.sidebar.subheader("🎯 Rapor İçin Parsel Seçimi")
 all_db_keys = list(st.session_state["parcel_db"].keys())
 
 if all_db_keys:
-    # Kullanıcının istedigi gibi tekli veya çoklu parsel seçebileceği multiselect alanı
-    selected_keys = st.sidebar.multiselect(
-        "Raporlanacak Parselleri Seçin:",
-        options=all_db_keys,
-        default=all_db_keys # Varsayılan olarak tümü seçili gelir
-    )
+    # Benzersiz Ada numaralarını ayıklayalım
+    unique_adas = sorted(list(set([p_data.get("ada", "0") for p_data in st.session_state["parcel_db"].values()])))
     
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("🗄️ Arşiv Yönetimi")
-    for key in all_db_keys:
-        col_s1, col_s2 = st.sidebar.columns([3, 1])
-        col_s1.write(f"📍 {key}")
-        if col_s2.button("Sil", key=f"del_{key}"):
-            del st.session_state["parcel_db"][key]
-            save_persistent_db(st.session_state["parcel_db"])
-            st.rerun()
+    selected_ada_filter = st.sidebar.selectbox("Ada Numarasına Göre Filtrele:", options=["Tümü"] + unique_adas)
+    
+    # Filtreye göre gösterilecek parsel listesini belirleme
+    if selected_ada_filter == "Tümü":
+        filtered_keys = all_db_keys
+    else:
+        filtered_keys = [k for k in all_db_keys if f"Ada:{selected_ada_filter}" in k]
+
+    selected_keys = st.sidebar.multiselect(
+        "Ada-Parsel Seçin:",
+        options=filtered_keys,
+        default=filtered_keys
+    )
 else:
-    st.sidebar.info("Henüz arşivde kayıtlı parsel yok. Lütfen PDF yükleyin.")
+    st.sidebar.info("Arşivde henüz kayıtlı parsel yok. Lütfen PDF yükleyin.")
     selected_keys = []
 
 if selected_keys:
-    # Sadece seçilen parselleri filtreleyerek aktif çalışma kümesi oluşturuyoruz
     active_parcel_db = {k: st.session_state["parcel_db"][k] for k in selected_keys}
 
     tab1, tab2, tab3 = st.tabs(["📊 Seçilen Parseller Özeti", "📐 İnşaat Alanı Hesabı", "📑 Proje Raporu & Fizibilite"])
@@ -327,9 +326,6 @@ if selected_keys:
                 if any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                     continue
                 
-                # Kullanıcının önceki oturumda güncellediği terk hesaplama kuralları:
-                # Terki yapılmamış arazide; Brüt arazi x 0.7 x kaks x 1.3
-                # Terki yapılmış arazide; Net arazi x kaks x 1.3 (0.70 ile çarpılmaz)
                 if not is_terkli:
                     if toplam_giren_fonk_m2 > 0:
                         fonk_pay_orani = f["giren_m2"] / toplam_giren_fonk_m2
@@ -359,7 +355,6 @@ if selected_keys:
         st.subheader("📑 Proje Raporlama & İş Modeli Fizibilitesi")
         st.success(f"⚡ **Canlı TCMB Dolar Kuru:** 1 USD = {rates['USD']:.2f} TL | **Seçilen Parsel Adedi:** {len(active_parcel_db)}")
         
-        # Seçilen ilk parselin mahallesini referans alıyoruz (karma seçimlerde ortalama veya ilk mahalle baz alınır)
         first_parcel = list(active_parcel_db.values())[0]
         detected_mahalle = first_parcel.get("mahalle", "VARSAYILAN").upper()
         
@@ -409,9 +404,8 @@ if selected_keys:
             arsa_payi_orani = col_f3.slider("Arsa Sahibi Payı / Kat Karşılığı Oranı (%)", min_value=0, max_value=70, value=40)
         else:
             arsa_payi_orani = 0.0
-            col_f3.info("ℹ️ Doğrudan Satılık modelinde arsa bedeli doğrudan yatırım maliyetine eklenir (Kat karşılığı payı uygulanmaz).")
+            col_f3.info("ℹ️ Doğrudan Satılık modelinde arsa bedeli doğrudan yatırım maliyetine eklenir.")
 
-        # FİNANSAL HESAPLAMALAR
         toplam_maliyet_usd = total_inşaat_alani * birim_maliyet
         toplam_ciro_usd = total_inşaat_alani * birim_satis
         
@@ -443,7 +437,6 @@ if selected_keys:
         f_col4.metric("Müteahhit Net Karı", f"${mutaahhit_net_kar_usd:,.2f}", f"₺{mutaahhit_net_kar_tl:,.2f} (%{roi:.1f} ROI)")
 
         st.markdown("---")
-        st.info("💡 **Rapor Notu:** Bu rapor, sol menüden seçilen arşiv parsellerinin imar verileri, güncel TCMB kurları ve seçilen iş modeli parametreleri kullanılarak anlık olarak derlenmiştir.")
         st.caption("İstestate Gayrimenkul & Meriç İnşaat Emlak - Kurumsal Raporlama ve Fizibilite Modülü")
 else:
-    st.warning("⚠️ Lütfen sol menüden raporlanmasını istediğiniz en az bir parsel seçin.")
+    st.warning("⚠️ Lütfen sol menüden raporlanmasını istediğiniz ada ve parselleri seçin.")
