@@ -237,14 +237,14 @@ def parse_imar_pdf(uploaded_file):
     return parcel_data
 
 # --- STREAMLIT ARAYÜZÜ ---
-st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT Emlak</h2>", unsafe_allow_html=True)
-st.markdown("<h4 style='text-align: center; color: #475569;'>Kalıcı Veritabanı Destekli Fizibilite Portalı</h4>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK</h2>", unsafe_allow_html=True)
+st.markdown("<h4 style='text-align: center; color: #475569;'>Çoklu Parsel Seçimli & İş Modeli Bazlı Raporlama Portalı</h4>", unsafe_allow_html=True)
 st.divider()
 
 rates = get_live_exchange_rates()
 
-st.sidebar.header("📁 İmar Belgesi Yükleme")
-uploaded_files = st.sidebar.file_uploader("İmar Durum Raporu (PDF) Seçin", type=["pdf"], accept_multiple_files=True)
+st.sidebar.header("📁 İmar Belgesi Arşivi")
+uploaded_files = st.sidebar.file_uploader("Yeni İmar Durum Raporu (PDF) Yükle", type=["pdf"], accept_multiple_files=True)
 
 if uploaded_files:
     for uploaded_file in uploaded_files:
@@ -252,13 +252,25 @@ if uploaded_files:
         unique_key = f"{p_data['mahalle']}_{p_data['ada']}_{p_data['parsel']}"
         st.session_state["parcel_db"][unique_key] = p_data
     
-    # Değişiklikleri kalıcı JSON dosyasına kaydet
     save_persistent_db(st.session_state["parcel_db"])
-    st.sidebar.success(f"{len(uploaded_files)} Adet Belge Kalıcı Olarak İşlendi!")
+    st.sidebar.success(f"{len(uploaded_files)} Adet Belge Arşive Kaydedildi!")
 
-st.sidebar.subheader("🗄️ Veritabanındaki Parseller")
-if st.session_state["parcel_db"]:
-    for key in list(st.session_state["parcel_db"].keys()):
+st.sidebar.divider()
+st.sidebar.subheader("🎯 Rapor İçin Parsel Seçimi")
+
+all_db_keys = list(st.session_state["parcel_db"].keys())
+
+if all_db_keys:
+    # Kullanıcının istedigi gibi tekli veya çoklu parsel seçebileceği multiselect alanı
+    selected_keys = st.sidebar.multiselect(
+        "Raporlanacak Parselleri Seçin:",
+        options=all_db_keys,
+        default=all_db_keys # Varsayılan olarak tümü seçili gelir
+    )
+    
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🗄️ Arşiv Yönetimi")
+    for key in all_db_keys:
         col_s1, col_s2 = st.sidebar.columns([3, 1])
         col_s1.write(f"📍 {key}")
         if col_s2.button("Sil", key=f"del_{key}"):
@@ -266,15 +278,19 @@ if st.session_state["parcel_db"]:
             save_persistent_db(st.session_state["parcel_db"])
             st.rerun()
 else:
-    st.sidebar.info("Henüz kaydedilmiş belge yok.")
+    st.sidebar.info("Henüz arşivde kayıtlı parsel yok. Lütfen PDF yükleyin.")
+    selected_keys = []
 
-if st.session_state["parcel_db"]:
-    tab1, tab2, tab3 = st.tabs(["📊 İmar Durumu Özeti", "📐 İnşaat Alanı Hesabı", "💰 Proje Tipi & Piyasa Fizibilitesi"])
+if selected_keys:
+    # Sadece seçilen parselleri filtreleyerek aktif çalışma kümesi oluşturuyoruz
+    active_parcel_db = {k: st.session_state["parcel_db"][k] for k in selected_keys}
+
+    tab1, tab2, tab3 = st.tabs(["📊 Seçilen Parseller Özeti", "📐 İnşaat Alanı Hesabı", "📑 Proje Raporu & Fizibilite"])
     
     with tab1:
-        st.subheader("Yüklenen Parsellerin İmar Özet Tablosu")
+        st.subheader("Seçilen Parsellerin İmar Özet Tablosu")
         table_rows = []
-        for key, p in st.session_state["parcel_db"].items():
+        for key, p in active_parcel_db.items():
             terk_lbl = "Terki Yapılmış (Net)" if p["terk_yapilmis_mi"] else "Terki Yapılmamış (Brüt)"
             for f in p["fonksiyonlar"]:
                 table_rows.append({
@@ -290,7 +306,7 @@ if st.session_state["parcel_db"]:
         st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
 
     with tab2:
-        st.subheader("Çoklu Fonksiyon Destekli İnşaat Kapasite Hesabı")
+        st.subheader("Seçilen Parseller İçin Çoklu Fonksiyon Destekli İnşaat Kapasite Hesabı")
         emsal_artis_orani = 1.30
         st.info("ℹ️ İnşaat hesabı sabit **1.30 Genel Emsal Artış Katsayısı** ile yürütülmektedir.")
         st.markdown("---")
@@ -298,7 +314,7 @@ if st.session_state["parcel_db"]:
         total_inşaat_alani = 0.0
         calc_results = []
 
-        for key, p in st.session_state["parcel_db"].items():
+        for key, p in active_parcel_db.items():
             toplam_brut_m2 = p["toplam_alan"]
             is_terkli = p["terk_yapilmis_mi"]
             
@@ -311,6 +327,9 @@ if st.session_state["parcel_db"]:
                 if any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                     continue
                 
+                # Kullanıcının önceki oturumda güncellediği terk hesaplama kuralları:
+                # Terki yapılmamış arazide; Brüt arazi x 0.7 x kaks x 1.3
+                # Terki yapılmış arazide; Net arazi x kaks x 1.3 (0.70 ile çarpılmaz)
                 if not is_terkli:
                     if toplam_giren_fonk_m2 > 0:
                         fonk_pay_orani = f["giren_m2"] / toplam_giren_fonk_m2
@@ -327,28 +346,40 @@ if st.session_state["parcel_db"]:
                 calc_results.append({
                     "Parsel": key,
                     "Fonksiyon": f["fonksiyon_adi"],
-                    "Terk Durumu": "Terksiz (Brüt Üzerinden %70 Düşülür)" if not is_terkli else "Terkli (Net Üzerinden Birebir)",
+                    "Terk Durumu": "Terksiz (Brüt x 0.7)" if not is_terkli else "Terkli (Net x 1)",
                     "Hesaba Esas Arsa Payı (m²)": f"{esas_m2:,.2f}",
                     "KAKS (Emsal)": f"{f['kaks']:.2f}",
                     "Toplam Satılabilir Net İnşaat (m²)": f"{satilabilir_m2:,.2f}"
                 })
 
         st.table(pd.DataFrame(calc_results))
-        st.metric(label="🏗️ Toplam Satılabilir Net İnşaat Alanı (m²)", value=f"{total_inşaat_alani:,.2f} m²")
+        st.metric(label="🏗️ Seçilen Parseller Toplamı: Satılabilir Net İnşaat Alanı (m²)", value=f"{total_inşaat_alani:,.2f} m²")
 
     with tab3:
-        st.subheader("🏢 Proje Tipi ve Gerçekçi Bölge Fizibilitesi")
-        st.success(f"⚡ **Canlı TCMB Dolar Kuru:** 1 USD = {rates['USD']:.2f} TL | **Beykoz Gerçekçi Rayiç Motoru Aktif**")
+        st.subheader("📑 Proje Raporlama & İş Modeli Fizibilitesi")
+        st.success(f"⚡ **Canlı TCMB Dolar Kuru:** 1 USD = {rates['USD']:.2f} TL | **Seçilen Parsel Adedi:** {len(active_parcel_db)}")
         
-        first_parcel = list(st.session_state["parcel_db"].values())[0]
+        # Seçilen ilk parselin mahallesini referans alıyoruz (karma seçimlerde ortalama veya ilk mahalle baz alınır)
+        first_parcel = list(active_parcel_db.values())[0]
         detected_mahalle = first_parcel.get("mahalle", "VARSAYILAN").upper()
         
-        st.markdown("### 🏗️ Proje Tipi ve Lokasyon Seçimi")
-        col_opt1, col_opt2 = st.columns(2)
+        st.markdown("### 🏢 İş Modeli ve Proje Tipi Yapılandırması")
         
-        with col_opt1:
+        col_m1, col_m2, col_m3 = st.columns(3)
+        
+        with col_m1:
+            is_modeli = st.selectbox(
+                "İş Modeli / Rapor Türü:",
+                options=[
+                    "Kat Karşılığı Proje Raporu",
+                    "Doğrudan Satılık / Arsa Yatırım Raporu"
+                ],
+                index=0
+            )
+            
+        with col_m2:
             selected_proje_tipi = st.selectbox(
-                "Proje Tipi Seçin:",
+                "Proje Tipi:",
                 options=[
                     "Lüks Villa / Müstakil Proje",
                     "Üst Segment Konut / Rezidans",
@@ -358,12 +389,12 @@ if st.session_state["parcel_db"]:
                 ],
                 index=0
             )
-        
-        real_satis_usd, real_maliyet_usd = get_realistic_market_pricing(detected_mahalle, selected_proje_tipi, rates["USD"])
+            
+        with col_m3:
+            st.caption(f"📍 Referans Lokasyon: **{detected_mahalle}**")
+            manual_override = st.checkbox("Özel / Manuel Fiyat Girişi Yap", value=False)
 
-        with col_opt2:
-            st.caption(f"📍 Analiz Edilen Mahalle: **{detected_mahalle}**")
-            manual_override = st.checkbox("Özel / Manuel Fiyat Girişi Yap (Piyasa verisini ez)", value=False)
+        real_satis_usd, real_maliyet_usd = get_realistic_market_pricing(detected_mahalle, selected_proje_tipi, rates["USD"])
 
         col_f1, col_f2, col_f3 = st.columns(3)
         
@@ -374,12 +405,23 @@ if st.session_state["parcel_db"]:
             birim_maliyet = col_f1.number_input("İnşaat M² Maliyeti ($) [Piyasa]", value=float(real_maliyet_usd), disabled=True)
             birim_satis = col_f2.number_input("M² Satış Fiyatı ($) [Piyasa]", value=float(real_satis_usd), disabled=True)
 
-        arsa_payi_orani = col_f3.slider("Arsa Payı / Kat Karşılığı Oranı (%)", min_value=0, max_value=70, value=40)
-        
+        if "Kat Karşılığı" in is_modeli:
+            arsa_payi_orani = col_f3.slider("Arsa Sahibi Payı / Kat Karşılığı Oranı (%)", min_value=0, max_value=70, value=40)
+        else:
+            arsa_payi_orani = 0.0
+            col_f3.info("ℹ️ Doğrudan Satılık modelinde arsa bedeli doğrudan yatırım maliyetine eklenir (Kat karşılığı payı uygulanmaz).")
+
+        # FİNANSAL HESAPLAMALAR
         toplam_maliyet_usd = total_inşaat_alani * birim_maliyet
         toplam_ciro_usd = total_inşaat_alani * birim_satis
-        arsa_sahibi_payi_usd = toplam_ciro_usd * (arsa_payi_orani / 100)
-        mutaahhit_net_kar_usd = toplam_ciro_usd - toplam_maliyet_usd - arsa_sahibi_payi_usd
+        
+        if "Kat Karşılığı" in is_modeli:
+            arsa_sahibi_payi_usd = toplam_ciro_usd * (arsa_payi_orani / 100)
+            mutaahhit_net_kar_usd = toplam_ciro_usd - toplam_maliyet_usd - arsa_sahibi_payi_usd
+        else:
+            arsa_sahibi_payi_usd = 0.0
+            mutaahhit_net_kar_usd = toplam_ciro_usd - toplam_maliyet_usd
+            
         roi = (mutaahhit_net_kar_usd / toplam_maliyet_usd * 100) if toplam_maliyet_usd > 0 else 0
         
         toplam_ciro_tl = toplam_ciro_usd * rates['USD']
@@ -387,11 +429,21 @@ if st.session_state["parcel_db"]:
         mutaahhit_net_kar_tl = mutaahhit_net_kar_usd * rates['USD']
 
         st.markdown("---")
-        st.markdown("### 📊 Gerçekçi Finansal Tablo Özeti (USD & TL)")
+        st.markdown(f"### 📊 Rapor Özeti: {is_modeli} ({selected_proje_tipi})")
+        
         f_col1, f_col2, f_col3, f_col4 = st.columns(4)
         f_col1.metric("Toplam Tahmini Ciro", f"${toplam_ciro_usd:,.2f}", f"₺{toplam_ciro_tl:,.2f}")
         f_col2.metric("Toplam İnşaat Maliyeti", f"${toplam_maliyet_usd:,.2f}", f"₺{toplam_maliyet_tl:,.2f}")
-        f_col3.metric("Arsa Sahibi Payı", f"${arsa_sahibi_payi_usd:,.2f}")
+        
+        if "Kat Karşılığı" in is_modeli:
+            f_col3.metric("Arsa Sahibi Payı", f"${arsa_sahibi_payi_usd:,.2f}")
+        else:
+            f_col3.metric("İş Modeli", "Doğrudan Yatırım")
+            
         f_col4.metric("Müteahhit Net Karı", f"${mutaahhit_net_kar_usd:,.2f}", f"₺{mutaahhit_net_kar_tl:,.2f} (%{roi:.1f} ROI)")
 
-        st.caption("İstestate Gayrimenkul & Meriç İnşaat Emlak - Kalıcı Dosya Tabanlı Fizibilite Motoru")
+        st.markdown("---")
+        st.info("💡 **Rapor Notu:** Bu rapor, sol menüden seçilen arşiv parsellerinin imar verileri, güncel TCMB kurları ve seçilen iş modeli parametreleri kullanılarak anlık olarak derlenmiştir.")
+        st.caption("İstestate Gayrimenkul & Meriç İnşaat Emlak - Kurumsal Raporlama ve Fizibilite Modülü")
+else:
+    st.warning("⚠️ Lütfen sol menüden raporlanmasını istediğiniz en az bir parsel seçin.")
