@@ -181,9 +181,9 @@ def parse_imar_pdf(uploaded_file):
                                     if "Mahalle" in head and val:
                                         parcel_data["mahalle"] = val.upper()
                                     elif "Ada" in head and val:
-                                        parcel_data["ada"] = val
+                                        parcel_data["ada"] = str(val).strip()
                                     elif "Parsel" in head and val:
-                                        parcel_data["parsel"] = val
+                                        parcel_data["parsel"] = str(val).strip()
                                     elif "Alan" in head and val:
                                         parcel_data["toplam_alan"] = parse_tr_float(val)
 
@@ -228,8 +228,8 @@ def parse_imar_pdf(uploaded_file):
         al_m = re.search(r"Alan\s*\*?\s*\|\s*([\d\.,]+)\s*m²", full_text)
         
         if m_m: parcel_data["mahalle"] = m_m.group(1).upper()
-        if a_m: parcel_data["ada"] = a_m.group(1)
-        if p_m: parcel_data["parsel"] = p_m.group(1)
+        if a_m: parcel_data["ada"] = str(a_m.group(1)).strip()
+        if p_m: parcel_data["parsel"] = str(p_m.group(1)).strip()
         if al_m and parcel_data["toplam_alan"] == 0.0:
             parcel_data["toplam_alan"] = parse_tr_float(al_m.group(1))
 
@@ -249,7 +249,7 @@ uploaded_files = st.sidebar.file_uploader("İmar Durum Raporu (PDF) Seçin", typ
 if uploaded_files:
     for uploaded_file in uploaded_files:
         p_data = parse_imar_pdf(uploaded_file)
-        unique_key = f"{p_data['mahalle']}_Ada:{p_data['ada']}_Parsel:{p_data['parsel']}"
+        unique_key = f"{p_data['mahalle']} | Ada: {p_data['ada']} - Parsel: {p_data['parsel']}"
         st.session_state["parcel_db"][unique_key] = p_data
     
     save_persistent_db(st.session_state["parcel_db"])
@@ -261,27 +261,24 @@ st.sidebar.subheader("🎯 Rapor İçin Parsel Seçimi")
 all_db_keys = list(st.session_state["parcel_db"].keys())
 
 if all_db_keys:
-    unique_adas = sorted(list(set([str(p_data.get("ada", "0")) for p_data in st.session_state["parcel_db"].values()])))
+    # Ada numaralarını doğru ve güvenli şekilde ayıkla
+    unique_adas = sorted(list(set([str(p_data.get("ada", "0")).strip() for p_data in st.session_state["parcel_db"].values()])))
     
     selected_ada_filter = st.sidebar.selectbox("Ada Numarasına Göre Filtrele:", options=["Tümü"] + unique_adas)
     
     if selected_ada_filter == "Tümü":
         filtered_keys = all_db_keys
     else:
-        filtered_keys = [k for k in all_db_keys if f"Ada:{selected_ada_filter}" in k]
-
-    if "selected_keys_state" not in st.session_state or st.sidebar.button("Seçimi Sıfırla"):
-        st.session_state["selected_keys_state"] = filtered_keys
-
-    current_selection = [k for k in st.session_state.get("selected_keys_state", []) if k in filtered_keys]
-    if not current_selection and filtered_keys:
-        current_selection = filtered_keys
+        # Seçilen ada numarasına uyan anahtarları güvenli şekilde filtrele
+        filtered_keys = [
+            k for k, p_data in st.session_state["parcel_db"].items() 
+            if str(p_data.get("ada", "")).strip() == str(selected_ada_filter).strip()
+        ]
 
     selected_keys = st.sidebar.multiselect(
         "Ada-Parsel Seçin:",
         options=filtered_keys,
-        default=current_selection,
-        key="selected_keys_state"
+        default=filtered_keys
     )
 else:
     st.sidebar.info("Arşivde henüz kayıtlı parsel yok. Lütfen PDF yükleyin.")
