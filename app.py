@@ -385,7 +385,7 @@ if selected_keys:
             )
         st.session_state["havuz_tercihi"] = havuz_tercihi
 
-        # Havuz modeline göre emsal içinden harcanan alan (Özel havuzlar toplamı veya Ortak havuz)
+        # Havuz modeline göre emsal içinden harcanan alan
         if havuz_tercihi == "Her Bağımsız Bölüme 1 Özel Havuz":
             havuz_emsele_maliyet_m2 = hedef_bagimsiz_bolum * 30.0
         elif havuz_tercihi == "Ortak / Sosyal Tesis Havuzu":
@@ -403,7 +403,7 @@ if selected_keys:
         st.markdown("---")
         m_col1, m_col2, m_col3, m_col4 = st.columns(4)
         m_col1.metric("Net Konut / Villa Alanı (Ortalama)", f"{ortalama_villa_alani:,.2f} m²", f"Toplam: {net_konut_innsaat_alani:,.2f} m²")
-        m_col2.metric("Ortalama Ünite Bodrum Alanı (%50)", f"{ortalama_bodrum_alani:,.2f} m²")
+        m_col2.metric("Ortalama Ünite Bodrum Alanı (%50)", f"{ortalama_bodrum_alani:,.2f} m²", f"Toplam Bodrum: {simulated_bodrum_alani:,.2f} m²")
         m_col3.metric("Emsalden Düşülen Havuz Payı", f"-{havuz_emsele_maliyet_m2:,.2f} m²")
         
         risk_durumu = "⚠️ RİSKLİ (Çok küçük ölçek)" if ortalama_villa_alani < 120 and hedef_bagimsiz_bolum > 1 else "✅ Uygun Ölçek"
@@ -420,16 +420,8 @@ if selected_keys:
         curr_hb = st.session_state["hedef_bagimsiz_bolum"]
         curr_hp = st.session_state["havuz_tercihi"]
         
-        if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz":
-            active_havuz_m2 = curr_hb * 30.0
-        elif curr_hp == "Ortak / Sosyal Tesis Havuzu":
-            active_havuz_m2 = 120.0
-        else:
-            active_havuz_m2 = 0.0
-            
-        # Finansal hesaplamalarda ciro ve maliyet yasal emsal tavanı (yasal_max_emsal_alani) üzerinden hesaplanır 
-        # çünkü havuz alanı da toplam inşaat maliyetine ve satış değerine dahildir ancak toplam emsal sınırını aşmaz.
-        toplam_fatura_alani = yasal_max_emsal_alani
+        # Mimari alandaki bodrum hesap mantığı ile senkronize bodrum alanı
+        simulated_bodrum_alani = (yasal_max_emsal_alani - (curr_hb * 30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 if curr_hp == "Ortak / Sosyal Tesis Havuzu" else 0.0))) * 0.50
 
         st.success(f"⚡ **Canlı TCMB Dolar Kuru:** 1 USD = {rates['USD']:.2f} TL | **Yasal Emsal Tavanı:** {yasal_max_emsal_alani:,.2f} m² | **Havuz Modeli:** {curr_hp}")
         
@@ -468,6 +460,13 @@ if selected_keys:
         real_satis_usd, real_maliyet_usd = get_realistic_market_pricing(detected_mahalle, selected_proje_tipi, rates["USD"])
 
         st.markdown("---")
+        
+        # Bodrum Satış Ayarları
+        st.markdown("#### 🏢 Satış ve Alan Parametreleri (Bodrum Kat Dahiliyeti)")
+        b_col_opt1, b_col_opt2 = st.columns(2)
+        bodrum_satisa_dahil = b_col_opt1.checkbox("Bodrum Katlarını Satış Ciroya Dahil Et", value=True)
+        bodrum_fiyat_orani = b_col_opt2.slider("Bodrum M² Satış Fiyatı Oranı (Normal Fiyata Göre %)", min_value=20, max_value=90, value=50, step=5)
+
         col_f1, col_f2, col_f3 = st.columns(3)
         
         if manual_override:
@@ -485,8 +484,14 @@ if selected_keys:
             arsa_payi_orani = 0.0
             col_f3.info("ℹ️ Doğrudan Satılık modelinde arsa bedeli doğrudan yatırım maliyetine eklenir.")
 
-        toplam_maliyet_usd = (toplam_fatura_alani * birim_maliyet) + arsa_bonus_usd
-        toplam_ciro_usd = toplam_fatura_alani * birim_satis
+        # Maliyet hesabı: Hem normal inşaat alanı hem de bodrum inşaat alanı maliyete tam olarak yansır
+        toplam_insaat_maliyet_alani = yasal_max_emsal_alani + simulated_bodrum_alani
+        toplam_maliyet_usd = (toplam_insaat_maliyet_alani * birim_maliyet) + arsa_bonus_usd
+        
+        # Ciro hesabı: Normal emsal alanı + (Eğer seçildiyse) İskontolu bodrum alanı cirosu
+        normal_ciro = yasal_max_emsal_alani * birim_satis
+        bodrum_ciro = (simulated_bodrum_alani * birim_satis * (bodrum_fiyat_orani / 100.0)) if bodrum_satisa_dahil else 0.0
+        toplam_ciro_usd = normal_ciro + bodrum_ciro
         
         if "Kat Karşılığı" in is_modeli:
             arsa_sahibi_payi_usd = toplam_ciro_usd * (arsa_payi_orani / 100)
