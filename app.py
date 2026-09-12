@@ -1,4 +1,6 @@
 import re
+import urllib.request
+import xml.etree.ElementTree as ET
 import pdfplumber
 import pandas as pd
 import streamlit as st
@@ -12,36 +14,49 @@ st.set_page_config(
 if "parcel_db" not in st.session_state:
     st.session_state["parcel_db"] = {}
 
+@st.cache_data(ttl=3600)
+def get_live_exchange_rates():
+    """TCMB canlı döviz kurlarını çeker."""
+    try:
+        url = "https://www.tcmb.gov.tr/kurlar/today.xml"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req) as response:
+            xml_data = response.read()
+        
+        root = ET.fromstring(xml_data)
+        usd_rate = 0.0
+        eur_rate = 0.0
+        
+        for currency in root.findall('Currency'):
+            code = currency.get('CurrencyCode')
+            if code == 'USD':
+                usd_rate = float(currency.find('ForexSelling').text)
+            elif code == 'EUR':
+                eur_rate = float(currency.find('ForexSelling').text)
+                
+        return {"USD": usd_rate, "EUR": eur_rate}
+    except Exception:
+        # Bağlantı hatası durumunda varsayılan kurlar
+        return {"USD": 34.00, "EUR": 37.50}
+
 def parse_tr_float(val_str):
-    """
-    Türkçe sayı formatlarını (Örn: 6,398.86 / 5,051,15 / 762.54 / %78.94) 
-    doğru matematiksel float değere dönüştürür.
-    """
     if not val_str:
         return 0.0
-    
-    # Metni temizle
     s = str(val_str).strip()
-    # Yüzde veya m² ifadelerini ayıkla
     if "-" in s:
         s = s.split("-")[-1]
-    
     s = re.sub(r'[^\d\.,]', '', s).strip()
     if not s:
         return 0.0
     
-    # Format dönüşüm mantığı
     if "," in s and "." in s:
-        # Örn: 6.398,86 veya 6,398.86
         if s.rfind(".") > s.rfind(","):
             s = s.replace(",", "")
         else:
             s = s.replace(".", "").replace(",", ".")
     elif "," in s:
-        # Örn: 5051,15
         s = s.replace(",", ".")
     elif "." in s:
-        # Binlik nokta kontrolü
         parts = s.split(".")
         if len(parts[-1]) == 3 and len(parts) > 1:
             s = s.replace(".", "")
@@ -51,12 +66,24 @@ def parse_tr_float(val_str):
     except ValueError:
         return 0.0
 
+def detect_terk_status(text):
+    """
+    İmar belgesi genel hükümlerinden terk yapılıp yapılmadığını otomatik algılar.
+    """
+    text_upper = text.upper()
+    if "YOLA TERK VE KAMUYA AYRILAN KISIMLAR KAMU ELİNE GEÇMEDEN" in text_upper or "TERK YAPILMAMIŞ" in text_upper:
+        return False  # Terki Yapılmamış (Brüt)
+    elif "TERKİ YAPILMIŞTIR" in text_upper or "DOP TERKİ YAPILMIŞ" in text_upper:
+        return True   # Terki Yapılmış (Net)
+    return False     # Varsayılan: Terki Yapılmamış
+
 def parse_imar_pdf(uploaded_file):
     parcel_data = {
         "mahalle": "BİLİNMİYOR",
         "ada": "0",
         "parsel": "0",
         "toplam_alan": 0.0,
+        "terk_yapilmis_mi": False,
         "fonksiyonlar": []
     }
     
@@ -72,7 +99,6 @@ def parse_imar_pdf(uploaded_file):
                     cells = [str(c).strip().replace('\n', ' ') if c is not None else '' for c in row]
                     row_str = " ".join(cells)
                     
-                    # 1. Başlıklar Üzerinden Mahalle, Ada, Parsel, Alan Yakalama
                     if any("Mahalle" in c for c in cells) and any("Ada" in c for c in cells):
                         if r_idx + 1 < len(table):
                             v_row = [str(c).strip().replace('\n', ' ') if c is not None else '' for c in table[r_idx + 1]]
@@ -88,7 +114,6 @@ def parse_imar_pdf(uploaded_file):
                                     elif "Alan" in head and val:
                                         parcel_data["toplam_alan"] = parse_tr_float(val)
 
-                    # 2. Fonksiyon Adı ve Detayları Yakalama
                     if "Fonksiyon Adı" in row_str:
                         fonk_name = ""
                         taks_val = 0.30
@@ -123,7 +148,8 @@ def parse_imar_pdf(uploaded_file):
                                 "giren_m2": giren_m2
                             })
 
-    # Düz Metin Yedeği (Regex Fallback)
+    parcel_data["terk_yapilmis_mi"] = detect_terk_status(full_text)
+    
     if parcel_data["mahalle"] == "BİLİNMİYOR" or parcel_data["ada"] == "0":
         m_m = re.search(r"Mahalle\s*\|\s*([A-ZÇĞİÖŞÜa-zçğıöşü]+)", full_text)
         a_m = re.search(r"Ada\s*\|\s*(\d+)", full_text)
@@ -142,6 +168,9 @@ def parse_imar_pdf(uploaded_file):
 st.markdown("<h2 style='text-align: center; color: #1E3A8A;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK</h2>", unsafe_allow_html=True)
 st.markdown("<h4 style='text-align: center; color: #475569;'>İmar Durumu Analizi & Gayrimenkul Fizibilite Portalı</h4>", unsafe_allow_html=True)
 st.divider()
+
+# Canlı Kur Bilgilerini Çek
+rates = get_live_exchange_rates()
 
 st.sidebar.header("📁 İmar Belgesi Yükleme")
 uploaded_files = st.sidebar.file_uploader("İmar Durum Raporu (PDF) Seçin", type=["pdf"], accept_multiple_files=True)
@@ -181,15 +210,25 @@ if st.session_state["parcel_db"]:
                     "Fonksiyon": f["fonksiyon_adi"],
                     "TAKS": f["taks"],
                     "KAKS (Emsal)": f["kaks"],
-                    "Fonksiyon Alanı (m²)": f"{f['giren_m2']:,.2f}"
+                    "Fonksiyon Alanı (m²)": f"{f['giren_m2']:,.2f}",
+                    "Otomatik Terk Durumu": "Terki Yapılmış (Net)" if p["terk_yapilmis_mi"] else "Terki Yapılmamış (Brüt)"
                 })
         st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
 
     with tab2:
         st.subheader("İnşaat Kapasite Hesabı")
+        
+        # Parsellerin otomatik terk durumunu genel kontrole aktar
+        auto_terk_status = all(p["terk_yapilmis_mi"] for p in st.session_state["parcel_db"].values())
+        
         col_c1, col_c2 = st.columns(2)
-        terk_durumu = col_c1.radio("Terkin Durumu Seçiniz:", ["Terki Yapılmamış Arazi (Brüt)", "Terki Yapılmış Arazi (Net)"])
-        emsal_artis_orani = col_c2.number_input("Emsal Artış Katsayısı (Örn: 1.30)", value=1.30, step=0.05)
+        terk_durumu_index = 1 if auto_terk_status else 0
+        terk_durumu = col_c1.radio(
+            "Terkin Durumu (Otomatik Algılandı):", 
+            ["Terki Yapılmamış Arazi (Brüt)", "Terki Yapılmış Arazi (Net)"],
+            index=terk_durumu_index
+        )
+        emsal_artis_orani = col_c2.number_input("Emsal Artış Katsayısı", value=1.30, step=0.05)
         
         st.markdown("---")
         total_inşaat_alani = 0.0
@@ -218,24 +257,32 @@ if st.session_state["parcel_db"]:
         st.metric(label="🏗️ Toplam Satılabilir Net İnşaat Alanı (m²)", value=f"{total_inşaat_alani:,.2f} m²")
 
     with tab3:
-        st.subheader("Finansal Analiz ve Proje Fizibilitesi")
+        st.subheader("Finansal Analiz ve Canlı Kur Fizibilitesi")
+        
+        st.info(f"💵 **TCMB Canlı Kurlar:** 1 USD = {rates['USD']:.2f} TL | 1 EUR = {rates['EUR']:.2f} TL")
+        
         col_f1, col_f2, col_f3 = st.columns(3)
         birim_maliyet = col_f1.number_input("İnşaat M² Maliyeti ($)", value=800, step=50)
         birim_satis = col_f2.number_input("M² Satış Fiyatı ($)", value=2500, step=100)
         arsa_payi_orani = col_f3.slider("Arsa Payı / Kat Karşılığı Oranı (%)", min_value=0, max_value=70, value=40)
         
-        toplam_maliyet = total_inşaat_alani * birim_maliyet
-        toplam_ciro = total_inşaat_alani * birim_satis
-        arsa_sahibi_payi = toplam_ciro * (arsa_payi_orani / 100)
-        mutaahhit_net_kar = toplam_ciro - toplam_maliyet - arsa_sahibi_payi
-        roi = (mutaahhit_net_kar / toplam_maliyet * 100) if toplam_maliyet > 0 else 0
+        toplam_maliyet_usd = total_inşaat_alani * birim_maliyet
+        toplam_ciro_usd = total_inşaat_alani * birim_satis
+        arsa_sahibi_payi_usd = toplam_ciro_usd * (arsa_payi_orani / 100)
+        mutaahhit_net_kar_usd = toplam_ciro_usd - toplam_maliyet_usd - arsa_sahibi_payi_usd
+        roi = (mutaahhit_net_kar_usd / toplam_maliyet_usd * 100) if toplam_maliyet_usd > 0 else 0
         
-        st.markdown("### 📊 Finansal Tablo Özeti")
+        # TL Karşılıkları
+        toplam_ciro_tl = toplam_ciro_usd * rates['USD']
+        toplam_maliyet_tl = toplam_maliyet_usd * rates['USD']
+        mutaahhit_net_kar_tl = mutaahhit_net_kar_usd * rates['USD']
+
+        st.markdown("### 📊 Finansal Tablo Özeti (USD & TL)")
         f_col1, f_col2, f_col3, f_col4 = st.columns(4)
-        f_col1.metric("Toplam Tahmini Ciro", f"${toplam_ciro:,.2f}")
-        f_col2.metric("Toplam İnşaat Maliyeti", f"${toplam_maliyet:,.2f}")
-        f_col3.metric("Arsa Sahibi Payı", f"${arsa_sahibi_payi:,.2f}")
-        f_col4.metric("Müteahhit Net Karı", f"${mutaahhit_net_kar:,.2f}", delta=f"%{roi:.1f} ROI")
+        f_col1.metric("Toplam Tahmini Ciro", f"${toplam_ciro_usd:,.2f}", f"₺{toplam_ciro_tl:,.2f}")
+        f_col2.metric("Toplam İnşaat Maliyeti", f"${toplam_maliyet_usd:,.2f}", f"₺{toplam_maliyet_tl:,.2f}")
+        f_col3.metric("Arsa Sahibi Payı", f"${arsa_sahibi_payi_usd:,.2f}")
+        f_col4.metric("Müteahhit Net Karı", f"${mutaahhit_net_kar_usd:,.2f}", f"₺{mutaahhit_net_kar_tl:,.2f} (%{roi:.1f} ROI)")
 
         st.markdown("---")
         st.caption("İstestate Gayrimenkul & Meriç İnşaat Emlak - Otomatik Fizibilite Raporlama Motoru")
