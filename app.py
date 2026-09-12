@@ -67,6 +67,7 @@ def parse_tr_float(val_str):
 
 def detect_terk_status(text):
     text_upper = text.upper()
+    # Eğer yola terk/kamu eline geçme şartı varsa terki yapılmamıştır (Brüt)
     if "YOLA TERK VE KAMUYA AYRILAN KISIMLAR KAMU ELİNE GEÇMEDEN" in text_upper or "TERK YAPILMAMIŞ" in text_upper:
         return False
     elif "TERKİ YAPILMIŞTIR" in text_upper or "DOP TERKİ YAPILMIŞ" in text_upper:
@@ -75,6 +76,7 @@ def detect_terk_status(text):
 
 def parse_imar_pdf(uploaded_file):
     parcel_data = {
+        "filename": uploaded_file.name,
         "mahalle": "BİLİNMİYOR",
         "ada": "0",
         "parsel": "0",
@@ -195,6 +197,7 @@ if st.session_state["parcel_db"]:
         st.subheader("Yüklenen Parsellerin Detaylı İmar Listesi")
         table_rows = []
         for key, p in st.session_state["parcel_db"].items():
+            terk_lbl = "Terki Yapılmış (Net)" if p["terk_yapilmis_mi"] else "Terki Yapılmamış (Brüt)"
             for f in p["fonksiyonlar"]:
                 table_rows.append({
                     "Kimlik": key,
@@ -206,55 +209,61 @@ if st.session_state["parcel_db"]:
                     "TAKS": f["taks"],
                     "KAKS (Emsal)": f["kaks"],
                     "Fonksiyon Alanı (m²)": f"{f['giren_m2']:,.2f}",
-                    "Otomatik Terk Durumu": "Terki Yapılmış (Net)" if p["terk_yapilmis_mi"] else "Terki Yapılmamış (Brüt)"
+                    "Algılanan Terk Durumu": terk_lbl
                 })
         st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
 
     with tab2:
-        st.subheader("İnşaat Kapasite Hesabı")
+        st.subheader("Parsel Bazlı İnşaat Kapasite Hesabı")
         
-        auto_terk_status = all(p["terk_yapilmis_mi"] for p in st.session_state["parcel_db"].values())
-        
-        col_c1, col_c2 = st.columns(2)
-        terk_durumu_index = 1 if auto_terk_status else 0
-        terk_durumu = col_c1.radio(
-            "Terkin Durumu (Otomatik Algılandı):", 
-            ["Terki Yapılmamış Arazi (Brüt)", "Terki Yapılmış Arazi (Net)"],
-            index=terk_durumu_index
-        )
-        emsal_artis_orani = col_c2.number_input("Emsal Artış Katsayısı", value=1.30, step=0.05)
-        
+        emsal_artis_orani = st.number_input("Genel Emsal Artış Katsayısı (Örn: 1.30)", value=1.30, step=0.05)
         st.markdown("---")
+        
         total_inşaat_alani = 0.0
         calc_results = []
 
+        st.markdown("### 🛠️ Parsel Terk Durumları Kontrolü")
+        
         for key, p in st.session_state["parcel_db"].items():
             toplam_brut_m2 = p["toplam_alan"]
+            
+            # Her parsel için bağımsız terk durum seçimi
+            is_terkli = st.checkbox(
+                f"📍 **{key}** - Terki Yapılmış Arazi (Net)", 
+                value=p["terk_yapilmis_mi"],
+                key=f"terk_chk_{key}"
+            )
+            
             for f in p["fonksiyonlar"]:
                 if any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                     satilabilir_m2 = 0.0
                     esas_m2 = f["giren_m2"]
+                    hesap_turu = "Kamu Alanı (İnşaat Yapılamaz)"
                 else:
-                    if terk_durumu == "Terki Yapılmamış Arazi (Brüt)":
-                        # Terki yapılmamış arazide hesap brüt arsa alanına göre yapılır
+                    if not is_terkli:
+                        # Terki yapılmamış: Brüt Arsa x 0.70 x KAKS x Emsal Artışı
                         esas_m2 = toplam_brut_m2
                         satilabilir_m2 = esas_m2 * 0.70 * f["kaks"] * emsal_artis_orani
+                        hesap_turu = "Brüt Arsa x 0.70 x Emsal"
                     else:
-                        # Terki yapılmış arazide hesap net fonksiyona giren alana göre yapılır
+                        # Terki yapılmış: Net Fonksiyon Alanı x KAKS x Emsal Artışı
                         esas_m2 = f["giren_m2"]
                         satilabilir_m2 = esas_m2 * f["kaks"] * emsal_artis_orani
+                        hesap_turu = "Net Alan x Emsal"
                 
                 total_inşaat_alani += satilabilir_m2
                 calc_results.append({
-                    "Parsel": key,
+                    "Parsel Kimliği": key,
                     "Fonksiyon": f["fonksiyon_adi"],
+                    "Hesap Formülü": hesap_turu,
                     "Hesaba Esas Alan (m²)": f"{esas_m2:,.2f}",
                     "Emsal (KAKS)": f["kaks"],
                     "Toplam İnşaat Alanı (m²)": f"{satilabilir_m2:,.2f}"
                 })
 
+        st.markdown("### 📊 Hesaplama Tablosu")
         st.table(pd.DataFrame(calc_results))
-        st.metric(label="🏗️ Toplam Satılabilir Net İnşaat Alanı (m²)", value=f"{total_inşaat_alani:,.2f} m²")
+        st.metric(label="🏗️ Tüm Parsellerin Toplam Satılabilir Net İnşaat Alanı (m²)", value=f"{total_inşaat_alani:,.2f} m²")
 
     with tab3:
         st.subheader("Finansal Analiz ve Canlı Kur Fizibilitesi")
