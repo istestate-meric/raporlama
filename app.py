@@ -270,10 +270,18 @@ if all_db_keys:
     else:
         filtered_keys = [k for k in all_db_keys if f"Ada:{selected_ada_filter}" in k]
 
+    if "selected_keys_state" not in st.session_state or st.sidebar.button("Seçimi Sıfırla"):
+        st.session_state["selected_keys_state"] = filtered_keys
+
+    current_selection = [k for k in st.session_state.get("selected_keys_state", []) if k in filtered_keys]
+    if not current_selection and filtered_keys:
+        current_selection = filtered_keys
+
     selected_keys = st.sidebar.multiselect(
         "Ada-Parsel Seçin:",
         options=filtered_keys,
-        default=filtered_keys
+        default=current_selection,
+        key="selected_keys_state"
     )
 else:
     st.sidebar.info("Arşivde henüz kayıtlı parsel yok. Lütfen PDF yükleyin.")
