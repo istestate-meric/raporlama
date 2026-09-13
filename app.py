@@ -558,7 +558,6 @@ if selected_keys:
         tekil_havuz_payi = 30.0 if havuz_tercihi == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 / hedef_bagimsiz_bolum if havuz_tercihi == "Ortak / Sosyal Tesis Havuzu" else 0.0)
         toplam_unite_brut_dahil_eklentiler = ortalama_unite_alani + ortalama_bodrum_alani + tekil_havuz_payi
 
-        # Kurumsal Tam Uyumlu, Net Okunabilir Özel Tablo Tasarımı (Koyu mod ve beyaz mod uyumlu)
         tab3_detay_rows_html = f"""<tr>
 <td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ana Ünite İnşaat Alanı (Brüt)</td>
 <td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ortalama Bağımsız Bölüm Kapalı Alanı</td>
@@ -686,6 +685,59 @@ if selected_keys:
         
         st.markdown("#### Bağımsız Bölüm Başına Detaylı Alan ve Dağılımı")
         
+        # Ön izleme ekranı için Tab 3 ile birebir aynı koyu tema kurumsal tablo tasarımı
+        preview_detay_rows_html = f"""<tr>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ana Ünite İnşaat Alanı (Brüt)</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ortalama Bağımsız Bölüm Kapalı Alanı</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #0f172a; text-align: right; font-weight: 700;">{tab5_saf_unite_brut:,.2f} m²</td>
+</tr>
+<tr>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #1e293b;">Bodrum Payı</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #1e293b;">Ortalama Bodrum Payı</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #1e293b; text-align: right; font-weight: 700;">{tab5_bodrum_payi_m2:,.2f} m²</td>
+</tr>
+<tr>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Havuz Payı</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">{curr_hp}</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #0f172a; text-align: right; font-weight: 700;">{tab5_havuz_payi_m2:,.2f} m²</td>
+</tr>
+<tr style="font-weight: bold;">
+<td style="border: 1px solid #475569; padding: 11px 14px; color: #ffffff; background-color: #1e3a8a;">Toplam Bağımsız Bölüm Brüt Alanı (Eklentiler Dahil)</td>
+<td style="border: 1px solid #475569; padding: 11px 14px; color: #ffffff; background-color: #1e3a8a;">Ana Ünite + Bodrum + Havuz Payı</td>
+<td style="border: 1px solid #475569; padding: 11px 14px; color: #38bdf8; background-color: #1e3a8a; text-align: right; font-weight: 800;">{tab5_toplam_unite_brut_dahil_eklentiler:,.2f} m²</td>
+</tr>"""
+
+        st.markdown(f"""<div style="overflow-x: auto; margin-bottom: 20px;"><table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+<thead>
+<tr style="background-color: #020617; color: #ffffff;">
+<th style="border: 1px solid #475569; padding: 12px 14px; text-align: left; font-weight: 700;">Bileşen</th>
+<th style="border: 1px solid #475569; padding: 12px 14px; text-align: left; font-weight: 700;">Açıklama / Model</th>
+<th style="border: 1px solid #475569; padding: 12px 14px; text-align: right; font-weight: 700;">Birim Değeri</th>
+</tr>
+</thead>
+<tbody>
+{preview_detay_rows_html}
+</tbody>
+</table></div>""", unsafe_allow_html=True)
+        
+        st.markdown("#### 3. Finansal Fizibilite ve Ciro Analizi ($ USD)")
+        
+        preview_table_data = [
+            {"Finansal Kalem": "Toplam Tahmini Brüt Ciro", "Tutar (USD $)": f"${toplam_ciro_usd:,.2f}", "Tutar (TL ₺)": f"₺{toplam_ciro_tl:,.2f}"},
+            {"Finansal Kalem": "Toplam İnşaat Maliyeti + Bonus", "Tutar (USD $)": f"${toplam_maliyet_usd:,.2f}", "Tutar (TL ₺)": f"₺{toplam_maliyet_tl:,.2f}"}
+        ]
+        if "Kat Karşılığı" in is_modeli:
+            preview_table_data.append({"Finansal Kalem": "Arsa Sahibi Payı", "Tutar (USD $)": f"${arsa_sahibi_payi_usd:,.2f}", "Tutar (TL ₺)": "-"})
+        
+        preview_table_data.append({"Finansal Kalem": "Müteahhit Net Kârı", "Tutar (USD $)": f"${mutaahhit_net_kar_usd:,.2f}", "Tutar (TL ₺)": f"₺{mutaahhit_net_kar_tl:,.2f} (%{yg_orani:.1f} YG)"})
+        
+        st.table(pd.DataFrame(preview_table_data))
+        st.markdown("---")
+        
+        pdf_logo1_html = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 55px; width: auto; object-fit: contain;'>" if img1_base64 else "<span style='font-size:18px; font-weight:bold; color:#1e3a8a;'>İSTESTATE</span>"
+        pdf_logo2_html = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 55px; width: auto; object-fit: contain;'>" if img2_base64 else "<span style='font-size:18px; font-weight:bold; color:#1e3a8a;'>MERİÇ İNŞAAT</span>"
+
+        # PDF çıktısı için yazıcı dostu açık renkli tablo satırları
         pdf_detay_rows_html = f"""<tr>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ana Ünite İnşaat Alanı (Brüt)</td>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ortalama Bağımsız Bölüm Kapalı Alanı</td>
@@ -706,36 +758,6 @@ if selected_keys:
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ana Ünite + Bodrum + Havuz Payı</td>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; color: #1e3a8a;">{tab5_toplam_unite_brut_dahil_eklentiler:,.2f} m²</td>
 </tr>"""
-
-        st.markdown(f"""<table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 15px;">
-<thead>
-<tr style="background-color: #f1f5f9;">
-<th style="border: 1px solid #cbd5e1; padding: 9px 12px; text-align: left;">Bileşen</th>
-<th style="border: 1px solid #cbd5e1; padding: 9px 12px; text-align: left;">Açıklama / Model</th>
-<th style="border: 1px solid #cbd5e1; padding: 9px 12px; text-align: right;">Birim Değeri</th>
-</tr>
-</thead>
-<tbody>
-{pdf_detay_rows_html}
-</tbody>
-</table>""", unsafe_allow_html=True)
-        
-        st.markdown("#### 3. Finansal Fizibilite ve Ciro Analizi ($ USD)")
-        
-        preview_table_data = [
-            {"Finansal Kalem": "Toplam Tahmini Brüt Ciro", "Tutar (USD $)": f"${toplam_ciro_usd:,.2f}", "Tutar (TL ₺)": f"₺{toplam_ciro_tl:,.2f}"},
-            {"Finansal Kalem": "Toplam İnşaat Maliyeti + Bonus", "Tutar (USD $)": f"${toplam_maliyet_usd:,.2f}", "Tutar (TL ₺)": f"₺{toplam_maliyet_tl:,.2f}"}
-        ]
-        if "Kat Karşılığı" in is_modeli:
-            preview_table_data.append({"Finansal Kalem": "Arsa Sahibi Payı", "Tutar (USD $)": f"${arsa_sahibi_payi_usd:,.2f}", "Tutar (TL ₺)": "-"})
-        
-        preview_table_data.append({"Finansal Kalem": "Müteahhit Net Kârı", "Tutar (USD $)": f"${mutaahhit_net_kar_usd:,.2f}", "Tutar (TL ₺)": f"₺{mutaahhit_net_kar_tl:,.2f} (%{yg_orani:.1f} YG)"})
-        
-        st.table(pd.DataFrame(preview_table_data))
-        st.markdown("---")
-        
-        pdf_logo1_html = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 55px; width: auto; object-fit: contain;'>" if img1_base64 else "<span style='font-size:18px; font-weight:bold; color:#1e3a8a;'>İSTESTATE</span>"
-        pdf_logo2_html = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 55px; width: auto; object-fit: contain;'>" if img2_base64 else "<span style='font-size:18px; font-weight:bold; color:#1e3a8a;'>MERİÇ İNŞAAT</span>"
 
         arsa_sahibi_row_html = ""
         if "Kat Karşılığı" in is_modeli:
