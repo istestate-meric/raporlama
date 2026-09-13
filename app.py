@@ -524,7 +524,7 @@ if selected_keys:
 
   st.markdown("---")
 
-  # --- MİNİMALİZE VE KURUMSAL AKORDEON YAPISI ---
+  # --- KOMPAKT VE KURUMSAL AKORDEON YAPISI ---
   all_functions_map = {}
   for key, p in active_parcel_db.items():
     for f in p["fonksiyonlar"]:
@@ -546,25 +546,26 @@ if selected_keys:
       expanded=False,
   ):
     st.markdown(
-        "<p style='color: #64748b; font-size: 13px; margin-bottom: 15px;'>Seçilen"
-        " bölgeye ve proje konseptine ait birim maliyet ve satış değerleri"
-        " piyasa verilerine göre otomatik optimize edilir. İhtiyaç halinde"
-        " özelleştirebilirsiniz.</p>",
+        "<p style='color: #64748b; font-size: 12px; margin-bottom: 10px;'>Bölge"
+        " ve proje konseptine göre birim maliyet/satış fiyatları anlık olarak"
+        " otomatik hesaplanır. İhtiyaç halinde düzenleyebilirsiniz.</p>",
         unsafe_allow_html=True,
     )
 
     for fonk_name, items in all_functions_map.items():
-      st.markdown(f"#### 📌 Fonksiyon: `{fonk_name}`")
       allowed_types = get_allowed_project_types(fonk_name)
 
-      f_col1, f_col2, f_col3 = st.columns(3)
-      with f_col1:
+      # Kompakt 5'li Yatay Kolon Yapısı (Tek Satır Görünüm)
+      fc1, fc2, fc3, fc4, fc5 = st.columns([1.5, 1.4, 1.1, 1.0, 1.0])
+
+      with fc1:
         sel_p_tipi = st.selectbox(
             f"Proje Tipi ({fonk_name})",
             options=allowed_types,
             key=f"p_tipi_{fonk_name}",
+            label_visibility="collapsed",
         )
-      with f_col2:
+      with fc2:
         fonk_toplam_brut_m2 = sum(
             item[1]["giren_m2"]
             if item[1]["giren_m2"] > 0
@@ -579,20 +580,19 @@ if selected_keys:
         def_adet = max(1, round(fonk_toplam_brut_m2 / def_hedef_alan))
 
         adet = st.number_input(
-            f"Planlanan Bağımsız Bölüm Adedi",
+            "Adet",
             min_value=1,
             value=int(def_adet),
             step=1,
             key=f"adet_{fonk_name}",
+            label_visibility="collapsed",
         )
-      with f_col3:
+      with fc3:
         havuz_mod = st.selectbox(
-            f"Havuz Modeli",
-            options=[
-                "Özel / Ortak Havuzlu",
-                "Havuz İptal (Küçük Ölçek Kısıtı)",
-            ],
+            "Havuz",
+            options=["Özel/Ortak Havuzlu", "Havuz İptal"],
             key=f"havuz_{fonk_name}",
+            label_visibility="collapsed",
         )
 
       first_mahalle = list(active_parcel_db.values())[0].get(
@@ -602,20 +602,21 @@ if selected_keys:
           first_mahalle, sel_p_tipi, rates["USD"]
       )
 
-      p_col1, p_col2 = st.columns(2)
-      with p_col1:
+      with fc4:
         fonk_maliyet = st.number_input(
-            f"M² Brüt Maliyet ($) [{fonk_name}]",
+            "Maliyet ($)",
             value=float(r_maliyet),
             step=50.0,
             key=f"mal_{fonk_name}",
+            label_visibility="collapsed",
         )
-      with p_col2:
+      with fc5:
         fonk_satis = st.number_input(
-            f"M² Brüt Satış ($) [{fonk_name}]",
+            "Satış ($)",
             value=float(r_satis),
             step=100.0,
             key=f"sat_{fonk_name}",
+            label_visibility="collapsed",
         )
 
       function_configs[fonk_name] = {
@@ -626,9 +627,15 @@ if selected_keys:
           "satis": fonk_satis,
           "bodrum_orani": r_bodrum_orani,
       }
-      st.markdown("---")
+      st.markdown(
+          f"<div style='font-size:11px; color:#475569; margin-top:-4px;"
+          f" margin-bottom:6px;'>📌 <b>{fonk_name}</b> | Proje Tipi, Adet,"
+          " Havuz, Maliyet ($/m²), Satış ($/m²):</div>",
+          unsafe_allow_html=True,
+      )
+      st.divider()
 
-  # Eğer akordeon kapalıysa veya o an render edilmediyse varsayılan değerleri besle
+  # Eğer akordeon kapalıysa varsayılan değerleri besle
   for fonk_name, items in all_functions_map.items():
     if fonk_name not in function_configs:
       first_mahalle = list(active_parcel_db.values())[0].get(
