@@ -368,11 +368,12 @@ if selected_keys:
     tahmini_ideal_adet = max(1, round(yasal_max_brut_insaat_alani / p_spec["hedef_alan"]))
     tahmini_havuz_modeli = p_spec["havuz_mod"]
 
-    # PROJE TİPİ DEĞİŞTİĞİNDE BAĞIMSIZ BÖLÜM ADEDİNİ OTOMATİK GÜNCELLE
+    # PROJE TİPİ DEĞİŞTİĞİNDE BAĞIMSIZ BÖLÜM ADEDİNİ OTOMATİK GÜNCELLE VE STATE'E ZORLA
     if "last_proje_tipi" not in st.session_state or st.session_state["last_proje_tipi"] != selected_proje_tipi:
         st.session_state["last_proje_tipi"] = selected_proje_tipi
         st.session_state["hedef_bagimsiz_bolum"] = tahmini_ideal_adet
         st.session_state["havuz_tercihi"] = tahmini_havuz_modeli
+        st.session_state["hb_input"] = tahmini_ideal_adet  # Streamlit number_input state senkronizasyonu
 
     tab1, tab2, tab3, tab4 = st.tabs(["📊 Seçilen Parseller Özeti", "📐 İnşaat Alanı Hesabı", "🏛️ Mimari Fizibilite", "📑 Proje Raporu & Fizibilite"])
     
