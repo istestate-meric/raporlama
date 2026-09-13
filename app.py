@@ -817,7 +817,7 @@ if selected_keys:
     st.markdown("---")
     m_col1, m_col2, m_col3, m_col4 = st.columns(4)
 
-    # İsteğiniz doğrultusunda İnşaat Alanı ve Net Arsa adet bazlı ana değer, toplam değer parantez içinde detay olarak güncellendi:
+    # İsteğiniz doğrultusunda İnşaat Alanı, Net Arsa ve Bodrum Payı adet bazlı ana değer, toplam değer parantez içinde detay olarak güncellendi:
     m_col1.metric(
         "İnşaat Alanı",
         f"{unite_basi_insaat_alani:,.2f} m²",
@@ -830,8 +830,8 @@ if selected_keys:
     )
     m_col3.metric(
         "Bodrum Payı",
-        f"{simulated_bodrum_alani:,.2f} m²",
-        f"({ortalama_bodrum_alani:,.2f} m² / {birim_etiketi_alt})",
+        f"{ortalama_bodrum_alani:,.2f} m²",
+        f"(Toplam: {simulated_bodrum_alani:,.2f} m²)",
     )
 
     min_sinir = (
