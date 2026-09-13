@@ -430,21 +430,18 @@ if selected_keys:
     
     with tab1:
         st.subheader("Seçilen Parsellerin İmar ve Fonksiyon Bazlı Arsa Dağılımı")
-        st.info("💡 Net arsa alanı her fonksiyonun kendi brüt alanı (`giren_m2`) üzerinden (terksizler için %30 kesintiyle) hesaplanmıştır ve asla ilgili fonksiyon alanını aşmaz.")
+        st.info("💡 Net arsa alanı Tapu alanı (`toplam_alan`) baz alınarak; terk yapılmamışsa imar uygulaması gereği %30 kesinti yapılmış gibi ($toplam\_brut \\times 0.70$), terki yapılmışsa fonksiyon alanı üzerinden hesaplanmıştır.")
         
         table_rows = []
         for key, p in active_parcel_db.items():
             is_terkli = p["terk_yapilmis_mi"]
             toplam_brut = p["toplam_alan"]
-            terk_lbl = "Terki Yapılmış (Net)" if is_terkli else "Terki Yapılmamış (%30 Kesintili)"
+            terk_lbl = "Terki Yapılmış (Net)" if is_terkli else "Terki Yapılmamış (%30 Kesintili İmar Hesabı)"
             
             for f in p["fonksiyonlar"]:
                 fonks_m2 = f["giren_m2"] if f["giren_m2"] > 0 else toplam_brut
-                # Net alan fonksiyon alanından büyük olamaz, doğrudan fonksiyon brüt alanı üzerinden türetilir
-                net_m2 = fonks_m2 if is_terkli else fonks_m2 * 0.70
-                
-                hedef_bb = st.session_state.get("hedef_bagimsiz_bolum", 1)
-                unite_basi_fonk_net = net_m2 / hedef_bb if hedef_bb > 0 else 0
+                # Net arsa hesabı Tapu alanı veya fonksiyon alanı (terk durumuna göre) üzerinden yapılır
+                net_m2 = fonks_m2 if is_terkli else toplam_brut * 0.70
                 
                 table_rows.append({
                     "Parsel Bilgisi": key,
@@ -453,7 +450,6 @@ if selected_keys:
                     "Fonksiyon": f["fonksiyon_adi"],
                     "Fonksiyon Alanı (m²)": f"{fonks_m2:,.2f}",
                     "Net Arsa (m²)": f"{net_m2:,.2f}",
-                    "Ünite Başı Net Arsa Payı": f"{unite_basi_fonk_net:,.2f} m² / Ünite",
                     "TAKS": f"{f['taks']:.2f}",
                     "KAKS (Emsal)": f"{f['kaks']:.2f}",
                     "Terk Durumu": terk_lbl
