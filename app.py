@@ -434,7 +434,7 @@ if selected_keys:
     
     ortalama_unite_alani = net_brut_dusulen_alan / curr_hb if curr_hb > 0 else 0
     
-    # Eş zaman ve senkronizasyon düzeltmesi: Net arsa alanı üzerinden ünite başına düşen net arsa payı
+    # Eş zamanlı ve adete bağlı ölçeklenen arsa payı hesaplaması (Eski haline döndürüldü)
     unite_basi_net_arsa_genel = toplam_net_arsa_alani / curr_hb if curr_hb > 0 else 0
     
     simulated_bodrum_alani = net_brut_dusulen_alan * p_spec["bodrum_orani"]
@@ -467,19 +467,19 @@ if selected_keys:
                     "Parsel Bilgisi": key,
                     "Mahalle": p["mahalle"],
                     "Toplam Arsa (m²)": f"{toplam_brut:,.2f}",
-                    "Fonksiyon": f["fonksiyon_adi"],
-                    "Fonksiyon Alanı (m²)": f"{fonks_m2:,.2f}",
+                    "Alan Adı": f["fonksiyon_adi"],
+                    "Alan Miktarı (m²)": f"{fonks_m2:,.2f}",
                     "Net Arsa (m²)": f"{net_m2:,.2f}",
                     "TAKS": f"{f['taks']:.2f}",
                     "KAKS (Emsal)": f"{f['kaks']:.2f}",
                     "Terk Durumu": terk_lbl
                 })
         st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
-        st.info(f"💡 **Toplam Arsa Özeti:** Toplam Brüt Arsa: **{toplam_brut_arsa_alani:,.2f} m²** | Parsel Bazlı Toplam Net Arsa: **{toplam_net_arsa_alani:,.2f} m²** | Toplam Fonksiyon Alanı: **{toplam_fonksiyon_alani:,.2f} m²**")
+        st.info(f"💡 **Toplam Arsa Özeti:** Toplam Brüt Arsa: **{toplam_brut_arsa_alani:,.2f} m²** | Parsel Bazlı Toplam Net Arsa: **{toplam_net_arsa_alani:,.2f} m²** | Toplam Alan Miktarı: **{toplam_fonksiyon_alani:,.2f} m²**")
 
     with tab2:
         st.subheader("Seçilen Parseller İçin Çoklu Destekli Brüt İnşaat Kapasite Hesabı")
-        st.info("ℹ️ İnşaat hesabı imar belgesindeki fonksiyon kırılımları ve **1.30 Genel Emsal Artış Katsayısı** ile yürütülmektedir.")
+        st.info("ℹ️ İnşaat hesabı imar belgesindeki kırılımlar ve **1.30 Genel Emsal Artış Katsayısı** ile yürütülmektedir.")
         st.markdown("---")
         
         calc_results = []
@@ -504,7 +504,7 @@ if selected_keys:
                 
                 calc_results.append({
                     "Parsel": key,
-                    "Fonksiyon": f["fonksiyon_adi"],
+                    "Alan Adı": f["fonksiyon_adi"],
                     "Terk Durumu": "Terksiz (%30 Kesintili)" if not is_terkli else "Terkli (Net Alan)",
                     "Hesaba Esas Arsa Payı (m²)": f"{esas_m2:,.2f}" if not is_terkli else f"{base_toplab_m2:,.2f}",
                     "KAKS (Emsal)": f"{f['kaks']:.2f}",
@@ -544,7 +544,7 @@ if selected_keys:
         st.markdown("---")
         m_col1, m_col2, m_col3, m_col4 = st.columns(4)
         m_col1.metric("Toplam Ünite Alanı (Ortalama Ünite)", f"{net_brut_dusulen_alan:,.2f} m²", f"({ortalama_unite_alani:,.2f} m² / Ünite)")
-        m_col2.metric("Ünite Başına Düşen Arsa Payı", f"{toplam_net_arsa_alani:,.2f} m²", f"({unite_basi_net_arsa_genel:,.2f} m² / Ünite)")
+        m_col2.metric("Ünite Başına Düşen Pay", f"{unite_basi_net_arsa_genel:,.2f} m² / Ünite", f"(Toplam Net Arsa / Adet)")
         m_col3.metric("Bodrum Payı", f"{simulated_bodrum_alani:,.2f} m²", f"({ortalama_bodrum_alani:,.2f} m² / Ünite)")
         
         min_sinir = 150 if "Villa" in selected_proje_tipi else (90 if "Ticari" not in selected_proje_tipi else 60)
@@ -659,7 +659,6 @@ if selected_keys:
         tab5_havuz_payi_m2 = 30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 / curr_hb if curr_hp == "Ortak / Sosyal Tesis Havuzu" else 0.0)
         tab5_bodrum_payi_m2 = simulated_bodrum_alani / curr_hb if curr_hb > 0 else 0
         tab5_toplam_unite_brut_dahil_eklentiler = tab5_saf_unite_brut + tab5_bodrum_payi_m2 + tab5_havuz_payi_m2
-        tab5_unite_basi_net_arsa = toplam_net_arsa_alani / curr_hb if curr_hb > 0 else 0
 
         st.markdown(f"### 🏢 İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK")
         st.markdown(f"**Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu**")
@@ -675,7 +674,7 @@ if selected_keys:
         st.markdown("#### 2. Mimari ve Bağımsız Bölüm Planlaması")
         st.markdown(f"- **Bağımsız Bölüm / Villa Adedi:** {curr_hb} Adet")
         st.markdown(f"- **Havuz Planlama Modeli:** {curr_hp}")
-        st.markdown(f"- **Ünite Başına Düşen Arsa Payı:** {toplam_net_arsa_alani:,.2f} m² ({tab5_unite_basi_net_arsa:,.2f} m² / Ünite)")
+        st.markdown(f"- **Ünite Başına Düşen Pay:** {unite_basi_net_arsa_genel:,.2f} m² / Ünite")
         
         st.markdown("#### Bağımsız Bölüm Başına Detaylı Alan ve Dağılımı")
         
@@ -878,7 +877,7 @@ if selected_keys:
             <div class="section-title">2. Mimari ve Bağımsız Bölüm Planlaması</div>
             <p class="content-line"><b>Bağımsız Bölüm / Villa Adedi:</b> {curr_hb} Adet</p>
             <p class="content-line"><b>Havuz Planlama Modeli:</b> {curr_hp}</p>
-            <p class="content-line"><b>Ünite Başına Düşen Arsa Payı:</b> {toplam_net_arsa_alani:,.2f} m² ({tab5_unite_basi_net_arsa:,.2f} m² / Ünite)</p>
+            <p class="content-line"><b>Ünite Başına Düşen Pay:</b> {unite_basi_net_arsa_genel:,.2f} m² / Ünite</p>
             
             <div style="font-size: 12px; font-weight: bold; color: #0f172a; margin-top: 10px; margin-bottom: 5px;">Bağımsız Bölüm Başına Detaylı Alan ve Dağılımı</div>
             <table class="data-table">
