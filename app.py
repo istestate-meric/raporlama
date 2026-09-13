@@ -319,7 +319,7 @@ else:
 if selected_keys:
     active_parcel_db = {k: st.session_state["parcel_db"][k] for k in selected_keys}
 
-    # --- TOPLAM BRÜT İNŞAAT ALANI VE ARSA ALANI HESABI ---
+    # --- TOPLAM BRÜT İNŞAAT ALANI VE NET ARSA ALANI HESABI (PARSEL BAZLI DİNAMİK TERK ORANI) ---
     emsal_artis_orani = 1.30
     yasal_max_brut_insaat_alani = 0.0
     toplam_brut_arsa_alani = 0.0
@@ -335,10 +335,15 @@ if selected_keys:
             if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"])
         )
         
+        # Her parselin kendi terk oranına/durumuna göre net arsa m² hesabı
+        parsel_net_arsa = 0.0
         if is_terkli:
-            toplam_net_arsa_alani += toplam_giren_fonk_m2 if toplam_giren_fonk_m2 > 0 else toplam_brut_m2
+            parsel_net_arsa = toplam_giren_fonk_m2 if toplam_giren_fonk_m2 > 0 else toplam_brut_m2
         else:
-            toplam_net_arsa_alani += toplam_brut_m2 * 0.70 # Ortalama yola terk / DOP indirimi varsayımı
+            # Terki yapılmamış parsellerde her parselin kendi raporundaki kesinti/DOP oranı (varsayılan %30 kesinti -> %70 kalır)
+            parsel_net_arsa = (toplam_giren_fonk_m2 if toplam_giren_fonk_m2 > 0 else toplam_brut_m2) * 0.70
+            
+        toplam_net_arsa_alani += parsel_net_arsa
 
         for f in p["fonksiyonlar"]:
             if any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
@@ -427,11 +432,12 @@ if selected_keys:
         st.subheader("Seçilen Parsellerin İmar ve Alan Özet Tablosu")
         table_rows = []
         for key, p in active_parcel_db.items():
-            terk_lbl = "Terki Yapılmış (Net)" if p["terk_yapilmis_mi"] else "Terki Yapılmamış (Brüt)"
+            terk_lbl = "Terki Yapılmış (Net)" if p["terk_yapilmis_mi"] else "Terki Yapılmamış (Brüt x Kesinti)"
             for f in p["fonksiyonlar"]:
                 giren = f['giren_m2']
-                net_arsa_payi = giren if p["terk_yapilmis_mi"] else giren * 0.70
-                unite_basi_net_arsa = net_arsa_payi / st.session_state["hedef_bagimsiz_bolum"] if st.session_state["hedef_bagimsiz_bolum"] > 0 else 0
+                # Parsel bazlı dinamik net arsa hesaplaması
+                parsel_net_pay = giren if p["terk_yapilmis_mi"] else giren * 0.70
+                unite_basi_net_arsa = parsel_net_pay / st.session_state["hedef_bagimsiz_bolum"] if st.session_state["hedef_bagimsiz_bolum"] > 0 else 0
                 
                 table_rows.append({
                     "Parsel Bilgisi": key,
@@ -439,13 +445,13 @@ if selected_keys:
                     "Toplam Brüt Arsa (m²)": f"{p['toplam_alan']:,.2f}",
                     "Fonksiyon": f["fonksiyon_adi"],
                     "İmarlı/Net Fonksiyon Alanı (m²)": f"{giren:,.2f}",
-                    "Ünite Başı Net Arsa Payı (m²/Adet)": f"{unite_basi_net_arsa:,.2f} m²",
+                    "Ünite Başı Net Arsa Payı (m²/Adet)": f"{parsel_net_pay:,.2f} m² ({unite_basi_net_arsa:,.2f} m² / Ünite)",
                     "TAKS": f"{f['taks']:.2f}",
                     "KAKS (Emsal)": f"{f['kaks']:.2f}",
                     "Terk Durumu": terk_lbl
                 })
         st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
-        st.info(f"💡 **Toplam Arsa Özeti:** Toplam Brüt Arsa: **{toplam_brut_arsa_alani:,.2f} m²** | Tahmini Toplam Net Arsa: **{toplam_net_arsa_alani:,.2f} m²**")
+        st.info(f"💡 **Toplam Arsa Özeti:** Toplam Brüt Arsa: **{toplam_brut_arsa_alani:,.2f} m²** | Parsel Bazlı Toplam Net Arsa: **{toplam_net_arsa_alani:,.2f} m²**")
 
     with tab2:
         st.subheader("Seçilen Parseller İçin Çoklu Fonksiyon Destekli Brüt İnşaat Kapasite Hesabı")
@@ -514,7 +520,7 @@ if selected_keys:
         net_brut_dusulen_alan = max(0.0, yasal_max_brut_insaat_alani - havuz_emsele_maliyet_m2)
         toplam_brut_kullanim_alani = net_brut_dusulen_alan
         
-        # Güncellenen Alan Formülasyonu: Toplam Alan (Parantez İçinde Ünite Başı m²)
+        # Alan Formülasyonu: Toplam Alan (Parantez İçinde Ünite Başı m²)
         ortalama_unite_alani = net_brut_dusulen_alan / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
         unite_basi_net_arsa_genel = toplam_net_arsa_alani / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
         
@@ -616,7 +622,7 @@ if selected_keys:
         st.markdown(f"- **Proje Tipi:** {selected_proje_tipi}")
         st.markdown(f"- **İş Modeli:** {is_modeli}")
         st.markdown(f"- **Toplam Brüt Arsa Alanı:** {toplam_brut_arsa_alani:,.2f} m²")
-        st.markdown(f"- **Tahmini Toplam Net Arsa Alanı:** {toplam_net_arsa_alani:,.2f} m²")
+        st.markdown(f"- **Parsel Bazlı Toplam Net Arsa Alanı:** {toplam_net_arsa_alani:,.2f} m²")
         st.markdown(f"- **Toplam Brüt İnşaat Alanı:** {yasal_max_brut_insaat_alani:,.2f} m²")
         
         st.markdown("#### 2. Mimari ve Bağımsız Bölüm Planlaması")
@@ -772,7 +778,7 @@ if selected_keys:
             <p class="content-line"><b>Proje Tipi:</b> {selected_proje_tipi}</p>
             <p class="content-line"><b>İş Modeli:</b> {is_modeli}</p>
             <p class="content-line"><b>Toplam Brüt Arsa Alanı:</b> {toplam_brut_arsa_alani:,.2f} m²</p>
-            <p class="content-line"><b>Tahmini Toplam Net Arsa Alanı:</b> {toplam_net_arsa_alani:,.2f} m²</p>
+            <p class="content-line"><b>Parsel Bazlı Toplam Net Arsa Alanı:</b> {toplam_net_arsa_alani:,.2f} m²</p>
             <p class="content-line"><b>Toplam Brüt İnşaat Alanı:</b> {yasal_max_brut_insaat_alani:,.2f} m²</p>
             
             <div class="section-title">2. Mimari ve Bağımsız Bölüm Planlaması</div>
