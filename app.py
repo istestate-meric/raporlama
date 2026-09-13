@@ -434,8 +434,11 @@ if selected_keys:
     
     ortalama_unite_alani = net_brut_dusulen_alan / curr_hb if curr_hb > 0 else 0
     
-    # Eş zamanlı ve adete bağlı ölçeklenen arsa payı hesaplaması (Eski haline döndürüldü)
+    # Yeni İstenen Mantık: Ünite Başına Net Arsa = Toplam Net Arsa / Adet
     unite_basi_net_arsa_genel = toplam_net_arsa_alani / curr_hb if curr_hb > 0 else 0
+    
+    # Yeni İstenen Mantık: Birim Alanı = Toplam Fonksiyon Alanı / Adet
+    birim_fonksiyon_alani = toplam_fonksiyon_alani / curr_hb if curr_hb > 0 else 0
     
     simulated_bodrum_alani = net_brut_dusulen_alan * p_spec["bodrum_orani"]
     ortalama_bodrum_alani = simulated_bodrum_alani / curr_hb if curr_hb > 0 else 0
@@ -543,8 +546,8 @@ if selected_keys:
 
         st.markdown("---")
         m_col1, m_col2, m_col3, m_col4 = st.columns(4)
-        m_col1.metric("Toplam Ünite Alanı (Ortalama Ünite)", f"{net_brut_dusulen_alan:,.2f} m²", f"({ortalama_unite_alani:,.2f} m² / Ünite)")
-        m_col2.metric("Ünite Başına Düşen Pay", f"{unite_basi_net_arsa_genel:,.2f} m² / Ünite", f"(Toplam Net Arsa / Adet)")
+        m_col1.metric("Toplam Fonksiyon Alanı", f"{toplam_fonksiyon_alani:,.2f} m²", f"({birim_fonksiyon_alani:,.2f} m² / Ünite)")
+        m_col2.metric("Ünite Başına Net Arsa", f"{unite_basi_net_arsa_genel:,.2f} m² / Ünite", f"(Toplam Net Arsa / Adet)")
         m_col3.metric("Bodrum Payı", f"{simulated_bodrum_alani:,.2f} m²", f"({ortalama_bodrum_alani:,.2f} m² / Ünite)")
         
         min_sinir = 150 if "Villa" in selected_proje_tipi else (90 if "Ticari" not in selected_proje_tipi else 60)
@@ -674,7 +677,7 @@ if selected_keys:
         st.markdown("#### 2. Mimari ve Bağımsız Bölüm Planlaması")
         st.markdown(f"- **Bağımsız Bölüm / Villa Adedi:** {curr_hb} Adet")
         st.markdown(f"- **Havuz Planlama Modeli:** {curr_hp}")
-        st.markdown(f"- **Ünite Başına Düşen Pay:** {unite_basi_net_arsa_genel:,.2f} m² / Ünite")
+        st.markdown(f"- **Ünite Başına Net Arsa:** {unite_basi_net_arsa_genel:,.2f} m² / Ünite")
         
         st.markdown("#### Bağımsız Bölüm Başına Detaylı Alan ve Dağılımı")
         
@@ -877,7 +880,7 @@ if selected_keys:
             <div class="section-title">2. Mimari ve Bağımsız Bölüm Planlaması</div>
             <p class="content-line"><b>Bağımsız Bölüm / Villa Adedi:</b> {curr_hb} Adet</p>
             <p class="content-line"><b>Havuz Planlama Modeli:</b> {curr_hp}</p>
-            <p class="content-line"><b>Ünite Başına Düşen Pay:</b> {unite_basi_net_arsa_genel:,.2f} m² / Ünite</p>
+            <p class="content-line"><b>Ünite Başına Net Arsa:</b> {unite_basi_net_arsa_genel:,.2f} m² / Ünite</p>
             
             <div style="font-size: 12px; font-weight: bold; color: #0f172a; margin-top: 10px; margin-bottom: 5px;">Bağımsız Bölüm Başına Detaylı Alan ve Dağılımı</div>
             <table class="data-table">
