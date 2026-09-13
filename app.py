@@ -668,17 +668,15 @@ if selected_keys:
             f_col3.metric("İş Modeli", "Doğrudan Yatırım")
         f_col4.metric("Müteahhit Net Karı", f"${mutaahhit_net_kar_usd:,.2f}", f"₺{mutaahhit_net_kar_tl:,.2f} (%{yg_orani:.1f} YG)")
 
-        # --- GÜNCELLENEN FİNANSAL FİZİBİLİTE VE CİRO ANALİZİ TABLOSU ---
+        # --- DÜZELTİLDİ: BAŞINDA BOŞLUK OLMAYAN HTML SATIRLARI ---
         arsa_sahibi_tab4_row_html = ""
         if "Kat Karşılığı" in is_modeli:
-            arsa_sahibi_tab4_row_html = f"""
-            <tr>
-            <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc;">Arsa Sahibi Payı</td>
-            <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #475569; background-color: #f8fafc;">Kat Karşılığı Paydaş Dağılımı</td>
-            <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc; text-align: right; font-weight: 700;">${arsa_sahibi_payi_usd:,.2f}</td>
-            <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc; text-align: right; font-weight: 700;">-</td>
-            </tr>
-            """
+            arsa_sahibi_tab4_row_html = f"""<tr>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc;">Arsa Sahibi Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #475569; background-color: #f8fafc;">Kat Karşılığı Paydaş Dağılımı</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc; text-align: right; font-weight: 700;">${arsa_sahibi_payi_usd:,.2f}</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc; text-align: right; font-weight: 700;">-</td>
+</tr>"""
 
         tab4_finansal_rows_html = f"""<tr>
 <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff;">Toplam Tahmini Brüt Ciro</td>
@@ -785,14 +783,12 @@ if selected_keys:
         
         arsa_sahibi_preview_row_html = ""
         if "Kat Karşılığı" in is_modeli:
-            arsa_sahibi_preview_row_html = f"""
-            <tr>
-            <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc;">Arsa Sahibi Payı</td>
-            <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #475569; background-color: #f8fafc;">Kat Karşılığı Paydaş Dağılımı</td>
-            <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc; text-align: right; font-weight: 700;">${arsa_sahibi_payi_usd:,.2f}</td>
-            <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc; text-align: right; font-weight: 700;">-</td>
-            </tr>
-            """
+            arsa_sahibi_preview_row_html = f"""<tr>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc;">Arsa Sahibi Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #475569; background-color: #f8fafc;">Kat Karşılığı Paydaş Dağılımı</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc; text-align: right; font-weight: 700;">${arsa_sahibi_payi_usd:,.2f}</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc; text-align: right; font-weight: 700;">-</td>
+</tr>"""
 
         preview_finansal_rows_html = f"""<tr>
 <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff;">Toplam Tahmini Brüt Ciro</td>
@@ -855,36 +851,32 @@ if selected_keys:
 
         arsa_sahibi_row_html = ""
         if "Kat Karşılığı" in is_modeli:
-            arsa_sahibi_row_html = f"""
-                    <tr>
-                        <td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc;">Arsa Sahibi Payı</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc; color: #475569;">Kat Karşılığı Paydaş Dağılımı</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc; text-align: right; color: #0f172a; font-weight: 600;">${arsa_sahibi_payi_usd:,.2f}</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc; text-align: right; color: #64748b;">-</td>
-                    </tr>
-            """
+            arsa_sahibi_row_html = f"""<tr>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc;">Arsa Sahibi Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc; color: #475569;">Kat Karşılığı Paydaş Dağılımı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc; text-align: right; color: #0f172a; font-weight: 600;">${arsa_sahibi_payi_usd:,.2f}</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc; text-align: right; color: #64748b;">-</td>
+</tr>"""
 
-        pdf_finansal_rows_html = f"""
-                    <tr>
-                        <td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff;">Toplam Tahmini Brüt Ciro</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff; color: #475569;">Tüm Bağımsız Bölüm ve Bodrum Satış Geliri</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff; text-align: right; color: #0f172a; font-weight: 600;">${toplam_ciro_usd:,.2f}</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff; text-align: right; color: #334155;">₺{toplam_ciro_tl:,.2f}</td>
-                    </tr>
-                    <tr>
-                        <td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc;">Toplam İnşaat Maliyeti + Bonus</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc; color: #475569;">Brüt İnşaat Maliyeti ve Nakit Bonus Toplamı</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc; text-align: right; color: #0f172a; font-weight: 600;">${toplam_maliyet_usd:,.2f}</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc; text-align: right; color: #334155;">₺{toplam_maliyet_tl:,.2f}</td>
-                    </tr>
-                    {arsa_sahibi_row_html}
-                    <tr style="background-color: #f1f5f9; font-weight: bold;">
-                        <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Müteahhit Net Kârı</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 7px 10px; color: #475569;">Toplam Kâr ve Yatırım Getirisi</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; color: #1e3a8a;">${mutaahhit_net_kar_usd:,.2f}</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; color: #1e3a8a;">₺{mutaahhit_net_kar_tl:,.2f} (%{yg_orani:.1f} YG)</td>
-                    </tr>
-        """
+        pdf_finansal_rows_html = f"""<tr>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff;">Toplam Tahmini Brüt Ciro</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff; color: #475569;">Tüm Bağımsız Bölüm ve Bodrum Satış Geliri</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff; text-align: right; color: #0f172a; font-weight: 600;">${toplam_ciro_usd:,.2f}</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff; text-align: right; color: #334155;">₺{toplam_ciro_tl:,.2f}</td>
+</tr>
+<tr>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc;">Toplam İnşaat Maliyeti + Bonus</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc; color: #475569;">Brüt İnşaat Maliyeti ve Nakit Bonus Toplamı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc; text-align: right; color: #0f172a; font-weight: 600;">${toplam_maliyet_usd:,.2f}</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc; text-align: right; color: #334155;">₺{toplam_maliyet_tl:,.2f}</td>
+</tr>
+{arsa_sahibi_row_html}
+<tr style="background-color: #f1f5f9; font-weight: bold;">
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Müteahhit Net Kârı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; color: #475569;">Toplam Kâr ve Yatırım Getirisi</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; color: #1e3a8a;">${mutaahhit_net_kar_usd:,.2f}</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; color: #1e3a8a;">₺{mutaahhit_net_kar_tl:,.2f} (%{yg_orani:.1f} YG)</td>
+</tr>"""
 
         report_html_template = f"""
         <!DOCTYPE html>
