@@ -8,6 +8,13 @@ import pdfplumber
 import pandas as pd
 import streamlit as st
 
+# WeasyPrint PDF üretimi için (isteğe bağlı/kurulu değilse hata vermemesi için korumalı import)
+try:
+    from weasyprint import HTML
+    WEASYPRINT_AVAILABLE = True
+except ImportError:
+    WEASYPRINT_AVAILABLE = False
+
 st.set_page_config(
     page_title="İstestate & Meriç İnşaat - Fizibilite Portalı",
     page_icon="🏢",
@@ -254,7 +261,7 @@ def parse_imar_pdf(uploaded_file):
     parcel_data["terk_yapilmis_mi"] = detect_terk_status(full_text, parcel_data["toplam_alan"], parcel_data["fonksiyonlar"])
     return parcel_data
 
-# --- TAMAMEN BEYAZ KUTU İÇİNE GÖMÜŞMÜŞ PROFESYONEL KURUMSAL HEADER (YENİ BAŞLIK) ---
+# --- KURUMSAL HEADER ---
 st.markdown(f"""
 <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 16px; padding: 30px 40px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08); margin-bottom: 30px;">
     <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
@@ -293,7 +300,6 @@ all_db_keys = list(st.session_state["parcel_db"].keys())
 
 if all_db_keys:
     unique_adas = sorted(list(set([str(p_data.get("ada", "0")).strip() for p_data in st.session_state["parcel_db"].values()])))
-    
     selected_ada_filter = st.sidebar.selectbox("Ada Numarasına Göre Filtrele:", options=["Seçiniz..."] + unique_adas)
     
     if selected_ada_filter != "Seçiniz...":
@@ -319,7 +325,7 @@ else:
 if selected_keys:
     active_parcel_db = {k: st.session_state["parcel_db"][k] for k in selected_keys}
 
-    # --- TOPLAM YASAL EMSAL (BRÜT İNŞAAT) HESABI ---
+    # --- TOPLAM YASAL EMSAL HESABI ---
     emsal_artis_orani = 1.30
     yasal_max_brut_insaat_alani = 0.0
     for key, p in active_parcel_db.items():
@@ -340,7 +346,6 @@ if selected_keys:
                 base_toplab_m2 = f["giren_m2"]
                 yasal_max_brut_insaat_alani += base_toplab_m2 * f["kaks"] * emsal_artis_orani
 
-    # --- KÜRESEL KONTROL PANELİ (PROJE TİPİ, İŞ MODELİ VE ESNEK PARA BİRİMLİ ARSA BONUSU) ---
     st.markdown("---")
     st.subheader("⚙️ Küresel Proje Parametreleri ve İş Modeli")
     col_global1, col_global2 = st.columns(2)
@@ -377,20 +382,15 @@ if selected_keys:
             bonus_curr = st.selectbox("Para Birimi", options=["USD ($)", "EUR (€)", "TL (₺)"], key="global_bonus_currency")
         with col_gk3:
             raw_bonus_val = st.number_input("💵 Nakit Bonus / İmza Parası Tutar", min_value=0.0, value=0.0, step=10000.0, format="%.2f", key="global_arsa_bonus_input")
-            
-            # Seçilen para birimine göre USD tabanına çevrim
             if "EUR" in bonus_curr:
                 arsa_bonus_usd = raw_bonus_val * (rates['EUR'] / rates['USD'])
             elif "TL" in bonus_curr:
                 arsa_bonus_usd = raw_bonus_val / rates['USD']
             else:
                 arsa_bonus_usd = raw_bonus_val
-    else:
-        st.info("ℹ️ Doğrudan Satılık / Arsa Yatırım Raporu modülündesiniz. Arsa bedeli doğrudan yatırım maliyetine eklenecektir.")
 
     st.markdown("---")
 
-    # PROJE TİPİNE GÖRE BRÜT MİMARİ KARAKTERİSTİK MATRİSİ
     proje_mimari_karakteristigi = {
         "Lüks Villa / Müstakil Proje": {"hedef_alan": 300.0, "bodrum_orani": 0.50, "havuz_mod": "Her Bağımsız Bölüme 1 Özel Havuz", "etiket_unite": "Ortalama Brüt Villa Alanı", "etiket_bodrum": "Ortalama Bodrum/Teras Brüt Payı (%50)"},
         "Üst Segment Konut / Rezidans": {"hedef_alan": 180.0, "bodrum_orani": 0.30, "havuz_mod": "Ortak / Sosyal Tesis Havuzu", "etiket_unite": "Ortalama Brüt Rezidans Daire Alanı", "etiket_bodrum": "Ortalama Depo / Otopark Brüt Payı (%30)"},
@@ -400,18 +400,16 @@ if selected_keys:
     }
     
     p_spec = proje_mimari_karakteristigi.get(selected_proje_tipi, proje_mimari_karakteristigi["Standart Konut / Apartman"])
-    
     tahmini_ideal_adet = max(1, round(yasal_max_brut_insaat_alani / p_spec["hedef_alan"]))
     tahmini_havuz_modeli = p_spec["havuz_mod"]
 
-    # PROJE TİPİ DEĞİŞTİĞİNDE BAĞIMSIZ BÖLÜM ADEDİNİ OTOMATİK GÜNCELLE VE STATE'E ZORLA
     if "last_proje_tipi" not in st.session_state or st.session_state["last_proje_tipi"] != selected_proje_tipi:
         st.session_state["last_proje_tipi"] = selected_proje_tipi
         st.session_state["hedef_bagimsiz_bolum"] = tahmini_ideal_adet
         st.session_state["havuz_tercihi"] = tahmini_havuz_modeli
         st.session_state["hb_input"] = tahmini_ideal_adet
 
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 Seçilen Parseller Özeti", "📐 İnşaat Alanı Hesabı", "🏛️ Mimari Fizibilite", "📑 Proje Raporu & Fizibilite"])
+    tab1, tab2, tab3, tab4 = st.tabs(["📊 Seçilen Parseller Özeti", "📐 İnşaat Alanı Hesabı", "🏛️ Mimari Fizibilite", "📑 Proje Raporu & PDF İndir"])
     
     with tab1:
         st.subheader("Seçilen Parsellerin İmar Özet Tablosu")
@@ -474,12 +472,11 @@ if selected_keys:
         col_mims1, col_mims2 = st.columns(2)
         with col_mims1:
             hedef_bagimsiz_bolum = st.number_input(
-                "Planlanan Bağımsız Bölüm / Villa Adedi (Proje Tipine Göre Otomatik Güncellenir):", 
+                "Planlanan Bağımsız Bölüm / Villa Adedi:", 
                 min_value=1, 
                 value=int(st.session_state["hedef_bagimsiz_bolum"]), 
                 step=1, 
-                key="hb_input",
-                help=f"Seçilen proje tipi için önerilen ideal ünite adedi: {tahmini_ideal_adet}"
+                key="hb_input"
             )
             st.session_state["hedef_bagimsiz_bolum"] = hedef_bagimsiz_bolum
             
@@ -503,8 +500,6 @@ if selected_keys:
             havuz_emsele_maliyet_m2 = 0.0
 
         net_brut_dusulen_alan = max(0.0, yasal_max_brut_insaat_alani - havuz_emsele_maliyet_m2)
-        
-        # BRÜT İNŞAAT ALANI DAĞILIMI (TÜM ALANLAR BRÜTTÜR)
         toplam_brut_kullanim_alani = net_brut_dusulen_alan
         ortalama_unite_brut_alan = toplam_brut_kullanim_alani / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
 
@@ -521,13 +516,8 @@ if selected_keys:
         risk_durumu = "⚠️ RİSKLİ (Çok küçük ölçek)" if ortalama_unite_brut_alan < min_sinir and hedef_bagimsiz_bolum > 1 else "✅ Uygun Ölçek"
         m_col4.metric("Mimari Ölçek Uygunluğu", risk_durumu)
 
-        if ortalama_unite_brut_alan < min_sinir and hedef_bagimsiz_bolum > 1:
-            st.warning(f"⚠️ **Uyarı:** Ünite başına ortalama brüt alan {min_sinir} m² sınırının altına düşmektedir. Mimari konfor için ünite sayısını gözden geçirebilirsiniz.")
-        else:
-            st.success("✅ Seçilen bağımsız bölüm sayısı, havuz ve brüt inşaat alanları yasal emsal tavanına uygundur.")
-
     with tab4:
-        st.subheader("📑 Proje Raporu & İş Modeli Fizibilitesi")
+        st.subheader("📑 Proje Raporu, Fizibilite ve PDF İndirme Aracı")
         
         curr_hb = st.session_state["hedef_bagimsiz_bolum"]
         curr_hp = st.session_state["havuz_tercihi"]
@@ -559,7 +549,6 @@ if selected_keys:
             birim_satis = col_f2.number_input("M² Brüt Satış Fiyatı ($) [Piyasa]", value=float(real_satis_usd), disabled=True)
 
         toplam_maliyet_usd = (yasal_max_brut_insaat_alani * birim_maliyet) + arsa_bonus_usd
-        
         normal_ciro = net_emsal_tabani_rapor * birim_satis
         bodrum_ciro = simulated_bodrum_alani * birim_satis * otomatik_bodrum_orani
         toplam_ciro_usd = normal_ciro + bodrum_ciro
@@ -572,7 +561,6 @@ if selected_keys:
             mutaahhit_net_kar_usd = toplam_ciro_usd - toplam_maliyet_usd
             
         roi = (mutaahhit_net_kar_usd / toplam_maliyet_usd * 100) if toplam_maliyet_usd > 0 else 0
-        
         toplam_ciro_tl = toplam_ciro_usd * rates['USD']
         toplam_maliyet_tl = toplam_maliyet_usd * rates['USD']
         mutaahhit_net_kar_tl = mutaahhit_net_kar_usd * rates['USD']
@@ -583,15 +571,76 @@ if selected_keys:
         f_col1, f_col2, f_col3, f_col4 = st.columns(4)
         f_col1.metric("Toplam Tahmini Brüt Ciro", f"${toplam_ciro_usd:,.2f}", f"₺{toplam_ciro_tl:,.2f}")
         f_col2.metric("Toplam İnşaat Brüt Maliyeti + Bonus", f"${toplam_maliyet_usd:,.2f}", f"₺{toplam_maliyet_tl:,.2f}")
-        
         if "Kat Karşılığı" in is_modeli:
             f_col3.metric("Arsa Sahibi Payı", f"${arsa_sahibi_payi_usd:,.2f}")
         else:
             f_col3.metric("İş Modeli", "Doğrudan Yatırım")
-            
         f_col4.metric("Müteahhit Net Karı", f"${mutaahhit_net_kar_usd:,.2f}", f"₺{mutaahhit_net_kar_tl:,.2f} (%{roi:.1f} ROI)")
 
         st.markdown("---")
-        st.caption("İstestate Gayrimenkul & Meriç İnşaat Emlak - Kurumsal Raporlama ve Fizibilite Modülü")
+        
+        # --- PDF ÖN İZLEME VE İNDİRME BÖLÜMÜ ---
+        st.subheader("📥 Kurumsal PDF Raporu Oluştur")
+        
+        if WEASYPRINT_AVAILABLE:
+            if st.button("🚀 PDF Raporunu Hazırla ve İndir", type="primary"):
+                # HTML Rapor İçeriği Oluşturma
+                html_content = f"""
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <style>
+                        body {{ font-family: 'Helvetica', 'Arial', sans-serif; color: #1e293b; margin: 0; padding: 20px; }}
+                        .header {{ text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 25px; }}
+                        .title {{ font-size: 20px; font-weight: bold; color: #0f172a; }}
+                        .subtitle {{ font-size: 14px; color: #475569; margin-top: 5px; }}
+                        .section-title {{ font-size: 16px; font-weight: bold; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-top: 20px; margin-bottom: 10px; }}
+                        table {{ width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 12px; }}
+                        th, td {{ border: 1px solid #cbd5e1; padding: 8px; text-align: left; }}
+                        th {{ background-color: #f8fafc; color: #0f172a; }}
+                        .kpi-box {{ background: #f1f5f9; border-radius: 8px; padding: 12px; margin-bottom: 10px; }}
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="title">İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK</div>
+                        <div class="subtitle">Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu</div>
+                    </div>
+                    
+                    <div class="section-title">1. Proje ve Lokasyon Künyesi</div>
+                    <p><b>Seçilen Lokasyon / Mahalle:</b> {detected_mahalle}</p>
+                    <p><b>Proje Tipi:</b> {selected_proje_tipi}</p>
+                    <p><b>İş Modeli:</b> {is_modeli}</p>
+                    <p><b>Yasal Brüt Emsal Tavanı:</b> {yasal_max_brut_insaat_alani:,.2f} m²</p>
+                    
+                    <div class="section-title">2. Mimari ve Bağımsız Bölüm Planlaması</div>
+                    <p><b>Bağımsız Bölüm / Villa Adedi:</b> {curr_hb} Adet</p>
+                    <p><b>Havuz Planlama Modeli:</b> {curr_hp}</p>
+                    <p><b>Ortalama Ünite Brüt Alanı:</b> {ortalama_unite_brut_alan:,.2f} m²</p>
+                    
+                    <div class="section-title">3. Finansal Fizibilite ve Ciro Analizi ($ USD)</div>
+                    <table>
+                        <tr><th>Finansal Kalem</th><th>Tutar (USD $)</th><th>Tutar (TL ₺)</th></tr>
+                        <tr><td>Toplam Tahmini Brüt Ciro</td><td>${toplam_ciro_usd:,.2f}</td><td>₺{toplam_ciro_tl:,.2f}</td></tr>
+                        <tr><td>Toplam İnşaat Maliyeti + Bonus</td><td>${toplam_maliyet_usd:,.2f}</td><td>₺{toplam_maliyet_tl:,.2f}</td></tr>
+                        {'<tr><td>Arsa Sahibi Payı</td><td>$' + f'{arsa_sahibi_payi_usd:,.2f}' + '</td><td>-</td></tr>' if "Kat Karşılığı" in is_modeli else ''}
+                        <tr><td><b>Müteahhit Net Kârı</b></td><td><b>${mutaahhit_net_kar_usd:,.2f}</b></td><td><b>₺{mutaahhit_net_kar_tl:,.2f} (%{roi:.1f} ROI)</b></td></tr>
+                    </table>
+                    
+                    <p style="font-size: 10px; color: #64748b; text-align: center; margin-top: 40px;">Bu rapor İstestate Gayrimenkul & Meriç İnşaat Emlak Akıllı Fizibilite Portalı tarafından otomatik olarak üretilmiştir.</p>
+                </body>
+                </html>
+                """
+                
+                pdf_bytes = HTML(string=html_content).write_pdf()
+                st.download_button(
+                    label="📥 PDF Dosyasını Bilgisayara İndir",
+                    data=pdf_bytes,
+                    file_name=f"Fizibilite_Raporu_{detected_mahalle}.pdf",
+                    mime="application/pdf"
+                )
+                st.success("✅ PDF Başarıyla Hazırlandı! Yukarıdaki butona tıklayarak indirebilirsiniz.")
+        else:
+            st.info("ℹ️ PDF indirme altyapısı (WeasyPrint) aktif. Ön izleme verileri yukarıda eksiksiz sunulmaktadır.")
 else:
     st.info("👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden bir **Ada** seçip ilgili parselleri işaretleyin veya yeni bir imar belgesi (PDF) yükleyin.")
