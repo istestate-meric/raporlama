@@ -637,6 +637,7 @@ if selected_keys:
   if "havuz_tercihi" not in st.session_state:
     st.session_state["havuz_tercihi"] = tahmini_havuz_modeli
 
+  # --- ANLIK HESAPLAMA DEĞİŞKENLERİ ---
   curr_hb = int(st.session_state["hedef_bagimsiz_bolum"])
   curr_hp = st.session_state["havuz_tercihi"]
 
@@ -652,6 +653,8 @@ if selected_keys:
       yasal_max_brut_insaat_alani / curr_hb if curr_hb > 0 else 0
   )
 
+  # --- DÜZELTME: HAVUZ ALANININ BİNA OTURUMUNDAN VE BODRUM PAYINDAN İZOLASYONU ---
+  # Birim başı havuz payı (inşaat hakkından düşülen su/teras alanı)
   tekil_havuz_payi = (
       30.0
       if "Özel Havuz" in curr_hp
@@ -659,12 +662,14 @@ if selected_keys:
   )
   ana_unite_kapali_alan = max(0.0, ortalama_unite_alani - tekil_havuz_payi)
 
+  # Bodrum payı sadece havuz alanından arındırılmış net yapı alanı üzerinden hesaplanır
   simulated_bodrum_alani = (
       (yasal_max_brut_insaat_alani - (tekil_havuz_payi * curr_hb))
       * p_spec["bodrum_orani"]
   )
   ortalama_bodrum_alani = simulated_bodrum_alani / curr_hb if curr_hb > 0 else 0
 
+  # --- 5 SEKME YAPISI ---
   tab1, tab2, tab3, tab4, tab5 = st.tabs([
       "📊 Seçilen Parseller Özeti",
       "📐 İnşaat Alanı Hesabı",
@@ -823,9 +828,9 @@ if selected_keys:
         "(Toplam Net Arsa / Adet)",
     )
     m_col3.metric(
-        "Bodrum Payı",
-        f"{simulated_bodrum_alani:,.2f} m²",
-        f"({ortalama_bodrum_alani:,.2f} m² / {birim_etiketi_alt})",
+        f"{birim_etiketi_alt} Başına Bodrum Payı",
+        f"{ortalama_bodrum_alani:,.2f} m²",
+        f"(Toplam: {simulated_bodrum_alani:,.2f} m²)",
     )
 
     min_sinir = (
@@ -953,6 +958,7 @@ if selected_keys:
         yasal_max_brut_insaat_alani * birim_maliyet
     ) + arsa_bonus_usd
 
+    # --- CİRO HESABI: Toplam İnşaat Alanı Satış Geliri + Arındırılmış Bodrum Alanı Satış Geliri ---
     normal_ciro = yasal_max_brut_insaat_alani * birim_satis
     bodrum_ciro = simulated_bodrum_alani * birim_satis * otomatik_bodrum_orani
     toplam_ciro_usd = normal_ciro + bodrum_ciro
@@ -1052,6 +1058,7 @@ if selected_keys:
         " yapabilirsiniz."
     )
 
+  # --- 5. SEKME: RAPOR ÖN İZLEME VE TEK SAYFA PDF OPTİMİZASYON MERKEZİ ---
   with tab5:
     st.subheader(
         "🖨️ Kurumsal Tek Sayfa Rapor Ön İzleme ve PDF İndirme Merkezi"
@@ -1081,6 +1088,7 @@ if selected_keys:
 
     st.markdown(f"**AKILLI GAYRİMENKUL GELİŞTİRME VE FİZİBİLİTE RAPORU**")
 
+    # --- TABLO 1: PROJE VE LOKASYON KÜNYESİ ---
     st.markdown("#### 1. Proje ve Lokasyon Künyesi")
     preview_kunye_rows_html = f"""<tr>
 <td style="border: 1px solid #cbd5e1; padding: 6px 10px; color: #0f172a; background-color: #ffffff;">Seçilen Lokasyon / Mahalle</td>
@@ -1122,7 +1130,8 @@ if selected_keys:
         unsafe_allow_html=True,
     )
 
-    st.markdown("#### 2. Mimari and Bağımsız Bölüm Planlaması")
+    # --- TABLO 2: MİMARİ VE BAĞIMSIZ BÖLÜM PLANLAMASI ---
+    st.markdown("#### 2. Mimari ve Bağımsız Bölüm Planlaması")
     preview_mimari_rows_html = f"""<tr>
 <td style="border: 1px solid #cbd5e1; padding: 6px 10px; color: #0f172a; background-color: #ffffff;">{birim_etiketi} Adedi</td>
 <td style="border: 1px solid #cbd5e1; padding: 6px 10px; color: #0f172a; background-color: #ffffff; text-align: right; font-weight: 700;">{curr_hb} Adet</td>
@@ -1239,6 +1248,7 @@ if selected_keys:
     )
     st.markdown("---")
 
+    # --- PDF İÇİN LOGO ALANLARI (BEYAZ KUTU İÇİNDE) ---
     pdf_logo1_html = (
         f"<div style='background-color: #ffffff; padding: 4px 8px; border-radius: 4px; display: inline-block;'><img src='data:image/png;base64,{img1_base64}' style='max-height: 38px; width: auto; object-fit: contain; vertical-align: middle;'></div>"
         if img1_base64
@@ -1250,6 +1260,7 @@ if selected_keys:
         else "<div style='background-color: #ffffff; padding: 4px 8px; border-radius: 4px;'><span style='font-size:12px; font-weight:bold; color:#0b1d3a;'>MERİÇ İNŞAAT</span></div>"
     )
 
+    # --- PDF İÇİN KÜNYE TABLOSU HTML ---
     pdf_kunye_rows_html = f"""<tr>
 <td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff;">Seçilen Lokasyon / Mahalle</td>
 <td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff; text-align: right; font-weight: 600;">{detected_mahalle}</td>
@@ -1275,6 +1286,7 @@ if selected_keys:
 <td style="border: 1px solid #cbd5e1; padding: 4px 8px; text-align: right; color: #1e3a8a;">{yasal_max_brut_insaat_alani:,.2f} m²</td>
 </tr>"""
 
+    # --- PDF İÇİN MİMARİ PLANLAMA TABLOSU HTML ---
     pdf_mimari_rows_html = f"""<tr>
 <td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff;">{birim_etiketi} Adedi</td>
 <td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff; text-align: right; font-weight: 600;">{curr_hb} Adet</td>
@@ -1338,6 +1350,7 @@ if selected_keys:
 <td style="border: 1px solid #cbd5e1; padding: 4px 8px; text-align: right; color: #1e3a8a;">₺{mutaahhit_net_kar_tl:,.2f} (%{yg_orani:.1f} YG)</td>
 </tr>"""
 
+    # --- REVISED BANNER STİLLİ WEASYPRINT HTML/CSS ŞABLONU ---
     report_html_template = f"""
         <!DOCTYPE html>
         <html>
@@ -1361,6 +1374,7 @@ if selected_keys:
                 background: #ffffff;
                 padding: 0;
             }}
+            /* Kurumsal Lacivert Banner */
             .report-banner {{
                 background-color: #0b1d3a;
                 color: #ffffff;
@@ -1426,6 +1440,7 @@ if selected_keys:
         </head>
         <body>
         <div class="report-container">
+            <!-- Kurumsal Lacivert Banner ve Beyaz Arka Planlı Logolar -->
             <table class="report-banner">
                 <tr>
                     <td style="width: 25%; text-align: left;">{pdf_logo1_html}</td>
