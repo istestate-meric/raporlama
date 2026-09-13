@@ -306,7 +306,28 @@ else:
 if selected_keys:
     active_parcel_db = {k: st.session_state["parcel_db"][k] for k in selected_keys}
 
-    # --- KÜRESEL KONTROL PANELİ (PROJE TİPİ VE İŞ MODELİ BİR ARADA) ---
+    # --- TOPLAM YASAL EMSAL HESABI (Ön hazırlık) ---
+    emsal_artis_orani = 1.30
+    yasal_max_emsal_alani = 0.0
+    for key, p in active_parcel_db.items():
+        toplam_brut_m2 = p["toplam_alan"]
+        is_terkli = p["terk_yapilmis_mi"]
+        toplam_giren_fonk_m2 = sum(
+            f["giren_m2"] for f in p["fonksiyonlar"]
+            if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"])
+        )
+        for f in p["fonksiyonlar"]:
+            if any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
+                continue
+            if not is_terkli:
+                fonk_pay_orani = f["giren_m2"] / toplam_giren_fonk_m2 if toplam_giren_fonk_m2 > 0 else 1.0
+                esas_m2 = toplam_brut_m2 * fonk_pay_orani
+                yasal_max_emsal_alani += esas_m2 * 0.70 * f["kaks"] * emsal_artis_orani
+            else:
+                base_toplab_m2 = f["giren_m2"]
+                yasal_max_emsal_alani += base_toplab_m2 * f["kaks"] * emsal_artis_orani
+
+    # --- KÜRESEL KONTROL PANELİ (PROJE TİPİ VE OTOMATİK PARAMETRE TÜRETME) ---
     st.markdown("---")
     st.subheader("⚙️ Küresel Proje Parametreleri ve İş Modeli")
     col_global1, col_global2 = st.columns(2)
@@ -333,28 +354,32 @@ if selected_keys:
         )
     st.markdown("---")
 
-    emsal_artis_orani = 1.30
-    yasal_max_emsal_alani = 0.0
-    for key, p in active_parcel_db.items():
-        toplam_brut_m2 = p["toplam_alan"]
-        is_terkli = p["terk_yapilmis_mi"]
-        toplam_giren_fonk_m2 = sum(
-            f["giren_m2"] for f in p["fonksiyonlar"]
-            if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"])
-        )
-        for f in p["fonksiyonlar"]:
-            if any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
-                continue
-            if not is_terkli:
-                fonk_pay_orani = f["giren_m2"] / toplam_giren_fonk_m2 if toplam_giren_fonk_m2 > 0 else 1.0
-                esas_m2 = toplam_brut_m2 * fonk_pay_orani
-                yasal_max_emsal_alani += esas_m2 * 0.70 * f["kaks"] * emsal_artis_orani
-            else:
-                base_toplab_m2 = f["giren_m2"]
-                yasal_max_emsal_alani += base_toplab_m2 * f["kaks"] * emsal_artis_orani
+    # PROJE TİPİNE GÖRE OTOMATİK HESAPLANAN VARSAYILAN DEĞERLER
+    hedef_birim_alanlar = {
+        "Lüks Villa / Müstakil Proje": 250.0,
+        "Üst Segment Konut / Rezidans": 150.0,
+        "Standart Konut / Apartman": 100.0,
+        "Ticari / Ofis Kompleksi": 200.0,
+        "Karma Proje (Konut + Ticari)": 130.0
+    }
+    
+    varsayilan_havuz_modeli = {
+        "Lüks Villa / Müstakil Proje": "Her Bağımsız Bölüme 1 Özel Havuz",
+        "Üst Segment Konut / Rezidans": "Ortak / Sosyal Tesis Havuzu",
+        "Standart Konut / Apartman": "Havuz İptal (Küçük Ölçek Kısıtı)",
+        "Ticari / Ofis Kompleksi": "Havuz İptal (Küçük Ölçek Kısıtı)",
+        "Karma Proje (Konut + Ticari)": "Ortak / Sosyal Tesis Havuzu"
+    }
 
-    if "havuz_tercihi" not in st.session_state:
-        st.session_state["havuz_tercihi"] = "Her Bağımsız Bölüme 1 Özel Havuz"
+    secilen_hedef_alan = hedef_birim_alanlar.get(selected_proje_tipi, 120.0)
+    tahmini_ideal_adet = max(1, round(yasal_max_emsal_alani / secilen_hedef_alan))
+    tahmini_havuz_modeli = varsayilan_havuz_modeli.get(selected_proje_tipi, "Her Bağımsız Bölüme 1 Özel Havuz")
+
+    # Proje tipi değiştiğinde state değerlerini akıllıca güncelle
+    if "last_proje_tipi" not in st.session_state or st.session_state["last_proje_tipi"] != selected_proje_tipi:
+        st.session_state["last_proje_tipi"] = selected_proje_tipi
+        st.session_state["hedef_bagimsiz_bolum"] = tahmini_ideal_adet
+        st.session_state["havuz_tercihi"] = tahmini_havuz_modeli
 
     tab1, tab2, tab3, tab4 = st.tabs(["📊 Seçilen Parseller Özeti", "📐 İnşaat Alanı Hesabı", "🏛️ Mimari Fizibilite", "📑 Proje Raporu & Fizibilite"])
     
@@ -414,21 +439,8 @@ if selected_keys:
 
     with tab3:
         st.subheader("🏛️ Mimari Fizibilite ve Bağımsız Bölüm Senaryoları")
-        st.info(f"ℹ️ **Aktif Proje Tipi:** {selected_proje_tipi} | Havuz veya sosyal tesisler yasal emsal tavanını aşamaz. Seçilen havuz alanı toplam yasal emsal hakkından düşülerek net konut/villa alanları otomatik olarak daraltılır.")
+        st.info(f"ℹ️ **Aktif Proje Tipi:** {selected_proje_tipi} | Ünite adedi ve havuz modeli seçtiğiniz proje tipine göre **otomatik atanmıştır**, ancak aşağıdan dilediğiniz gibi değiştirebilirsiniz.")
         
-        hedef_birim_alanlar = {
-            "Lüks Villa / Müstakil Proje": 250.0,
-            "Üst Segment Konut / Rezidans": 150.0,
-            "Standart Konut / Apartman": 100.0,
-            "Ticari / Ofis Kompleksi": 200.0,
-            "Karma Proje (Konut + Ticari)": 130.0
-        }
-        secilen_hedef_alan = hedef_birim_alanlar.get(selected_proje_tipi, 120.0)
-        tahmini_ideal_adet = max(1, round(yasal_max_emsal_alani / secilen_hedef_alan))
-
-        if "hedef_bagimsiz_bolum" not in st.session_state:
-            st.session_state["hedef_bagimsiz_bolum"] = tahmini_ideal_adet
-
         col_mims1, col_mims2 = st.columns(2)
         with col_mims1:
             hedef_bagimsiz_bolum = st.number_input(
@@ -442,10 +454,13 @@ if selected_keys:
             st.session_state["hedef_bagimsiz_bolum"] = hedef_bagimsiz_bolum
             
         with col_mims2:
+            havuz_secenekleri = ["Her Bağımsız Bölüme 1 Özel Havuz", "Ortak / Sosyal Tesis Havuzu", "Havuz İptal (Küçük Ölçek Kısıtı)"]
+            default_hp_idx = havuz_secenekleri.index(st.session_state["havuz_tercihi"]) if st.session_state["havuz_tercihi"] in havuz_secenekleri else 0
+            
             havuz_tercihi = st.selectbox(
                 "Havuz Planlama Modeli:", 
-                options=["Her Bağımsız Bölüme 1 Özel Havuz", "Ortak / Sosyal Tesis Havuzu", "Havuz İptal (Küçük Ölçek Kısıtı)"],
-                index=["Her Bağımsız Bölüme 1 Özel Havuz", "Ortak / Sosyal Tesis Havuzu", "Havuz İptal (Küçük Ölçek Kısıtı)"].index(st.session_state["havuz_tercihi"]),
+                options=havuz_secenekleri,
+                index=default_hp_idx,
                 key="hp_select"
             )
         st.session_state["havuz_tercihi"] = havuz_tercihi
