@@ -14,8 +14,9 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ ---
-DB_FILE = "imar_veritabani.json"
+# --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ (MUTLAK DİZİN GARANTİSİ) ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__)) if "__file__" in locals() else os.getcwd()
+DB_FILE = os.path.join(BASE_DIR, "imar_veritabani.json")
 
 def load_persistent_db():
     if os.path.exists(DB_FILE):
@@ -38,8 +39,9 @@ if "parcel_db" not in st.session_state:
 
 # --- GÖRSELİ BASE64'E ÇEVİRME YARDIMCISI ---
 def get_image_base64(path):
-    if os.path.exists(path):
-        with open(path, "rb") as f:
+    full_path = os.path.join(BASE_DIR, path)
+    if os.path.exists(full_path):
+        with open(full_path, "rb") as f:
             data = f.read()
         return base64.b64encode(data).decode("utf-8")
     return ""
