@@ -558,15 +558,40 @@ if selected_keys:
         tekil_havuz_payi = 30.0 if havuz_tercihi == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 / hedef_bagimsiz_bolum if havuz_tercihi == "Ortak / Sosyal Tesis Havuzu" else 0.0)
         toplam_unite_brut_dahil_eklentiler = ortalama_unite_alani + ortalama_bodrum_alani + tekil_havuz_payi
 
-        birim_detay_data = [
-            {"Bodrum Payı / Alan Türü": "Ünite Tipi", "Açıklama / Model": selected_proje_tipi, "Birim Başına Düşen Değer": f"{hedef_bagimsiz_bolum} Adet Toplam"},
-            {"Bodrum Payı / Alan Türü": "Ana Ünite İnşaat Alanı (Brüt)", "Açıklama / Model": "Ortalama Bağımsız Bölüm Kapalı Alanı", "Birim Başına Düşen Değer": f"{ortalama_unite_alani:,.2f} m²"},
-            {"Bodrum Payı / Alan Türü": "Bodrum Payı", "Açıklama / Model": p_spec["etiket_bodrum"], "Birim Başına Düşen Değer": f"{ortalama_bodrum_alani:,.2f} m²"},
-            {"Bodrum Payı / Alan Türü": "Havuz Payı", "Açıklama / Model": havuz_tercihi, "Birim Başına Düşen Değer": f"{tekil_havuz_payi:,.2f} m²"},
-            {"Bodrum Payı / Alan Türü": "Ünite Başına Düşen Net Arsa Payı", "Açıklama / Model": "Parsel Net Arsa / Toplam Ünite Adedi", "Birim Başına Düşen Değer": f"{unite_basi_net_arsa_genel:,.2f} m²"},
-            {"Bodrum Payı / Alan Türü": "Toplam Bağımsız Bölüm Brüt Alanı (Eklentiler Dahil)", "Açıklama / Model": "Ana Ünite + Bodrum + Havuz Payı", "Birim Başına Düşen Değer": f"{toplam_unite_brut_dahil_eklentiler:,.2f} m²"}
-        ]
-        st.table(pd.DataFrame(birim_detay_data))
+        # 3 Sütunlu Finansal Tablo Yapısına Uyarlanmış HTML Tablosu (Tab 3 ve Tab 5 için)
+        tab3_detay_rows_html = f"""<tr>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ana Ünite İnşaat Alanı (Brüt)</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ortalama Bağımsız Bölüm Kapalı Alanı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{ortalama_unite_alani:,.2f} m²</td>
+</tr>
+<tr>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Bodrum Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ortalama Bodrum Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{ortalama_bodrum_alani:,.2f} m²</td>
+</tr>
+<tr>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Havuz Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">{havuz_tercihi}</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{tekil_havuz_payi:,.2f} m²</td>
+</tr>
+<tr style="background-color: #f8fafc; font-weight: bold;">
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Toplam Bağımsız Bölüm Brüt Alanı (Eklentiler Dahil)</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ana Ünite + Bodrum + Havuz Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; color: #1e3a8a;">{toplam_unite_brut_dahil_eklentiler:,.2f} m²</td>
+</tr>"""
+
+        st.markdown(f"""<table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 15px;">
+<thead>
+<tr style="background-color: #f1f5f9;">
+<th style="border: 1px solid #cbd5e1; padding: 9px 12px; text-align: left;">Bileşen</th>
+<th style="border: 1px solid #cbd5e1; padding: 9px 12px; text-align: left;">Açıklama / Model</th>
+<th style="border: 1px solid #cbd5e1; padding: 9px 12px; text-align: right;">Birim Değeri</th>
+</tr>
+</thead>
+<tbody>
+{tab3_detay_rows_html}
+</tbody>
+</table>""", unsafe_allow_html=True)
 
     with tab4:
         st.subheader("📑 Proje Raporu ve Finansal Fizibilite Matrisi")
@@ -661,7 +686,6 @@ if selected_keys:
         
         st.markdown("#### Bağımsız Bölüm Başına Detaylı Alan ve Dağılımı")
         
-        # HTML etiketlerinin en soldan başlaması (girintisiz olması) kod bloğu hatasını engeller
         pdf_detay_rows_html = f"""<tr>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ana Ünite İnşaat Alanı (Brüt)</td>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ortalama Bağımsız Bölüm Kapalı Alanı</td>
@@ -683,12 +707,12 @@ if selected_keys:
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; color: #1e3a8a;">{tab5_toplam_unite_brut_dahil_eklentiler:,.2f} m²</td>
 </tr>"""
 
-        st.markdown(f"""<table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 15px;">
+        st.markdown(f"""<table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 15px;">
 <thead>
 <tr style="background-color: #f1f5f9;">
-<th style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: left;">Bileşen</th>
-<th style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: left;">Açıklama / Model</th>
-<th style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right;">Birim Değeri</th>
+<th style="border: 1px solid #cbd5e1; padding: 9px 12px; text-align: left;">Bileşen</th>
+<th style="border: 1px solid #cbd5e1; padding: 9px 12px; text-align: left;">Açıklama / Model</th>
+<th style="border: 1px solid #cbd5e1; padding: 9px 12px; text-align: right;">Birim Değeri</th>
 </tr>
 </thead>
 <tbody>
