@@ -424,6 +424,19 @@ if selected_keys:
         st.session_state["havuz_tercihi"] = tahmini_havuz_modeli
         st.session_state["hb_input"] = tahmini_ideal_adet
 
+    # --- ORTAK HESAPLAMA DEĞİŞKENLERİ (SEKMELERDEN ÖNCE TANIMLANDI) ---
+    curr_hb = st.session_state.get("hedef_bagimsiz_bolum", tahmini_ideal_adet)
+    curr_hp = st.session_state.get("havuz_tercihi", tahmini_havuz_modeli)
+
+    havuz_emsele_maliyet_m2 = 30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 if curr_hp == "Ortak / Sosyal Tesis Havuzu" else 0.0)
+    net_brut_dusulen_alan = max(0.0, yasal_max_brut_insaat_alani - havuz_emsele_maliyet_m2)
+    toplam_brut_kullanim_alani = net_brut_dusulen_alan
+    
+    ortalama_unite_alani = net_brut_dusulen_alan / curr_hb if curr_hb > 0 else 0
+    unite_basi_net_arsa_genel = toplam_fonksiyon_alani / curr_hb if curr_hb > 0 else 0
+    simulated_bodrum_alani = net_brut_dusulen_alan * p_spec["bodrum_orani"]
+    ortalama_bodrum_alani = simulated_bodrum_alani / curr_hb if curr_hb > 0 else 0
+
     # --- 5 SEKME YAPISI ---
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "📊 Seçilen Parseller Özeti", 
@@ -435,7 +448,7 @@ if selected_keys:
     
     with tab1:
         st.subheader("Seçilen Parsellerin İmar ve Fonksiyon Bazlı Arsa Dağılımı")
-        st.info("💡 Net arsa alanı Tapu alanı (`toplam_alan`) baz alınarak; terk yapılmamışsa imar uygulaması gereği %30 kesinti yapılmış gibi ($toplam\_brut \\times 0.70$), terki yapılmışsa fonksiyon alanı üzerinden hesaplanmıştır.")
+        st.info("💡 Net arsa alanı Tapu alanı (`toplam_alan`) baz alınarak; terk yapılmamışsa imar uygulaması gereği %30 kesinti yapılmış gibi, terki yapılmışsa fonksiyon alanı üzerinden hesaplanmıştır.")
         
         table_rows = []
         for key, p in active_parcel_db.items():
@@ -525,18 +538,6 @@ if selected_keys:
             )
         st.session_state["havuz_tercihi"] = havuz_tercihi
 
-        havuz_emsele_maliyet_m2 = 30.0 if havuz_tercihi == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 if havuz_tercihi == "Ortak / Sosyal Tesis Havuzu" else 0.0)
-        net_brut_dusulen_alan = max(0.0, yasal_max_brut_insaat_alani - havuz_emsele_maliyet_m2)
-        toplam_brut_kullanim_alani = net_brut_dusuler_alan
-        
-        ortalama_unite_alani = net_brut_dusulen_alan / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
-        
-        # Ünite Başına Düşen Net Arsa hesabı Fonksiyon Alanına göre yapılmıştır
-        unite_basi_net_arsa_genel = toplam_fonksiyon_alani / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
-        
-        simulated_bodrum_alani = net_brut_dusulen_alan * p_spec["bodrum_orani"]
-        ortalama_bodrum_alani = simulated_bodrum_alani / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
-
         st.markdown("---")
         m_col1, m_col2, m_col3, m_col4 = st.columns(4)
         m_col1.metric("Toplam Ünite Alanı (Ortalama Ünite)", f"{net_brut_dusulen_alan:,.2f} m²", f"({ortalama_unite_alani:,.2f} m² / Ünite)")
@@ -544,14 +545,14 @@ if selected_keys:
         m_col3.metric("Bodrum Payı", f"{simulated_bodrum_alani:,.2f} m²", f"({ortalama_bodrum_alani:,.2f} m² / Ünite)")
         
         min_sinir = 150 if "Villa" in selected_proje_tipi else (90 if "Ticari" not in selected_proje_tipi else 60)
-        risk_durumu = "⚠️ RİSKLİ (Çok küçük ölçek)" if ortalama_unite_alani < min_sinir and hedef_bagimsiz_bolum > 1 else "✅ Uygun Ölçek"
+        risk_durumu = "⚠️ RİSKLİ (Çok küçük ölçek)" if ortalama_unite_alani < min_sinir and curr_hb > 1 else "✅ Uygun Ölçek"
         m_col4.metric("Mimari Ölçek Uygunluğu", risk_durumu)
 
         st.markdown("---")
         st.markdown("### 🏷️ Bağımsız Bölüm Başına Detaylı Alan ve Dağılımı")
         st.info("💡 Her bir bağımsız ünitenin yapısal bileşenleri, inşaat alanları ve tamamlayıcı payları aşağıda detaylandırılmıştır.")
 
-        tekil_havuz_payi = 30.0 if havuz_tercihi == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 / hedef_bagimsiz_bolum if havuz_tercihi == "Ortak / Sosyal Tesis Havuzu" else 0.0)
+        tekil_havuz_payi = 30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 / curr_hb if curr_hp == "Ortak / Sosyal Tesis Havuzu" else 0.0)
         toplam_unite_brut_dahil_eklentiler = ortalama_unite_alani + ortalama_bodrum_alani + tekil_havuz_payi
 
         tab3_detay_rows_html = f"""<tr>
@@ -566,7 +567,7 @@ if selected_keys:
 </tr>
 <tr>
 <td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Havuz Payı</td>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">{havuz_tercihi}</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">{curr_hp}</td>
 <td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #0f172a; text-align: right; font-weight: 700;">{tekil_havuz_payi:,.2f} m²</td>
 </tr>
 <tr style="font-weight: bold;">
@@ -591,12 +592,6 @@ if selected_keys:
     with tab4:
         st.subheader("📑 Proje Raporu ve Finansal Fizibilite Matrisi")
         
-        curr_hb = st.session_state["hedef_bagimsiz_bolum"]
-        curr_hp = st.session_state["havuz_tercihi"]
-        
-        net_emsal_tabani_rapor = yasal_max_brut_insaat_alani - (30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 if curr_hp == "Ortak / Sosyal Tesis Havuzu" else 0.0))
-        simulated_bodrum_alani = max(0.0, net_emsal_tabani_rapor) * p_spec["bodrum_orani"]
-
         first_parcel = list(active_parcel_db.values())[0]
         detected_mahalle = first_parcel.get("mahalle", "VARSAYILAN").upper()
         
@@ -621,7 +616,7 @@ if selected_keys:
             birim_satis = col_f2.number_input("M² Brüt Satış Fiyatı ($) [Piyasa]", value=float(real_satis_usd), disabled=True, key="tab4_satis_dis")
 
         toplam_maliyet_usd = (yasal_max_brut_insaat_alani * birim_maliyet) + arsa_bonus_usd
-        normal_ciro = net_emsal_tabani_rapor * birim_satis
+        normal_ciro = net_brut_dusulen_alan * birim_satis
         bodrum_ciro = simulated_bodrum_alani * birim_satis * otomatik_bodrum_orani
         toplam_ciro_usd = normal_ciro + bodrum_ciro
         
@@ -657,9 +652,9 @@ if selected_keys:
         st.write("Aşağıda hazırlanan raporun profesyonel ekran ön izlemesi yer almaktadır. Butona tıklayarak doğrudan **Yatay PDF Olarak İndirebilirsiniz**.")
         st.markdown("---")
         
-        tab5_saf_unite_brut = (yasal_max_brut_insaat_alani - (30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 if curr_hp == "Ortak / Sosyal Tesis Havuzu" else 0.0))) / curr_hb if curr_hb > 0 else 0
+        tab5_saf_unite_brut = net_brut_dusulen_alan / curr_hb if curr_hb > 0 else 0
         tab5_havuz_payi_m2 = 30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 / curr_hb if curr_hp == "Ortak / Sosyal Tesis Havuzu" else 0.0)
-        tab5_bodrum_payi_m2 = (net_emsal_tabani_rapor * p_spec["bodrum_orani"]) / curr_hb if curr_hb > 0 else 0
+        tab5_bodrum_payi_m2 = simulated_bodrum_alani / curr_hb if curr_hb > 0 else 0
         tab5_toplam_unite_brut_dahil_eklentiler = tab5_saf_unite_brut + tab5_bodrum_payi_m2 + tab5_havuz_payi_m2
         tab5_unite_basi_net_arsa = toplam_fonksiyon_alani / curr_hb if curr_hb > 0 else 0
 
