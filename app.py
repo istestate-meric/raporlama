@@ -385,7 +385,7 @@ if selected_keys:
       k: st.session_state["parcel_db"][k] for k in selected_keys
   }
 
-  # --- DOĞRU MANTIK: BRÜT ARAZİDEN TERK DÜŞÜLEREK "NET ARSA / UYGULAMA ALANI" HESabi ---
+  # --- KESİN AYRIŞTIRMA: BRÜT ARAZİ vs UYGULAMA / BAHÇE ALANI (NET ARSA) ---
   fonksiyon_bazli_veriler = {}
   for key, p in active_parcel_db.items():
     is_terkli = p["terk_yapilmis_mi"]
@@ -399,15 +399,14 @@ if selected_keys:
             "toplam_insaat_alani": 0.0,
         }
 
-      # 1. Başlangıçtaki Ham / Brüt Arazi Ölçüsü
+      # 1. Ham Brüt Arazi (İmar belgesinden gelen ilk alan)
       brut_arazi = f["giren_m2"] if f["giren_m2"] > 0 else p["toplam_alan"]
 
-      # 2. Terk Sonrası Net Arsa (Eğer terk yapılmışsa brüt alanın kendisidir;
-      # yapılmamışsa brüt alan üzerinden %30 yasal kesinti/DOP düşülerek net arsaya ulaşılır)
+      # 2. Terk Sonrası Net Arsa (İnşaat hesabının baz alındığı alan)
       net_arsa = brut_arazi if is_terkli else brut_arazi * 0.70
 
-      # 3. Uygulamada ve Bahçe/Peyzajda Kullanılacak Fiili Alan = Terk Sonrası Net Arsa Alanı
-      uygulama_alani = net_arsa
+      # 3. Uygulama ve Bahçe Alanı = Doğrudan Terk Sonrası Kalan Net Arsa Miktarı
+      uygulama_bahce_alani = net_arsa
 
       if (
           f["kaks"] <= 0
@@ -423,7 +422,7 @@ if selected_keys:
       fonksiyon_bazli_veriler[fonk_adi]["toplam_brut_arazi"] += brut_arazi
       fonksiyon_bazli_veriler[fonk_adi]["toplam_net_arsa"] += net_arsa
       fonksiyon_bazli_veriler[fonk_adi]["toplam_uygulama_bahce_alani"] += (
-          uygulama_alani
+          uygulama_bahce_alani
       )
       fonksiyon_bazli_veriler[fonk_adi]["toplam_insaat_alani"] += brut_insaat
 
@@ -479,31 +478,32 @@ if selected_keys:
     rows = []
     for k, p in active_parcel_db.items():
       for f in p["fonksiyonlar"]:
+        b_val = f["giren_m2"]
+        n_val = b_val if p["terk_yapilmis_mi"] else b_val * 0.70
         rows.append({
             "Parsel": k,
             "Mahalle": p["mahalle"],
             "Fonksiyon": f["fonksiyon_adi"],
-            "Brüt Arsa (m²)": f"{f['giren_m2']:,.2f}",
+            "Brüt Arazi (m²)": f"{b_val:,.2f}",
+            "Uygulama / Bahçe Alanı (m²)": f"{n_val:,.2f}",
             "TAKS": f"{f['taks']:.2f}",
             "KAKS": f"{f['kaks']:.2f}",
-            "Terk Durumu": (
-                "Terkli" if p["terk_yapilmis_mi"] else "Terksiz (%30 Kesintili)"
-            ),
+            "Terk Durumu": "Terkli" if p["terk_yapilmis_mi"] else "Terksiz",
         })
     st.dataframe(pd.DataFrame(rows), use_container_width=True)
 
   with tab2:
     st.subheader(
-        "Fonksiyonlara Göre Brüt Arazi, Net Arsa ve Uygulama Alanı Dağılımı"
+        "Fonksiyonlara Göre Brüt Arazi ve Uygulama / Bahçe Alanı Dağılımı"
     )
     for fonk, vals in fonksiyon_bazli_veriler.items():
       if vals["toplam_insaat_alani"] == 0:
         st.metric(
-            label=f"🌳 {fonk} (Donatı / Bahçe Alanı)",
+            label=f"🌳 {fonk} (Donatı Alanı)",
             value="0.00 m² (İnşaat Yok)",
             delta=(
-                f"Uygulama/Bahçe Alanı: "
-                f"{vals['toplam_uygulama_bahce_alani']:,.2f} m²"
+                f"Brüt Arazi: {vals['toplam_brut_arazi']:,.2f} m² | Uygulama /"
+                f" Bahçe Alanı: {vals['toplam_uygulama_bahce_alani']:,.2f} m²"
             ),
         )
       else:
@@ -539,8 +539,8 @@ if selected_keys:
         )
         st.success(
             f"Proje Tipi: **{p_tipi}** | Bağımsız Bölüm Başına Alan:"
-            f" **{birim_alan:,.2f} m²** | Uygulama / Bahçe Alanı (Terk"
-            f" Sonrası): **{vals['toplam_uygulama_bahce_alani']:,.2f} m²**"
+            f" **{birim_alan:,.2f} m²** | Fiili Uygulama / Bahçe Alanı:"
+            f" **{vals['toplam_uygulama_bahce_alani']:,.2f} m²**"
         )
       st.markdown("---")
 
@@ -588,7 +588,7 @@ if selected_keys:
   with tab5:
     st.subheader("🖨️ Kurumsal Rapor Ön İzleme & PDF")
     st.info(
-        "Terk sonrası net arsa alanı uygulama ve bahçe alanı olarak rapora"
+        "Brüt arsa ve terk sonrası uygulama/bahçe alanı ayrımları rapora"
         " yansıtılmıştır."
     )
     if st.button("Tek Sayfa Kurumsal Fizibilite Raporu İndir"):
