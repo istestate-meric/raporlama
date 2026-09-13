@@ -68,7 +68,7 @@ img1_tag = (
 )
 img2_tag = (
     f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 65px;"
-    " width: auto; object-fit: contain;'>"
+    " width: auto; object-fit: contain;'>" )
     if img2_base64
     else "<h2 style='color:#1e3a8a; margin:0;'>MERİÇ İNŞAAT</h2>"
 
