@@ -654,7 +654,6 @@ if selected_keys:
   )
 
   # --- DÜZELTME: HAVUZ ALANININ BİNA OTURUMUNDAN VE BODRUM PAYINDAN İZOLASYONU ---
-  # Birim başı havuz payı (inşaat hakkından düşülen su/teras alanı)
   tekil_havuz_payi = (
       30.0
       if "Özel Havuz" in curr_hp
@@ -662,7 +661,6 @@ if selected_keys:
   )
   ana_unite_kapali_alan = max(0.0, ortalama_unite_alani - tekil_havuz_payi)
 
-  # Bodrum payı sadece havuz alanından arındırılmış net yapı alanı üzerinden hesaplanır
   simulated_bodrum_alani = (
       (yasal_max_brut_insaat_alani - (tekil_havuz_payi * curr_hb))
       * p_spec["bodrum_orani"]
@@ -817,7 +815,6 @@ if selected_keys:
     st.markdown("---")
     m_col1, m_col2, m_col3, m_col4 = st.columns(4)
 
-    # İsteğiniz doğrultusunda İnşaat Alanı, Net Arsa ve Bodrum Payı adet bazlı ana değer, toplam değer parantez içinde detay olarak güncellendi:
     m_col1.metric(
         "İnşaat Alanı",
         f"{unite_basi_insaat_alani:,.2f} m²",
@@ -959,7 +956,6 @@ if selected_keys:
         yasal_max_brut_insaat_alani * birim_maliyet
     ) + arsa_bonus_usd
 
-    # --- CİRO HESABI: Toplam İnşaat Alanı Satış Geliri + Arındırılmış Bodrum Alanı Satış Geliri ---
     normal_ciro = yasal_max_brut_insaat_alani * birim_satis
     bodrum_ciro = simulated_bodrum_alani * birim_satis * otomatik_bodrum_orani
     toplam_ciro_usd = normal_ciro + bodrum_ciro
@@ -1089,7 +1085,6 @@ if selected_keys:
 
     st.markdown(f"**AKILLI GAYRİMENKUL GELİŞTİRME VE FİZİBİLİTE RAPORU**")
 
-    # --- TABLO 1: PROJE VE LOKASYON KÜNYESİ ---
     st.markdown("#### 1. Proje ve Lokasyon Künyesi")
     preview_kunye_rows_html = f"""<tr>
 <td style="border: 1px solid #cbd5e1; padding: 6px 10px; color: #0f172a; background-color: #ffffff;">Seçilen Lokasyon / Mahalle</td>
@@ -1131,7 +1126,6 @@ if selected_keys:
         unsafe_allow_html=True,
     )
 
-    # --- TABLO 2: MİMARİ VE BAĞIMSIZ BÖLÜM PLANLAMASI ---
     st.markdown("#### 2. Mimari ve Bağımsız Bölüm Planlaması")
     preview_mimari_rows_html = f"""<tr>
 <td style="border: 1px solid #cbd5e1; padding: 6px 10px; color: #0f172a; background-color: #ffffff;">{birim_etiketi} Adedi</td>
@@ -1261,7 +1255,6 @@ if selected_keys:
         else "<div style='background-color: #ffffff; padding: 4px 8px; border-radius: 4px;'><span style='font-size:12px; font-weight:bold; color:#0b1d3a;'>MERİÇ İNŞAAT</span></div>"
     )
 
-    # --- PDF İÇİN KÜNYE TABLOSU HTML ---
     pdf_kunye_rows_html = f"""<tr>
 <td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff;">Seçilen Lokasyon / Mahalle</td>
 <td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff; text-align: right; font-weight: 600;">{detected_mahalle}</td>
@@ -1287,7 +1280,6 @@ if selected_keys:
 <td style="border: 1px solid #cbd5e1; padding: 4px 8px; text-align: right; color: #1e3a8a;">{yasal_max_brut_insaat_alani:,.2f} m²</td>
 </tr>"""
 
-    # --- PDF İÇİN MİMARİ PLANLAMA TABLOSU HTML ---
     pdf_mimari_rows_html = f"""<tr>
 <td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff;">{birim_etiketi} Adedi</td>
 <td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff; text-align: right; font-weight: 600;">{curr_hb} Adet</td>
@@ -1351,7 +1343,6 @@ if selected_keys:
 <td style="border: 1px solid #cbd5e1; padding: 4px 8px; text-align: right; color: #1e3a8a;">₺{mutaahhit_net_kar_tl:,.2f} (%{yg_orani:.1f} YG)</td>
 </tr>"""
 
-    # --- REVISED BANNER STİLLİ WEASYPRINT HTML/CSS ŞABLONU ---
     report_html_template = f"""
         <!DOCTYPE html>
         <html>
@@ -1375,7 +1366,6 @@ if selected_keys:
                 background: #ffffff;
                 padding: 0;
             }}
-            /* Kurumsal Lacivert Banner */
             .report-banner {{
                 background-color: #0b1d3a;
                 color: #ffffff;
@@ -1441,7 +1431,6 @@ if selected_keys:
         </head>
         <body>
         <div class="report-container">
-            <!-- Kurumsal Lacivert Banner ve Beyaz Arka Planlı Logolar -->
             <table class="report-banner">
                 <tr>
                     <td style="width: 25%; text-align: left;">{pdf_logo1_html}</td>
@@ -1452,7 +1441,7 @@ if selected_keys:
                 </tr>
             </table>
             
-            <div class="section-title">1. Proje and Lokasyon Künyesi</div>
+            <div class="section-title">1. Proje ve Lokasyon Künyesi</div>
             <table class="data-table">
                 <thead>
                     <tr>
