@@ -642,7 +642,6 @@ if selected_keys:
       with fc2:
         fonk_toplam_brut_m2 = temp_function_bruts.get(fonk_name, 300.0)
 
-        # Piyasada onay görmüş hedef birim m² değerlerine göre otomatik adet hesaplama
         if "Villa" in sel_p_tipi:
           hedef_birim_m2 = 300.0
         elif "Rezidan" in sel_p_tipi or "Üst Segment" in sel_p_tipi:
@@ -652,11 +651,9 @@ if selected_keys:
         elif "Karma" in sel_p_tipi:
           hedef_birim_m2 = 140.0
         else:
-          hedef_birim_m2 = 115.0  # Standart Konut / Apartman
+          hedef_birim_m2 = 115.0
 
-        def_adet = max(
-            1, round(fonk_toplam_brut_m2 / (hedef_birim_m2 * 1.35))
-        )  # 1.35 brüt/net dönüşüm faktörü karşılığı
+        def_adet = max(1, round(fonk_toplam_brut_m2 / (hedef_birim_m2 * 1.35)))
 
         adet = st.number_input(
             "Adet",
@@ -857,7 +854,7 @@ if selected_keys:
       calc_results.append({
           "Parsel": item["Parsel"],
           "Fonksiyon": item["Fonksiyon"],
-          "Toplam Brüt İnşaat Alanı (m²)": f"{item['Brüt İnşaat (m²)'...:,.2f}",
+          "Toplam Brüt İnşaat Alanı (m²)": f"{item['Brüt İnşaat (m²)']:,.2f}",
       })
     st.table(pd.DataFrame(calc_results))
     st.metric(
@@ -879,7 +876,6 @@ if selected_keys:
       conf = function_configs.get(fonk_name, {})
       sel_p_tipi = conf.get("proje_tipi", "Standart Konut / Apartman")
 
-      # Dinamik etiket belirleme
       if "Villa" in sel_p_tipi:
         birim_etiket = "Ortalama Villa Brüt Alanı"
       elif "Rezidan" in sel_p_tipi or "Üst Segment" in sel_p_tipi:
