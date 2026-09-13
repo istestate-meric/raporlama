@@ -640,6 +640,8 @@ if selected_keys:
             birim_satis = col_f2.number_input("M² Brüt Satış Fiyatı ($) [Piyasa]", value=float(real_satis_usd), disabled=True, key="tab4_satis_dis")
 
         toplam_maliyet_usd = (yasal_max_brut_insaat_alani * birim_maliyet) + arsa_bonus_usd
+        
+        # --- DÜZELTİLEN CİRO HESABI: Toplam İnşaat Alanı Satış Geliri + Bodrum Alanı Satış Geliri ---
         normal_ciro = yasal_max_brut_insaat_alani * birim_satis
         bodrum_ciro = simulated_bodrum_alani * birim_satis * otomatik_bodrum_orani
         toplam_ciro_usd = normal_ciro + bodrum_ciro
@@ -679,7 +681,7 @@ if selected_keys:
 
         tab4_finansal_rows_html = f"""<tr>
 <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff;">Toplam Tahmini Brüt Ciro</td>
-<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #475569; background-color: #ffffff;">Tüm Bağımsız Bölüm ve Bodrum Satış Geliri</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #475569; background-color: #ffffff;">İnşaat Alanı + Bodrum Satış Geliri Toplamı</td>
 <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff; text-align: right; font-weight: 700;">${toplam_ciro_usd:,.2f}</td>
 <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff; text-align: right; font-weight: 700;">₺{toplam_ciro_tl:,.2f}</td>
 </tr>
@@ -844,7 +846,7 @@ if selected_keys:
 
         preview_finansal_rows_html = f"""<tr>
 <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff;">Toplam Tahmini Brüt Ciro</td>
-<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #475569; background-color: #ffffff;">Tüm Bağımsız Bölüm ve Bodrum Satış Geliri</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #475569; background-color: #ffffff;">İnşaat Alanı + Bodrum Satış Geliri Toplamı</td>
 <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff; text-align: right; font-weight: 700;">${toplam_ciro_usd:,.2f}</td>
 <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff; text-align: right; font-weight: 700;">₺{toplam_ciro_tl:,.2f}</td>
 </tr>
@@ -952,7 +954,7 @@ if selected_keys:
 
         pdf_finansal_rows_html = f"""<tr>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff;">Toplam Tahmini Brüt Ciro</td>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff; color: #475569;">Tüm Bağımsız Bölüm ve Bodrum Satış Geliri</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff; color: #475569;">İnşaat Alanı + Bodrum Satış Geliri Toplamı</td>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff; text-align: right; color: #0f172a; font-weight: 600;">${toplam_ciro_usd:,.2f}</td>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff; text-align: right; color: #334155;">₺{toplam_ciro_tl:,.2f}</td>
 </tr>
