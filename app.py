@@ -817,20 +817,21 @@ if selected_keys:
     st.markdown("---")
     m_col1, m_col2, m_col3, m_col4 = st.columns(4)
 
+    # İsteğiniz doğrultusunda İnşaat Alanı ve Net Arsa adet bazlı ana değer, toplam değer parantez içinde detay olarak güncellendi:
     m_col1.metric(
-        f"{birim_etiketi_alt} Başına İnşaat Alanı",
+        "İnşaat Alanı",
         f"{unite_basi_insaat_alani:,.2f} m²",
-        "(Toplam İnşaat / Adet)",
+        f"(Toplam: {yasal_max_brut_insaat_alani:,.2f} m²)",
     )
     m_col2.metric(
-        f"{birim_etiketi_alt} Başına Net Arsa",
+        "Net Arsa",
         f"{unite_basi_net_arsa_genel:,.2f} m²",
-        "(Toplam Net Arsa / Adet)",
+        f"(Toplam: {toplam_net_arsa_alani:,.2f} m²)",
     )
     m_col3.metric(
-        f"{birim_etiketi_alt} Başına Bodrum Payı",
-        f"{ortalama_bodrum_alani:,.2f} m²",
-        f"(Toplam: {simulated_bodrum_alani:,.2f} m²)",
+        "Bodrum Payı",
+        f"{simulated_bodrum_alani:,.2f} m²",
+        f"({ortalama_bodrum_alani:,.2f} m² / {birim_etiketi_alt})",
     )
 
     min_sinir = (
@@ -1451,7 +1452,7 @@ if selected_keys:
                 </tr>
             </table>
             
-            <div class="section-title">1. Proje ve Lokasyon Künyesi</div>
+            <div class="section-title">1. Proje and Lokasyon Künyesi</div>
             <table class="data-table">
                 <thead>
                     <tr>
