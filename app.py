@@ -337,9 +337,8 @@ if selected_keys:
             if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"])
         )
         
-        # NET ARSA HESABI: İmar belgesindeki alan baz alınır, mükerrer terk uygulanmaz
-        base_net_base = toplam_giren_fonk_m2 if toplam_giren_fonk_m2 > 0 else toplam_brut_m2
-        varsayilan_net = base_net_base
+        # NET ARSA HESABI: Mükerrer terk yapılmaması için doğrudan imar belgesindeki toplam arsa alanı baz alınır
+        varsayilan_net = toplam_brut_m2
         
         if key not in st.session_state["parcel_net_overrides"]:
             st.session_state["parcel_net_overrides"][key] = varsayilan_net
