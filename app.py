@@ -372,7 +372,7 @@ st.markdown(
     </div>
     <hr style="margin: 25px 0 20px 0; border: none; border-top: 1px solid #e2e8f0;">
     <div style="text-align: center;">
-        <h1 style='color: #0f172a; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; margin-top: 0;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK</h1>
+        <h1 style='color: #0f172a; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; margin-top: 0;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT</h1>
         <p style='color: #475569; font-size: 15px; font-weight: 600; margin: 0;'>Akıllı Gayrimenkul Geliştirme ve Fizibilite Portalı</p>
     </div>
 </div>
@@ -1264,95 +1264,95 @@ if selected_keys:
 
     # --- PDF İÇİN KÜNYE TABLOSU HTML ---
     pdf_kunye_rows_html = f"""<tr>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #ffffff;">Seçilen Lokasyon / Mahalle</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #ffffff; text-align: right; font-weight: 600;">{detected_mahalle}</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff;">Seçilen Lokasyon / Mahalle</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff; text-align: right; font-weight: 600;">{detected_mahalle}</td>
 </tr>
 <tr>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #f8fafc;">Proje Tipi</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #f8fafc; text-align: right; font-weight: 600;">{selected_proje_tipi}</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc;">Proje Tipi</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc; text-align: right; font-weight: 600;">{selected_proje_tipi}</td>
 </tr>
 <tr>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #ffffff;">İş Modeli</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #ffffff; text-align: right; font-weight: 600;">{is_modeli}</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff;">İş Modeli</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff; text-align: right; font-weight: 600;">{is_modeli}</td>
 </tr>
 <tr>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #f8fafc;">Toplam Arsa Alanı</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #f8fafc; text-align: right; font-weight: 600;">{toplam_brut_arsa_alani:,.2f} m²</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc;">Toplam Arsa Alanı</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc; text-align: right; font-weight: 600;">{toplam_brut_arsa_alani:,.2f} m²</td>
 </tr>
 <tr>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #ffffff;">Toplam Net Arsa Alanı</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #ffffff; text-align: right; font-weight: 600;">{toplam_net_arsa_alani:,.2f} m²</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff;">Toplam Net Arsa Alanı</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff; text-align: right; font-weight: 600;">{toplam_net_arsa_alani:,.2f} m²</td>
 </tr>
 <tr style="background-color: #f1f5f9; font-weight: bold;">
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px;">Toplam Brüt İnşaat Alanı</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; text-align: right; color: #1e3a8a;">{yasal_max_brut_insaat_alani:,.2f} m²</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px;">Toplam Brüt İnşaat Alanı</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; text-align: right; color: #1e3a8a;">{yasal_max_brut_insaat_alani:,.2f} m²</td>
 </tr>"""
 
     # --- PDF İÇİN MİMARİ PLANLAMA TABLOSU HTML ---
     pdf_mimari_rows_html = f"""<tr>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #ffffff;">{birim_etiketi} Adedi</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #ffffff; text-align: right; font-weight: 600;">{curr_hb} Adet</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff;">{birim_etiketi} Adedi</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff; text-align: right; font-weight: 600;">{curr_hb} Adet</td>
 </tr>
 <tr>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #f8fafc;">Havuz Planlama Modeli</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #f8fafc; text-align: right; font-weight: 600;">{curr_hp}</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc;">Havuz Planlama Modeli</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc; text-align: right; font-weight: 600;">{curr_hp}</td>
 </tr>
 <tr style="background-color: #f1f5f9; font-weight: bold;">
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px;">{birim_etiketi_alt} Başına Net Arsa</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; text-align: right; color: #1e3a8a;">{unite_basi_net_arsa_genel:,.2f} m² / {birim_etiketi_alt}</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px;">{birim_etiketi_alt} Başına Net Arsa</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; text-align: right; color: #1e3a8a;">{unite_basi_net_arsa_genel:,.2f} m² / {birim_etiketi_alt}</td>
 </tr>"""
 
     pdf_detay_rows_html = f"""<tr>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #ffffff;">Ana Ünite Kapalı Alanı (Brüt)</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #ffffff; color: #475569;">Havuz Payı Düşülmüş Net Kapalı Yaşam Alanı</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #ffffff; text-align: right; font-weight: 600;">{tab5_ana_unite_kapali:,.2f} m²</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff;">Ana Ünite Kapalı Alanı (Brüt)</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff; color: #475569;">Havuz Payı Düşülmüş Net Kapalı Yaşam Alanı</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff; text-align: right; font-weight: 600;">{tab5_ana_unite_kapali:,.2f} m²</td>
 </tr>
 <tr>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #f8fafc;">Havuz Payı (İnşaat Hakkından Düşülen)</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #f8fafc; color: #475569;">{curr_hp}</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #f8fafc; text-align: right; font-weight: 600;">{tab5_havuz_payi_m2:,.2f} m²</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc;">Havuz Payı (İnşaat Hakkından Düşülen)</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc; color: #475569;">{curr_hp}</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc; text-align: right; font-weight: 600;">{tab5_havuz_payi_m2:,.2f} m²</td>
 </tr>
 <tr>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #ffffff;">Bodrum Payı</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #ffffff; color: #475569;">Ortalama Bodrum Payı</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #ffffff; text-align: right; font-weight: 600;">{tab5_bodrum_payi_m2:,.2f} m²</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff;">Bodrum Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff; color: #475569;">Ortalama Bodrum Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff; text-align: right; font-weight: 600;">{tab5_bodrum_payi_m2:,.2f} m²</td>
 </tr>
 <tr style="background-color: #f1f5f9; font-weight: bold;">
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px;">Toplam {birim_etiketi_alt} Brüt Alanı (Eklentiler Dahil)</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; color: #475569;">Ana Ünite + Havuz Payı + Bodrum</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; text-align: right; color: #1e3a8a;">{tab5_toplam_unite_brut_dahil_eklentiler:,.2f} m²</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px;">Toplam {birim_etiketi_alt} Brüt Alanı (Eklentiler Dahil)</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; color: #475569;">Ana Ünite + Havuz Payı + Bodrum</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; text-align: right; color: #1e3a8a;">{tab5_toplam_unite_brut_dahil_eklentiler:,.2f} m²</td>
 </tr>"""
 
     arsa_sahibi_row_html = ""
     if "Kat Karşılığı" in is_modeli:
       arsa_sahibi_row_html = f"""<tr>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #f8fafc;">Arsa Sahibi Payı</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #f8fafc; color: #475569;">Kat Karşılığı Paydaş Dağılımı</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #f8fafc; text-align: right; color: #0f172a; font-weight: 600;">${arsa_sahibi_payi_usd:,.2f}</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #f8fafc; text-align: right; color: #64748b;">-</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc;">Arsa Sahibi Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc; color: #475569;">Kat Karşılığı Paydaş Dağılımı</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc; text-align: right; color: #0f172a; font-weight: 600;">${arsa_sahibi_payi_usd:,.2f}</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc; text-align: right; color: #64748b;">-</td>
 </tr>"""
 
     pdf_finansal_rows_html = f"""<tr>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #ffffff;">Toplam Tahmini Brüt Ciro</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #ffffff; color: #475569;">İnşaat Alanı + Bodrum Satış Geliri Toplamı</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #ffffff; text-align: right; color: #0f172a; font-weight: 600;">${toplam_ciro_usd:,.2f}</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #ffffff; text-align: right; color: #334155;">₺{toplam_ciro_tl:,.2f}</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff;">Toplam Tahmini Brüt Ciro</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff; color: #475569;">İnşaat Alanı + Bodrum Satış Geliri Toplamı</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff; text-align: right; color: #0f172a; font-weight: 600;">${toplam_ciro_usd:,.2f}</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff; text-align: right; color: #334155;">₺{toplam_ciro_tl:,.2f}</td>
 </tr>
 <tr>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #f8fafc;">Toplam İnşaat Maliyeti + Bonus</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #f8fafc; color: #475569;">Brüt İnşaat Maliyeti ve Nakit Bonus Toplamı</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #f8fafc; text-align: right; color: #0f172a; font-weight: 600;">${toplam_maliyet_usd:,.2f}</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; background-color: #f8fafc; text-align: right; color: #334155;">₺{toplam_maliyet_tl:,.2f}</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc;">Toplam İnşaat Maliyeti + Bonus</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc; color: #475569;">Brüt İnşaat Maliyeti ve Nakit Bonus Toplamı</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc; text-align: right; color: #0f172a; font-weight: 600;">${toplam_maliyet_usd:,.2f}</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc; text-align: right; color: #334155;">₺{toplam_maliyet_tl:,.2f}</td>
 </tr>
 {arsa_sahibi_row_html}
 <tr style="background-color: #f1f5f9; font-weight: bold;">
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px;">Müteahhit Net Kârı</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; color: #475569;">Toplam Kâr ve Yatırım Getirisi</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; text-align: right; color: #1e3a8a;">${mutaahhit_net_kar_usd:,.2f}</td>
-<td style="border: 1px solid #cbd5e1; padding: 5px 8px; text-align: right; color: #1e3a8a;">₺{mutaahhit_net_kar_tl:,.2f} (%{yg_orani:.1f} YG)</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px;">Müteahhit Net Kârı</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; color: #475569;">Toplam Kâr ve Yatırım Getirisi</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; text-align: right; color: #1e3a8a;">${mutaahhit_net_kar_usd:,.2f}</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; text-align: right; color: #1e3a8a;">₺{mutaahhit_net_kar_tl:,.2f} (%{yg_orani:.1f} YG)</td>
 </tr>"""
 
-    # --- TEK SAYFAYA SIĞACAK ŞEKİLDE AYARLANMIŞ WEASYPRINT HTML ŞABLONU ---
+    # --- ELITE CORPORATE WEASYPRINT HTML/CSS ŞABLONU ---
     report_html_template = f"""
         <!DOCTYPE html>
         <html>
@@ -1361,7 +1361,7 @@ if selected_keys:
         <style>
             @page {{
                 size: A4 landscape;
-                margin: 10mm;
+                margin: 8mm 10mm;
             }}
             body {{
                 font-family: 'Helvetica', 'Arial', sans-serif;
@@ -1369,19 +1369,25 @@ if selected_keys:
                 background: #ffffff;
                 margin: 0;
                 padding: 0;
-                font-size: 10.5px;
-                line-height: 1.2;
+                font-size: 9.5px;
+                line-height: 1.15;
             }}
             .report-container {{
                 background: #ffffff;
                 padding: 0;
             }}
+            .top-accent-bar {{
+                height: 3px;
+                background: #1e3a8a;
+                width: 100%;
+                margin-bottom: 6px;
+            }}
             .header-table {{
                 width: 100%;
                 border-collapse: collapse;
                 border-bottom: 2px solid #0f172a;
-                padding-bottom: 6px;
-                margin-bottom: 8px;
+                padding-bottom: 4px;
+                margin-bottom: 6px;
             }}
             .header-table td {{
                 border: none;
@@ -1392,65 +1398,68 @@ if selected_keys:
                 text-align: center;
             }}
             h2 {{
-                font-size: 16px;
+                font-size: 15px;
                 font-weight: 800;
                 color: #0f172a;
                 margin: 0;
                 letter-spacing: -0.5px;
             }}
             p.sub {{
-                font-size: 11px;
+                font-size: 10px;
                 color: #475569;
                 margin: 2px 0 0 0;
                 font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
             }}
             .section-title {{
-                font-size: 11px;
+                font-size: 10px;
                 font-weight: bold;
                 color: #1e3a8a;
                 border-bottom: 1.2px solid #cbd5e1;
                 padding-bottom: 2px;
-                margin-top: 8px;
-                margin-bottom: 4px;
+                margin-top: 6px;
+                margin-bottom: 3px;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
             }}
             .data-table {{
                 width: 100%;
                 border-collapse: collapse;
-                margin-top: 2px;
-                font-size: 10px;
+                margin-top: 1px;
+                font-size: 9px;
             }}
             .data-table th {{
                 background-color: #f8fafc;
                 border: 1px solid #cbd5e1;
-                padding: 5px 8px;
+                padding: 4px 6px;
                 text-align: left;
                 color: #0f172a;
                 font-weight: 700;
             }}
             .data-table td {{
                 border: 1px solid #cbd5e1;
-                padding: 5px 8px;
+                padding: 4px 6px;
             }}
             .footer {{
-                font-size: 9px;
+                font-size: 8px;
                 color: #64748b;
                 text-align: center;
-                margin-top: 12px;
+                margin-top: 8px;
                 border-top: 1px dashed #cbd5e1;
-                padding-top: 4px;
+                padding-top: 3px;
             }}
         </style>
         </head>
         <body>
         <div class="report-container">
+            <div class="top-accent-bar"></div>
             <table class="header-table">
                 <tr>
                     <td style="width: 25%; text-align: left;">{pdf_logo1_html}</td>
                     <td style="width: 50%;" class="title-box">
-                        <h2>İSTESTATE & MERİÇ İNŞAAT</h2>
-                        <p class="sub">Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu</p>
+                        <h2>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT</h2>
+                        <p class="sub">Yatırım Komitesi Onaylı Akıllı Fizibilite Raporu</p>
                     </td>
                     <td style="width: 25%; text-align: right;">{pdf_logo2_html}</td>
                 </tr>
@@ -1482,7 +1491,7 @@ if selected_keys:
                 </tbody>
             </table>
             
-            <div style="font-size: 10px; font-weight: bold; color: #1e3a8a; text-transform: uppercase; margin-top: 8px; margin-bottom: 3px;">{birim_etiketi} Başına Detaylı Alan ve Dağılımı</div>
+            <div style="font-size: 9.5px; font-weight: bold; color: #1e3a8a; text-transform: uppercase; margin-top: 5px; margin-bottom: 2px;">{birim_etiketi} Başına Detaylı Alan ve Dağılımı</div>
             <table class="data-table">
                 <thead>
                     <tr>
@@ -1512,7 +1521,7 @@ if selected_keys:
             </table>
             
             <div class="footer">
-                Bu rapor İstestate Gayrimenkul & Meriç İnşaat Emlak Akıllı Fizibilite Portalı tarafından resmi veriler baz alınarak tek sayfa sunum standardına uygun üretilmiştir.
+                Bu rapor İstestate Gayrimenkul & Meriç İnşaat Emlak Akıllı Fizibilite Portalı tarafından resmi veriler baz alınarak tek sayfa üst düzey kurumsal sunum standardına uygun üretilmiştir.
             </div>
         </div>
         </body>
@@ -1525,7 +1534,7 @@ if selected_keys:
         label="📥 Tek Sayfa Yatay Kurumsal Fizibilite Raporunu PDF Olarak İndir",
         data=pdf_bytes,
         file_name=(
-            f"Tek_Sayfa_Fizibilite_{detected_mahalle}_{selected_proje_tipi.replace(' ', '_')}.pdf"
+            f"Kurumsal_Fizibilite_{detected_mahalle}_{selected_proje_tipi.replace(' ', '_')}.pdf"
         ),
         mime="application/pdf",
         use_container_width=True,
