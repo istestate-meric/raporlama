@@ -104,7 +104,7 @@ def get_live_exchange_rates():
     return {"USD": 34.00, "EUR": 37.50}
 
 
-# --- 2. BEYKOZ GERÇEKÇİ PİYASA VE PROJE TİPİ MATRİSİ ---
+# --- 2. BEYKOZ GERÇEKÇİ PİYASA VE PROJE TİPİ MATRİSİ (CANLI OTOMATİK) ---
 def get_realistic_market_pricing(mahalle_adi, proje_tipi, usd_rate):
   mahalle_base_tl = {
       "ACARLAR": 140000,
@@ -365,7 +365,6 @@ def parse_imar_pdf(uploaded_file):
   return parcel_data
 
 
-# --- İMAR FONKSİYONUNA GÖRE UYGUN PROJE TİPLERİNİ BELİRLEME ---
 def get_allowed_project_types(fonksiyon_adi):
   f_upper = fonksiyon_adi.upper()
   if "TİCARET" in f_upper and ("KONUT" in f_upper or "MESKEN" in f_upper):
@@ -524,8 +523,8 @@ if selected_keys:
         arsa_bonus_usd = raw_bonus_val
 
   st.markdown("---")
-  st.subheader("🏛️ Fonksiyona Özel Mimari ve Finansal Parametreler")
 
+  # --- MİNİMALİZE VE KURUMSAL AKORDEON YAPISI ---
   all_functions_map = {}
   for key, p in active_parcel_db.items():
     for f in p["fonksiyonlar"]:
@@ -541,78 +540,113 @@ if selected_keys:
 
   function_configs = {}
 
-  for fonk_name, items in all_functions_map.items():
-    st.markdown(f"#### 📌 Fonksiyon: `{fonk_name}`")
-    allowed_types = get_allowed_project_types(fonk_name)
-
-    f_col1, f_col2, f_col3 = st.columns(3)
-    with f_col1:
-      sel_p_tipi = st.selectbox(
-          f"Proje Tipi ({fonk_name})",
-          options=allowed_types,
-          key=f"p_tipi_{fonk_name}",
-      )
-    with f_col2:
-      fonk_toplam_brut_m2 = sum(
-          item[1]["giren_m2"]
-          if item[1]["giren_m2"] > 0
-          else active_parcel_db[item[0]]["toplam_alan"]
-          for item in items
-      )
-      def_hedef_alan = (
-          300.0
-          if "Villa" in sel_p_tipi
-          else (150.0 if "Karma" in sel_p_tipi else 125.0)
-      )
-      def_adet = max(1, round(fonk_toplam_brut_m2 / def_hedef_alan))
-
-      adet = st.number_input(
-          f"Planlanan Bağımsız Bölüm Adedi",
-          min_value=1,
-          value=int(def_adet),
-          step=1,
-          key=f"adet_{fonk_name}",
-      )
-    with f_col3:
-      havuz_mod = st.selectbox(
-          f"Havuz Modeli",
-          options=[
-              "Özel / Ortak Havuzlu",
-              "Havuz İptal (Küçük Ölçek Kısıtı)",
-          ],
-          key=f"havuz_{fonk_name}",
-      )
-
-    first_mahalle = list(active_parcel_db.values())[0].get("mahalle", "VARSAYILAN")
-    r_satis, r_maliyet, r_bodrum_orani = get_realistic_market_pricing(
-        first_mahalle, sel_p_tipi, rates["USD"]
+  with st.expander(
+      "🏛️ Fonksiyona Özel Mimari ve Finansal Parametreler (Canlı Otomatik"
+      " Matris)",
+      expanded=False,
+  ):
+    st.markdown(
+        "<p style='color: #64748b; font-size: 13px; margin-bottom: 15px;'>Seçilen"
+        " bölgeye ve proje konseptine ait birim maliyet ve satış değerleri"
+        " piyasa verilerine göre otomatik optimize edilir. İhtiyaç halinde"
+        " özelleştirebilirsiniz.</p>",
+        unsafe_allow_html=True,
     )
 
-    p_col1, p_col2 = st.columns(2)
-    with p_col1:
-      fonk_maliyet = st.number_input(
-          f"M² Brüt Maliyet ($) [{fonk_name}]",
-          value=float(r_maliyet),
-          step=50.0,
-          key=f"mal_{fonk_name}",
+    for fonk_name, items in all_functions_map.items():
+      st.markdown(f"#### 📌 Fonksiyon: `{fonk_name}`")
+      allowed_types = get_allowed_project_types(fonk_name)
+
+      f_col1, f_col2, f_col3 = st.columns(3)
+      with f_col1:
+        sel_p_tipi = st.selectbox(
+            f"Proje Tipi ({fonk_name})",
+            options=allowed_types,
+            key=f"p_tipi_{fonk_name}",
+        )
+      with f_col2:
+        fonk_toplam_brut_m2 = sum(
+            item[1]["giren_m2"]
+            if item[1]["giren_m2"] > 0
+            else active_parcel_db[item[0]]["toplam_alan"]
+            for item in items
+        )
+        def_hedef_alan = (
+            300.0
+            if "Villa" in sel_p_tipi
+            else (150.0 if "Karma" in sel_p_tipi else 125.0)
+        )
+        def_adet = max(1, round(fonk_toplam_brut_m2 / def_hedef_alan))
+
+        adet = st.number_input(
+            f"Planlanan Bağımsız Bölüm Adedi",
+            min_value=1,
+            value=int(def_adet),
+            step=1,
+            key=f"adet_{fonk_name}",
+        )
+      with f_col3:
+        havuz_mod = st.selectbox(
+            f"Havuz Modeli",
+            options=[
+                "Özel / Ortak Havuzlu",
+                "Havuz İptal (Küçük Ölçek Kısıtı)",
+            ],
+            key=f"havuz_{fonk_name}",
+        )
+
+      first_mahalle = list(active_parcel_db.values())[0].get(
+          "mahalle", "VARSAYILAN"
       )
-    with p_col2:
-      fonk_satis = st.number_input(
-          f"M² Brüt Satış ($) [{fonk_name}]",
-          value=float(r_satis),
-          step=100.0,
-          key=f"sat_{fonk_name}",
+      r_satis, r_maliyet, r_bodrum_orani = get_realistic_market_pricing(
+          first_mahalle, sel_p_tipi, rates["USD"]
       )
 
-    function_configs[fonk_name] = {
-        "proje_tipi": sel_p_tipi,
-        "adet": adet,
-        "havuz_mod": havuz_mod,
-        "maliyet": fonk_maliyet,
-        "satis": fonk_satis,
-        "bodrum_orani": r_bodrum_orani,
-    }
-    st.markdown("---")
+      p_col1, p_col2 = st.columns(2)
+      with p_col1:
+        fonk_maliyet = st.number_input(
+            f"M² Brüt Maliyet ($) [{fonk_name}]",
+            value=float(r_maliyet),
+            step=50.0,
+            key=f"mal_{fonk_name}",
+        )
+      with p_col2:
+        fonk_satis = st.number_input(
+            f"M² Brüt Satış ($) [{fonk_name}]",
+            value=float(r_satis),
+            step=100.0,
+            key=f"sat_{fonk_name}",
+        )
+
+      function_configs[fonk_name] = {
+          "proje_tipi": sel_p_tipi,
+          "adet": adet,
+          "havuz_mod": havuz_mod,
+          "maliyet": fonk_maliyet,
+          "satis": fonk_satis,
+          "bodrum_orani": r_bodrum_orani,
+      }
+      st.markdown("---")
+
+  # Eğer akordeon kapalıysa veya o an render edilmediyse varsayılan değerleri besle
+  for fonk_name, items in all_functions_map.items():
+    if fonk_name not in function_configs:
+      first_mahalle = list(active_parcel_db.values())[0].get(
+          "mahalle", "VARSAYILAN"
+      )
+      allowed_types = get_allowed_project_types(fonk_name)
+      def_p_tipi = allowed_types[0]
+      r_satis, r_maliyet, r_bodrum_orani = get_realistic_market_pricing(
+          first_mahalle, def_p_tipi, rates["USD"]
+      )
+      function_configs[fonk_name] = {
+          "proje_tipi": def_p_tipi,
+          "adet": 1,
+          "havuz_mod": "Havuz İptal",
+          "maliyet": r_maliyet,
+          "satis": r_satis,
+          "bodrum_orani": r_bodrum_orani,
+      }
 
   # --- GENEL HESAPLAMA MOTORU ---
   total_yasal_brut_insaat = 0.0
@@ -644,17 +678,7 @@ if selected_keys:
       ):
         continue
 
-      conf = function_configs.get(
-          fonk_adi,
-          {
-              "proje_tipi": "Standart Konut / Apartman",
-              "adet": 1,
-              "havuz_mod": "Havuz İptal",
-              "maliyet": 900.0,
-              "satis": 3000.0,
-              "bodrum_orani": 0.40,
-          },
-      )
+      conf = function_configs.get(fonk_adi)
 
       giren_m2 = f["giren_m2"] if f["giren_m2"] > 0 else toplam_brut_m2
       if not is_terkli:
