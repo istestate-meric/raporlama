@@ -588,7 +588,7 @@ if selected_keys:
 
         real_satis_usd, real_maliyet_usd, otomatik_bodrum_orani = get_realistic_market_pricing(detected_mahalle, selected_proje_tipi, rates["USD"])
 
-        st.success(f"⚡ **Canlı TCMB Kurları:** 1 USD = {rates['USD']:.2f} TL | 1 EUR = {rates['EUR']:.2f} TL | **Toplam Brüt İnşaat Alanı:** {yasal_max_brut_insaat_alani:,.2f} m²")
+        st.success(f"⚡ **Canły TCMB Kurları:** 1 USD = {rates['USD']:.2f} TL | 1 EUR = {rates['EUR']:.2f} TL | **Toplam Brüt İnşaat Alanı:** {yasal_max_brut_insaat_alani:,.2f} m²")
 
         st.markdown("---")
         col_f1, col_f2 = st.columns(2)
