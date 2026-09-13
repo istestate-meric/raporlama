@@ -307,6 +307,33 @@ else:
 if selected_keys:
     active_parcel_db = {k: st.session_state["parcel_db"][k] for k in selected_keys}
 
+    # --- KÜRESEL PROJE VE İŞ MODELİ KONTROL PANELİ ---
+    st.markdown("---")
+    st.subheader("⚙️ Küresel Proje & İş Modeli Parametreleri")
+    col_global1, col_global2 = st.columns(2)
+    with col_global1:
+        selected_proje_tipi = st.selectbox(
+            "Proje Tipi (Mimari & Finansal Model):",
+            options=[
+                "Lüks Villa / Müstakil Proje",
+                "Üst Segment Konut / Rezidans",
+                "Standart Konut / Apartman",
+                "Ticari / Ofis Kompleksi",
+                "Karma Proje (Konut + Ticari)"
+            ],
+            key="global_proje_tipi"
+        )
+    with col_global2:
+        is_modeli = st.selectbox(
+            "İş Modeli / Rapor Türü:",
+            options=[
+                "Kat Karşılığı Proje Raporu",
+                "Doğrudan Satılık / Arsa Yatırım Raporu"
+            ],
+            key="global_is_modeli"
+        )
+    st.markdown("---")
+
     emsal_artis_orani = 1.30
     yasal_max_emsal_alani = 0.0
     for key, p in active_parcel_db.items():
@@ -327,8 +354,6 @@ if selected_keys:
                 base_toplab_m2 = f["giren_m2"]
                 yasal_max_emsal_alani += base_toplab_m2 * f["kaks"] * emsal_artis_orani
 
-    if "selected_proje_tipi" not in st.session_state:
-        st.session_state["selected_proje_tipi"] = "Lüks Villa / Müstakil Proje"
     if "havuz_tercihi" not in st.session_state:
         st.session_state["havuz_tercihi"] = "Her Bağımsız Bölüme 1 Özel Havuz"
 
@@ -390,7 +415,7 @@ if selected_keys:
 
     with tab3:
         st.subheader("🏛️ Mimari Fizibilite ve Bağımsız Bölüm Senaryoları")
-        st.info("ℹ️ **İmar Kuralı:** Havuz veya sosyal tesisler yasal emsal tavanını aşamaz. Seçilen havuz alanı toplam yasal emsal hakkından düşülerek net konut/villa alanları otomatik olarak daraltılır.")
+        st.info(f"ℹ️ **Aktif Proje Tipi:** {selected_proje_tipi} | **İmar Kuralı:** Havuz veya sosyal tesisler yasal emsal tavanını aşamaz. Seçilen havuz alanı toplam yasal emsal hakkından düşülerek net konut/villa alanları otomatik olarak daraltılır.")
         
         hedef_birim_alanlar = {
             "Lüks Villa / Müstakil Proje": 250.0,
@@ -399,7 +424,7 @@ if selected_keys:
             "Ticari / Ofis Kompleksi": 200.0,
             "Karma Proje (Konut + Ticari)": 130.0
         }
-        secilen_hedef_alan = hedef_birim_alanlar.get(st.session_state["selected_proje_tipi"], 120.0)
+        secilen_hedef_alan = hedef_birim_alanlar.get(selected_proje_tipi, 120.0)
         tahmini_ideal_adet = max(1, round(yasal_max_emsal_alani / secilen_hedef_alan))
 
         if "hedef_bagimsiz_bolum" not in st.session_state:
@@ -464,34 +489,10 @@ if selected_keys:
         first_parcel = list(active_parcel_db.values())[0]
         detected_mahalle = first_parcel.get("mahalle", "VARSAYILAN").upper()
         
-        col_m1, col_m2, col_m3 = st.columns(3)
-        
+        col_m1, col_m2 = st.columns(2)
         with col_m1:
-            is_modeli = st.selectbox(
-                "İş Modeli / Rapor Türü:",
-                options=[
-                    "Kat Karşılığı Proje Raporu",
-                    "Doğrudan Satılık / Arsa Yatırım Raporu"
-                ],
-                index=0
-            )
-            
-        with col_m2:
-            selected_proje_tipi = st.selectbox(
-                "Proje Tipi:",
-                options=[
-                    "Lüks Villa / Müstakil Proje",
-                    "Üst Segment Konut / Rezidans",
-                    "Standart Konut / Apartman",
-                    "Ticari / Ofis Kompleksi",
-                    "Karma Proje (Konut + Ticari)"
-                ],
-                index=0
-            )
-            st.session_state["selected_proje_tipi"] = selected_proje_tipi
-            
-        with col_m3:
             st.caption(f"📍 Referans Lokasyon: **{detected_mahalle}**")
+        with col_m2:
             manual_override = st.checkbox("Özel / Manuel Fiyat Girişi Yap", value=False)
 
         real_satis_usd, real_maliyet_usd, otomatik_bodrum_orani = get_realistic_market_pricing(detected_mahalle, selected_proje_tipi, rates["USD"])
