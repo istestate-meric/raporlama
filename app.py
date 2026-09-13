@@ -565,6 +565,40 @@ if selected_keys:
 
   st.markdown("</div>", unsafe_allow_html=True)
 
+  # --- ÖNCEDEN GEÇİCİ HESAPLAMA İÇİN FONKSİYON BRÜT ALANLARININ ÇIKARILMASI ---
+  temp_function_bruts = {}
+  for key, p in active_parcel_db.items():
+    toplam_brut_m2 = p["toplam_alan"]
+    is_terkli = p["terk_yapilmis_mi"]
+    toplam_giren_fonk_m2 = sum(
+        f["giren_m2"]
+        for f in p["fonksiyonlar"]
+        if not any(
+            x in f["fonksiyon_adi"]
+            for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
+        )
+    )
+    for f in p["fonksiyonlar"]:
+      fonk_adi = f["fonksiyon_adi"]
+      if any(
+          x in fonk_adi.upper()
+          for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
+      ):
+        continue
+      giren_m2 = f["giren_m2"] if f["giren_m2"] > 0 else toplam_brut_m2
+      if not is_terkli:
+        fonk_pay_orani = (
+            (giren_m2 / toplam_giren_fonk_m2) if toplam_giren_fonk_m2 > 0 else 1.0
+        )
+        esas_m2 = toplam_brut_m2 * fonk_pay_orani
+        brut_insaat = esas_m2 * 0.70 * f["kaks"] * emsal_artis_orani
+      else:
+        brut_insaat = giren_m2 * f["kaks"] * emsal_artis_orani
+
+      temp_function_bruts[fonk_adi] = (
+          temp_function_bruts.get(fonk_adi, 0.0) + brut_insaat
+      )
+
   # --- KOMPAKT VE KURUMSAL AKORDEON YAPISI ---
   all_functions_map = {}
   for key, p in active_parcel_db.items():
@@ -588,8 +622,8 @@ if selected_keys:
   ):
     st.markdown(
         "<p style='color: #64748b; font-size: 12px; margin-bottom: 10px;'>Bölge"
-        " ve proje konseptine göre birim maliyet/satış fiyatları anlık olarak"
-        " otomatik hesaplanır. İhtiyaç halinde düzenleyebilirsiniz.</p>",
+        " ve proje konseptine göre birim maliyet/satış fiyatları ile piyasa"
+        " standartlarına uygun adetler anlık olarak hesaplanır.</p>",
         unsafe_allow_html=True,
     )
 
@@ -606,18 +640,23 @@ if selected_keys:
             label_visibility="collapsed",
         )
       with fc2:
-        fonk_toplam_brut_m2 = sum(
-            item[1]["giren_m2"]
-            if item[1]["giren_m2"] > 0
-            else active_parcel_db[item[0]]["toplam_alan"]
-            for item in items
-        )
-        def_hedef_alan = (
-            300.0
-            if "Villa" in sel_p_tipi
-            else (150.0 if "Karma" in sel_p_tipi else 125.0)
-        )
-        def_adet = max(1, round(fonk_toplam_brut_m2 / def_hedef_alan))
+        fonk_toplam_brut_m2 = temp_function_bruts.get(fonk_name, 300.0)
+
+        # Piyasada onay görmüş hedef birim m² değerlerine göre otomatik adet hesaplama
+        if "Villa" in sel_p_tipi:
+          hedef_birim_m2 = 300.0
+        elif "Rezidan" in sel_p_tipi or "Üst Segment" in sel_p_tipi:
+          hedef_birim_m2 = 160.0
+        elif "Ticari" in sel_p_tipi or "Ofis" in sel_p_tipi:
+          hedef_birim_m2 = 180.0
+        elif "Karma" in sel_p_tipi:
+          hedef_birim_m2 = 140.0
+        else:
+          hedef_birim_m2 = 115.0  # Standart Konut / Apartman
+
+        def_adet = max(
+            1, round(fonk_toplam_brut_m2 / (hedef_birim_m2 * 1.35))
+        )  # 1.35 brüt/net dönüşüm faktörü karşılığı
 
         adet = st.number_input(
             "Adet",
@@ -818,7 +857,7 @@ if selected_keys:
       calc_results.append({
           "Parsel": item["Parsel"],
           "Fonksiyon": item["Fonksiyon"],
-          "Toplam Brüt İnşaat Alanı (m²)": f"{item['Brüt İnşaat (m²)']:,.2f}",
+          "Toplam Brüt İnşaat Alanı (m²)": f"{item['Brüt İnşaat (m²)'...:,.2f}",
       })
     st.table(pd.DataFrame(calc_results))
     st.metric(
@@ -838,8 +877,20 @@ if selected_keys:
 
     for fonk_name, items in all_functions_map.items():
       conf = function_configs.get(fonk_name, {})
+      sel_p_tipi = conf.get("proje_tipi", "Standart Konut / Apartman")
 
-      # Fonksiyona ait toplam Alan Miktarı (m2) ve brüt inşaat alanlarını hesapla
+      # Dinamik etiket belirleme
+      if "Villa" in sel_p_tipi:
+        birim_etiket = "Ortalama Villa Brüt Alanı"
+      elif "Rezidan" in sel_p_tipi or "Üst Segment" in sel_p_tipi:
+        birim_etiket = "Ortalama Rezidans / Üst Segment Brüt Alanı"
+      elif "Ticari" in sel_p_tipi or "Ofis" in sel_p_tipi:
+        birim_etiket = "Ortalama Ofis / Ticari Alan Brüt Alanı"
+      elif "Karma" in sel_p_tipi:
+        birim_etiket = "Ortalama Karma Proje Brüt Alanı"
+      else:
+        birim_etiket = "Ortalama Konut Brüt Alanı"
+
       fonk_toplam_brut = 0.0
       fonk_toplam_alan_miktari = 0.0
       for key, f in items:
@@ -847,8 +898,7 @@ if selected_keys:
         toplam_brut_m2 = p["toplam_alan"]
         is_terkli = p["terk_yapilmis_mi"]
         giren_m2 = f["giren_m2"] if f["giren_m2"] > 0 else toplam_brut_m2
-        
-        # Fiili kullanım alanı / Alan Miktarı hesaplaması (Terk durumuna göre netleştirilmiş veya giren m2)
+
         if not is_terkli:
           toplam_giren_fonk_m2 = sum(
               x["giren_m2"]
@@ -870,7 +920,12 @@ if selected_keys:
               else 1.0
           )
           esas_m2 = toplam_brut_m2 * fonk_pay_orani * 0.70
-          brut_insaat = (toplam_brut_m2 * fonk_pay_orani) * 0.70 * f["kaks"] * emsal_artis_orani
+          brut_insaat = (
+              (toplam_brut_m2 * fonk_pay_orani)
+              * 0.70
+              * f["kaks"]
+              * emsal_artis_orani
+          )
         else:
           esas_m2 = giren_m2
           brut_insaat = esas_m2 * f["kaks"] * emsal_artis_orani
@@ -880,19 +935,20 @@ if selected_keys:
 
       adet = conf.get("adet", 1)
       bahce_alani_birim = (
-          (fonk_toplam_alan_miktari / adet) if adet > 0 else fonk_toplam_alan_miktari
+          (fonk_toplam_alan_miktari / adet)
+          if adet > 0
+          else fonk_toplam_alan_miktari
       )
       ortalama_brut_birim = (
           (fonk_toplam_brut / adet) if adet > 0 else fonk_toplam_brut
       )
 
-      # Kurumsal Kart Tasarımı
       st.markdown(
           f"""
             <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 22px; margin-bottom: 22px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
                 <h4 style="color: #0f172a; margin-top: 0; margin-bottom: 15px; font-size: 16px; border-bottom: 2px solid #94a3b8; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
                     <span>📌 Fonksiyon: <span style="color: #1e3a8a;">{fonk_name}</span></span>
-                    <span style="font-size: 12px; font-weight: normal; color: #475569; background: #e2e8f0; padding: 3px 10px; border-radius: 6px;">{conf.get('proje_tipi', '-')}</span>
+                    <span style="font-size: 12px; font-weight: normal; color: #475569; background: #e2e8f0; padding: 3px 10px; border-radius: 6px;">{sel_p_tipi}</span>
                 </h4>
             """,
           unsafe_allow_html=True,
@@ -902,9 +958,7 @@ if selected_keys:
       with mc1:
         st.metric("Bağımsız Bölüm Adedi", f"{adet} Adet")
       with mc2:
-        st.metric(
-            "Ortalama Konut / Birim Brüt Alanı", f"{ortalama_brut_birim:,.2f} m²"
-        )
+        st.metric(f"{birim_etiket}", f"{ortalama_brut_birim:,.2f} m²")
       with mc3:
         st.metric("Havuz Konsept Tercihi", conf.get("havuz_mod", "-"))
 
@@ -912,7 +966,6 @@ if selected_keys:
           "<div style='margin-top: 10px;'></div>", unsafe_allow_html=True
       )
 
-      # Bahçe / Arsa payı birim ve Alan Miktarı (m2) vurgusu
       st.markdown(
           f"""
             <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
