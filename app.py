@@ -254,8 +254,21 @@ def parse_imar_pdf(uploaded_file):
     parcel_data["terk_yapilmis_mi"] = detect_terk_status(full_text, parcel_data["toplam_alan"], parcel_data["fonksiyonlar"])
     return parcel_data
 
-# --- TAMAMEN BEYAZ KUTU İÇİNE GÖMÜLMÜŞ PROFESYONEL KURUMSAL HEADER (SIFIR GİRİNTİ) ---
-st.markdown(f"""<div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 16px; padding: 30px 40px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08); margin-bottom: 30px;"><div style="display: flex; align-items: center; justify-content: space-between; width: 100%;"><div style="flex: 1; text-align: center;">{img1_tag}</div><div style="width: 1px; background-color: #cbd5e1; height: 75px; margin: 0 20px;"></div><div style="flex: 1; text-align: center;">{img2_tag}</div></div><hr style="margin: 25px 0 20px 0; border: none; border-top: 1px solid #e2e8f0;"><div style="text-align: center;"><h1 style='color: #0f172a; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; margin-top: 0;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK</h1><p style='color: #475569; font-size: 15px; font-weight: 600; margin: 0;'>Ada Bazlı Akıllı Fizibilite ve Proje Kapasite Modülü</p></div></div>""", unsafe_allow_html=True)
+# --- TAMAMEN BEYAZ KUTU İÇİNE GÖMÜŞMÜŞ PROFESYONEL KURUMSAL HEADER (YENİ BAŞLIK) ---
+st.markdown(f"""
+<div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 16px; padding: 30px 40px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08); margin-bottom: 30px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+        <div style="flex: 1; text-align: center;">{img1_tag}</div>
+        <div style="width: 1px; background-color: #cbd5e1; height: 75px; margin: 0 20px;"></div>
+        <div style="flex: 1; text-align: center;">{img2_tag}</div>
+    </div>
+    <hr style="margin: 25px 0 20px 0; border: none; border-top: 1px solid #e2e8f0;">
+    <div style="text-align: center;">
+        <h1 style='color: #0f172a; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; margin-top: 0;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK</h1>
+        <p style='color: #475569; font-size: 15px; font-weight: 600; margin: 0;'>Akıllı Gayrimenkul Geliştirme ve Fizibilite Portalı</p>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 rates = get_live_exchange_rates()
 
