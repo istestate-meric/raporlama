@@ -436,22 +436,22 @@ if selected_keys:
         st.session_state["last_proje_tipi"] = selected_proje_tipi
         st.session_state["hedef_bagimsiz_bolum"] = tahmini_ideal_adet
         st.session_state["havuz_tercihi"] = tahmini_havuz_modeli
-        st.session_state["hb_input"] = tahmini_ideal_adet
 
-    # --- ORTAK HESAPLAMA DEĞİŞKENLERİ ---
-    curr_hb = st.session_state.get("hedef_bagimsiz_bolum", tahmini_ideal_adet)
-    curr_hp = st.session_state.get("havuz_tercihi", tahmini_havuz_modeli)
+    if "hedef_bagimsiz_bolum" not in st.session_state:
+        st.session_state["hedef_bagimsiz_bolum"] = tahmini_ideal_adet
+    if "havuz_tercihi" not in st.session_state:
+        st.session_state["havuz_tercihi"] = tahmini_havuz_modeli
 
-    havuz_emsele_maliyet_m2 = 30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 if curr_hp == "Ortak / Sosyal Tesis Havuzu" else 0.0)
+    # --- ANLIK HESAPLAMA DEĞİŞKENLERİ ---
+    curr_hb = int(st.session_state["hedef_bagimsiz_bolum"])
+    curr_hp = st.session_state["havuz_tercihi"]
+
+    havuz_emsele_maliyet_m2 = 30.0 if "Özel Havuz" in curr_hp else (120.0 if "Ortak" in curr_hp else 0.0)
     net_brut_dusulen_alan = max(0.0, yasal_max_brut_insaat_alani - havuz_emsele_maliyet_m2)
     toplam_brut_kullanim_alani = net_brut_dusulen_alan
     
     ortalama_unite_alani = net_brut_dusulen_alan / curr_hb if curr_hb > 0 else 0
-    
-    # Ünite Başına Net Arsa = Toplam Net Arsa / Adet
     unite_basi_net_arsa_genel = toplam_net_arsa_alani / curr_hb if curr_hb > 0 else 0
-    
-    # Ünite Başına İnşaat Alanı = Toplam İnşaat Alanı / Adet
     unite_basi_insaat_alani = yasal_max_brut_insaat_alani / curr_hb if curr_hb > 0 else 0
     
     simulated_bodrum_alani = net_brut_dusulen_alan * p_spec["bodrum_orani"]
@@ -535,36 +535,32 @@ if selected_keys:
         st.subheader("🏛️ Mimari Fizibilite ve Senaryolar")
         st.info(f"ℹ️ **Aktif Proje Tipi:** {selected_proje_tipi} | Proje tipine göre önerilen otomatik {birim_etiketi_alt.lower()} adedi uygulandı.")
         
-        # Proje Tipine Göre Dinamik Başlık
         dinamik_unit_etiketi = f"Planlanan {birim_etiketi} Adedi:"
 
         col_mims1, col_mims2 = st.columns(2)
         with col_mims1:
-            hedef_bagimsiz_bolum = st.number_input(
+            st.number_input(
                 dinamik_unit_etiketi, 
                 min_value=1, 
-                value=int(st.session_state["hedef_bagimsiz_bolum"]), 
                 step=1, 
-                key="hb_input"
+                key="hedef_bagimsiz_bolum"
             )
-            st.session_state["hedef_bagimsiz_bolum"] = hedef_bagimsiz_bolum
             
         with col_mims2:
-            havuz_secenekleri = [f"Her {birim_etiketi_alt}e 1 Özel Havuz" if "Villa" in selected_proje_tipi else f"Her {birim_etiketi_alt}e 1 Özel Havuz", "Ortak / Sosyal Tesis Havuzu", "Havuz İptal (Küçük Ölçek Kısıtı)"]
-            # Fix specific wording for pool based on type
+            havuz_secenekleri = [f"Her {birim_etiketi_alt}e 1 Özel Havuz", "Ortak / Sosyal Tesis Havuzu", "Havuz İptal (Küçük Ölçek Kısıtı)"]
             if "Villa" in selected_proje_tipi:
                 havuz_secenekleri[0] = "Her Villaya 1 Özel Havuz"
             elif "Konut" in selected_proje_tipi or "Rezidans" in selected_proje_tipi:
                 havuz_secenekleri[0] = "Ortak Tesis / Havuz"
             
-            default_hp_idx = 0 if curr_hp in havuz_secenekleri else 0
-            
-            havuz_tercihi = st.selectbox(
+            if st.session_state["havuz_tercihi"] not in havuz_secenekleri:
+                st.session_state["havuz_tercihi"] = havuz_secenekleri[0]
+
+            st.selectbox(
                 "Havuz Planlama Modeli:", 
                 options=havuz_secenekleri,
-                key="hp_select"
+                key="havuz_tercihi"
             )
-        st.session_state["havuz_tercihi"] = havuz_tercihi
 
         st.markdown("---")
         m_col1, m_col2, m_col3, m_col4 = st.columns(4)
