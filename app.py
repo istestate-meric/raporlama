@@ -333,6 +333,7 @@ if selected_keys:
         )
 
         for f in p["fonksiyonlar"]:
+            # Terkli parsellerde net alan = fonksiyon alanı; Terksiz parsellerde %30 terk düşülerek net alan bulunur.
             fonk_net_m2 = f["giren_m2"] if is_terkli else f["giren_m2"] * 0.70
             toplam_net_arsa_alani += fonk_net_m2
 
@@ -409,7 +410,7 @@ if selected_keys:
         st.session_state["havuz_tercihi"] = tahmini_havuz_modeli
         st.session_state["hb_input"] = tahmini_ideal_adet
 
-    # --- SEKME YAPISI (Doğru Girintiyle if selected_keys bloğunun içinde) ---
+    # --- SEKME YAPISI ---
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "📊 Seçilen Parseller Özeti", 
         "📐 İnşaat Alanı Hesabı", 
@@ -420,60 +421,33 @@ if selected_keys:
     
     with tab1:
         st.subheader("Seçilen Parsellerin İmar ve Fonksiyon Bazlı Arsa Dağılımı")
-        st.info("💡 **Güncel Mantık:** Net Arsa alanı parselin gerçek kesintilerine göre hesaplanırken, **Ünite Başına Düşen Fonksiyon Alanı** doğrudan **Fonksiyon Alanı (m²)** üzerinden bağımsız bölüm adedine oranlanmaktadır.")
+        st.info("💡 **Düzeltilmiş Hesap:** Net Arsa alanı, terksiz parsellerde %30 yasal terk düşülerek gösterilir. Ünite Başı Net Arsa Payı ise doğrudan **Fonksiyon Alanı (m²)** üzerinden hesaplanmaktadır.")
         
         table_rows = []
         for key, p in active_parcel_db.items():
             is_terkli = p["terk_yapilmis_mi"]
-            toplam_brut = p["toplam_alan"]
-            
-            toplam_fonk_alan = sum(f["giren_m2"] for f in p["fonksiyonlar"])
-            
-            if not is_terkli and toplam_brut > 0 and toplam_fonk_alan > 0:
-                parsel_net_arsa_toplam = min(toplam_fonk_alan, toplam_brut * 0.70)
-            else:
-                parsel_net_arsa_toplam = toplam_fonk_alan if is_terkli else toplam_brut * 0.70
-
-            terk_lbl = f"Terki Yapılmış (Net)" if is_terkli else f"Terksiz / Kesintili"
+            terk_lbl = "Terki Yapılmış (Net)" if is_terkli else "Terki Yapılmamış"
             
             for f in p["fonksiyonlar"]:
                 fonks_m2 = f["giren_m2"]
-                
-                fonk_oran = (fonks_m2 / toplam_fonk_alan) if toplam_fonk_alan > 0 else 1.0
-                net_m2 = parsel_net_arsa_toplam * fonk_oran
+                # Net alan hesabı: terksiz ise %30 terk kesintisi yapılır
+                net_m2 = fonks_m2 if is_terkli else fonks_m2 * 0.70
                 
                 hedef_bb = st.session_state.get("hedef_bagimsiz_bolum", 1)
+                # İstediğiniz düzeltme: Ünite başı arsa payı Fonksiyon Alanı üzerinden hesaplanır
                 unite_basi_fonk_net = fonks_m2 / hedef_bb if hedef_bb > 0 else 0
                 
                 table_rows.append({
                     "Parsel Bilgisi": key,
                     "Mahalle": p["mahalle"],
-                    "Toplam Brüt Arsa (m²)": f"{toplam_brut:,.2f}",
+                    "Toplam Arsa (m²)": f"{p['toplam_alan']:,.2f}",
                     "Fonksiyon": f["fonksiyon_adi"],
                     "Fonksiyon Alanı (m²)": f"{fonks_m2:,.2f}",
-                    "Hesaplanan Net Arsa (m²)": f"{net_m2:,.2f}",
-                    "Ünite Başına Düşen Fonksiyon Alanı": f"{unite_basi_fonk_net:,.2f} m² / Ünite",
+                    "Net Arsa (m²)": f"{net_m2:,.2f}",
+                    "Ünite Başı Net Arsa Payı": f"{unite_basi_fonk_net:,.2f} m² / Ünite",
                     "TAKS": f"{f['taks']:.2f}",
                     "KAKS (Emsal)": f"{f['kaks']:.2f}",
-                    "Durum": terk_lbl
+                    "Terk Durumu": terk_lbl
                 })
-                
         st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
-        st.info(f"💡 **Genel Özet:** Toplam Brüt Arsa: **{toplam_brut_arsa_alani:,.2f} m²** | Toplam Net Arsa: **{toplam_net_arsa_alani:,.2f} m²**")
-
-    with tab2:
-        st.subheader("İnşaat Alanı ve Emsal Hesaplama Paneli")
-        st.metric("Yasal Maksimum Brüt İnşaat Alanı (Emsal + Artışlar)", f"{yasal_max_brut_insaat_alani:,.2f} m²")
-
-    with tab3:
-        st.subheader("Mimari Fizibilite ve Ünite Dağılımı")
-        st.write("Bağımsız bölüm ve mimari yerleşim parametreleri.")
-        st.session_state["hedef_bagimsiz_bolum"] = st.number_input("Hedef Bağımsız Bölüm Adedi", min_value=1, value=int(st.session_state.get("hedef_bagimsiz_bolum", 1)))
-
-    with tab4:
-        st.subheader("Proje Raporu ve Finansal Fizibilite")
-        st.write("Maliyet, satış ve kârlılık analizleri.")
-
-    with tab5:
-        st.subheader("Rapor Ön İzleme ve PDF Çıktısı")
-        st.write("WeasyPrint tabanlı kurumsal PDF rapor çıktısı.")
+        st.info(f"💡 **Toplam Arsa Özeti:** Toplam Brüt Arsa: **{toplam_brut_arsa_alani:,.2f} m²** | Parsel Bazlı Toplam Net Arsa: **{toplam_net_arsa_alani:,.2f} m²**")
