@@ -310,7 +310,7 @@ if all_db_keys:
         "Raporlanacak Ada-Parsel Seçin:",
         options=filtered_keys if selected_ada_filter != "Seçiniz..." else [],
         default=default_selection,
-        help="Önce yukarıdan Ada filtresi seçin, ardından listelenen parselleri işaretleyin."
+        help="Önce yukaridan Ada filtresi seçin, ardindan listelenen parselleri işaretleyin."
     )
 else:
     st.sidebar.info("Arşivde henüz kayıtlı parsel yok. Lütfen sol üstten PDF imar belgesi yükleyin.")
@@ -576,7 +576,7 @@ if selected_keys:
     # --- 5. SEKME: RAPOR ÖN İZLEME VE PDF İNDİRME MERKEZİ ---
     with tab5:
         st.subheader("🖨️ Kurumsal Rapor Ön İzleme ve PDF İndirme Merkezi")
-        st.write("Aşağıda hazırlanan raporun profesyonel ekran ön izlemesi yer almaktadır. Butona tıklayarak doğrudan **PDF Olarak İndirebilirsiniz**.")
+        st.write("Aşağıda hazırlanan raporun profesyonel ekran ön izlemesi yer almaktadır. Butona tıklayarak doğrudan **Yatay PDF Olarak İndirebilirsiniz**.")
         st.markdown("---")
         
         # Tab 5 havuz payı entegre edilmiş hesaplama
@@ -617,14 +617,17 @@ if selected_keys:
         st.table(pd.DataFrame(preview_table_data))
         st.markdown("---")
         
-        # PDF çıktı şablonu (WeasyPrint HTML-CSS - "YG" revizyonlu)
+        # --- PDF ÇIKTI ŞABLONU (YATAY / LANDSCAPE, LOGOLU VE KURUMSAL TABLOLU) ---
+        pdf_logo1_html = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 55px; width: auto; object-fit: contain;'>" if img1_base64 else "<span style='font-size:18px; font-weight:bold; color:#1e3a8a;'>İSTESTATE</span>"
+        pdf_logo2_html = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 55px; width: auto; object-fit: contain;'>" if img2_base64 else "<span style='font-size:18px; font-weight:bold; color:#1e3a8a;'>MERİÇ İNŞAAT</span>"
+
         arsa_sahibi_row_html = ""
         if "Kat Karşılığı" in is_modeli:
             arsa_sahibi_row_html = f"""
                     <tr>
-                        <td style="border: 1px solid #cbd5e1; padding: 8px;">Arsa Sahibi Payı</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">${arsa_sahibi_payi_usd:,.2f}</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">-</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 9px 12px; color: #334155;">Arsa Sahibi Payı</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 9px 12px; text-align: right; color: #0f172a; font-weight: 600;">${arsa_sahibi_payi_usd:,.2f}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 9px 12px; text-align: right; color: #64748b;">-</td>
                     </tr>
             """
 
@@ -638,39 +641,119 @@ if selected_keys:
         <head>
         <meta charset="utf-8">
         <style>
-            body {{ font-family: 'Helvetica', 'Arial', sans-serif; color: #1e293b; background: #ffffff; padding: 20px; }}
-            .report-container {{ background: #ffffff; padding: 25px; border: 1px solid #cbd5e1; border-radius: 12px; }}
-            .header-title {{ text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 25px; }}
-            h2 {{ font-size: 20px; font-weight: bold; color: #0f172a; margin: 0; }}
-            p.sub {{ font-size: 13px; color: #475569; margin-top: 5px; font-weight: 600; }}
-            h3 {{ font-size: 14px; font-weight: bold; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-top: 20px; }}
-            p.content-line {{ font-size: 12px; margin: 5px 0; }}
-            table {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }}
-            th {{ background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 6px; text-align: left; }}
-            td {{ border: 1px solid #cbd5e1; padding: 6px; }}
-            .footer {{ font-size: 10px; color: #64748b; text-align: center; margin-top: 30px; border-top: 1px dashed #cbd5e1; padding-top: 10px; }}
+            @page {{
+                size: A4 landscape;
+                margin: 15mm;
+            }}
+            body {{
+                font-family: 'Helvetica', 'Arial', sans-serif;
+                color: #1e293b;
+                background: #ffffff;
+                margin: 0;
+                padding: 0;
+            }}
+            .report-container {{
+                background: #ffffff;
+                padding: 10px;
+            }}
+            .header-table {{
+                width: 100%;
+                border-collapse: collapse;
+                border-bottom: 2px solid #0f172a;
+                padding-bottom: 15px;
+                margin-bottom: 20px;
+            }}
+            .header-table td {{
+                border: none;
+                padding: 0;
+                vertical-align: middle;
+            }}
+            .title-box {{
+                text-align: center;
+            }}
+            h2 {{
+                font-size: 22px;
+                font-weight: 800;
+                color: #0f172a;
+                margin: 0;
+                letter-spacing: -0.5px;
+            }}
+            p.sub {{
+                font-size: 13px;
+                color: #475569;
+                margin: 4px 0 0 0;
+                font-weight: 600;
+            }}
+            .section-title {{
+                font-size: 13px;
+                font-weight: bold;
+                color: #1e3a8a;
+                border-bottom: 1.5px solid #cbd5e1;
+                padding-bottom: 5px;
+                margin-top: 18px;
+                margin-bottom: 8px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }}
+            .content-line {{
+                font-size: 12px;
+                margin: 4px 0;
+                color: #334155;
+            }}
+            .data-table {{
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 10px;
+                font-size: 11px;
+            }}
+            .data-table th {{
+                background-color: #f8fafc;
+                border: 1px solid #cbd5e1;
+                padding: 8px 12px;
+                text-align: left;
+                color: #0f172a;
+                font-weight: 700;
+            }}
+            .data-table td {{
+                border: 1px solid #cbd5e1;
+                padding: 9px 12px;
+            }}
+            .footer {{
+                font-size: 10px;
+                color: #64748b;
+                text-align: center;
+                margin-top: 40px;
+                border-top: 1px dashed #cbd5e1;
+                padding-top: 10px;
+            }}
         </style>
         </head>
         <body>
         <div class="report-container">
-            <div class="header-title">
-                <h2>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK</h2>
-                <p class="sub">Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu</p>
-            </div>
+            <table class="header-table">
+                <tr>
+                    <td style="width: 25%; text-align: left;">{pdf_logo1_html}</td>
+                    <td style="width: 50%;" class="title-box">
+                        <h2>İSTESTATE & MERİÇ İNŞAAT</h2>
+                        <p class="sub">Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu</p>
+                    </td>
+                    <td style="width: 25%; text-align: right;">{pdf_logo2_html}</td>
+                </tr>
+            </table>
             
-            <h3>1. Proje ve Lokasyon Künyesi</h3>
+            <div class="section-title">1. Proje ve Lokasyon Künyesi</div>
             <p class="content-line"><b>Seçilen Lokasyon / Mahalle:</b> {detected_mahalle}</p>
             <p class="content-line"><b>Proje Tipi:</b> {selected_proje_tipi}</p>
             <p class="content-line"><b>İş Modeli:</b> {is_modeli}</p>
             <p class="content-line"><b>Toplam Brüt İnşaat Alanı:</b> {yasal_max_brut_insaat_alani:,.2f} m²</p>
             
-            <h3>2. Mimari ve Bağımsız Bölüm Planlaması</h3>
+            <div class="section-title">2. Mimari ve Bağımsız Bölüm Planlaması</div>
             <p class="content-line"><b>Bağımsız Bölüm / Villa Adedi:</b> {curr_hb} Adet</p>
             <p class="content-line"><b>Havuz Planlama Modeli:</b> {curr_hp}</p>
             <p class="content-line"><b>Ortalama Ünite Brüt Alanı:</b> {pdf_unite_metin}</p>
             
-            <h3>3. Finansal Fizibilite ve Ciro Analizi ($ USD)</h3>
-            <table>
+            <div class="section-title">3. Finansal Fizibilite ve Ciro Analizi ($ USD)</div>
+            <table class="data-table">
                 <thead>
                     <tr>
                         <th>Finansal Kalem</th>
@@ -680,26 +763,26 @@ if selected_keys:
                 </thead>
                 <tbody>
                     <tr>
-                        <td>Toplam Tahmini Brüt Ciro</td>
-                        <td style="text-align: right;">${toplam_ciro_usd:,.2f}</td>
-                        <td style="text-align: right;">₺{toplam_ciro_tl:,.2f}</td>
+                        <td style="color: #334155;">Toplam Tahmini Brüt Ciro</td>
+                        <td style="text-align: right; color: #0f172a; font-weight: 600;">${toplam_ciro_usd:,.2f}</td>
+                        <td style="text-align: right; color: #334155;">₺{toplam_ciro_tl:,.2f}</td>
                     </tr>
                     <tr>
-                        <td>Toplam İnşaat Maliyeti + Bonus</td>
-                        <td style="text-align: right;">${toplam_maliyet_usd:,.2f}</td>
-                        <td style="text-align: right;">₺{toplam_maliyet_tl:,.2f}</td>
+                        <td style="color: #334155;">Toplam İnşaat Maliyeti + Bonus</td>
+                        <td style="text-align: right; color: #0f172a; font-weight: 600;">${toplam_maliyet_usd:,.2f}</td>
+                        <td style="text-align: right; color: #334155;">₺{toplam_maliyet_tl:,.2f}</td>
                     </tr>
                     {arsa_sahibi_row_html}
                     <tr style="background-color: #f1f5f9; font-weight: bold;">
-                        <td>Müteahhit Net Kârı</td>
-                        <td style="text-align: right;">${mutaahhit_net_kar_usd:,.2f}</td>
-                        <td style="text-align: right;">₺{mutaahhit_net_kar_tl:,.2f} (%{yg_orani:.1f} YG)</td>
+                        <td style="color: #0f172a;">Müteahhit Net Kârı</td>
+                        <td style="text-align: right; color: #1e3a8a;">${mutaahhit_net_kar_usd:,.2f}</td>
+                        <td style="text-align: right; color: #1e3a8a;">₺{mutaahhit_net_kar_tl:,.2f} (%{yg_orani:.1f} YG)</td>
                     </tr>
                 </tbody>
             </table>
             
             <div class="footer">
-                Bu rapor İstestate Gayrimenkul & Meriç İnşaat Emlak Akıllı Fizibilite Portalı tarafından otomatik olarak üretilmiştir.
+                Bu rapor İstestate Gayrimenkul & Meriç İnşaat Emlak Akıllı Fizibilite Portalı tarafından resmi veriler baz alınarak otomatik olarak üretilmiştir.
             </div>
         </div>
         </body>
@@ -709,9 +792,9 @@ if selected_keys:
         pdf_bytes = HTML(string=report_html_template).write_pdf()
         
         st.download_button(
-            label="📥 Kurumsal Fizibilite Raporunu PDF Olarak İndir",
+            label="📥 Yatay Kurumsal Fizibilite Raporunu PDF Olarak İndir",
             data=pdf_bytes,
-            file_name=f"Fizibilite_Raporu_{detected_mahalle}_{selected_proje_tipi.replace(' ', '_')}.pdf",
+            file_name=f"Yatay_Fizibilite_Raporu_{detected_mahalle}_{selected_proje_tipi.replace(' ', '_')}.pdf",
             mime="application/pdf",
             use_container_width=True
         )
