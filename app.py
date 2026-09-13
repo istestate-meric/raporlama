@@ -319,7 +319,6 @@ else:
 if selected_keys:
     active_parcel_db = {k: st.session_state["parcel_db"][k] for k in selected_keys}
 
-    # --- TOPLAM BRÜT İNŞAAT ALANI (ORİJİNAL KURALINA DÖNDÜRÜLDÜ) VE NET ARSA ALANI HESABI ---
     emsal_artis_orani = 1.30
     yasal_max_brut_insaat_alani = 0.0
     toplam_brut_arsa_alani = 0.0
@@ -338,7 +337,6 @@ if selected_keys:
             if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"])
         )
         
-        # Varsayılan net alan (Ünite başı net arsa payı ve tablo için)
         varsayilan_net = (toplam_giren_fonk_m2 * 0.70) if not is_terkli else (toplam_giren_fonk_m2 if toplam_giren_fonk_m2 > 0 else toplam_brut_m2)
         if key not in st.session_state["parcel_net_overrides"]:
             st.session_state["parcel_net_overrides"][key] = varsayilan_net
@@ -346,7 +344,6 @@ if selected_keys:
         parsel_net_arsa = st.session_state["parcel_net_overrides"][key]
         toplam_net_arsa_alani += parsel_net_arsa
 
-        # İNŞAAT ALANI HESABI (ORİJİNAL KURALINA UYGUN: Terksiz parsellerde standart %30 kesinti / %70 kalan kuralı)
         for f in p["fonksiyonlar"]:
             if any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                 continue
@@ -404,11 +401,11 @@ if selected_keys:
     st.markdown("---")
 
     proje_mimari_karakteristigi = {
-        "Lüks Villa / Müstakil Proje": {"hedef_alan": 300.0, "bodrum_orani": 0.50, "havuz_mod": "Her Bağımsız Bölüme 1 Özel Havuz", "etiket_bodrum": "Ortalama Bodrum/Teras Brüt Payı (%50)"},
-        "Üst Segment Konut / Rezidans": {"hedef_alan": 180.0, "bodrum_orani": 0.30, "havuz_mod": "Ortak / Sosyal Tesis Havuzu", "etiket_bodrum": "Ortalama Depo / Otopark Brüt Payı (%30)"},
-        "Standart Konut / Apartman": {"hedef_alan": 125.0, "bodrum_orani": 0.20, "havuz_mod": "Havuz İptal (Küçük Ölçek Kısıtı)", "etiket_bodrum": "Ortalama Ortak Alan / Sığınak Brüt Payı (%20)"},
-        "Ticari / Ofis Kompleksi": {"hedef_alan": 250.0, "bodrum_orani": 0.40, "havuz_mod": "Havuz İptal (Küçük Ölçek Kısıtı)", "etiket_bodrum": "Ortalama Bodrum / Arşiv Brüt Payı (%40)"},
-        "Karma Proje (Konut + Ticari)": {"hedef_alan": 150.0, "bodrum_orani": 0.35, "havuz_mod": "Ortak / Sosyal Tesis Havuzu", "etiket_bodrum": "Ortalama Bodrum / Teknik Brüt Pay (%35)"}
+        "Lüks Villa / Müstakil Proje": {"hedef_alan": 300.0, "bodrum_orani": 0.50, "havuz_mod": "Her Bağımsız Bölüme 1 Özel Havuz", "etiket_bodrum": "Ortalama Bodrum/Teras Müştemilat Payı (%50)"},
+        "Üst Segment Konut / Rezidans": {"hedef_alan": 180.0, "bodrum_orani": 0.30, "havuz_mod": "Ortak / Sosyal Tesis Havuzu", "etiket_bodrum": "Ortalama Depo / Otopark Müştemilat Payı (%30)"},
+        "Standart Konut / Apartman": {"hedef_alan": 125.0, "bodrum_orani": 0.20, "havuz_mod": "Havuz İptal (Küçük Ölçek Kısıtı)", "etiket_bodrum": "Ortalama Ortak Alan / Sığınak Müştemilatı (%20)"},
+        "Ticari / Ofis Kompleksi": {"hedef_alan": 250.0, "bodrum_orani": 0.40, "havuz_mod": "Havuz İptal (Küçük Ölçek Kısıtı)", "etiket_bodrum": "Ortalama Bodrum / Arşiv Müştemilatı (%40)"},
+        "Karma Proje (Konut + Ticari)": {"hedef_alan": 150.0, "bodrum_orani": 0.35, "havuz_mod": "Ortak / Sosyal Tesis Havuzu", "etiket_bodrum": "Ortalama Bodrum / Teknik Müştemilat Payı (%35)"}
     }
     
     p_spec = proje_mimari_karakteristigi.get(selected_proje_tipi, proje_mimari_karakteristigi["Standart Konut / Apartman"])
@@ -554,10 +551,10 @@ if selected_keys:
         risk_durumu = "⚠️ RİSKLİ (Çok küçük ölçek)" if ortalama_unite_alani < min_sinir and hedef_bagimsiz_bolum > 1 else "✅ Uygun Ölçek"
         m_col4.metric("Mimari Ölçek Uygunluğu", risk_durumu)
 
-        # --- YENİ: BAĞIMSIZ BÖLÜM BAŞINA DETAYLI ALAN VE EKLENTİ DAĞILIMI ---
+        # --- GÜNCELLENMİŞ BAŞLIK ---
         st.markdown("---")
-        st.markdown("### 🏷️ Bağımsız Bölüm Başına Detaylı Alan ve Eklenti Dağılımı")
-        st.info("💡 Her bir bağımsız ünitenin yapısal bileşenleri, inşaat alanları ve ek yapı payları aşağıda detaylandırılmıştır.")
+        st.markdown("### 🏷️ Bağımsız Bölüm Başına Detaylı Alan ve Dağılımı")
+        st.info("💡 Her bir bağımsız ünitenin yapısal bileşenleri, inşaat alanları ve tamamlayıcı müştemilat payları aşağıda detaylandırılmıştır.")
 
         tekil_havuz_payi = 30.0 if havuz_tercihi == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 / hedef_bagimsiz_bolum if havuz_tercihi == "Ortak / Sosyal Tesis Havuzu" else 0.0)
         toplam_unite_brut_dahil_eklentiler = ortalama_unite_alani + ortalama_bodrum_alani + tekil_havuz_payi
@@ -565,10 +562,10 @@ if selected_keys:
         birim_detay_data = [
             {"Bileşen / Alan Türü": "Ünite Tipi (Mimari Model)", "Açıklama / Model": selected_proje_tipi, "Birim Başına Düşen Değer": f"{hedef_bagimsiz_bolum} Adet Toplam"},
             {"Bileşen / Alan Türü": "Ana Ünite İnşaat Alanı (Brüt)", "Açıklama / Model": "Ortalama Bağımsız Bölüm Kapalı Alanı", "Birim Başına Düşen Değer": f"{ortalama_unite_alani:,.2f} m²"},
-            {"Bileşen / Alan Türü": "Eklenti: Bodrum / Teras Payı", "Açıklama / Model": p_spec["etiket_bodrum"], "Birim Başına Düşen Değer": f"{ortalama_bodrum_alani:,.2f} m²"},
-            {"Bileşen / Alan Türü": "Eklenti: Havuz / Sosyal Donatı Payı", "Açıklama / Model": havuz_tercihi, "Birim Başına Düşen Değer": f"{tekil_havuz_payi:,.2f} m²"},
+            {"Bileşen / Alan Türü": "Müştemilat: Bodrum / Teras Payı", "Açıklama / Model": p_spec["etiket_bodrum"], "Birim Başına Düşen Değer": f"{ortalama_bodrum_alani:,.2f} m²"},
+            {"Bileşen / Alan Türü": "Müştemilat / Donatı: Havuz Payı", "Açıklama / Model": havuz_tercihi, "Birim Başına Düşen Değer": f"{tekil_havuz_payi:,.2f} m²"},
             {"Bileşen / Alan Türü": "Ünite Başına Düşen Net Arsa Payı", "Açıklama / Model": "Parsel Net Arsa / Toplam Ünite Adedi", "Birim Başına Düşen Değer": f"{unite_basi_net_arsa_genel:,.2f} m²"},
-            {"Bileşen / Alan Türü": "Toplam Bağımsız Bölüm Brüt Alanı (Eklentiler Dahil)", "Açıklama / Model": "Ana Ünite + Bodrum + Havuz Payı", "Birim Başına Düşen Değer": f"{toplam_unite_brut_dahil_eklentiler:,.2f} m²"}
+            {"Bileşen / Alan Türü": "Toplam Bağımsız Bölüm Brüt Alanı (Müştemilatlar Dahil)", "Açıklama / Model": "Ana Ünite + Bodrum + Havuz Payı", "Birim Başına Düşen Değer": f"{toplam_unite_brut_dahil_eklentiler:,.2f} m²"}
         ]
         st.table(pd.DataFrame(birim_detay_data))
 
