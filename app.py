@@ -1080,7 +1080,8 @@ if selected_keys:
         tab5_saf_unite_brut + tab5_bodrum_payi_m2
     )
 
-    st.markdown(f"### 🏢 GAYRİMENKUL GELİŞTİRME VE FİZİBİLİTE RAPORU")
+    st.markdown(f"### 🏢 İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK")
+    st.markdown(f"**Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu**")
 
     # --- TABLO 1: PROJE VE LOKASYON KÜNYESİ ---
     st.markdown("#### 1. Proje ve Lokasyon Künyesi")
@@ -1243,20 +1244,20 @@ if selected_keys:
     st.markdown("---")
 
     pdf_logo1_html = (
-        f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 38px;"
+        f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 45px;"
         " width: auto; object-fit: contain;'>"
         if img1_base64
         else (
-            "<span style='font-size:13px; font-weight:bold;"
+            "<span style='font-size:16px; font-weight:bold;"
             " color:#1e3a8a;'>İSTESTATE</span>"
         )
     )
     pdf_logo2_html = (
-        f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 38px;"
+        f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 45px;"
         " width: auto; object-fit: contain;'>"
         if img2_base64
         else (
-            "<span style='font-size:13px; font-weight:bold;"
+            "<span style='font-size:16px; font-weight:bold;"
             " color:#1e3a8a;'>MERİÇ İNŞAAT</span>"
         )
     )
@@ -1375,41 +1376,48 @@ if selected_keys:
                 background: #ffffff;
                 padding: 0;
             }}
-            /* Üst Lacivert Banner ve Beyaz Arka Plan Alanlı Logo & Başlık Yerleşimi */
+            /* Güçlü Üst Banner / Vurgu Alanı */
             .top-banner-bar {{
                 background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
                 color: #ffffff;
-                padding: 6px 10px;
+                padding: 6px 12px;
+                text-align: center;
+                font-weight: bold;
+                font-size: 9.5px;
+                letter-spacing: 0.8px;
+                text-transform: uppercase;
                 margin-bottom: 5px;
                 border-radius: 3px;
             }}
-            .banner-table {{
+            .header-table {{
                 width: 100%;
                 border-collapse: collapse;
+                border-bottom: 2px solid #0f172a;
+                padding-bottom: 3px;
+                margin-bottom: 4px;
             }}
-            .banner-table td {{
+            .header-table td {{
                 border: none;
                 padding: 0;
                 vertical-align: middle;
             }}
-            .logo-box-left, .logo-box-right {{
-                background: #ffffff;
-                padding: 3px 6px;
-                border-radius: 3px;
-                display: inline-block;
+            .title-box {{
                 text-align: center;
             }}
-            .title-box-center {{
-                text-align: center;
-                color: #ffffff;
-            }}
-            h2.main-title {{
-                font-size: 11px;
+            h2 {{
+                font-size: 13px;
                 font-weight: 800;
-                color: #ffffff;
+                color: #0f172a;
                 margin: 0;
-                letter-spacing: 0.5px;
+                letter-spacing: -0.5px;
+            }}
+            p.sub {{
+                font-size: 9px;
+                color: #475569;
+                margin: 1px 0 0 0;
+                font-weight: 600;
                 text-transform: uppercase;
+                letter-spacing: 0.5px;
             }}
             .section-title {{
                 font-size: 9px;
@@ -1455,21 +1463,18 @@ if selected_keys:
         </head>
         <body>
         <div class="report-container">
-            <div class="top-banner-bar">
-                <table class="banner-table">
-                    <tr>
-                        <td style="width: 25%; text-align: left;">
-                            <div class="logo-box-left">{pdf_logo1_html}</div>
-                        </td>
-                        <td style="width: 50%;" class="title-box-center">
-                            <h2 class="main-title">GAYRİMENKUL GELİŞTİRME VE FİZİBİLİTE RAPORU</h2>
-                        </td>
-                        <td style="width: 25%; text-align: right;">
-                            <div class="logo-box-right">{pdf_logo2_html}</div>
-                        </td>
-                    </tr>
-                </table>
-            </div>
+            <div class="top-banner-bar">İstestate & Meriç İnşaat — Yatırım Komitesi Onaylı Fizibilite Raporu</div>
+            
+            <table class="header-table">
+                <tr>
+                    <td style="width: 25%; text-align: left;">{pdf_logo1_html}</td>
+                    <td style="width: 50%;" class="title-box">
+                        <h2>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT</h2>
+                        <p class="sub">Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu</p>
+                    </td>
+                    <td style="width: 25%; text-align: right;">{pdf_logo2_html}</td>
+                </tr>
+            </table>
             
             <div class="section-title">1. Proje ve Lokasyon Künyesi</div>
             <table class="data-table">
@@ -1484,7 +1489,7 @@ if selected_keys:
                 </tbody>
             </table>
             
-            <div class="section-title">2. Mimari ve Bağımsız Bölüm Planlaması</div>
+            <div class="section-title">2. Mimari e Bağımsız Bölüm Planlaması</div>
             <table class="data-table">
                 <thead>
                     <tr>
