@@ -327,7 +327,7 @@ if selected_keys:
                 base_toplab_m2 = f["giren_m2"]
                 yasal_max_brut_insaat_alani += base_toplab_m2 * f["kaks"] * emsal_artis_orani
 
-    # --- KÜRESEL KONTROL PANELİ (PROJE TİPİ, İŞ MODELİ VE KAT KARŞILIĞI PARAMETRELERİ) ---
+    # --- KÜRESEL KONTROL PANELİ (PROJE TİPİ, İŞ MODELİ VE ESNEK PARA BİRİMLİ ARSA BONUSU) ---
     st.markdown("---")
     st.subheader("⚙️ Küresel Proje Parametreleri ve İş Modeli")
     col_global1, col_global2 = st.columns(2)
@@ -353,16 +353,25 @@ if selected_keys:
             key="global_is_modeli"
         )
 
-    # Kat Karşılığı seçildiğinde küresel alanda aktifleşen özel parametreler
     arsa_payi_orani = 0.0
     arsa_bonus_usd = 0.0
     if "Kat Karşılığı" in is_modeli:
         st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
-        col_gk1, col_gk2 = st.columns(2)
+        col_gk1, col_gk2, col_gk3 = st.columns([2, 1, 2])
         with col_gk1:
             arsa_payi_orani = st.slider("Arsa Sahibi Payı / Kat Karşılığı Oranı (%)", min_value=0, max_value=70, value=50, key="global_arsa_payi_slider")
         with col_gk2:
-            arsa_bonus_usd = st.number_input("💵 Arsa Sahibine Verilecek Nakit Bonus / İmza Parası ($)", min_value=0.0, value=0.0, step=10000.0, format="%.2f", key="global_arsa_bonus_input")
+            bonus_curr = st.selectbox("Para Birimi", options=["USD ($)", "EUR (€)", "TL (₺)"], key="global_bonus_currency")
+        with col_gk3:
+            raw_bonus_val = st.number_input("💵 Nakit Bonus / İmza Parası Tutar", min_value=0.0, value=0.0, step=10000.0, format="%.2f", key="global_arsa_bonus_input")
+            
+            # Seçilen para birimine göre USD tabanına çevrim
+            if "EUR" in bonus_curr:
+                arsa_bonus_usd = raw_bonus_val * (rates['EUR'] / rates['USD'])
+            elif "TL" in bonus_curr:
+                arsa_bonus_usd = raw_bonus_val / rates['USD']
+            else:
+                arsa_bonus_usd = raw_bonus_val
     else:
         st.info("ℹ️ Doğrudan Satılık / Arsa Yatırım Raporu modülündesiniz. Arsa bedeli doğrudan yatırım maliyetine eklenecektir.")
 
@@ -524,7 +533,7 @@ if selected_keys:
 
         real_satis_usd, real_maliyet_usd, otomatik_bodrum_orani = get_realistic_market_pricing(detected_mahalle, selected_proje_tipi, rates["USD"])
 
-        st.success(f"⚡ **Canlı TCMB Dolar Kuru:** 1 USD = {rates['USD']:.2f} TL | **Yasal Brüt Emsal Tavanı:** {yasal_max_brut_insaat_alani:,.2f} m² | **Hesaplama Tabanı:** Tamamen Brüt Alanlar Üzerinden")
+        st.success(f"⚡ **Canlı TCMB Kurları:** 1 USD = {rates['USD']:.2f} TL | 1 EUR = {rates['EUR']:.2f} TL | **Yasal Brüt Emsal Tavanı:** {yasal_max_brut_insaat_alani:,.2f} m²")
 
         st.markdown("---")
         col_f1, col_f2 = st.columns(2)
