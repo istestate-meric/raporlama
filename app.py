@@ -555,7 +555,6 @@ if selected_keys:
     for fonk_name, items in all_functions_map.items():
       allowed_types = get_allowed_project_types(fonk_name)
 
-      # Kompakt 5'li Yatay Kolon Yapısı (Tek Satır Görünüm)
       fc1, fc2, fc3, fc4, fc5 = st.columns([1.5, 1.4, 1.1, 1.0, 1.0])
 
       with fc1:
@@ -635,7 +634,6 @@ if selected_keys:
       )
       st.divider()
 
-  # Eğer akordeon kapalıysa varsayılan değerleri besle
   for fonk_name, items in all_functions_map.items():
     if fonk_name not in function_configs:
       first_mahalle = list(active_parcel_db.values())[0].get(
@@ -737,10 +735,9 @@ if selected_keys:
       else 0
   )
 
-  # --- SEKME YAPISI ---
-  tab1, tab2, tab3, tab4, tab5 = st.tabs([
-      "📊 Seçilen Parseller Özeti",
-      "📐 İnşaat Alanı Hesabı",
+  # --- SEKME YAPISI (4 SEKME OLARAK BİRLEŞTİRİLDİ) ---
+  tab1, tab2, tab3, tab4 = st.tabs([
+      "📊 Seçilen Parseller & İnşaat Alanı",
       "🏛️ Mimari Fizibilite",
       "📑 Proje Raporu & Fizibilite",
       "🖨️ Rapor Ön İzleme & PDF",
@@ -774,7 +771,7 @@ if selected_keys:
         })
     st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
 
-  with tab2:
+    st.markdown("---")
     st.subheader("Fonksiyon Bazlı Brüt İnşaat Kapasite Hesabı")
     calc_results = []
     for item in function_results_detail:
@@ -789,7 +786,7 @@ if selected_keys:
         value=f"{total_yasal_brut_insaat:,.2f} m²",
     )
 
-  with tab3:
+  with tab2:
     st.subheader("🏛️ Fonksiyona Özel Mimari Fizibilite Sonuçları")
     for fonk_name, conf in function_configs.items():
       st.markdown(f"**Fonksiyon: {fonk_name}**")
@@ -799,7 +796,7 @@ if selected_keys:
       m_col3.metric("Havuz Tercihi", conf["havuz_mod"])
       st.markdown("---")
 
-  with tab4:
+  with tab3:
     st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılım Matrisi")
     f_col1, f_col2, f_col3 = st.columns(3)
     f_col1.metric("Toplam Tahmini Brüt Ciro", f"${total_ciro_usd:,.2f}")
@@ -810,7 +807,7 @@ if selected_keys:
         f"%{yg_orani:.1f} YG",
     )
 
-  with tab5:
+  with tab4:
     st.subheader(
         "🖨️ Kurumsal Tek Sayfa Rapor Ön İzleme ve PDF İndirme Merkezi"
     )
