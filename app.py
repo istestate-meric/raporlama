@@ -291,7 +291,8 @@ if all_db_keys:
     else:
         filtered_keys = []
 
-    default_selection = just_uploaded_keys if just_uploaded_keys else []
+    # HATA ÇÖZÜMÜ: Sadece filtrelenmiş seçenekler arasında yer alan geçerli default değerleri bırakıyoruz
+    default_selection = [k for k in (just_uploaded_keys if just_uploaded_keys else []) if k in filtered_keys]
 
     selected_keys = st.sidebar.multiselect(
         "Raporlanacak Ada-Parsel Seçin:",
