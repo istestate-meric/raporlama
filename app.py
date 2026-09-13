@@ -653,8 +653,19 @@ if selected_keys:
       yasal_max_brut_insaat_alani / curr_hb if curr_hb > 0 else 0
   )
 
+  # --- DÜZELTME: HAVUZ ALANININ BİNA OTURUMUNDAN VE BODRUM PAYINDAN İZOLASYONU ---
+  # Birim başı havuz payı (inşaat hakkından düşülen su/teras alanı)
+  tekil_havuz_payi = (
+      30.0
+      if "Özel Havuz" in curr_hp
+      else (120.0 / curr_hb if "Ortak" in curr_hp else 0.0)
+  )
+  ana_unite_kapali_alan = max(0.0, ortalama_unite_alani - tekil_havuz_payi)
+
+  # Bodrum payı sadece havuz alanından arındırılmış net yapı alanı üzerinden hesaplanır
   simulated_bodrum_alani = (
-      yasal_max_brut_insaat_alani * p_spec["bodrum_orani"]
+      (yasal_max_brut_insaat_alani - (tekil_havuz_payi * curr_hb))
+      * p_spec["bodrum_orani"]
   )
   ortalama_bodrum_alani = simulated_bodrum_alani / curr_hb if curr_hb > 0 else 0
 
@@ -837,17 +848,12 @@ if selected_keys:
     st.markdown("---")
     st.markdown(f"### 🏷️ {birim_etiketi} Başına Detaylı Alan ve Dağılımı")
     st.info(
-        "💡 Havuzlar yasal inşaat hakkından tüketir. Bu nedenle havuz alanı brüt"
-        " ünite inşaat alanından düşülerek **Ana Ünite Kapalı Alanı** net olarak"
-        " hesaplanmıştır."
+        "💡 Havuzlar yasal inşaat hakkından tüketir. Havuz alanı (su ve sirkülasyon"
+        " yüzeyleri) ana yapı oturumundan ve bodrum hesaplamasından arındırılarak"
+        " **Ana Ünite Kapalı Alanı** ve **Net Bodrum Payı** hassasiyetle"
+        " ayrıştırılmıştır."
     )
 
-    tekil_havuz_payi = (
-        30.0
-        if "Özel Havuz" in curr_hp
-        else (120.0 / curr_hb if "Ortak" in curr_hp else 0.0)
-    )
-    ana_unite_kapali_alan = max(0.0, ortalama_unite_alani - tekil_havuz_payi)
     toplam_unite_brut_dahil_eklentiler = (
         ortalama_unite_alani + ortalama_bodrum_alani
     )
@@ -859,12 +865,12 @@ if selected_keys:
 </tr>
 <tr>
 <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc;">Havuz Payı (İnşaat Hakkından Düşülen)</td>
-<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #475569; background-color: #f8fafc;">{curr_hp}</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #475569; background-color: #f8fafc;">{curr_hp} (Oturumdan İzole)</td>
 <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc; text-align: right; font-weight: 700;">{tekil_havuz_payi:,.2f} m²</td>
 </tr>
 <tr>
 <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff;">Bodrum Payı</td>
-<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #475569; background-color: #ffffff;">Ortalama Bodrum Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #475569; background-color: #ffffff;">Havuz Hariç Net Oturum Üzerinden Oranlanan Bodrum</td>
 <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff; text-align: right; font-weight: 700;">{ortalama_bodrum_alani:,.2f} m²</td>
 </tr>
 <tr style="font-weight: bold;">
@@ -952,7 +958,7 @@ if selected_keys:
         yasal_max_brut_insaat_alani * birim_maliyet
     ) + arsa_bonus_usd
 
-    # --- CİRO HESABI: Toplam İnşaat Alanı Satış Geliri + Bodrum Alanı Satış Geliri ---
+    # --- CİRO HESABI: Toplam İnşaat Alanı Satış Geliri + Arındırılmış Bodrum Alanı Satış Geliri ---
     normal_ciro = yasal_max_brut_insaat_alani * birim_satis
     bodrum_ciro = simulated_bodrum_alani * birim_satis * otomatik_bodrum_orani
     toplam_ciro_usd = normal_ciro + bodrum_ciro
@@ -1163,12 +1169,12 @@ if selected_keys:
 </tr>
 <tr>
 <td style="border: 1px solid #cbd5e1; padding: 6px 10px; color: #0f172a; background-color: #f8fafc;">Havuz Payı (İnşaat Hakkından Düşülen)</td>
-<td style="border: 1px solid #cbd5e1; padding: 6px 10px; color: #475569; background-color: #f8fafc;">{curr_hp}</td>
+<td style="border: 1px solid #cbd5e1; padding: 6px 10px; color: #475569; background-color: #f8fafc;">{curr_hp} (Oturumdan İzole)</td>
 <td style="border: 1px solid #cbd5e1; padding: 6px 10px; color: #0f172a; background-color: #f8fafc; text-align: right; font-weight: 700;">{tab5_havuz_payi_m2:,.2f} m²</td>
 </tr>
 <tr>
 <td style="border: 1px solid #cbd5e1; padding: 6px 10px; color: #0f172a; background-color: #ffffff;">Bodrum Payı</td>
-<td style="border: 1px solid #cbd5e1; padding: 6px 10px; color: #475569; background-color: #ffffff;">Ortalama Bodrum Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 6px 10px; color: #475569; background-color: #ffffff;">Havuz Hariç Net Oturum Üzerinden Oranlanan Bodrum</td>
 <td style="border: 1px solid #cbd5e1; padding: 6px 10px; color: #0f172a; background-color: #ffffff; text-align: right; font-weight: 700;">{tab5_bodrum_payi_m2:,.2f} m²</td>
 </tr>
 <tr style="font-weight: bold;">
@@ -1301,12 +1307,12 @@ if selected_keys:
 </tr>
 <tr>
 <td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc;">Havuz Payı (İnşaat Hakkından Düşülen)</td>
-<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc; color: #475569;">{curr_hp}</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc; color: #475569;">{curr_hp} (Oturumdan İzole)</td>
 <td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #f8fafc; text-align: right; font-weight: 600;">{tab5_havuz_payi_m2:,.2f} m²</td>
 </tr>
 <tr>
 <td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff;">Bodrum Payı</td>
-<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff; color: #475569;">Ortalama Bodrum Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff; color: #475569;">Havuz Hariç Net Oturum Üzerinden Oranlanan Bodrum</td>
 <td style="border: 1px solid #cbd5e1; padding: 4px 8px; background-color: #ffffff; text-align: right; font-weight: 600;">{tab5_bodrum_payi_m2:,.2f} m²</td>
 </tr>
 <tr style="background-color: #f1f5f9; font-weight: bold;">
