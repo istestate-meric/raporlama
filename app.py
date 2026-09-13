@@ -1242,23 +1242,16 @@ if selected_keys:
     )
     st.markdown("---")
 
+    # --- PDF İÇİN LOGO ALANLARI (BEYAZ KUTU İÇİNDE) ---
     pdf_logo1_html = (
-        f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 45px;"
-        " width: auto; object-fit: contain;'>"
+        f"<div style='background-color: #ffffff; padding: 4px 8px; border-radius: 4px; display: inline-block;'><img src='data:image/png;base64,{img1_base64}' style='max-height: 38px; width: auto; object-fit: contain; vertical-align: middle;'></div>"
         if img1_base64
-        else (
-            "<span style='font-size:16px; font-weight:bold;"
-            " color:#1e3a8a;'>İSTESTATE</span>"
-        )
+        else "<div style='background-color: #ffffff; padding: 4px 8px; border-radius: 4px;'><span style='font-size:12px; font-weight:bold; color:#0b1d3a;'>İSTESTATE</span></div>"
     )
     pdf_logo2_html = (
-        f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 45px;"
-        " width: auto; object-fit: contain;'>"
+        f"<div style='background-color: #ffffff; padding: 4px 8px; border-radius: 4px; display: inline-block;'><img src='data:image/png;base64,{img2_base64}' style='max-height: 38px; width: auto; object-fit: contain; vertical-align: middle;'></div>"
         if img2_base64
-        else (
-            "<span style='font-size:16px; font-weight:bold;"
-            " color:#1e3a8a;'>MERİÇ İNŞAAT</span>"
-        )
+        else "<div style='background-color: #ffffff; padding: 4px 8px; border-radius: 4px;'><span style='font-size:12px; font-weight:bold; color:#0b1d3a;'>MERİÇ İNŞAAT</span></div>"
     )
 
     # --- PDF İÇİN KÜNYE TABLOSU HTML ---
@@ -1351,7 +1344,7 @@ if selected_keys:
 <td style="border: 1px solid #cbd5e1; padding: 4px 8px; text-align: right; color: #1e3a8a;">₺{mutaahhit_net_kar_tl:,.2f} (%{yg_orani:.1f} YG)</td>
 </tr>"""
 
-    # --- REVISED ELITE CORPORATE WEASYPRINT HTML/CSS ŞABLONU ---
+    # --- REVISED BANNER STİLLİ WEASYPRINT HTML/CSS ŞABLONU ---
     report_html_template = f"""
         <!DOCTYPE html>
         <html>
@@ -1375,34 +1368,33 @@ if selected_keys:
                 background: #ffffff;
                 padding: 0;
             }}
-            .header-table {{
+            /* Kurumsal Lacivert Banner */
+            .report-banner {{
+                background-color: #0b1d3a;
+                color: #ffffff;
                 width: 100%;
                 border-collapse: collapse;
-                border-bottom: 2px solid #0f172a;
-                padding-bottom: 3px;
-                margin-bottom: 4px;
+                margin-bottom: 6px;
             }}
-            .header-table td {{
+            .report-banner td {{
                 border: none;
-                padding: 0;
+                padding: 8px 10px;
                 vertical-align: middle;
             }}
-            .title-box {{
-                text-align: center;
-            }}
-            h2 {{
-                font-size: 12px;
+            .title-box h2 {{
+                font-size: 11px;
                 font-weight: 800;
-                color: #0f172a;
+                color: #ffffff;
                 margin: 0;
-                letter-spacing: -0.5px;
+                letter-spacing: 0.3px;
                 text-transform: uppercase;
+                text-align: center;
             }}
             .section-title {{
                 font-size: 9px;
                 font-weight: bold;
-                color: #1e3a8a;
-                border-left: 3px solid #1e3a8a;
+                color: #0b1d3a;
+                border-left: 3px solid #0b1d3a;
                 padding-left: 5px;
                 background-color: #f1f5f9;
                 padding-top: 2px;
@@ -1442,7 +1434,8 @@ if selected_keys:
         </head>
         <body>
         <div class="report-container">
-            <table class="header-table">
+            <!-- Kurumsal Lacivert Banner ve Beyaz Arka Planlı Logolar -->
+            <table class="report-banner">
                 <tr>
                     <td style="width: 25%; text-align: left;">{pdf_logo1_html}</td>
                     <td style="width: 50%;" class="title-box">
@@ -1478,7 +1471,7 @@ if selected_keys:
                 </tbody>
             </table>
             
-            <div style="font-size: 8.5px; font-weight: bold; color: #1e3a8a; border-left: 3px solid #1e3a8a; padding-left: 5px; background-color: #f1f5f9; padding-top: 2px; padding-bottom: 2px; text-transform: uppercase; margin-top: 4px; margin-bottom: 2px;">{birim_etiketi} Başına Detaylı Alan ve Dağılımı</div>
+            <div style="font-size: 8.5px; font-weight: bold; color: #0b1d3a; border-left: 3px solid #0b1d3a; padding-left: 5px; background-color: #f1f5f9; padding-top: 2px; padding-bottom: 2px; text-transform: uppercase; margin-top: 4px; margin-bottom: 2px;">{birim_etiketi} Başına Detaylı Alan ve Dağılımı</div>
             <table class="data-table">
                 <thead>
                     <tr>
