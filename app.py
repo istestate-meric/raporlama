@@ -104,7 +104,6 @@ def get_live_exchange_rates():
 # --- 2. İMAR FONKSİYONUNA GÖRE UYGUN PROJE TİPLERİ FİLTRESİ ---
 def get_allowed_project_types(fonksiyon_adi):
   f_upper = fonksiyon_adi.upper()
-  # Park, Yol veya Yapısız alan kontrolü
   if any(k in f_upper for k in ["PARK", "YEŞİL", "YOL", "DİNİ", "MEZARLIK"]):
     return ["Yapılaşmaya Kapalı / Donatı Alanı"]
 
@@ -386,7 +385,7 @@ if selected_keys:
       k: st.session_state["parcel_db"][k] for k in selected_keys
   }
 
-  # --- FONKSİYONLARA GÖRE AYRIŞTIRMA VE HESAPLAMA (0 KAKS/TAKS KORUMALI) ---
+  # --- FONKSİYONLARA GÖRE AYRIŞTIRMA VE HESAPLAMA (NET ARSA vs UYGULAMA ALANI) ---
   fonksiyon_bazli_veriler = {}
   for key, p in active_parcel_db.items():
     toplam_brut = p["toplam_alan"]
@@ -397,13 +396,15 @@ if selected_keys:
         fonksiyon_bazli_veriler[fonk_adi] = {
             "toplam_brut_arsa": 0.0,
             "toplam_net_arsa": 0.0,
+            "toplam_uygulama_bahce_alani": 0.0,
             "toplam_insaat_alani": 0.0,
         }
 
       giren_m2 = f["giren_m2"] if f["giren_m2"] > 0 else toplam_brut
       net_arsa = giren_m2 if is_terkli else giren_m2 * 0.70
+      # Uygulama / Bahçe alanı için ham parsel alanı (Alan - m2) baz alınır
+      uygulama_alani = giren_m2
 
-      # KAKS veya TAKS 0 ise veya park/yeşil alansa inşaat alanı 0 olur
       if (
           f["kaks"] <= 0
           or f["taks"] <= 0
@@ -417,36 +418,48 @@ if selected_keys:
 
       fonksiyon_bazli_veriler[fonk_adi]["toplam_brut_arsa"] += giren_m2
       fonksiyon_bazli_veriler[fonk_adi]["toplam_net_arsa"] += net_arsa
+      fonksiyon_bazli_veriler[fonk_adi]["toplam_uygulama_bahce_alani"] += (
+          uygulama_alani
+      )
       fonksiyon_bazli_veriler[fonk_adi]["toplam_insaat_alani"] += brut_insaat
 
-  st.subheader("⚙️ Fonksiyon Bazlı Proje Tipi ve İş Modeli Seçimi")
-
-  secilen_fonksiyon_proje_tipleri = {}
-  for fonk_adi in fonksiyon_bazli_veriler.keys():
-    allowed_types = get_allowed_project_types(fonk_adi)
-    st.markdown(f"#### 📌 İmar Fonksiyonu: `{fonk_adi}`")
-    c1, c2 = st.columns(2)
-    with c1:
-      secilen_fonksiyon_proje_tipleri[fonk_adi] = st.selectbox(
-          f"Proje Tipi ({fonk_adi}):", options=allowed_types, key=f"ptype_{fonk_adi}"
+  # --- MİNİMAL VE KULLANIŞLI PROJE TİPİ & İŞ MODELİ SEÇİM ALANI ---
+  with st.expander(
+      "⚙️ Proje Tipi ve İş Modeli Ayarları (Minimal Panel)", expanded=True
+  ):
+    col_is, col_space = st.columns([2, 1])
+    with col_is:
+      is_modeli = st.selectbox(
+          "Genel İş Modeli / Rapor Türü:",
+          options=[
+              "Kat Karşılığı Proje Raporu",
+              "Doğrudan Satılık / Arsa Yatırım Raporu",
+          ],
       )
-    with c2:
-      if "Yapılaşmaya Kapalı" in secilen_fonksiyon_proje_tipleri[fonk_adi]:
-        st.warning(
-            f"⚠️ {fonk_adi} donatı alanı olduğundan inşaat üretilemez (0 m²)."
-        )
-      else:
-        st.info(
-            f"ℹ️ {fonk_adi} için yasal olarak uygun projeler filtrelenmiştir."
-        )
 
-  is_modeli = st.selectbox(
-      "Genel İş Modeli / Rapor Türü:",
-      options=[
-          "Kat Karşılığı Proje Raporu",
-          "Doğrudan Satılık / Arsa Yatırım Raporu",
-      ],
-  )
+    st.markdown("---")
+    secilen_fonksiyon_proje_tipleri = {}
+    cols = st.columns(
+        len(fonksiyon_bazli_veriler) if len(fonksiyon_bazli_veriler) > 0 else 1
+    )
+
+    for idx, (fonk_adi, vals) in enumerate(fonksiyon_bazli_veriler.items()):
+      allowed_types = get_allowed_project_types(fonk_adi)
+      with cols[idx % len(cols)]:
+        st.markdown(f"**📌 {fonk_adi}**")
+        secilen_fonksiyon_proje_tipleri[fonk_adi] = st.selectbox(
+            "Proje Tipi Seçin",
+            options=allowed_types,
+            key=f"ptype_{fonk_adi}",
+            label_visibility="collapsed",
+        )
+        if "Yapılaşmaya Kapalı" in secilen_fonksiyon_proje_tipleri[fonk_adi]:
+          st.caption("⚠️ Donatı Alanı (0 İnşaat)")
+        else:
+          st.caption(
+              f"Uygulama/Bahçe Alanı: {vals['toplam_uygulama_bahce_alani']:,.0f}"
+              " m²"
+          )
 
   # --- SEKME YAPISI ---
   tab1, tab2, tab3, tab4, tab5 = st.tabs([
@@ -466,11 +479,11 @@ if selected_keys:
             "Parsel": k,
             "Mahalle": p["mahalle"],
             "Fonksiyon": f["fonksiyon_adi"],
-            "Alan (m²)": f"{f['giren_m2']:,.2f}",
+            "Alan (Uygulama/m²)": f"{f['giren_m2']:,.2f}",
             "TAKS": f"{f['taks']:.2f}",
             "KAKS": f"{f['kaks']:.2f}",
             "Terk Durumu": (
-                "Terkli (Net)"
+                "Terkli (Net Arsa)"
                 if p["terk_yapilmis_mi"]
                 else "Terksiz (%30 Kesintili)"
             ),
@@ -478,19 +491,25 @@ if selected_keys:
     st.dataframe(pd.DataFrame(rows), use_container_width=True)
 
   with tab2:
-    st.subheader("Fonksiyonlara Göre Brüt İnşaat Alanı Dağılımı")
+    st.subheader("Fonksiyonlara Göre Brüt İnşaat ve Uygulama Alanı Dağılımı")
     for fonk, vals in fonksiyon_bazli_veriler.items():
       if vals["toplam_insaat_alani"] == 0:
         st.metric(
-            label=f"🌳 {fonk} (Donatı / Yapılaşmasız Alan)",
+            label=f"🌳 {fonk} (Donatı / Bahçe Alanı)",
             value="0.00 m² (İnşaat Yok)",
-            delta=f"Arsa Alanı: {vals['toplam_brut_arsa']:,.2f} m²",
+            delta=(
+                f"Uygulama / Bahçe Alanı: "
+                f"{vals['toplam_uygulama_bahce_alani']:,.2f} m²"
+            ),
         )
       else:
         st.metric(
             label=f"🏗️ {fonk} - Toplam Brüt İnşaat Alanı",
             value=f"{vals['toplam_insaat_alani']:,.2f} m²",
-            delta=f"Net Arsa: {vals['toplam_net_arsa']:,.2f} m²",
+            delta=(
+                f"Net Arsa: {vals['toplam_net_arsa']:,.2f} m² | Uygulama/Bahçe"
+                f" Alanı: {vals['toplam_uygulama_bahce_alani']:,.2f} m²"
+            ),
         )
 
   with tab3:
@@ -501,8 +520,8 @@ if selected_keys:
 
       if vals["toplam_insaat_alani"] == 0:
         st.info(
-            f"ℹ️ {fonk} için imar katsayıları 0 olduğundan mimari bağımsız"
-            " bölüm hesaplanmaz."
+            f"ℹ️ {fonk} donatı alanı olduğundan mimari bağımsız bölüm"
+            " hesaplanmaz."
         )
       else:
         hedef_adet = st.number_input(
@@ -515,8 +534,9 @@ if selected_keys:
             vals["toplam_insaat_alani"] / hedef_adet if hedef_adet > 0 else 0
         )
         st.success(
-            f"Seçilen Proje Tipi: **{p_tipi}** | Bağımsız Bölüm Başına Ortalama"
-            f" İnşaat Alanı: **{birim_alan:,.2f} m²**"
+            f"Proje Tipi: **{p_tipi}** | Bağımsız Bölüm Başına Alan:"
+            f" **{birim_alan:,.2f} m²** | Uygulama/Bahçe Alanı Kullanımı:"
+            f" **{vals['toplam_uygulama_bahce_alani']:,.2f} m²**"
         )
       st.markdown("---")
 
@@ -564,8 +584,8 @@ if selected_keys:
   with tab5:
     st.subheader("🖨️ Kurumsal Rapor Ön İzleme & PDF")
     st.info(
-        "Park ve donatı alanları inşaat/ciro hesaplarından harici tutularak"
-        " rapora yansıtılmıştır."
+        "Uygulama alanı (bahçe/peyzaj) ve imar net arsa ayrımları rapora"
+        " işlenmiştir."
     )
     if st.button("Tek Sayfa Kurumsal Fizibilite Raporu İndir"):
       st.success("Rapor başarıyla oluşturuldu.")
