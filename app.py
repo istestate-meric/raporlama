@@ -493,28 +493,39 @@ if selected_keys:
             )
         st.session_state["havuz_tercihi"] = havuz_tercihi
 
+        # Havuz emsalden düşüm hesabı
         if havuz_tercihi == "Her Bağımsız Bölüme 1 Özel Havuz":
             havuz_emsele_maliyet_m2 = hedef_bagimsiz_bolum * 30.0
+            unite_basina_havuz_m2 = 30.0
         elif havuz_tercihi == "Ortak / Sosyal Tesis Havuzu":
             havuz_emsele_maliyet_m2 = 120.0
+            unite_basina_havuz_m2 = 120.0 / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
         else:
             havuz_emsele_maliyet_m2 = 0.0
+            unite_basina_havuz_m2 = 0.0
 
         net_brut_dusulen_alan = max(0.0, yasal_max_brut_insaat_alani - havuz_emsele_maliyet_m2)
         toplam_brut_kullanim_alani = net_brut_dusulen_alan
-        ortalama_unite_brut_alan = toplam_brut_kullanim_alani / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
+        
+        # Net bina oturum alanı ve havuz dahil brüt ünite alanı ayrımı
+        saf_unite_brut_alan = net_brut_dusulen_alan / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
+        toplam_unite_brut_alan_dahil_havuz = saf_unite_brut_alan + unite_basina_havuz_m2
 
         simulated_bodrum_alani = net_brut_dusulen_alan * p_spec["bodrum_orani"]
         ortalama_bodrum_alani = simulated_bodrum_alani / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
 
         st.markdown("---")
         m_col1, m_col2, m_col3, m_col4 = st.columns(4)
-        m_col1.metric(p_spec["etiket_unite"], f"{ortalama_unite_brut_alan:,.2f} m²", f"Toplam Brüt: {toplam_brut_kullanim_alani:,.2f} m²")
+        m_col1.metric(
+            p_spec["etiket_unite"], 
+            f"{saf_unite_brut_alan:,.2f} m²", 
+            f"Havuz Dahil Brüt: {toplam_unite_brut_alan_dahil_havuz:,.2f} m²" if unite_basina_havuz_m2 > 0 else "Havuz Yok"
+        )
         m_col2.metric(p_spec["etiket_bodrum"], f"{ortalama_bodrum_alani:,.2f} m²", f"Toplam Bodrum Brüt: {simulated_bodrum_alani:,.2f} m²")
         m_col3.metric("Emsalden Düşülen Havuz Payı", f"-{havuz_emsele_maliyet_m2:,.2f} m²")
         
         min_sinir = 150 if "Villa" in selected_proje_tipi else (90 if "Ticari" not in selected_proje_tipi else 60)
-        risk_durumu = "⚠️ RİSKLİ (Çok küçük ölçek)" if ortalama_unite_brut_alan < min_sinir and hedef_bagimsiz_bolum > 1 else "✅ Uygun Ölçek"
+        risk_durumu = "⚠️ RİSKLİ (Çok küçük ölçek)" if saf_unite_brut_alan < min_sinir and hedef_bagimsiz_bolum > 1 else "✅ Uygun Ölçek"
         m_col4.metric("Mimari Ölçek Uygunluğu", risk_durumu)
 
     with tab4:
@@ -586,11 +597,11 @@ if selected_keys:
         st.write("Aşağıda hazırlanan raporun profesyonel ekran ön izlemesi yer almaktadır. Butona tıklayarak doğrudan **PDF Olarak İndirebilirsiniz**.")
         st.markdown("---")
         
-        # Ekran Ön İzlemesi İçin Temiz Streamlit Bileşenleri (Kod kirliliği olmadan)
+        # Ekran Ön İzlemesi İçin Temiz Streamlit Bileşenleri
         st.markdown(f"### 🏢 İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK")
         st.markdown(f"**Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu**")
         
-        st.markdown("#### 1. Proje ve Lokasyon Künyesi")
+        st.markdown("#### 1. Proje dan Lokasyon Künyesi")
         st.markdown(f"- **Seçilen Lokasyon / Mahalle:** {detected_mahalle}")
         st.markdown(f"- **Proje Tipi:** {selected_proje_tipi}")
         st.markdown(f"- **İş Modeli:** {is_modeli}")
@@ -599,11 +610,13 @@ if selected_keys:
         st.markdown("#### 2. Mimari ve Bağımsız Bölüm Planlaması")
         st.markdown(f"- **Bağımsız Bölüm / Villa Adedi:** {curr_hb} Adet")
         st.markdown(f"- **Havuz Planlama Modeli:** {curr_hp}")
-        st.markdown(f"- **Ortalama Ünite Brüt Alanı:** {ortalama_unite_brut_alan:,.2f} m²")
+        unite_gosterim_metni = f"{saf_unite_brut_alan:,.2f} m²"
+        if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz":
+            unite_gosterim_metni += f" (+ 30.00 m² Havuz Payı = {toplam_unite_brut_alan_dahil_havuz:,.2f} m² Brüt Toplam)"
+        st.markdown(f"- **Ortalama Ünite Brüt Alanı:** {unite_gosterim_metni}")
         
         st.markdown("#### 3. Finansal Fizibilite ve Ciro Analizi ($ USD)")
         
-        # Ön izleme için şık bir tablo oluşturalım
         preview_table_data = [
             {"Finansal Kalem": "Toplam Tahmini Brüt Ciro", "Tutar (USD $)": f"${toplam_ciro_usd:,.2f}", "Tutar (TL ₺)": f"₺{toplam_ciro_tl:,.2f}"},
             {"Finansal Kalem": "Toplam İnşaat Maliyeti + Bonus", "Tutar (USD $)": f"${toplam_maliyet_usd:,.2f}", "Tutar (TL ₺)": f"₺{toplam_maliyet_tl:,.2f}"}
@@ -614,7 +627,6 @@ if selected_keys:
         preview_table_data.append({"Finansal Kalem": "Müteahhit Net Kârı", "Tutar (USD $)": f"${mutaahhit_net_kar_usd:,.2f}", "Tutar (TL ₺)": f"₺{mutaahhit_net_kar_tl:,.2f} (%{roi:.1f} ROI)"})
         
         st.table(pd.DataFrame(preview_table_data))
-        
         st.markdown("---")
         
         # PDF çıktı şablonu (WeasyPrint için profesyonel HTML-CSS tasarımı)
@@ -627,6 +639,10 @@ if selected_keys:
                         <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">-</td>
                     </tr>
             """
+
+        pdf_unite_metin = f"{saf_unite_brut_alan:,.2f} m²"
+        if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz":
+            pdf_unite_metin += f" (+ 30.00 m² Havuz = {toplam_unite_brut_alan_dahil_havuz:,.2f} m² Brüt)"
 
         report_html_template = f"""
         <!DOCTYPE html>
@@ -663,7 +679,7 @@ if selected_keys:
             <h3>2. Mimari ve Bağımsız Bölüm Planlaması</h3>
             <p class="content-line"><b>Bağımsız Bölüm / Villa Adedi:</b> {curr_hb} Adet</p>
             <p class="content-line"><b>Havuz Planlama Modeli:</b> {curr_hp}</p>
-            <p class="content-line"><b>Ortalama Ünite Brüt Alanı:</b> {ortalama_unite_brut_alan:,.2f} m²</p>
+            <p class="content-line"><b>Ortalama Ünite Brüt Alanı:</b> {pdf_unite_metin}</p>
             
             <h3>3. Finansal Fizibilite ve Ciro Analizi ($ USD)</h3>
             <table>
@@ -702,7 +718,6 @@ if selected_keys:
         </html>
         """
         
-        # WeasyPrint ile PDF İndirme Butonu
         pdf_bytes = HTML(string=report_html_template).write_pdf()
         
         st.download_button(
