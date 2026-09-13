@@ -365,7 +365,7 @@ def parse_imar_pdf(uploaded_file):
   return parcel_data
 
 
-# --- İMAR FONKSİYONUNA GÖRE UYGUN PROJE TİPLERini BELİRLEME ---
+# --- İMAR FONKSİYONUNA GÖRE UYGUN PROJE TİPLERİNİ BELİRLEME ---
 def get_allowed_project_types(fonksiyon_adi):
   f_upper = fonksiyon_adi.upper()
   if "TİCARET" in f_upper and ("KONUT" in f_upper or "MESKEN" in f_upper):
@@ -526,7 +526,6 @@ if selected_keys:
   st.markdown("---")
   st.subheader("🏛️ Fonksiyona Özel Mimari ve Finansal Parametreler")
 
-  # Tüm aktif parsellerdeki benzersiz fonksiyonları topla ve her biri için ayarlar al
   all_functions_map = {}
   for key, p in active_parcel_db.items():
     for f in p["fonksiyonlar"]:
@@ -554,7 +553,6 @@ if selected_keys:
           key=f"p_tipi_{fonk_name}",
       )
     with f_col2:
-      # Varsayılan bağımsız bölüm tahmini için o fonksiyona ait m2'leri hesapla
       fonk_toplam_brut_m2 = sum(
           item[1]["giren_m2"]
           if item[1]["giren_m2"] > 0
@@ -566,8 +564,8 @@ if selected_keys:
           if "Villa" in sel_p_tipi
           else (150.0 if "Karma" in sel_p_tipi else 125.0)
       )
-      def_adet = max(1, round(fonk_toplam_brut_m2 / def_def_alan_ kontrolü := def_hedef_alan)) # korumalı
-      
+      def_adet = max(1, round(fonk_toplam_brut_m2 / def_hedef_alan))
+
       adet = st.number_input(
           f"Planlanan Bağımsız Bölüm Adedi",
           min_value=1,
@@ -585,7 +583,6 @@ if selected_keys:
           key=f"havuz_{fonk_name}",
       )
 
-    # Piyasa fiyatları
     first_mahalle = list(active_parcel_db.values())[0].get("mahalle", "VARSAYILAN")
     r_satis, r_maliyet, r_bodrum_orani = get_realistic_market_pricing(
         first_mahalle, sel_p_tipi, rates["USD"]
@@ -672,9 +669,7 @@ if selected_keys:
 
       total_yasal_brut_insaat += brut_insaat
 
-      tekil_havuz_payi = (
-          30.0 if "Özel" in conf["havuz_mod"] else 0.0
-      )
+      tekil_havuz_payi = 30.0 if "Özel" in conf["havuz_mod"] else 0.0
       sim_bodrum = (
           brut_insaat - (tekil_havuz_payi * conf["adet"])
       ) * conf["bodrum_orani"]
