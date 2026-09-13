@@ -582,9 +582,9 @@ if selected_keys:
     # --- 5. SEKME: RAPOR ÖN İZLEME VE PDF İNDİRME MERKEZİ ---
     with tab5:
         st.subheader("🖨️ Kurumsal Rapor Ön İzleme ve PDF İndirme Merkezi")
-        st.write("Aşağıda hazırlanan raporun tarayıcı içi canlı ön izlemesi yer almaktadır. Tarayıcının yazdırma özelliğini kullanarak belgeyi doğrudan **PDF Olarak Kaydedebilirsiniz**.")
+        st.write("Aşağıda hazırlanan raporun canlı ön izlemesi yer almaktadır. Butona tıklayarak raporu yeni bir pencerede açabilir ve doğrudan **PDF Olarak Kaydedebilirsiniz**.")
         
-        # Dinamik Tablo Satırı Oluşumu (HTML kodlarının ekranda görünmesini önlemek için güvenli ayrıştırma)
+        # Dinamik Tablo Satırı Oluşumu (Güvenli HTML Ayrıştırma)
         arsa_sahibi_row_html = ""
         if "Kat Karşılığı" in is_modeli:
             arsa_sahibi_row_html = f"""
@@ -595,7 +595,7 @@ if selected_keys:
                     </tr>
             """
 
-        # Ortak HTML Şablonu Değişkeni
+        # Ortak HTML Şablonu
         report_html_template = f"""
         <div id="printable-report" style="font-family: 'Helvetica', 'Arial', sans-serif; color: #1e293b; background: #ffffff; padding: 30px; border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
             <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 25px;">
@@ -649,27 +649,32 @@ if selected_keys:
         </div>
         """
         
-        # 1. Streamlit İçinde HTML Ön İzleme Gösterimi
+        # 1. Streamlit İçinde Canlı HTML Ön İzleme Gösterimi
         st.markdown(report_html_template, unsafe_allow_html=True)
         
         st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
         
-        # 2. Alternatif PDF / Yazdırma Çözümü (Tarayıcı Yerel Yazdırma Motoru)
-        col_dl1, col_dl2 = st.columns([2, 1])
-        with col_dl1:
-            st.success("✅ Rapor ön izlemesi sorunsuz şekilde oluşturuldu. Aşağıdaki butonu kullanarak raporu doğrudan PDF olarak indirebilir veya yazdırabilirsiniz.")
-        with col_dl2:
-            # Tarayıcı JavaScript Yazdır Butonu Entegrasyonu
-            print_button_html = """
-            <script>
-            function printReport() {
-                window.print();
-            }
-            </script>
-            <button onclick="window.print()" style="width: 100%; background-color: #0f172a; color: white; padding: 10px 20px; font-size: 14px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                🖨️ PDF Olarak Kaydet / Yazdır
-            </button>
-            """
-            st.components.v1.html(print_button_html, height=50)
+        # 2. Yeni Pencerede Açıp Tam Raporu Yazdıran Güvenli JS Scripti
+        escaped_html = report_html_template.replace("`", "\\`").replace("$", "\\$").replace("\n", " ")
+        print_button_html = f"""
+        <script>
+        function printReport() {{
+            var myWindow = window.open('', '_blank', 'width=900,height=800');
+            myWindow.document.write('<html><head><title>İstestate & Meriç İnşaat - Fizibilite Raporu</title></head><body style="padding: 30px; background: #fff;">');
+            myWindow.document.write(`{escaped_html}`);
+            myWindow.document.write('</body></html>');
+            myWindow.document.close();
+            myWindow.focus();
+            setTimeout(function() {{
+                myWindow.print();
+            }}, 500);
+        }}
+        </script>
+        <button onclick="printReport()" style="width: 100%; background-color: #0f172a; color: white; padding: 14px 20px; font-size: 15px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            🖨️ Yeni Pencerede Aç & PDF Olarak Kaydet
+        </button>
+        """
+        
+        st.components.v1.html(print_button_html, height=70)
 else:
     st.info("👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden bir **Ada** seçip ilgili parselleri işaretleyin veya yeni bir imar belgesi (PDF) yükleyin.")
