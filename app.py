@@ -306,17 +306,31 @@ else:
 if selected_keys:
     active_parcel_db = {k: st.session_state["parcel_db"][k] for k in selected_keys}
 
-    # --- KÜRESEL İŞ MODELİ / RAPOR TÜRÜ KONTROL PANELİ ---
+    # --- KÜRESEL KONTROL PANELİ (PROJE TİPİ VE İŞ MODELİ BİR ARADA) ---
     st.markdown("---")
-    st.subheader("⚙️ Küresel İş Modeli / Rapor Türü")
-    is_modeli = st.selectbox(
-        "İş Modeli / Rapor Türü (Tüm Raporu Etkiler):",
-        options=[
-            "Kat Karşılığı Proje Raporu",
-            "Doğrudan Satılık / Arsa Yatırım Raporu"
-        ],
-        key="global_is_modeli"
-    )
+    st.subheader("⚙️ Küresel Proje Parametreleri ve İş Modeli")
+    col_global1, col_global2 = st.columns(2)
+    with col_global1:
+        selected_proje_tipi = st.selectbox(
+            "Proje Tipi (Mimari Yerleşim & Ünite Büyüklüğü Modeli):",
+            options=[
+                "Lüks Villa / Müstakil Proje",
+                "Üst Segment Konut / Rezidans",
+                "Standart Konut / Apartman",
+                "Ticari / Ofis Kompleksi",
+                "Karma Proje (Konut + Ticari)"
+            ],
+            key="global_proje_tipi"
+        )
+    with col_global2:
+        is_modeli = st.selectbox(
+            "İş Modeli / Rapor Türü:",
+            options=[
+                "Kat Karşılığı Proje Raporu",
+                "Doğrudan Satılık / Arsa Yatırım Raporu"
+            ],
+            key="global_is_modeli"
+        )
     st.markdown("---")
 
     emsal_artis_orani = 1.30
@@ -400,23 +414,7 @@ if selected_keys:
 
     with tab3:
         st.subheader("🏛️ Mimari Fizibilite ve Bağımsız Bölüm Senaryoları")
-        
-        # --- PROJE TİPİ DOĞRUDAN MİMARİ SEKMESİNİN BAŞINA ENTEGRE EDİLDİ ---
-        selected_proje_tipi = st.selectbox(
-            "Proje Tipi (Mimari Yerleşim & Ünite Büyüklüğü Modeli):",
-            options=[
-                "Lüks Villa / Müstakil Proje",
-                "Üst Segment Konut / Rezidans",
-                "Standart Konut / Apartman",
-                "Ticari / Ofis Kompleksi",
-                "Karma Proje (Konut + Ticari)"
-            ],
-            key="tab3_proje_tipi"
-        )
-        st.session_state["active_proje_tipi"] = selected_proje_tipi
-        st.markdown("---")
-
-        st.info(f"ℹ️ **Seçilen Proje Tipi:** {selected_proje_tipi} | Havuz veya sosyal tesisler yasal emsal tavanını aşamaz. Seçilen havuz alanı toplam yasal emsal hakkından düşülerek net konut/villa alanları otomatik olarak daraltılır.")
+        st.info(f"ℹ️ **Aktif Proje Tipi:** {selected_proje_tipi} | Havuz veya sosyal tesisler yasal emsal tavanını aşamaz. Seçilen havuz alanı toplam yasal emsal hakkından düşülerek net konut/villa alanları otomatik olarak daraltılır.")
         
         hedef_birim_alanlar = {
             "Lüks Villa / Müstakil Proje": 250.0,
@@ -484,7 +482,6 @@ if selected_keys:
         
         curr_hb = st.session_state["hedef_bagimsiz_bolum"]
         curr_hp = st.session_state["havuz_tercihi"]
-        curr_proje_tipi = st.session_state.get("active_proje_tipi", "Standart Konut / Apartman")
         
         simulated_bodrum_alani = (yasal_max_emsal_alani - (curr_hb * 30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 if curr_hp == "Ortak / Sosyal Tesis Havuzu" else 0.0))) * 0.50
 
@@ -493,11 +490,11 @@ if selected_keys:
         
         col_m1, col_m2 = st.columns(2)
         with col_m1:
-            st.caption(f"📍 Referans Lokasyon: **{detected_mahalle}** | Proje Tipi: **{curr_proje_tipi}**")
+            st.caption(f"📍 Referans Lokasyon: **{detected_mahalle}** | Proje Tipi: **{selected_proje_tipi}**")
         with col_m2:
             manual_override = st.checkbox("Özel / Manuel Fiyat Girişi Yap", value=False)
 
-        real_satis_usd, real_maliyet_usd, otomatik_bodrum_orani = get_realistic_market_pricing(detected_mahalle, curr_proje_tipi, rates["USD"])
+        real_satis_usd, real_maliyet_usd, otomatik_bodrum_orani = get_realistic_market_pricing(detected_mahalle, selected_proje_tipi, rates["USD"])
 
         st.success(f"⚡ **Canlı TCMB Dolar Kuru:** 1 USD = {rates['USD']:.2f} TL | **Yasal Emsal Tavanı:** {yasal_max_emsal_alani:,.2f} m² | **Otomatik Bodrum Kat Ciro Katsayısı:** %{int(otomatik_bodrum_orani*100)}")
 
@@ -539,7 +536,7 @@ if selected_keys:
         mutaahhit_net_kar_tl = mutaahhit_net_kar_usd * rates['USD']
 
         st.markdown("---")
-        st.markdown(f"### 📊 Rapor Özeti: {is_modeli} ({curr_proje_tipi})")
+        st.markdown(f"### 📊 Rapor Özeti: {is_modeli} ({selected_proje_tipi})")
         
         f_col1, f_col2, f_col3, f_col4 = st.columns(4)
         f_col1.metric("Toplam Tahmini Ciro", f"${toplam_ciro_usd:,.2f}", f"₺{toplam_ciro_tl:,.2f}")
