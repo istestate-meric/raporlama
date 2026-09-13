@@ -446,7 +446,7 @@ if selected_keys:
     curr_hb = int(st.session_state["hedef_bagimsiz_bolum"])
     curr_hp = st.session_state["havuz_tercihi"]
 
-    # HAVUZLAR İNŞAAT ALANINA DAHİL EDİLİR (Emsal bütçesini aşmaz, bütçenin içinden pay alır)
+    # HAVUZLAR İNŞAAT ALANINA DAHİLDİR (Toplam yasal emsal bütçesinin içerisinden pay alır)
     toplam_brut_kullanim_alani = yasal_max_brut_insaat_alani
     
     ortalama_unite_alani = yasal_max_brut_insaat_alani / curr_hb if curr_hb > 0 else 0
@@ -574,29 +574,32 @@ if selected_keys:
 
         st.markdown("---")
         st.markdown(f"### 🏷️ {birim_etiketi} Başına Detaylı Alan ve Dağılımı")
-        st.info(f"💡 Havuzlar toplam inşaat alanı bütçesine dahil edilmiştir. Her bir {birim_etiketi_alt.lower()} ünitesinin yapısal bileşenleri aşağıda detaylandırılmıştır.")
+        st.info(f"💡 Havuzlar inşaat alanına dahil edilmiştir. Toplam yasal inşaat hakkı havuzları da kapsayacak biçimde birimler arasında paylaştırılmıştır.")
 
+        # Havuz payı inşaat alanına dahildir, bu yüzden ünite brüt alanından düşülmez; inşaat bütçesinin içinde yer alır.
         tekil_havuz_payi = 30.0 if "Özel Havuz" in curr_hp else (120.0 / curr_hb if "Ortak" in curr_hp else 0.0)
-        toplam_unite_brut_dahil_eklentiler = ortalama_unite_alani + ortalama_bodrum_alani + tekil_havuz_payi
+        # Ana ünite kapalı alanı, toplam inşaat alanından havuz ve benzeri paylar ayrıldıktan sonra kalandır
+        ana_unite_kapali_alan = max(0.0, ortalama_unite_alani - tekil_havuz_payi)
+        toplam_unite_brut_dahil_eklentiler = ortalama_unite_alani + ortalama_bodrum_alani
 
         tab3_detay_rows_html = f"""<tr>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ana Ünite İnşaat Alanı (Brüt)</td>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ortalama {birim_etiketi_alt} Kapalı Alanı</td>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #0f172a; text-align: right; font-weight: 700;">{ortalama_unite_alani:,.2f} m²</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ana Ünite Kapalı Alanı (Brüt)</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Havuz Hariç Net Kapalı Yapı Alanı</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #0f172a; text-align: right; font-weight: 700;">{ana_unite_kapali_alan:,.2f} m²</td>
 </tr>
 <tr>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #1e293b;">Bodrum Payı</td>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #1e293b;">Ortalama Bodrum Payı</td>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #1e293b; text-align: right; font-weight: 700;">{ortalama_bodrum_alani:,.2f} m²</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #1e293b;">Havuz Payı (İnşaat Dahil)</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #1e293b;">{curr_hp}</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #1e293b; text-align: right; font-weight: 700;">{tekil_havuz_payi:,.2f} m²</td>
 </tr>
 <tr>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Havuz Payı (İnşaat Dahil)</td>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">{curr_hp}</td>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #0f172a; text-align: right; font-weight: 700;">{tekil_havuz_payi:,.2f} m²</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Bodrum Payı</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ortalama Bodrum Payı</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #0f172a; text-align: right; font-weight: 700;">{ortalama_bodrum_alani:,.2f} m²</td>
 </tr>
 <tr style="font-weight: bold;">
 <td style="border: 1px solid #475569; padding: 11px 14px; color: #ffffff; background-color: #1e3a8a;">Toplam {birim_etiketi_alt} Brüt Alanı (Eklentiler Dahil)</td>
-<td style="border: 1px solid #475569; padding: 11px 14px; color: #ffffff; background-color: #1e3a8a;">Ana Ünite + Bodrum + Havuz Payı</td>
+<td style="border: 1px solid #475569; padding: 11px 14px; color: #ffffff; background-color: #1e3a8a;">Ana Ünite + Havuz Payı + Bodrum</td>
 <td style="border: 1px solid #475569; padding: 11px 14px; color: #38bdf8; background-color: #1e3a8a; text-align: right; font-weight: 800;">{toplam_unite_brut_dahil_eklentiler:,.2f} m²</td>
 </tr>"""
 
@@ -678,8 +681,9 @@ if selected_keys:
         
         tab5_saf_unite_brut = yasal_max_brut_insaat_alani / curr_hb if curr_hb > 0 else 0
         tab5_havuz_payi_m2 = 30.0 if "Özel Havuz" in curr_hp else (120.0 / curr_hb if "Ortak" in curr_hp else 0.0)
+        tab5_ana_unite_kapali = max(0.0, tab5_saf_unite_brut - tab5_havuz_payi_m2)
         tab5_bodrum_payi_m2 = simulated_bodrum_alani / curr_hb if curr_hb > 0 else 0
-        tab5_toplam_unite_brut_dahil_eklentiler = tab5_saf_unite_brut + tab5_bodrum_payi_m2 + tab5_havuz_payi_m2
+        tab5_toplam_unite_brut_dahil_eklentiler = tab5_saf_unite_brut + tab5_bodrum_payi_m2
 
         st.markdown(f"### 🏢 İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK")
         st.markdown(f"**Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu**")
@@ -700,23 +704,23 @@ if selected_keys:
         st.markdown(f"#### {birim_etiketi} Başına Detaylı Alan ve Dağılımı")
         
         preview_detay_rows_html = f"""<tr>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ana Ünite İnşaat Alanı (Brüt)</td>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ortalama {birim_etiketi_alt} Kapalı Alanı</td>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #0f172a; text-align: right; font-weight: 700;">{tab5_saf_unite_brut:,.2f} m²</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ana Ünite Kapalı Alanı (Brüt)</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Havuz Hariç Net Kapalı Yapı Alanı</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #0f172a; text-align: right; font-weight: 700;">{tab5_ana_unite_kapali:,.2f} m²</td>
 </tr>
 <tr>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #1e293b;">Bodrum Payı</td>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #1e293b;">Ortalama Bodrum Payı</td>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #1e293b; text-align: right; font-weight: 700;">{tab5_bodrum_payi_m2:,.2f} m²</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #1e293b;">Havuz Payı (İnşaat Dahil)</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #1e293b;">{curr_hp}</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #1e293b; text-align: right; font-weight: 700;">{tab5_havuz_payi_m2:,.2f} m²</td>
 </tr>
 <tr>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Havuz Payı (İnşaat Dahil)</td>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">{curr_hp}</td>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #0f172a; text-align: right; font-weight: 700;">{tab5_havuz_payi_m2:,.2f} m²</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Bodrum Payı</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ortalama Bodrum Payı</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #0f172a; text-align: right; font-weight: 700;">{tab5_bodrum_payi_m2:,.2f} m²</td>
 </tr>
 <tr style="font-weight: bold;">
 <td style="border: 1px solid #475569; padding: 11px 14px; color: #ffffff; background-color: #1e3a8a;">Toplam {birim_etiketi_alt} Brüt Alanı (Eklentiler Dahil)</td>
-<td style="border: 1px solid #475569; padding: 11px 14px; color: #ffffff; background-color: #1e3a8a;">Ana Ünite + Bodrum + Havuz Payı</td>
+<td style="border: 1px solid #475569; padding: 11px 14px; color: #ffffff; background-color: #1e3a8a;">Ana Ünite + Havuz Payı + Bodrum</td>
 <td style="border: 1px solid #475569; padding: 11px 14px; color: #38bdf8; background-color: #1e3a8a; text-align: right; font-weight: 800;">{tab5_toplam_unite_brut_dahil_eklentiler:,.2f} m²</td>
 </tr>"""
 
@@ -751,23 +755,23 @@ if selected_keys:
         pdf_logo2_html = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 55px; width: auto; object-fit: contain;'>" if img2_base64 else "<span style='font-size:18px; font-weight:bold; color:#1e3a8a;'>MERİÇ İNŞAAT</span>"
 
         pdf_detay_rows_html = f"""<tr>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ana Ünite İnşaat Alanı (Brüt)</td>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ortalama {birim_etiketi_alt} Kapalı Alanı</td>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{tab5_saf_unite_brut:,.2f} m²</td>
-</tr>
-<tr>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Bodrum Payı</td>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ortalama Bodrum Payı</td>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{tab5_bodrum_payi_m2:,.2f} m²</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ana Ünite Kapalı Alanı (Brüt)</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Havuz Hariç Net Kapalı Yapı Alanı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{tab5_ana_unite_kapali:,.2f} m²</td>
 </tr>
 <tr>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Havuz Payı (İnşaat Dahil)</td>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">{curr_hp}</td>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{tab5_havuz_payi_m2:,.2f} m²</td>
 </tr>
+<tr>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Bodrum Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ortalama Bodrum Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{tab5_bodrum_payi_m2:,.2f} m²</td>
+</tr>
 <tr style="background-color: #f8fafc; font-weight: bold;">
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Toplam {birim_etiketi_alt} Brüt Alanı (Eklentiler Dahil)</td>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ana Ünite + Bodrum + Havuz Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ana Ünite + Havuz Payı + Bodrum</td>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; color: #1e3a8a;">{tab5_toplam_unite_brut_dahil_eklentiler:,.2f} m²</td>
 </tr>"""
 
