@@ -397,11 +397,11 @@ if selected_keys:
     st.markdown("---")
 
     proje_mimari_karakteristigi = {
-        "Lüks Villa / Müstakil Proje": {"hedef_alan": 300.0, "bodrum_orani": 0.50, "havuz_mod": "Her Bağımsız Bölüme 1 Özel Havuz", "etiket_unite": "Ortalama Ünite Brüt Alanı (Toplam İnşaat / Ünite)", "etiket_bodrum": "Ortalama Bodrum/Teras Brüt Payı (%50)"},
-        "Üst Segment Konut / Rezidans": {"hedef_alan": 180.0, "bodrum_orani": 0.30, "havuz_mod": "Ortak / Sosyal Tesis Havuzu", "etiket_unite": "Ortalama Ünite Brüt Alanı (Toplam İnşaat / Ünite)", "etiket_bodrum": "Ortalama Depo / Otopark Brüt Payı (%30)"},
-        "Standart Konut / Apartman": {"hedef_alan": 125.0, "bodrum_orani": 0.20, "havuz_mod": "Havuz İptal (Küçük Ölçek Kısıtı)", "etiket_unite": "Ortalama Ünite Brüt Alanı (Toplam İnşaat / Ünite)", "etiket_bodrum": "Ortalama Ortak Alan / Sığınak Brüt Payı (%20)"},
-        "Ticari / Ofis Kompleksi": {"hedef_alan": 250.0, "bodrum_orani": 0.40, "havuz_mod": "Havuz İptal (Küçük Ölçek Kısıtı)", "etiket_unite": "Ortalama Ünite Brüt Alanı (Toplam İnşaat / Ünite)", "etiket_bodrum": "Ortalama Bodrum / Arşiv Brüt Payı (%40)"},
-        "Karma Proje (Konut + Ticari)": {"hedef_alan": 150.0, "bodrum_orani": 0.35, "havuz_mod": "Ortak / Sosyal Tesis Havuzu", "etiket_unite": "Ortalama Ünite Brüt Alanı (Toplam İnşaat / Ünite)", "etiket_bodrum": "Ortalama Bodrum / Teknik Brüt Pay (%35)"}
+        "Lüks Villa / Müstakil Proje": {"hedef_alan": 300.0, "bodrum_orani": 0.50, "havuz_mod": "Her Bağımsız Bölüme 1 Özel Havuz", "etiket_bodrum": "Ortalama Bodrum/Teras Brüt Payı (%50)"},
+        "Üst Segment Konut / Rezidans": {"hedef_alan": 180.0, "bodrum_orani": 0.30, "havuz_mod": "Ortak / Sosyal Tesis Havuzu", "etiket_bodrum": "Ortalama Depo / Otopark Brüt Payı (%30)"},
+        "Standart Konut / Apartman": {"hedef_alan": 125.0, "bodrum_orani": 0.20, "havuz_mod": "Havuz İptal (Küçük Ölçek Kısıtı)", "etiket_bodrum": "Ortalama Ortak Alan / Sığınak Brüt Payı (%20)"},
+        "Ticari / Ofis Kompleksi": {"hedef_alan": 250.0, "bodrum_orani": 0.40, "havuz_mod": "Havuz İptal (Küçük Ölçek Kısıtı)", "etiket_bodrum": "Ortalama Bodrum / Arşiv Brüt Payı (%40)"},
+        "Karma Proje (Konut + Ticari)": {"hedef_alan": 150.0, "bodrum_orani": 0.35, "havuz_mod": "Ortak / Sosyal Tesis Havuzu", "etiket_bodrum": "Ortalama Bodrum / Teknik Brüt Pay (%35)"}
     }
     
     p_spec = proje_mimari_karakteristigi.get(selected_proje_tipi, proje_mimari_karakteristigi["Standart Konut / Apartman"])
@@ -514,7 +514,7 @@ if selected_keys:
         net_brut_dusulen_alan = max(0.0, yasal_max_brut_insaat_alani - havuz_emsele_maliyet_m2)
         toplam_brut_kullanim_alani = net_brut_dusulen_alan
         
-        # Ortalama Ünite Brüt Alanı (Toplam / Adet) detaylı formülasyonu
+        # Güncellenen Alan Formülasyonu: Toplam Alan (Parantez İçinde Ünite Başı m²)
         ortalama_unite_alani = net_brut_dusulen_alan / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
         unite_basi_net_arsa_genel = toplam_net_arsa_alani / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
         
@@ -523,9 +523,9 @@ if selected_keys:
 
         st.markdown("---")
         m_col1, m_col2, m_col3, m_col4 = st.columns(4)
-        m_col1.metric("Ortalama Ünite Brüt Alanı (Toplam İnşaat / Adet)", f"{ortalama_unite_alani:,.2f} m²", f"Toplam Ünite: {hedef_bagimsiz_bolum} Adet")
-        m_col2.metric("Ünite Başına Düşen Net Arsa", f"{unite_basi_net_arsa_genel:,.2f} m²", f"Toplam Net Arsa: {toplam_net_arsa_alani:,.2f} m²")
-        m_col3.metric(p_spec["etiket_bodrum"], f"{ortalama_bodrum_alani:,.2f} m²", f"Toplam Bodrum Brüt: {simulated_bodrum_alani:,.2f} m²")
+        m_col1.metric("Toplam Ünite Alanı (Ortalama Ünite)", f"{net_brut_dusulen_alan:,.2f} m²", f"({ortalama_unite_alani:,.2f} m² / Ünite)")
+        m_col2.metric("Ünite Başına Düşen Net Arsa", f"{toplam_net_arsa_alani:,.2f} m²", f"({unite_basi_net_arsa_genel:,.2f} m² / Ünite)")
+        m_col3.metric(p_spec["etiket_bodrum"], f"{simulated_bodrum_alani:,.2f} m²", f"({ortalama_bodrum_alani:,.2f} m² / Ünite)")
         
         min_sinir = 150 if "Villa" in selected_proje_tipi else (90 if "Ticari" not in selected_proje_tipi else 60)
         risk_durumu = "⚠️ RİSKLİ (Çok küçük ölçek)" if ortalama_unite_alani < min_sinir and hedef_bagimsiz_bolum > 1 else "✅ Uygun Ölçek"
@@ -605,6 +605,7 @@ if selected_keys:
         tab5_havuz_payi_m2 = 30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else 0.0
         tab5_toplam_unite_brut_dahil_havuz = tab5_saf_unite_brut + tab5_havuz_payi_m2
         tab5_unite_basi_net_arsa = toplam_net_arsa_alani / curr_hb if curr_hb > 0 else 0
+        tab5_toplam_birim_alani = net_emsal_tabani_rapor
 
         # Ekran Ön İzlemesi İçin Streamlit Bileşenleri
         st.markdown(f"### 🏢 İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK")
@@ -621,12 +622,12 @@ if selected_keys:
         st.markdown("#### 2. Mimari ve Bağımsız Bölüm Planlaması")
         st.markdown(f"- **Bağımsız Bölüm / Villa Adedi:** {curr_hb} Adet")
         st.markdown(f"- **Havuz Planlama Modeli:** {curr_hp}")
-        st.markdown(f"- **Ünite Başına Düşen Net Arsa Payı:** {tab5_unite_basi_net_arsa:,.2f} m² / Adet")
+        st.markdown(f"- **Ünite Başına Düşen Net Arsa Payı:** {toplam_net_arsa_alani:,.2f} m² ({tab5_unite_basi_net_arsa:,.2f} m² / Ünite)")
         
-        tab5_unite_gosterim_metni = f"{tab5_saf_unite_brut:,.2f} m²"
+        tab5_unite_gosterim_metni = f"{tab5_toplam_birim_alani:,.2f} m² ({tab5_saf_unite_brut:,.2f} m² / Ünite)"
         if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz":
-            tab5_unite_gosterim_metni += f" (+ 30.00 m² Havuz Payı = {tab5_toplam_unite_brut_dahil_havuz:,.2f} m² Brüt Toplam)"
-        st.markdown(f"- **Ortalama Ünite Brüt Alanı (Toplam İnşaat / Ünite):** {tab5_unite_gosterim_metni}")
+            tab5_unite_gosterim_metni = f"{tab5_toplam_birim_alani:,.2f} m² ({tab5_saf_unite_brut:,.2f} m² + 30.00 m² Havuz = {tab5_toplam_unite_brut_dahil_havuz:,.2f} m² Brüt / Ünite)"
+        st.markdown(f"- **Toplam Birim Alanı (Ortalama Ünite Brüt):** {tab5_unite_gosterim_metni}")
         
         st.markdown("#### 3. Finansal Fizibilite ve Ciro Analizi ($ USD)")
         
@@ -656,9 +657,9 @@ if selected_keys:
                     </tr>
             """
 
-        pdf_unite_metin = f"{tab5_saf_unite_brut:,.2f} m²"
+        pdf_unite_metin = f"{tab5_toplam_birim_alani:,.2f} m² ({tab5_saf_unite_brut:,.2f} m² / Ünite)"
         if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz":
-            pdf_unite_metin += f" (+ 30.00 m² Havuz = {tab5_toplam_unite_brut_dahil_havuz:,.2f} m² Brüt)"
+            pdf_unite_metin = f"{tab5_toplam_birim_alani:,.2f} m² ({tab5_saf_unite_brut:,.2f} m² + 30.00 m² Havuz = {tab5_toplam_unite_brut_dahil_havuz:,.2f} m² Brüt / Ünite)"
 
         report_html_template = f"""
         <!DOCTYPE html>
@@ -777,8 +778,8 @@ if selected_keys:
             <div class="section-title">2. Mimari ve Bağımsız Bölüm Planlaması</div>
             <p class="content-line"><b>Bağımsız Bölüm / Villa Adedi:</b> {curr_hb} Adet</p>
             <p class="content-line"><b>Havuz Planlama Modeli:</b> {curr_hp}</p>
-            <p class="content-line"><b>Ünite Başına Düşen Net Arsa Payı:</b> {tab5_unite_basi_net_arsa:,.2f} m² / Adet</p>
-            <p class="content-line"><b>Ortalama Ünite Brüt Alanı (Toplam İnşaat / Ünite):</b> {pdf_unite_metin}</p>
+            <p class="content-line"><b>Ünite Başına Düşen Net Arsa Payı:</b> {toplam_net_arsa_alani:,.2f} m² ({tab5_unite_basi_net_arsa:,.2f} m² / Ünite)</p>
+            <p class="content-line"><b>Toplam Birim Alanı (Ortalama Ünite Brüt):</b> {pdf_unite_metin}</p>
             
             <div class="section-title">3. Finansal Fizibilite ve Ciro Analizi ($ USD)</div>
             <table class="data-table">
