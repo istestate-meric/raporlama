@@ -386,7 +386,7 @@ if selected_keys:
             key="global_is_modeli"
         )
 
-    # --- PROJE TİPİNE GÖRE DİNAMİK İSİMLENDİRME (ÜNİTE YERİNE PROJE TERİMİ) ---
+    # --- PROJE TİPİNE GÖRE DİNAMİK İSİMLENDİRME ---
     if "Villa" in selected_proje_tipi:
         birim_etiketi = "Villa"
         birim_etiketi_alt = "Villa"
@@ -446,15 +446,14 @@ if selected_keys:
     curr_hb = int(st.session_state["hedef_bagimsiz_bolum"])
     curr_hp = st.session_state["havuz_tercihi"]
 
-    havuz_emsele_maliyet_m2 = 30.0 if "Özel Havuz" in curr_hp else (120.0 if "Ortak" in curr_hp else 0.0)
-    net_brut_dusulen_alan = max(0.0, yasal_max_brut_insaat_alani - havuz_emsele_maliyet_m2)
-    toplam_brut_kullanim_alani = net_brut_dusulen_alan
+    # HAVUZLAR İNŞAAT ALANINA DAHİL EDİLİR (Emsal bütçesini aşmaz, bütçenin içinden pay alır)
+    toplam_brut_kullanim_alani = yasal_max_brut_insaat_alani
     
-    ortalama_unite_alani = net_brut_dusulen_alan / curr_hb if curr_hb > 0 else 0
+    ortalama_unite_alani = yasal_max_brut_insaat_alani / curr_hb if curr_hb > 0 else 0
     unite_basi_net_arsa_genel = toplam_net_arsa_alani / curr_hb if curr_hb > 0 else 0
     unite_basi_insaat_alani = yasal_max_brut_insaat_alani / curr_hb if curr_hb > 0 else 0
     
-    simulated_bodrum_alani = net_brut_dusulen_alan * p_spec["bodrum_orani"]
+    simulated_bodrum_alani = yasal_max_brut_insaat_alani * p_spec["bodrum_orani"]
     ortalama_bodrum_alani = simulated_bodrum_alani / curr_hb if curr_hb > 0 else 0
 
     # --- 5 SEKME YAPISI ---
@@ -575,7 +574,7 @@ if selected_keys:
 
         st.markdown("---")
         st.markdown(f"### 🏷️ {birim_etiketi} Başına Detaylı Alan ve Dağılımı")
-        st.info(f"💡 Her bir {birim_etiketi_alt.lower()} ünitesinin yapısal bileşenleri, inşaat alanları ve tamamlayıcı payları aşağıda detaylandırılmıştır.")
+        st.info(f"💡 Havuzlar toplam inşaat alanı bütçesine dahil edilmiştir. Her bir {birim_etiketi_alt.lower()} ünitesinin yapısal bileşenleri aşağıda detaylandırılmıştır.")
 
         tekil_havuz_payi = 30.0 if "Özel Havuz" in curr_hp else (120.0 / curr_hb if "Ortak" in curr_hp else 0.0)
         toplam_unite_brut_dahil_eklentiler = ortalama_unite_alani + ortalama_bodrum_alani + tekil_havuz_payi
@@ -591,7 +590,7 @@ if selected_keys:
 <td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #1e293b; text-align: right; font-weight: 700;">{ortalama_bodrum_alani:,.2f} m²</td>
 </tr>
 <tr>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Havuz Payı</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Havuz Payı (İnşaat Dahil)</td>
 <td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">{curr_hp}</td>
 <td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #0f172a; text-align: right; font-weight: 700;">{tekil_havuz_payi:,.2f} m²</td>
 </tr>
@@ -641,7 +640,7 @@ if selected_keys:
             birim_satis = col_f2.number_input("M² Brüt Satış Fiyatı ($) [Piyasa]", value=float(real_satis_usd), disabled=True, key="tab4_satis_dis")
 
         toplam_maliyet_usd = (yasal_max_brut_insaat_alani * birim_maliyet) + arsa_bonus_usd
-        normal_ciro = net_brut_dusulen_alan * birim_satis
+        normal_ciro = yasal_max_brut_insaat_alani * birim_satis
         bodrum_ciro = simulated_bodrum_alani * birim_satis * otomatik_bodrum_orani
         toplam_ciro_usd = normal_ciro + bodrum_ciro
         
@@ -677,7 +676,7 @@ if selected_keys:
         st.write("Aşağıda hazırlanan raporun profesyonel ekran ön izlemesi yer almaktadır. Butona tıklayarak doğrudan **Yatay PDF Olarak İndirebilirsiniz**.")
         st.markdown("---")
         
-        tab5_saf_unite_brut = net_brut_dusulen_alan / curr_hb if curr_hb > 0 else 0
+        tab5_saf_unite_brut = yasal_max_brut_insaat_alani / curr_hb if curr_hb > 0 else 0
         tab5_havuz_payi_m2 = 30.0 if "Özel Havuz" in curr_hp else (120.0 / curr_hb if "Ortak" in curr_hp else 0.0)
         tab5_bodrum_payi_m2 = simulated_bodrum_alani / curr_hb if curr_hb > 0 else 0
         tab5_toplam_unite_brut_dahil_eklentiler = tab5_saf_unite_brut + tab5_bodrum_payi_m2 + tab5_havuz_payi_m2
@@ -711,7 +710,7 @@ if selected_keys:
 <td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #1e293b; text-align: right; font-weight: 700;">{tab5_bodrum_payi_m2:,.2f} m²</td>
 </tr>
 <tr>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Havuz Payı</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Havuz Payı (İnşaat Dahil)</td>
 <td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">{curr_hp}</td>
 <td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #0f172a; text-align: right; font-weight: 700;">{tab5_havuz_payi_m2:,.2f} m²</td>
 </tr>
@@ -762,7 +761,7 @@ if selected_keys:
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{tab5_bodrum_payi_m2:,.2f} m²</td>
 </tr>
 <tr>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Havuz Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Havuz Payı (İnşaat Dahil)</td>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">{curr_hp}</td>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{tab5_havuz_payi_m2:,.2f} m²</td>
 </tr>
