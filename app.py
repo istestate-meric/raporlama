@@ -319,7 +319,7 @@ else:
 if selected_keys:
     active_parcel_db = {k: st.session_state["parcel_db"][k] for k in selected_keys}
 
-    # --- TOPLAM YASAL EMSAL HESABI ---
+    # --- TOPLAM BRÜT İNŞAAT ALANI HESABI ---
     emsal_artis_orani = 1.30
     yasal_max_brut_insaat_alani = 0.0
     for key, p in active_parcel_db.items():
@@ -464,7 +464,7 @@ if selected_keys:
                 })
 
         st.table(pd.DataFrame(calc_results))
-        st.metric(label="🏗️ Yasal Emsal Tavanı (Toplam Brüt İnşaat Alanı)", value=f"{yasal_max_brut_insaat_alani:,.2f} m²")
+        st.metric(label="🏗️ Toplam Brüt İnşaat Alanı", value=f"{yasal_max_brut_insaat_alani:,.2f} m²")
 
     with tab3:
         st.subheader("🏛️ Mimari Fizibilite ve Bağımsız Bölüm Senaryoları")
@@ -493,7 +493,6 @@ if selected_keys:
             )
         st.session_state["havuz_tercihi"] = havuz_tercihi
 
-        # Mimari Tab 3 orijinal orijinal mantığı
         havuz_emsele_maliyet_m2 = 30.0 if havuz_tercihi == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 if havuz_tercihi == "Ortak / Sosyal Tesis Havuzu" else 0.0)
         net_brut_dusulen_alan = max(0.0, yasal_max_brut_insaat_alani - havuz_emsele_maliyet_m2)
         toplam_brut_kullanim_alani = net_brut_dusulen_alan
@@ -531,7 +530,7 @@ if selected_keys:
 
         real_satis_usd, real_maliyet_usd, otomatik_bodrum_orani = get_realistic_market_pricing(detected_mahalle, selected_proje_tipi, rates["USD"])
 
-        st.success(f"⚡ **Canlı TCMB Kurları:** 1 USD = {rates['USD']:.2f} TL | 1 EUR = {rates['EUR']:.2f} TL | **Yasal Brüt Emsal Tavanı:** {yasal_max_brut_insaat_alani:,.2f} m²")
+        st.success(f"⚡ **Canlı TCMB Kurları:** 1 USD = {rates['USD']:.2f} TL | 1 EUR = {rates['EUR']:.2f} TL | **Toplam Brüt İnşaat Alanı:** {yasal_max_brut_insaat_alani:,.2f} m²")
 
         st.markdown("---")
         col_f1, col_f2 = st.columns(2)
@@ -574,13 +573,13 @@ if selected_keys:
         
         st.info("💡 **İpucu:** Raporun kurumsal ön izlemesini incelemek ve PDF olarak indirmek için yandaki **'🖨️ Rapor Ön İzleme & PDF'** sekmesine geçiş yapabilirsiniz.")
 
-    # --- 5. SEKME: RAPOR ÖN İZLEME VE PDF İNDİRME MERKEZİ (GÜNCELLENDİ) ---
+    # --- 5. SEKME: RAPOR ÖN İZLEME VE PDF İNDİRME MERKEZİ ---
     with tab5:
         st.subheader("🖨️ Kurumsal Rapor Ön İzleme ve PDF İndirme Merkezi")
         st.write("Aşağıda hazırlanan raporun profesyonel ekran ön izlemesi yer almaktadır. Butona tıklayarak doğrudan **PDF Olarak İndirebilirsiniz**.")
         st.markdown("---")
         
-        # Tab 5 için özel havuz payı entegre edilmiş hesaplama
+        # Tab 5 havuz payı entegre edilmiş hesaplama
         tab5_saf_unite_brut = (yasal_max_brut_insaat_alani - (30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 if curr_hp == "Ortak / Sosyal Tesis Havuzu" else 0.0))) / curr_hb if curr_hb > 0 else 0
         tab5_havuz_payi_m2 = 30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else 0.0
         tab5_toplam_unite_brut_dahil_havuz = tab5_saf_unite_brut + tab5_havuz_payi_m2
@@ -593,7 +592,7 @@ if selected_keys:
         st.markdown(f"- **Seçilen Lokasyon / Mahalle:** {detected_mahalle}")
         st.markdown(f"- **Proje Tipi:** {selected_proje_tipi}")
         st.markdown(f"- **İş Modeli:** {is_modeli}")
-        st.markdown(f"- **Yasal Brüt Emsal Tavanı:** {yasal_max_brut_insaat_alani:,.2f} m²")
+        st.markdown(f"- **Toplam Brüt İnşaat Alanı:** {yasal_max_brut_insaat_alani:,.2f} m²")
         
         st.markdown("#### 2. Mimari ve Bağımsız Bölüm Planlaması")
         st.markdown(f"- **Bağımsız Bölüm / Villa Adedi:** {curr_hb} Adet")
@@ -618,7 +617,7 @@ if selected_keys:
         st.table(pd.DataFrame(preview_table_data))
         st.markdown("---")
         
-        # PDF çıktı şablonu (WeasyPrint için profesyonel HTML-CSS tasarımı - Tab 5 Güncellemeli)
+        # PDF çıktı şablonu (WeasyPrint HTML-CSS - "Toplam Brüt İnşaat Alanı" revizyonlu)
         arsa_sahibi_row_html = ""
         if "Kat Karşılığı" in is_modeli:
             arsa_sahibi_row_html = f"""
@@ -663,7 +662,7 @@ if selected_keys:
             <p class="content-line"><b>Seçilen Lokasyon / Mahalle:</b> {detected_mahalle}</p>
             <p class="content-line"><b>Proje Tipi:</b> {selected_proje_tipi}</p>
             <p class="content-line"><b>İş Modeli:</b> {is_modeli}</p>
-            <p class="content-line"><b>Yasal Brüt Emsal Tavanı:</b> {yasal_max_brut_insaat_alani:,.2f} m²</p>
+            <p class="content-line"><b>Toplam Brüt İnşaat Alanı:</b> {yasal_max_brut_insaat_alani:,.2f} m²</p>
             
             <h3>2. Mimari ve Bağımsız Bölüm Planlaması</h3>
             <p class="content-line"><b>Bağımsız Bölüm / Villa Adedi:</b> {curr_hb} Adet</p>
