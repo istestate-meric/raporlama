@@ -424,7 +424,7 @@ if selected_keys:
         st.session_state["havuz_tercihi"] = tahmini_havuz_modeli
         st.session_state["hb_input"] = tahmini_ideal_adet
 
-    # --- ORTAK HESAPLAMA DEĞİŞKENLERİ (SEKMELERDEN ÖNCE TANIMLANDI) ---
+    # --- ORTAK HESAPLAMA DEĞİŞKENLERİ ---
     curr_hb = st.session_state.get("hedef_bagimsiz_bolum", tahmini_ideal_adet)
     curr_hp = st.session_state.get("havuz_tercihi", tahmini_havuz_modeli)
 
@@ -434,11 +434,11 @@ if selected_keys:
     
     ortalama_unite_alani = net_brut_dusulen_alan / curr_hb if curr_hb > 0 else 0
     
-    # Yeni İstenen Mantık: Ünite Başına Net Arsa = Toplam Net Arsa / Adet
+    # 1. İstek: Ünite Başına Net Arsa = Toplam Net Arsa / Adet (Eş Zamanlı Güncellenir)
     unite_basi_net_arsa_genel = toplam_net_arsa_alani / curr_hb if curr_hb > 0 else 0
     
-    # Yeni İstenen Mantık: Birim Alanı = Toplam Fonksiyon Alanı / Adet
-    birim_fonksiyon_alani = toplam_fonksiyon_alani / curr_hb if curr_hb > 0 else 0
+    # 2. İstek: Ünite Başına İnşaat Alanı = Toplam İnşaat Alanı / Adet
+    unite_basi_insaat_alani = yasal_max_brut_insaat_alani / curr_hb if curr_hb > 0 else 0
     
     simulated_bodrum_alani = net_brut_dusulen_alan * p_spec["bodrum_orani"]
     ortalama_bodrum_alani = simulated_bodrum_alani / curr_hb if curr_hb > 0 else 0
@@ -521,10 +521,13 @@ if selected_keys:
         st.subheader("🏛️ Mimari Fizibilite ve Bağımsız Bölüm Senaryoları")
         st.info(f"ℹ️ **Aktif Proje Tipi:** {selected_proje_tipi} | Proje tipine göre önerilen otomatik ünite adedi uygulandı.")
         
+        # 3. İstek: Proje Tipine göre dinamik başlık ataması
+        dinamik_unit_etiketi = "Planlanan Villa Adedi:" if "Villa" in selected_proje_tipi else ("Planlanan Rezidans / Daire Adedi:" if "Konut" in selected_proje_tipi or "Rezidans" in selected_proje_tipi else ("Planlanan Ofis / Ticari Ünite Adedi:" if "Ticari" in selected_proje_tipi else "Planlanan Bağımsız Bölüm Adedi:"))
+
         col_mims1, col_mims2 = st.columns(2)
         with col_mims1:
             hedef_bagimsiz_bolum = st.number_input(
-                "Planlanan Bağımsız Bölüm / Villa Adedi:", 
+                dinamik_unit_etiketi, 
                 min_value=1, 
                 value=int(st.session_state["hedef_bagimsiz_bolum"]), 
                 step=1, 
@@ -546,8 +549,13 @@ if selected_keys:
 
         st.markdown("---")
         m_col1, m_col2, m_col3, m_col4 = st.columns(4)
-        m_col1.metric("Toplam Fonksiyon Alanı", f"{toplam_fonksiyon_alani:,.2f} m²", f"({birim_fonksiyon_alani:,.2f} m² / Ünite)")
-        m_col2.metric("Ünite Başına Net Arsa", f"{unite_basi_net_arsa_genel:,.2f} m² / Ünite", f"(Toplam Net Arsa / Adet)")
+        
+        # 2. İstek: "Toplam Fonksiyon Alanı" yerine "Ünite Başına İnşaat Alanı" metrik kartı
+        m_col1.metric("Ünite Başına İnşaat Alanı", f"{unite_basi_insaat_alani:,.2f} m²", f"(Toplam İnşaat Alanı / Adet)")
+        
+        # 1. İstek: "Ünite Başına Net Arsa" hesabı (Toplam Net Arsa / Adet) ve eş zamanlı değişim
+        m_col2.metric("Ünite Başına Net Arsa", f"{unite_basi_net_arsa_genel:,.2f} m²", f"(Toplam Net Arsa / Adet)")
+        
         m_col3.metric("Bodrum Payı", f"{simulated_bodrum_alani:,.2f} m²", f"({ortalama_bodrum_alani:,.2f} m² / Ünite)")
         
         min_sinir = 150 if "Villa" in selected_proje_tipi else (90 if "Ticari" not in selected_proje_tipi else 60)
