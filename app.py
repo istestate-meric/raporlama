@@ -337,9 +337,9 @@ if selected_keys:
             if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"])
         )
         
-        # GÜVENLİ NET ARSA HESABI (FONKSİYON ALANI YOKSA BRÜT ALANA FALLBACK)
+        # NET ARSA HESABI: İmar belgesindeki alan baz alınır, mükerrer terk uygulanmaz
         base_net_base = toplam_giren_fonk_m2 if toplam_giren_fonk_m2 > 0 else toplam_brut_m2
-        varsayilan_net = (base_net_base * 0.70) if not is_terkli else base_net_base
+        varsayilan_net = base_net_base
         
         if key not in st.session_state["parcel_net_overrides"]:
             st.session_state["parcel_net_overrides"][key] = varsayilan_net
@@ -436,7 +436,7 @@ if selected_keys:
         st.info("💡 Her parselin net arsa alanını dilediğiniz gibi güncelleyebilirsiniz. Bu alan ünite başı net arsa payı hesaplamalarında kullanılır, ana inşaat alanı hesaplama kurallarını bozmaz.")
         
         for key, p in active_parcel_db.items():
-            st.markdown(f"**Parsel:** `{key}` (Toplam Brüt: {p['toplam_alan']:,.2f} m² | Durum: {'Terki Yapılmış' if p['terk_yapilmis_mi'] else 'Terki Yapılmamış'})")
+            st.markdown(f"**Parsel:** `{key}` (Toplam Alan: {p['toplam_alan']:,.2f} m² | Durum: {'Terki Yapılmış' if p['terk_yapilmis_mi'] else 'Terki Yapılmamış'})")
             col_p1, col_p2 = st.columns([2, 3])
             with col_p1:
                 current_net_val = st.session_state["parcel_net_overrides"].get(key, p["toplam_alan"])
@@ -460,7 +460,7 @@ if selected_keys:
                 table_rows.append({
                     "Parsel Bilgisi": key,
                     "Mahalle": p["mahalle"],
-                    "Toplam Brüt Arsa (m²)": f"{p['toplam_alan']:,.2f}",
+                    "Toplam Arsa (m²)": f"{p['toplam_alan']:,.2f}",
                     "Fonksiyon": f["fonksiyon_adi"],
                     "Net Arsa (m²)": f"{parsel_net_pay:,.2f}",
                     "Ünite Başı Net Arsa Payı": f"{unite_basi_net_arsa:,.2f} m² / Ünite",
@@ -881,7 +881,7 @@ if selected_keys:
             <p class="content-line"><b>Seçilen Lokasyon / Mahalle:</b> {detected_mahalle}</p>
             <p class="content-line"><b>Proje Tipi:</b> {selected_proje_tipi}</p>
             <p class="content-line"><b>İş Modeli:</b> {is_modeli}</p>
-            <p class="content-line"><b>Toplam Brüt Arsa Alanı:</b> {toplam_brut_arsa_alani:,.2f} m²</p>
+            <p class="content-line"><b>Toplam Arsa Alanı:</b> {toplam_brut_arsa_alani:,.2f} m²</p>
             <p class="content-line"><b>Parsel Bazlı Toplam Net Arsa Alanı:</b> {toplam_net_arsa_alani:,.2f} m²</p>
             <p class="content-line"><b>Toplam Brüt İnşaat Alanı:</b> {yasal_max_brut_insaat_alani:,.2f} m²</p>
             
