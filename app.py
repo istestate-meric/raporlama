@@ -798,7 +798,7 @@ if selected_keys:
 
     for fonk_name, items in all_functions_map.items():
       conf = function_configs.get(fonk_name, {})
-      
+
       # Fonksiyona ait toplam arsa ve brüt inşaat alanlarını hesapla
       fonk_toplam_brut = 0.0
       fonk_toplam_arsa = 0.0
@@ -810,7 +810,7 @@ if selected_keys:
         if not is_terkli:
           toplam_giren_fonk_m2 = sum(
               x["giren_m2"]
-              for _, x in p["fonksiyonlar"]
+              for x in p["fonksiyonlar"]
               if not any(
                   sub in x["fonksiyon_adi"].upper()
                   for sub in [
@@ -860,12 +860,16 @@ if selected_keys:
       with mc1:
         st.metric("Bağımsız Bölüm Adedi", f"{adet} Adet")
       with mc2:
-        st.metric("Ortalama Konut / Birim Brüt Alanı", f"{ortalama_brut_birim:,.2f} m²")
+        st.metric(
+            "Ortalama Konut / Birim Brüt Alanı", f"{ortalama_brut_birim:,.2f} m²"
+        )
       with mc3:
         st.metric("Havuz Konsept Tercihi", conf.get("havuz_mod", "-"))
 
-      st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
-      
+      st.markdown(
+          "<div style='margin-top: 10px;'></div>", unsafe_allow_html=True
+      )
+
       # Bahçe / Arsa payı birim ve toplam alan vurgusu
       st.markdown(
           f"""
