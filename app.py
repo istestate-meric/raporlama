@@ -354,13 +354,13 @@ if selected_keys:
         )
     st.markdown("---")
 
-    # PROJE TİPİNE GÖRE ÖZEL VERİNLİK (NET/BRÜT) VE BİRİM ALAN MATRİSİ
+    # PROJE TİPİNE GÖRE BRÜT MİMARİ KARAKTERİSTİK MATRİSİ
     proje_mimari_karakteristigi = {
-        "Lüks Villa / Müstakil Proje": {"hedef_alan": 250.0, "net_brut_orani": 0.82, "bodrum_orani": 0.50, "havuz_mod": "Her Bağımsız Bölüme 1 Özel Havuz", "etiket_unite": "Net Villa Alanı (Ortalama)", "etiket_bodrum": "Ortalama Villa Bodrum/Teras Payı (%50)"},
-        "Üst Segment Konut / Rezidans": {"hedef_alan": 150.0, "net_brut_orani": 0.78, "bodrum_orani": 0.30, "havuz_mod": "Ortak / Sosyal Tesis Havuzu", "etiket_unite": "Net Rezidans Daire Alanı (Ortalama)", "etiket_bodrum": "Ortalama Depo / Otopark Payı (%30)"},
-        "Standart Konut / Apartman": {"hedef_alan": 100.0, "net_brut_orani": 0.75, "bodrum_orani": 0.20, "havuz_mod": "Havuz İptal (Küçük Ölçek Kısıtı)", "etiket_unite": "Net Daire Alanı (Ortalama)", "etiket_bodrum": "Ortalama Ortak Alan / Sığınak (%20)"},
-        "Ticari / Ofis Kompleksi": {"hedef_alan": 200.0, "net_brut_orani": 0.72, "bodrum_orani": 0.40, "havuz_mod": "Havuz İptal (Küçük Ölçek Kısıtı)", "etiket_unite": "Net Ofis / Dükkan Alanı (Ortalama)", "etiket_bodrum": "Ortalama Bodrum / Arşiv Depo (%40)"},
-        "Karma Proje (Konut + Ticari)": {"hedef_alan": 130.0, "net_brut_orani": 0.76, "bodrum_orani": 0.35, "havuz_mod": "Ortak / Sosyal Tesis Havuzu", "etiket_unite": "Net Karma Ünite Alanı (Ortalama)", "etiket_bodrum": "Ortalama Bodrum / Teknik Pay (%35)"}
+        "Lüks Villa / Müstakil Proje": {"hedef_alan": 300.0, "bodrum_orani": 0.50, "havuz_mod": "Her Bağımsız Bölüme 1 Özel Havuz", "etiket_unite": "Ortalama Brüt Villa Alanı", "etiket_bodrum": "Ortalama Bodrum/Teras Brüt Payı (%50)"},
+        "Üst Segment Konut / Rezidans": {"hedef_alan": 180.0, "bodrum_orani": 0.30, "havuz_mod": "Ortak / Sosyal Tesis Havuzu", "etiket_unite": "Ortalama Brüt Rezidans Daire Alanı", "etiket_bodrum": "Ortalama Depo / Otopark Brüt Payı (%30)"},
+        "Standart Konut / Apartman": {"hedef_alan": 125.0, "bodrum_orani": 0.20, "havuz_mod": "Havuz İptal (Küçük Ölçek Kısıtı)", "etiket_unite": "Ortalama Brüt Daire Alanı", "etiket_bodrum": "Ortalama Ortak Alan / Sığınak Brüt Payı (%20)"},
+        "Ticari / Ofis Kompleksi": {"hedef_alan": 250.0, "bodrum_orani": 0.40, "havuz_mod": "Havuz İptal (Küçük Ölçek Kısıtı)", "etiket_unite": "Ortalama Brüt Ofis / Dükkan Alanı", "etiket_bodrum": "Ortalama Bodrum / Arşiv Brüt Payı (%40)"},
+        "Karma Proje (Konut + Ticari)": {"hedef_alan": 150.0, "bodrum_orani": 0.35, "havuz_mod": "Ortak / Sosyal Tesis Havuzu", "etiket_unite": "Ortalama Brüt Karma Ünite Alanı", "etiket_bodrum": "Ortalama Bodrum / Teknik Brüt Pay (%35)"}
     }
     
     p_spec = proje_mimari_karakteristigi.get(selected_proje_tipi, proje_mimari_karakteristigi["Standart Konut / Apartman"])
@@ -368,7 +368,7 @@ if selected_keys:
     tahmini_ideal_adet = max(1, round(yasal_max_brut_insaat_alani / p_spec["hedef_alan"]))
     tahmini_havuz_modeli = p_spec["havuz_mod"]
 
-    # Proje tipi değiştiğinde state değerlerini akıllıca güncelle
+    # PROJE TİPİ DEĞİŞTİĞİNDE BAĞIMSIZ BÖLÜM ADEDİNİ OTOMATİK GÜNCELLE
     if "last_proje_tipi" not in st.session_state or st.session_state["last_proje_tipi"] != selected_proje_tipi:
         st.session_state["last_proje_tipi"] = selected_proje_tipi
         st.session_state["hedef_bagimsiz_bolum"] = tahmini_ideal_adet
@@ -432,17 +432,17 @@ if selected_keys:
 
     with tab3:
         st.subheader("🏛️ Mimari Fizibilite ve Bağımsız Bölüm Senaryoları")
-        st.info(f"ℹ️ **Aktif Proje Tipi:** {selected_proje_tipi} | Otomatik Net/Brüt Verimlilik Oranı: **%{int(p_spec['net_brut_orani']*100)}**")
+        st.info(f"ℹ️ **Aktif Proje Tipi:** {selected_proje_tipi} | Proje tipine göre önerilen otomatik ünite adedi uygulandı.")
         
         col_mims1, col_mims2 = st.columns(2)
         with col_mims1:
             hedef_bagimsiz_bolum = st.number_input(
-                "Planlanan Bağımsız Bölüm / Villa Adedi:", 
+                "Planlanan Bağımsız Bölüm / Villa Adedi (Proje Tipine Göre Otomatik Güncellenir):", 
                 min_value=1, 
                 value=int(st.session_state["hedef_bagimsiz_bolum"]), 
                 step=1, 
                 key="hb_input",
-                help=f"Seçilen proje tipi için piyasa bazlı önerilen ideal ünite adedi: {tahmini_ideal_adet}"
+                help=f"Seçilen proje tipi için önerilen ideal ünite adedi: {tahmini_ideal_adet}"
             )
             st.session_state["hedef_bagimsiz_bolum"] = hedef_bagimsiz_bolum
             
@@ -467,27 +467,27 @@ if selected_keys:
 
         net_brut_dusulen_alan = max(0.0, yasal_max_brut_insaat_alani - havuz_emsele_maliyet_m2)
         
-        # BRÜTTEN NET KULLANIM ALANINA GEÇİŞ (PROJE TİPİNE ÖZEL ORANLA)
-        toplam_net_kullanim_alani = net_brut_dusulen_alan * p_spec["net_brut_orani"]
-        ortalama_unite_net_alan = toplam_net_kullanim_alani / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
+        # BRÜT İNŞAAT ALANI DAĞILIMI (TÜM ALANLAR BRÜTTÜR)
+        toplam_brut_kullanim_alani = net_brut_dusulen_alan
+        ortalama_unite_brut_alan = toplam_brut_kullanim_alani / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
 
         simulated_bodrum_alani = net_brut_dusulen_alan * p_spec["bodrum_orani"]
         ortalama_bodrum_alani = simulated_bodrum_alani / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
 
         st.markdown("---")
         m_col1, m_col2, m_col3, m_col4 = st.columns(4)
-        m_col1.metric(p_spec["etiket_unite"], f"{ortalama_unite_net_alan:,.2f} m²", f"Toplam Net: {toplam_net_kullanim_alani:,.2f} m²")
-        m_col2.metric(p_spec["etiket_bodrum"], f"{ortalama_bodrum_alani:,.2f} m²", f"Toplam Bodrum: {simulated_bodrum_alani:,.2f} m²")
+        m_col1.metric(p_spec["etiket_unite"], f"{ortalama_unite_brut_alan:,.2f} m²", f"Toplam Brüt: {toplam_brut_kullanim_alani:,.2f} m²")
+        m_col2.metric(p_spec["etiket_bodrum"], f"{ortalama_bodrum_alani:,.2f} m²", f"Toplam Bodrum Brüt: {simulated_bodrum_alani:,.2f} m²")
         m_col3.metric("Emsalden Düşülen Havuz Payı", f"-{havuz_emsele_maliyet_m2:,.2f} m²")
         
-        min_sinir = 120 if "Villa" in selected_proje_tipi else (75 if "Ticari" not in selected_proje_tipi else 50)
-        risk_durumu = "⚠️ RİSKLİ (Çok küçük ölçek)" if ortalama_unite_net_alan < min_sinir and hedef_bagimsiz_bolum > 1 else "✅ Uygun Ölçek"
+        min_sinir = 150 if "Villa" in selected_proje_tipi else (90 if "Ticari" not in selected_proje_tipi else 60)
+        risk_durumu = "⚠️ RİSKLİ (Çok küçük ölçek)" if ortalama_unite_brut_alan < min_sinir and hedef_bagimsiz_bolum > 1 else "✅ Uygun Ölçek"
         m_col4.metric("Mimari Ölçek Uygunluğu", risk_durumu)
 
-        if ortalama_unite_net_alan < min_sinir and hedef_bagimsiz_bolum > 1:
-            st.warning(f"⚠️ **Uyarı:** Ünite başına ortalama net alan {min_sinir} m² sınırının altına düşmektedir. Mimari konfor için ünite sayısını gözden geçirebilirsiniz.")
+        if ortalama_unite_brut_alan < min_sinir and hedef_bagimsiz_bolum > 1:
+            st.warning(f"⚠️ **Uyarı:** Ünite başına ortalama brüt alan {min_sinir} m² sınırının altına düşmektedir. Mimari konfor için ünite sayısını gözden geçirebilirsiniz.")
         else:
-            st.success("✅ Seçilen bağımsız bölüm sayısı, havuz ve net verimlilik oranları yasal emsal tavanına uygundur.")
+            st.success("✅ Seçilen bağımsız bölüm sayısı, havuz ve brüt inşaat alanları yasal emsal tavanına uygundur.")
 
     with tab4:
         st.subheader("📑 Proje Raporu & İş Modeli Fizibilitesi")
@@ -509,17 +509,17 @@ if selected_keys:
 
         real_satis_usd, real_maliyet_usd, otomatik_bodrum_orani = get_realistic_market_pricing(detected_mahalle, selected_proje_tipi, rates["USD"])
 
-        st.success(f"⚡ **Canlı TCMB Dolar Kuru:** 1 USD = {rates['USD']:.2f} TL | **Yasal Brüt Emsal Tavanı:** {yasal_max_brut_insaat_alani:,.2f} m² | **Net/Brüt Verimlilik:** %{int(p_spec['net_brut_orani']*100)}")
+        st.success(f"⚡ **Canlı TCMB Dolar Kuru:** 1 USD = {rates['USD']:.2f} TL | **Yasal Brüt Emsal Tavanı:** {yasal_max_brut_insaat_alani:,.2f} m² | **Hesaplama Tabanı:** Tamamen Brüt Alanlar Üzerinden")
 
         st.markdown("---")
         col_f1, col_f2, col_f3 = st.columns(3)
         
         if manual_override:
-            birim_maliyet = col_f1.number_input("İnşaat M² Maliyeti ($) [Özel]", value=float(real_maliyet_usd), step=50.0)
-            birim_satis = col_f2.number_input("M² Satış Fiyatı ($) [Özel]", value=float(real_satis_usd), step=100.0)
+            birim_maliyet = col_f1.number_input("İnşaat M² Brüt Maliyeti ($) [Özel]", value=float(real_maliyet_usd), step=50.0)
+            birim_satis = col_f2.number_input("M² Brüt Satış Fiyatı ($) [Özel]", value=float(real_satis_usd), step=100.0)
         else:
-            birim_maliyet = col_f1.number_input("İnşaat M² Maliyeti ($) [Piyasa]", value=float(real_maliyet_usd), disabled=True)
-            birim_satis = col_f2.number_input("M² Satış Fiyatı ($) [Piyasa]", value=float(real_satis_usd), disabled=True)
+            birim_maliyet = col_f1.number_input("İnşaat M² Brüt Maliyeti ($) [Piyasa]", value=float(real_maliyet_usd), disabled=True)
+            birim_satis = col_f2.number_input("M² Brüt Satış Fiyatı ($) [Piyasa]", value=float(real_satis_usd), disabled=True)
 
         arsa_bonus_usd = 0.0
         if "Kat Karşılığı" in is_modeli:
@@ -552,8 +552,8 @@ if selected_keys:
         st.markdown(f"### 📊 Rapor Özeti: {is_modeli} ({selected_proje_tipi})")
         
         f_col1, f_col2, f_col3, f_col4 = st.columns(4)
-        f_col1.metric("Toplam Tahmini Ciro", f"${toplam_ciro_usd:,.2f}", f"₺{toplam_ciro_tl:,.2f}")
-        f_col2.metric("Toplam İnşaat Maliyeti + Bonus", f"${toplam_maliyet_usd:,.2f}", f"₺{toplam_maliyet_tl:,.2f}")
+        f_col1.metric("Toplam Tahmini Brüt Ciro", f"${toplam_ciro_usd:,.2f}", f"₺{toplam_ciro_tl:,.2f}")
+        f_col2.metric("Toplam İnşaat Brüt Maliyeti + Bonus", f"${toplam_maliyet_usd:,.2f}", f"₺{toplam_maliyet_tl:,.2f}")
         
         if "Kat Karşılığı" in is_modeli:
             f_col3.metric("Arsa Sahibi Payı", f"${arsa_sahibi_payi_usd:,.2f}")
