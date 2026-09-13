@@ -386,6 +386,20 @@ if selected_keys:
             key="global_is_modeli"
         )
 
+    # --- PROJE TİPİNE GÖRE DİNAMİK İSİMLENDİRME (ÜNİTE YERİNE PROJE TERİMİ) ---
+    if "Villa" in selected_proje_tipi:
+        birim_etiketi = "Villa"
+        birim_etiketi_alt = "Villa"
+    elif "Konut" in selected_proje_tipi or "Rezidans" in selected_proje_tipi:
+        birim_etiketi = "Daire / Rezidans"
+        birim_etiketi_alt = "Daire"
+    elif "Ticari" in selected_proje_tipi:
+        birim_etiketi = "Ofis / Ticari Ünite"
+        birim_etiketi_alt = "Ofis"
+    else:
+        birim_etiketi = "Bağımsız Bölüm"
+        birim_etiketi_alt = "Bağımsız Bölüm"
+
     arsa_payi_orani = 0.0
     arsa_bonus_usd = 0.0
     if "Kat Karşılığı" in is_modeli:
@@ -434,10 +448,10 @@ if selected_keys:
     
     ortalama_unite_alani = net_brut_dusulen_alan / curr_hb if curr_hb > 0 else 0
     
-    # 1. İstek: Ünite Başına Net Arsa = Toplam Net Arsa / Adet (Eş Zamanlı Güncellenir)
+    # Ünite Başına Net Arsa = Toplam Net Arsa / Adet
     unite_basi_net_arsa_genel = toplam_net_arsa_alani / curr_hb if curr_hb > 0 else 0
     
-    # 2. İstek: Ünite Başına İnşaat Alanı = Toplam İnşaat Alanı / Adet
+    # Ünite Başına İnşaat Alanı = Toplam İnşaat Alanı / Adet
     unite_basi_insaat_alani = yasal_max_brut_insaat_alani / curr_hb if curr_hb > 0 else 0
     
     simulated_bodrum_alani = net_brut_dusulen_alan * p_spec["bodrum_orani"]
@@ -518,11 +532,11 @@ if selected_keys:
         st.metric(label="🏗️ Toplam Brüt İnşaat Alanı", value=f"{yasal_max_brut_insaat_alani:,.2f} m²")
 
     with tab3:
-        st.subheader("🏛️ Mimari Fizibilite ve Bağımsız Bölüm Senaryoları")
-        st.info(f"ℹ️ **Aktif Proje Tipi:** {selected_proje_tipi} | Proje tipine göre önerilen otomatik ünite adedi uygulandı.")
+        st.subheader("🏛️ Mimari Fizibilite ve Senaryolar")
+        st.info(f"ℹ️ **Aktif Proje Tipi:** {selected_proje_tipi} | Proje tipine göre önerilen otomatik {birim_etiketi_alt.lower()} adedi uygulandı.")
         
-        # 3. İstek: Proje Tipine göre dinamik başlık ataması
-        dinamik_unit_etiketi = "Planlanan Villa Adedi:" if "Villa" in selected_proje_tipi else ("Planlanan Rezidans / Daire Adedi:" if "Konut" in selected_proje_tipi or "Rezidans" in selected_proje_tipi else ("Planlanan Ofis / Ticari Ünite Adedi:" if "Ticari" in selected_proje_tipi else "Planlanan Bağımsız Bölüm Adedi:"))
+        # Proje Tipine Göre Dinamik Başlık
+        dinamik_unit_etiketi = f"Planlanan {birim_etiketi} Adedi:"
 
         col_mims1, col_mims2 = st.columns(2)
         with col_mims1:
@@ -536,13 +550,18 @@ if selected_keys:
             st.session_state["hedef_bagimsiz_bolum"] = hedef_bagimsiz_bolum
             
         with col_mims2:
-            havuz_secenekleri = ["Her Bağımsız Bölüme 1 Özel Havuz", "Ortak / Sosyal Tesis Havuzu", "Havuz İptal (Küçük Ölçek Kısıtı)"]
-            default_hp_idx = havuz_secenekleri.index(st.session_state["havuz_tercihi"]) if st.session_state["havuz_tercihi"] in havuz_secenekleri else 0
+            havuz_secenekleri = [f"Her {birim_etiketi_alt}e 1 Özel Havuz" if "Villa" in selected_proje_tipi else f"Her {birim_etiketi_alt}e 1 Özel Havuz", "Ortak / Sosyal Tesis Havuzu", "Havuz İptal (Küçük Ölçek Kısıtı)"]
+            # Fix specific wording for pool based on type
+            if "Villa" in selected_proje_tipi:
+                havuz_secenekleri[0] = "Her Villaya 1 Özel Havuz"
+            elif "Konut" in selected_proje_tipi or "Rezidans" in selected_proje_tipi:
+                havuz_secenekleri[0] = "Ortak Tesis / Havuz"
+            
+            default_hp_idx = 0 if curr_hp in havuz_secenekleri else 0
             
             havuz_tercihi = st.selectbox(
                 "Havuz Planlama Modeli:", 
                 options=havuz_secenekleri,
-                index=default_hp_idx,
                 key="hp_select"
             )
         st.session_state["havuz_tercihi"] = havuz_tercihi
@@ -550,28 +569,24 @@ if selected_keys:
         st.markdown("---")
         m_col1, m_col2, m_col3, m_col4 = st.columns(4)
         
-        # 2. İstek: "Toplam Fonksiyon Alanı" yerine "Ünite Başına İnşaat Alanı" metrik kartı
-        m_col1.metric("Ünite Başına İnşaat Alanı", f"{unite_basi_insaat_alani:,.2f} m²", f"(Toplam İnşaat Alanı / Adet)")
-        
-        # 1. İstek: "Ünite Başına Net Arsa" hesabı (Toplam Net Arsa / Adet) ve eş zamanlı değişim
-        m_col2.metric("Ünite Başına Net Arsa", f"{unite_basi_net_arsa_genel:,.2f} m²", f"(Toplam Net Arsa / Adet)")
-        
-        m_col3.metric("Bodrum Payı", f"{simulated_bodrum_alani:,.2f} m²", f"({ortalama_bodrum_alani:,.2f} m² / Ünite)")
+        m_col1.metric(f"{birim_etiketi_alt} Başına İnşaat Alanı", f"{unite_basi_insaat_alani:,.2f} m²", f"(Toplam İnşaat / Adet)")
+        m_col2.metric(f"{birim_etiketi_alt} Başına Net Arsa", f"{unite_basi_net_arsa_genel:,.2f} m²", f"(Toplam Net Arsa / Adet)")
+        m_col3.metric("Bodrum Payı", f"{simulated_bodrum_alani:,.2f} m²", f"({ortalama_bodrum_alani:,.2f} m² / {birim_etiketi_alt})")
         
         min_sinir = 150 if "Villa" in selected_proje_tipi else (90 if "Ticari" not in selected_proje_tipi else 60)
         risk_durumu = "⚠️ RİSKLİ (Çok küçük ölçek)" if ortalama_unite_alani < min_sinir and curr_hb > 1 else "✅ Uygun Ölçek"
         m_col4.metric("Mimari Ölçek Uygunluğu", risk_durumu)
 
         st.markdown("---")
-        st.markdown("### 🏷️ Bağımsız Bölüm Başına Detaylı Alan ve Dağılımı")
-        st.info("💡 Her bir bağımsız ünitenin yapısal bileşenleri, inşaat alanları ve tamamlayıcı payları aşağıda detaylandırılmıştır.")
+        st.markdown(f"### 🏷️ {birim_etiketi} Başına Detaylı Alan ve Dağılımı")
+        st.info(f"💡 Her bir {birim_etiketi_alt.lower()} ünitesinin yapısal bileşenleri, inşaat alanları ve tamamlayıcı payları aşağıda detaylandırılmıştır.")
 
-        tekil_havuz_payi = 30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 / curr_hb if curr_hp == "Ortak / Sosyal Tesis Havuzu" else 0.0)
+        tekil_havuz_payi = 30.0 if "Özel Havuz" in curr_hp else (120.0 / curr_hb if "Ortak" in curr_hp else 0.0)
         toplam_unite_brut_dahil_eklentiler = ortalama_unite_alani + ortalama_bodrum_alani + tekil_havuz_payi
 
         tab3_detay_rows_html = f"""<tr>
 <td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ana Ünite İnşaat Alanı (Brüt)</td>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ortalama Bağımsız Bölüm Kapalı Alanı</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ortalama {birim_etiketi_alt} Kapalı Alanı</td>
 <td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #0f172a; text-align: right; font-weight: 700;">{ortalama_unite_alani:,.2f} m²</td>
 </tr>
 <tr>
@@ -585,7 +600,7 @@ if selected_keys:
 <td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #0f172a; text-align: right; font-weight: 700;">{tekil_havuz_payi:,.2f} m²</td>
 </tr>
 <tr style="font-weight: bold;">
-<td style="border: 1px solid #475569; padding: 11px 14px; color: #ffffff; background-color: #1e3a8a;">Toplam Bağımsız Bölüm Brüt Alanı (Eklentiler Dahil)</td>
+<td style="border: 1px solid #475569; padding: 11px 14px; color: #ffffff; background-color: #1e3a8a;">Toplam {birim_etiketi_alt} Brüt Alanı (Eklentiler Dahil)</td>
 <td style="border: 1px solid #475569; padding: 11px 14px; color: #ffffff; background-color: #1e3a8a;">Ana Ünite + Bodrum + Havuz Payı</td>
 <td style="border: 1px solid #475569; padding: 11px 14px; color: #38bdf8; background-color: #1e3a8a; text-align: right; font-weight: 800;">{toplam_unite_brut_dahil_eklentiler:,.2f} m²</td>
 </tr>"""
@@ -667,7 +682,7 @@ if selected_keys:
         st.markdown("---")
         
         tab5_saf_unite_brut = net_brut_dusulen_alan / curr_hb if curr_hb > 0 else 0
-        tab5_havuz_payi_m2 = 30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 / curr_hb if curr_hp == "Ortak / Sosyal Tesis Havuzu" else 0.0)
+        tab5_havuz_payi_m2 = 30.0 if "Özel Havuz" in curr_hp else (120.0 / curr_hb if "Ortak" in curr_hp else 0.0)
         tab5_bodrum_payi_m2 = simulated_bodrum_alani / curr_hb if curr_hb > 0 else 0
         tab5_toplam_unite_brut_dahil_eklentiler = tab5_saf_unite_brut + tab5_bodrum_payi_m2 + tab5_havuz_payi_m2
 
@@ -683,15 +698,15 @@ if selected_keys:
         st.markdown(f"- **Toplam Brüt İnşaat Alanı:** {yasal_max_brut_insaat_alani:,.2f} m²")
         
         st.markdown("#### 2. Mimari ve Bağımsız Bölüm Planlaması")
-        st.markdown(f"- **Bağımsız Bölüm / Villa Adedi:** {curr_hb} Adet")
+        st.markdown(f"- **{birim_etiketi} Adedi:** {curr_hb} Adet")
         st.markdown(f"- **Havuz Planlama Modeli:** {curr_hp}")
-        st.markdown(f"- **Ünite Başına Net Arsa:** {unite_basi_net_arsa_genel:,.2f} m² / Ünite")
+        st.markdown(f"- **{birim_etiketi_alt} Başına Net Arsa:** {unite_basi_net_arsa_genel:,.2f} m² / {birim_etiketi_alt}")
         
-        st.markdown("#### Bağımsız Bölüm Başına Detaylı Alan ve Dağılımı")
+        st.markdown(f"#### {birim_etiketi} Başına Detaylı Alan ve Dağılımı")
         
         preview_detay_rows_html = f"""<tr>
 <td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ana Ünite İnşaat Alanı (Brüt)</td>
-<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ortalama Bağımsız Bölüm Kapalı Alanı</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ortalama {birim_etiketi_alt} Kapalı Alanı</td>
 <td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #0f172a; text-align: right; font-weight: 700;">{tab5_saf_unite_brut:,.2f} m²</td>
 </tr>
 <tr>
@@ -705,7 +720,7 @@ if selected_keys:
 <td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #0f172a; text-align: right; font-weight: 700;">{tab5_havuz_payi_m2:,.2f} m²</td>
 </tr>
 <tr style="font-weight: bold;">
-<td style="border: 1px solid #475569; padding: 11px 14px; color: #ffffff; background-color: #1e3a8a;">Toplam Bağımsız Bölüm Brüt Alanı (Eklentiler Dahil)</td>
+<td style="border: 1px solid #475569; padding: 11px 14px; color: #ffffff; background-color: #1e3a8a;">Toplam {birim_etiketi_alt} Brüt Alanı (Eklentiler Dahil)</td>
 <td style="border: 1px solid #475569; padding: 11px 14px; color: #ffffff; background-color: #1e3a8a;">Ana Ünite + Bodrum + Havuz Payı</td>
 <td style="border: 1px solid #475569; padding: 11px 14px; color: #38bdf8; background-color: #1e3a8a; text-align: right; font-weight: 800;">{tab5_toplam_unite_brut_dahil_eklentiler:,.2f} m²</td>
 </tr>"""
@@ -742,7 +757,7 @@ if selected_keys:
 
         pdf_detay_rows_html = f"""<tr>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ana Ünite İnşaat Alanı (Brüt)</td>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ortalama Bağımsız Bölüm Kapalı Alanı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ortalama {birim_etiketi_alt} Kapalı Alanı</td>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{tab5_saf_unite_brut:,.2f} m²</td>
 </tr>
 <tr>
@@ -756,7 +771,7 @@ if selected_keys:
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{tab5_havuz_payi_m2:,.2f} m²</td>
 </tr>
 <tr style="background-color: #f8fafc; font-weight: bold;">
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Toplam Bağımsız Bölüm Brüt Alanı (Eklentiler Dahil)</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Toplam {birim_etiketi_alt} Brüt Alanı (Eklentiler Dahil)</td>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ana Ünite + Bodrum + Havuz Payı</td>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; color: #1e3a8a;">{tab5_toplam_unite_brut_dahil_eklentiler:,.2f} m²</td>
 </tr>"""
@@ -885,12 +900,12 @@ if selected_keys:
             <p class="content-line"><b>Toplam Net Arsa Alanı:</b> {toplam_net_arsa_alani:,.2f} m²</p>
             <p class="content-line"><b>Toplam Brüt İnşaat Alanı:</b> {yasal_max_brut_insaat_alani:,.2f} m²</p>
             
-            <div class="section-title">2. Mimari ve Bağımsız Bölüm Planlaması</div>
-            <p class="content-line"><b>Bağımsız Bölüm / Villa Adedi:</b> {curr_hb} Adet</p>
+            <div class="section-title">2. Mimari ve Planlama</div>
+            <p class="content-line"><b>{birim_etiketi} Adedi:</b> {curr_hb} Adet</p>
             <p class="content-line"><b>Havuz Planlama Modeli:</b> {curr_hp}</p>
-            <p class="content-line"><b>Ünite Başına Net Arsa:</b> {unite_basi_net_arsa_genel:,.2f} m² / Ünite</p>
+            <p class="content-line"><b>{birim_etiketi_alt} Başına Net Arsa:</b> {unite_basi_net_arsa_genel:,.2f} m² / {birim_etiketi_alt}</p>
             
-            <div style="font-size: 12px; font-weight: bold; color: #0f172a; margin-top: 10px; margin-bottom: 5px;">Bağımsız Bölüm Başına Detaylı Alan ve Dağılımı</div>
+            <div style="font-size: 12px; font-weight: bold; color: #0f172a; margin-top: 10px; margin-bottom: 5px;">{birim_etiketi} Başına Detaylı Alan ve Dağılımı</div>
             <table class="data-table">
                 <thead>
                     <tr>
