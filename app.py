@@ -385,25 +385,29 @@ if selected_keys:
       k: st.session_state["parcel_db"][k] for k in selected_keys
   }
 
-  # --- FONKSİYONLARA GÖRE AYRIŞTIRMA VE HESAPLAMA (NET ARSA vs UYGULAMA ALANI) ---
+  # --- BRÜT ARAZİ ÜZERİNDEN TERK VE İNŞAAT HESAPLAMA MANTIĞI ---
   fonksiyon_bazli_veriler = {}
   for key, p in active_parcel_db.items():
-    toplam_brut = p["toplam_alan"]
     is_terkli = p["terk_yapilmis_mi"]
     for f in p["fonksiyonlar"]:
       fonk_adi = f["fonksiyon_adi"]
       if fonk_adi not in fonksiyon_bazli_veriler:
         fonksiyon_bazli_veriler[fonk_adi] = {
-            "toplam_brut_arsa": 0.0,
+            "toplam_brut_arazi": 0.0,
             "toplam_net_arsa": 0.0,
             "toplam_uygulama_bahce_alani": 0.0,
             "toplam_insaat_alani": 0.0,
         }
 
-      giren_m2 = f["giren_m2"] if f["giren_m2"] > 0 else toplam_brut
-      net_arsa = giren_m2 if is_terkli else giren_m2 * 0.70
-      # Uygulama / Bahçe alanı için ham parsel alanı (Alan - m2) baz alınır
-      uygulama_alani = giren_m2
+      # Brüt arazi ölçüsü imar kağıdından gelen giren_m2 veya toplam alandır
+      brut_arazi = f["giren_m2"] if f["giren_m2"] > 0 else p["toplam_alan"]
+
+      # Terk işlemi (DOP/Kesinti) doğrudan BRÜT ARAZİ üzerinden yapılır:
+      # Terk yapılmamışsa %30 kesinti brüt araziden düşülerek net arsaya ulaşılır.
+      net_arsa = brut_arazi if is_terkli else brut_arazi * 0.70
+
+      # Uygulama / bahçe alanı olarak brüt arazi baz alınır
+      uygulama_alani = brut_arazi
 
       if (
           f["kaks"] <= 0
@@ -416,14 +420,14 @@ if selected_keys:
       else:
         brut_insaat = net_arsa * f["kaks"] * 1.30
 
-      fonksiyon_bazli_veriler[fonk_adi]["toplam_brut_arsa"] += giren_m2
+      fonksiyon_bazli_veriler[fonk_adi]["toplam_brut_arazi"] += brut_arazi
       fonksiyon_bazli_veriler[fonk_adi]["toplam_net_arsa"] += net_arsa
       fonksiyon_bazli_veriler[fonk_adi]["toplam_uygulama_bahce_alani"] += (
           uygulama_alani
       )
       fonksiyon_bazli_veriler[fonk_adi]["toplam_insaat_alani"] += brut_insaat
 
-  # --- MİNİMAL VE KULLANIŞLI PROJE TİPİ & İŞ MODELİ SEÇİM ALANI ---
+  # --- PROJE TİPİ VE İŞ MODELİ SEÇİM PANELİ ---
   with st.expander(
       "⚙️ Proje Tipi ve İş Modeli Ayarları (Minimal Panel)", expanded=True
   ):
@@ -457,8 +461,7 @@ if selected_keys:
           st.caption("⚠️ Donatı Alanı (0 İnşaat)")
         else:
           st.caption(
-              f"Uygulama/Bahçe Alanı: {vals['toplam_uygulama_bahce_alani']:,.0f}"
-              " m²"
+              f"Brüt Arazi: {vals['toplam_brut_arazi']:,.0f} m²"
           )
 
   # --- SEKME YAPISI ---
@@ -479,36 +482,35 @@ if selected_keys:
             "Parsel": k,
             "Mahalle": p["mahalle"],
             "Fonksiyon": f["fonksiyon_adi"],
-            "Alan (Uygulama/m²)": f"{f['giren_m2']:,.2f}",
+            "Brüt Arazi (m²)": f"{f['giren_m2']:,.2f}",
             "TAKS": f"{f['taks']:.2f}",
             "KAKS": f"{f['kaks']:.2f}",
             "Terk Durumu": (
-                "Terkli (Net Arsa)"
+                "Terkli (Net Arsa = Brüt)"
                 if p["terk_yapilmis_mi"]
-                else "Terksiz (%30 Kesintili)"
+                else "Terksiz (%30 Kesinti Brütten Yapılır)"
             ),
         })
     st.dataframe(pd.DataFrame(rows), use_container_width=True)
 
   with tab2:
-    st.subheader("Fonksiyonlara Göre Brüt İnşaat ve Uygulama Alanı Dağılımı")
+    st.subheader(
+        "Fonksiyonlara Göre Brüt Arazi, Net Arsa ve İnşaat Alanı Dağılımı"
+    )
     for fonk, vals in fonksiyon_bazli_veriler.items():
       if vals["toplam_insaat_alani"] == 0:
         st.metric(
             label=f"🌳 {fonk} (Donatı / Bahçe Alanı)",
             value="0.00 m² (İnşaat Yok)",
-            delta=(
-                f"Uygulama / Bahçe Alanı: "
-                f"{vals['toplam_uygulama_bahce_alani']:,.2f} m²"
-            ),
+            delta=f"Brüt Arazi: {vals['toplam_brut_arazi']:,.2f} m²",
         )
       else:
         st.metric(
             label=f"🏗️ {fonk} - Toplam Brüt İnşaat Alanı",
             value=f"{vals['toplam_insaat_alani']:,.2f} m²",
             delta=(
-                f"Net Arsa: {vals['toplam_net_arsa']:,.2f} m² | Uygulama/Bahçe"
-                f" Alanı: {vals['toplam_uygulama_bahce_alani']:,.2f} m²"
+                f"Brüt Arazi: {vals['toplam_brut_arazi']:,.2f} m² | Net Arsa:"
+                f" {vals['toplam_net_arsa']:,.2f} m²"
             ),
         )
 
@@ -535,7 +537,7 @@ if selected_keys:
         )
         st.success(
             f"Proje Tipi: **{p_tipi}** | Bağımsız Bölüm Başına Alan:"
-            f" **{birim_alan:,.2f} m²** | Uygulama/Bahçe Alanı Kullanımı:"
+            f" **{birim_alan:,.2f} m²** | Bahçe/Peyzaj Alanı (Brüt Arazi):"
             f" **{vals['toplam_uygulama_bahce_alani']:,.2f} m²**"
         )
       st.markdown("---")
@@ -584,7 +586,7 @@ if selected_keys:
   with tab5:
     st.subheader("🖨️ Kurumsal Rapor Ön İzleme & PDF")
     st.info(
-        "Uygulama alanı (bahçe/peyzaj) ve imar net arsa ayrımları rapora"
+        "Terk ve kesintiler brüt arazi üzerinden hesaplanarak rapora"
         " işlenmiştir."
     )
     if st.button("Tek Sayfa Kurumsal Fizibilite Raporu İndir"):
