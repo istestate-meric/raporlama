@@ -16,6 +16,30 @@ st.set_page_config(
     layout="wide",
 )
 
+# --- ÖZEL KURUMSAL STİL ENJEKSİYONU ---
+st.markdown(
+    """
+<style>
+    .stSelectbox, .stNumberInput, .stSlider {
+        background-color: #ffffff;
+        border-radius: 8px;
+    }
+    div[data-baseweb="select"] > div {
+        border-radius: 8px;
+        border-color: #cbd5e1;
+    }
+    .metric-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    }
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
 # --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ ---
 BASE_DIR = (
     os.path.dirname(os.path.abspath(__file__))
@@ -481,9 +505,22 @@ if selected_keys:
 
   emsal_artis_orani = 1.30
 
-  st.markdown("---")
-  st.subheader("⚙️ İş Modeli ve Genel Parametreler")
-  col_global1, _ = st.columns(2)
+  # --- KURUMSAL VE ESTETİK İŞ MODELİ / GENEL PARAMETRELER ALANI ---
+  st.markdown(
+      """
+    <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #cbd5e1; border-radius: 14px; padding: 24px; margin-bottom: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+        <div style="display: flex; align-items: center; margin-bottom: 16px; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px;">
+            <span style="font-size: 20px; margin-right: 10px;">⚙️</span>
+            <div>
+                <h3 style="color: #0f172a; margin: 0; font-size: 18px; font-weight: 700;">İş Modeli ve Genel Parametreler</h3>
+                <p style="color: #64748b; margin: 0; font-size: 13px;">Projenin finansal kurgusunu ve iş ortaklığı modelini yapılandırın.</p>
+            </div>
+        </div>
+    """,
+      unsafe_allow_html=True,
+  )
+
+  col_global1, col_global_empty = st.columns([2, 1])
   with col_global1:
     is_modeli = st.selectbox(
         "İş Modeli / Rapor Türü:",
@@ -497,7 +534,11 @@ if selected_keys:
   arsa_payi_orani = 0.0
   arsa_bonus_usd = 0.0
   if "Kat Karşılığı" in is_modeli:
-    st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div style='margin-top: 15px; border-top: 1px dashed #cbd5e1;"
+        " padding-top: 15px;'></div>",
+        unsafe_allow_html=True,
+    )
     col_gk1, col_gk2, col_gk3 = st.columns([2, 1, 2])
     with col_gk1:
       arsa_payi_orani = st.slider(
@@ -522,7 +563,7 @@ if selected_keys:
       else:
         arsa_bonus_usd = raw_bonus_val
 
-  st.markdown("---")
+  st.markdown("</div>", unsafe_allow_html=True)
 
   # --- KOMPAKT VE KURUMSAL AKORDEON YAPISI ---
   all_functions_map = {}
@@ -664,7 +705,6 @@ if selected_keys:
   for key, p in active_parcel_db.items():
     toplam_brut_m2 = p["toplam_alan"]
     is_terkli = p["terk_yapilmis_mi"]
-    net_arsa_m2 = toplam_brut_m2 if is_terkli else toplam_brut_m2 * 0.70
 
     toplam_giren_fonk_m2 = sum(
         f["giren_m2"]
@@ -799,14 +839,16 @@ if selected_keys:
     for fonk_name, items in all_functions_map.items():
       conf = function_configs.get(fonk_name, {})
 
-      # Fonksiyona ait toplam arsa ve brüt inşaat alanlarını hesapla
+      # Fonksiyona ait toplam Alan Miktarı (m2) ve brüt inşaat alanlarını hesapla
       fonk_toplam_brut = 0.0
-      fonk_toplam_arsa = 0.0
+      fonk_toplam_alan_miktari = 0.0
       for key, f in items:
         p = active_parcel_db[key]
         toplam_brut_m2 = p["toplam_alan"]
         is_terkli = p["terk_yapilmis_mi"]
         giren_m2 = f["giren_m2"] if f["giren_m2"] > 0 else toplam_brut_m2
+        
+        # Fiili kullanım alanı / Alan Miktarı hesaplaması (Terk durumuna göre netleştirilmiş veya giren m2)
         if not is_terkli:
           toplam_giren_fonk_m2 = sum(
               x["giren_m2"]
@@ -827,18 +869,18 @@ if selected_keys:
               if toplam_giren_fonk_m2 > 0
               else 1.0
           )
-          esas_m2 = toplam_brut_m2 * fonk_pay_orani
-          brut_insaat = esas_m2 * 0.70 * f["kaks"] * emsal_artis_orani
+          esas_m2 = toplam_brut_m2 * fonk_pay_orani * 0.70
+          brut_insaat = (toplam_brut_m2 * fonk_pay_orani) * 0.70 * f["kaks"] * emsal_artis_orani
         else:
           esas_m2 = giren_m2
           brut_insaat = esas_m2 * f["kaks"] * emsal_artis_orani
 
         fonk_toplam_brut += brut_insaat
-        fonk_toplam_arsa += esas_m2
+        fonk_toplam_alan_miktari += esas_m2
 
       adet = conf.get("adet", 1)
       bahce_alani_birim = (
-          (fonk_toplam_arsa / adet) if adet > 0 else fonk_toplam_arsa
+          (fonk_toplam_alan_miktari / adet) if adet > 0 else fonk_toplam_alan_miktari
       )
       ortalama_brut_birim = (
           (fonk_toplam_brut / adet) if adet > 0 else fonk_toplam_brut
@@ -870,14 +912,14 @@ if selected_keys:
           "<div style='margin-top: 10px;'></div>", unsafe_allow_html=True
       )
 
-      # Bahçe / Arsa payı birim ve toplam alan vurgusu
+      # Bahçe / Arsa payı birim ve Alan Miktarı (m2) vurgusu
       st.markdown(
           f"""
             <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <div>
                     <span style="font-weight: 700; color: #334155; font-size: 13px;">🌿 Bağımsız Bölüme Düşen Bahçe / Arsa Alanı:</span>
                     <span style="color: #0f172a; font-weight: 800; font-size: 14px; margin-left: 6px;">{bahce_alani_birim:,.2f} m² / birim</span>
-                    <div style="color: #64748b; font-size: 11px; margin-top: 2px;">(Toplam Fonksiyon Arsa Alanı: {fonk_toplam_arsa:,.2f} m²)</div>
+                    <div style="color: #64748b; font-size: 11px; margin-top: 2px;">(Toplam Fonksiyon Alan Miktarı: {fonk_toplam_alan_miktari:,.2f} m²)</div>
                 </div>
                 <div>
                     <span style="font-weight: 700; color: #334155; font-size: 13px;">🏗️ Fonksiyon Toplam Brüt İnşaat:</span>
