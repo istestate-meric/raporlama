@@ -667,6 +667,53 @@ if selected_keys:
         else:
             f_col3.metric("İş Modeli", "Doğrudan Yatırım")
         f_col4.metric("Müteahhit Net Karı", f"${mutaahhit_net_kar_usd:,.2f}", f"₺{mutaahhit_net_kar_tl:,.2f} (%{yg_orani:.1f} YG)")
+
+        # --- GÜNCELLENEN FİNANSAL FİZİBİLİTE VE CİRO ANALİZİ TABLOSU ---
+        arsa_sahibi_tab4_row_html = ""
+        if "Kat Karşılığı" in is_modeli:
+            arsa_sahibi_tab4_row_html = f"""
+            <tr>
+            <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc;">Arsa Sahibi Payı</td>
+            <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #475569; background-color: #f8fafc;">Kat Karşılığı Paydaş Dağılımı</td>
+            <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc; text-align: right; font-weight: 700;">${arsa_sahibi_payi_usd:,.2f}</td>
+            <td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc; text-align: right; font-weight: 700;">-</td>
+            </tr>
+            """
+
+        tab4_finansal_rows_html = f"""<tr>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff;">Toplam Tahmini Brüt Ciro</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #475569; background-color: #ffffff;">Tüm Bağımsız Bölüm ve Bodrum Satış Geliri</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff; text-align: right; font-weight: 700;">${toplam_ciro_usd:,.2f}</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff; text-align: right; font-weight: 700;">₺{toplam_ciro_tl:,.2f}</td>
+</tr>
+<tr>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc;">Toplam İnşaat Maliyeti + Bonus</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #475569; background-color: #f8fafc;">Brüt İnşaat Maliyeti ve Nakit Bonus Toplamı</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc; text-align: right; font-weight: 700;">${toplam_maliyet_usd:,.2f}</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc; text-align: right; font-weight: 700;">₺{toplam_maliyet_tl:,.2f}</td>
+</tr>
+{arsa_sahibi_tab4_row_html}
+<tr style="font-weight: bold;">
+<td style="border: 1px solid #cbd5e1; padding: 11px 14px; color: #0f172a; background-color: #f1f5f9;">Müteahhit Net Kârı</td>
+<td style="border: 1px solid #cbd5e1; padding: 11px 14px; color: #0f172a; background-color: #f1f5f9;">Toplam Kâr ve Yatırım Getirisi (%{yg_orani:.1f} YG)</td>
+<td style="border: 1px solid #cbd5e1; padding: 11px 14px; color: #1e3a8a; background-color: #f1f5f9; text-align: right; font-weight: 800;">${mutaahhit_net_kar_usd:,.2f}</td>
+<td style="border: 1px solid #cbd5e1; padding: 11px 14px; color: #1e3a8a; background-color: #f1f5f9; text-align: right; font-weight: 800;">₺{mutaahhit_net_kar_tl:,.2f}</td>
+</tr>"""
+
+        st.markdown(f"### 📈 Finansal Fizibilite ve Ciro Analizi")
+        st.markdown(f"""<div style="overflow-x: auto; margin-bottom: 20px;"><table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+<thead>
+<tr style="background-color: #f8fafc; color: #0f172a;">
+<th style="border: 1px solid #cbd5e1; padding: 12px 14px; text-align: left; font-weight: 700;">Finansal Kalem</th>
+<th style="border: 1px solid #cbd5e1; padding: 12px 14px; text-align: left; font-weight: 700;">Açıklama / Model</th>
+<th style="border: 1px solid #cbd5e1; padding: 12px 14px; text-align: right; font-weight: 700;">Tutar (USD $)</th>
+<th style="border: 1px solid #cbd5e1; padding: 12px 14px; text-align: right; font-weight: 700;">Tutar (TL ₺)</th>
+</tr>
+</thead>
+<tbody>
+{tab4_finansal_rows_html}
+</tbody>
+</table></div>""", unsafe_allow_html=True)
         
         st.info("💡 **İpucu:** Raporun kurumsal ön izlemesini incelemek ve PDF olarak indirmek için yandaki **'🖨️ Rapor Ön İzleme & PDF'** sekmesine geçiş yapabilirsiniz.")
 
