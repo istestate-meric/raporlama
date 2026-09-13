@@ -493,39 +493,22 @@ if selected_keys:
             )
         st.session_state["havuz_tercihi"] = havuz_tercihi
 
-        # Havuz emsalden düşüm hesabı
-        if havuz_tercihi == "Her Bağımsız Bölüme 1 Özel Havuz":
-            havuz_emsele_maliyet_m2 = hedef_bagimsiz_bolum * 30.0
-            unite_basina_havuz_m2 = 30.0
-        elif havuz_tercihi == "Ortak / Sosyal Tesis Havuzu":
-            havuz_emsele_maliyet_m2 = 120.0
-            unite_basina_havuz_m2 = 120.0 / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
-        else:
-            havuz_emsele_maliyet_m2 = 0.0
-            unite_basina_havuz_m2 = 0.0
-
+        # Mimari Tab 3 orijinal orijinal mantığı
+        havuz_emsele_maliyet_m2 = 30.0 if havuz_tercihi == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 if havuz_tercihi == "Ortak / Sosyal Tesis Havuzu" else 0.0)
         net_brut_dusulen_alan = max(0.0, yasal_max_brut_insaat_alani - havuz_emsele_maliyet_m2)
         toplam_brut_kullanim_alani = net_brut_dusulen_alan
-        
-        # Net bina oturum alanı ve havuz dahil brüt ünite alanı ayrımı
-        saf_unite_brut_alan = net_brut_dusulen_alan / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
-        toplam_unite_brut_alan_dahil_havuz = saf_unite_brut_alan + unite_basina_havuz_m2
-
+        ortalama_unite_alani = net_brut_dusulen_alan / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
         simulated_bodrum_alani = net_brut_dusulen_alan * p_spec["bodrum_orani"]
         ortalama_bodrum_alani = simulated_bodrum_alani / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
 
         st.markdown("---")
         m_col1, m_col2, m_col3, m_col4 = st.columns(4)
-        m_col1.metric(
-            p_spec["etiket_unite"], 
-            f"{saf_unite_brut_alan:,.2f} m²", 
-            f"Havuz Dahil Brüt: {toplam_unite_brut_alan_dahil_havuz:,.2f} m²" if unite_basina_havuz_m2 > 0 else "Havuz Yok"
-        )
+        m_col1.metric(p_spec["etiket_unite"], f"{ortalama_unite_alani:,.2f} m²")
         m_col2.metric(p_spec["etiket_bodrum"], f"{ortalama_bodrum_alani:,.2f} m²", f"Toplam Bodrum Brüt: {simulated_bodrum_alani:,.2f} m²")
         m_col3.metric("Emsalden Düşülen Havuz Payı", f"-{havuz_emsele_maliyet_m2:,.2f} m²")
         
         min_sinir = 150 if "Villa" in selected_proje_tipi else (90 if "Ticari" not in selected_proje_tipi else 60)
-        risk_durumu = "⚠️ RİSKLİ (Çok küçük ölçek)" if saf_unite_brut_alan < min_sinir and hedef_bagimsiz_bolum > 1 else "✅ Uygun Ölçek"
+        risk_durumu = "⚠️ RİSKLİ (Çok küçük ölçek)" if ortalama_unite_alani < min_sinir and hedef_bagimsiz_bolum > 1 else "✅ Uygun Ölçek"
         m_col4.metric("Mimari Ölçek Uygunluğu", risk_durumu)
 
     with tab4:
@@ -534,7 +517,7 @@ if selected_keys:
         curr_hb = st.session_state["hedef_bagimsiz_bolum"]
         curr_hp = st.session_state["havuz_tercihi"]
         
-        net_emsal_tabani_rapor = yasal_max_brut_insaat_alani - (curr_hb * 30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 if curr_hp == "Ortak / Sosyal Tesis Havuzu" else 0.0))
+        net_emsal_tabani_rapor = yasal_max_brut_insaat_alani - (30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 if curr_hp == "Ortak / Sosyal Tesis Havuzu" else 0.0))
         simulated_bodrum_alani = max(0.0, net_emsal_tabani_rapor) * p_spec["bodrum_orani"]
 
         first_parcel = list(active_parcel_db.values())[0]
@@ -591,17 +574,22 @@ if selected_keys:
         
         st.info("💡 **İpucu:** Raporun kurumsal ön izlemesini incelemek ve PDF olarak indirmek için yandaki **'🖨️ Rapor Ön İzleme & PDF'** sekmesine geçiş yapabilirsiniz.")
 
-    # --- 5. SEKME: RAPOR ÖN İZLEME VE PDF İNDİRME MERKEZİ ---
+    # --- 5. SEKME: RAPOR ÖN İZLEME VE PDF İNDİRME MERKEZİ (GÜNCELLENDİ) ---
     with tab5:
         st.subheader("🖨️ Kurumsal Rapor Ön İzleme ve PDF İndirme Merkezi")
         st.write("Aşağıda hazırlanan raporun profesyonel ekran ön izlemesi yer almaktadır. Butona tıklayarak doğrudan **PDF Olarak İndirebilirsiniz**.")
         st.markdown("---")
         
+        # Tab 5 için özel havuz payı entegre edilmiş hesaplama
+        tab5_saf_unite_brut = (yasal_max_brut_insaat_alani - (30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 if curr_hp == "Ortak / Sosyal Tesis Havuzu" else 0.0))) / curr_hb if curr_hb > 0 else 0
+        tab5_havuz_payi_m2 = 30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else 0.0
+        tab5_toplam_unite_brut_dahil_havuz = tab5_saf_unite_brut + tab5_havuz_payi_m2
+
         # Ekran Ön İzlemesi İçin Temiz Streamlit Bileşenleri
         st.markdown(f"### 🏢 İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK")
         st.markdown(f"**Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu**")
         
-        st.markdown("#### 1. Proje dan Lokasyon Künyesi")
+        st.markdown("#### 1. Proje ve Lokasyon Künyesi")
         st.markdown(f"- **Seçilen Lokasyon / Mahalle:** {detected_mahalle}")
         st.markdown(f"- **Proje Tipi:** {selected_proje_tipi}")
         st.markdown(f"- **İş Modeli:** {is_modeli}")
@@ -610,10 +598,11 @@ if selected_keys:
         st.markdown("#### 2. Mimari ve Bağımsız Bölüm Planlaması")
         st.markdown(f"- **Bağımsız Bölüm / Villa Adedi:** {curr_hb} Adet")
         st.markdown(f"- **Havuz Planlama Modeli:** {curr_hp}")
-        unite_gosterim_metni = f"{saf_unite_brut_alan:,.2f} m²"
+        
+        tab5_unite_gosterim_metni = f"{tab5_saf_unite_brut:,.2f} m²"
         if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz":
-            unite_gosterim_metni += f" (+ 30.00 m² Havuz Payı = {toplam_unite_brut_alan_dahil_havuz:,.2f} m² Brüt Toplam)"
-        st.markdown(f"- **Ortalama Ünite Brüt Alanı:** {unite_gosterim_metni}")
+            tab5_unite_gosterim_metni += f" (+ 30.00 m² Havuz Payı = {tab5_toplam_unite_brut_dahil_havuz:,.2f} m² Brüt Toplam)"
+        st.markdown(f"- **Ortalama Ünite Brüt Alanı:** {tab5_unite_gosterim_metni}")
         
         st.markdown("#### 3. Finansal Fizibilite ve Ciro Analizi ($ USD)")
         
@@ -629,7 +618,7 @@ if selected_keys:
         st.table(pd.DataFrame(preview_table_data))
         st.markdown("---")
         
-        # PDF çıktı şablonu (WeasyPrint için profesyonel HTML-CSS tasarımı)
+        # PDF çıktı şablonu (WeasyPrint için profesyonel HTML-CSS tasarımı - Tab 5 Güncellemeli)
         arsa_sahibi_row_html = ""
         if "Kat Karşılığı" in is_modeli:
             arsa_sahibi_row_html = f"""
@@ -640,9 +629,9 @@ if selected_keys:
                     </tr>
             """
 
-        pdf_unite_metin = f"{saf_unite_brut_alan:,.2f} m²"
+        pdf_unite_metin = f"{tab5_saf_unite_brut:,.2f} m²"
         if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz":
-            pdf_unite_metin += f" (+ 30.00 m² Havuz = {toplam_unite_brut_alan_dahil_havuz:,.2f} m² Brüt)"
+            pdf_unite_metin += f" (+ 30.00 m² Havuz = {tab5_toplam_unite_brut_dahil_havuz:,.2f} m² Brüt)"
 
         report_html_template = f"""
         <!DOCTYPE html>
