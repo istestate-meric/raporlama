@@ -787,14 +787,103 @@ if selected_keys:
     )
 
   with tab2:
-    st.subheader("🏛️ Fonksiyona Özel Mimari Fizibilite Sonuçları")
-    for fonk_name, conf in function_configs.items():
-      st.markdown(f"**Fonksiyon: {fonk_name}**")
-      m_col1, m_col2, m_col3 = st.columns(3)
-      m_col1.metric("Proje Tipi", conf["proje_tipi"])
-      m_col2.metric("Bağımsız Bölüm Adedi", f"{conf['adet']} Adet")
-      m_col3.metric("Havuz Tercihi", conf["havuz_mod"])
-      st.markdown("---")
+    st.subheader("🏛️ Fonksiyona Özel Mimari ve Yerleşim Fizibilitesi")
+    st.markdown(
+        "<p style='color: #64748b; font-size: 13px;'>Seçilen parsellerdeki"
+        " fonksiyonların bağımsız bölüm dağılımları, yapı tipleri ve her bir"
+        " bağımsız bölüme düşen bahçe / arsa payı analizi aşağıda kurumsal"
+        " standartlarda özetlenmiştir.</p>",
+        unsafe_allow_html=True,
+    )
+
+    for fonk_name, items in all_functions_map.items():
+      conf = function_configs.get(fonk_name, {})
+      
+      # Fonksiyona ait toplam arsa ve brüt inşaat alanlarını hesapla
+      fonk_toplam_brut = 0.0
+      fonk_toplam_arsa = 0.0
+      for key, f in items:
+        p = active_parcel_db[key]
+        toplam_brut_m2 = p["toplam_alan"]
+        is_terkli = p["terk_yapilmis_mi"]
+        giren_m2 = f["giren_m2"] if f["giren_m2"] > 0 else toplam_brut_m2
+        if not is_terkli:
+          toplam_giren_fonk_m2 = sum(
+              x["giren_m2"]
+              for _, x in p["fonksiyonlar"]
+              if not any(
+                  sub in x["fonksiyon_adi"].upper()
+                  for sub in [
+                      "PARK",
+                      "TEKNİK ALTYAPI",
+                      "LİSE",
+                      "KÜLTÜREL",
+                      "ANAOKULU",
+                  ]
+              )
+          )
+          fonk_pay_orani = (
+              (giren_m2 / toplam_giren_fonk_m2)
+              if toplam_giren_fonk_m2 > 0
+              else 1.0
+          )
+          esas_m2 = toplam_brut_m2 * fonk_pay_orani
+          brut_insaat = esas_m2 * 0.70 * f["kaks"] * emsal_artis_orani
+        else:
+          esas_m2 = giren_m2
+          brut_insaat = esas_m2 * f["kaks"] * emsal_artis_orani
+
+        fonk_toplam_brut += brut_insaat
+        fonk_toplam_arsa += esas_m2
+
+      adet = conf.get("adet", 1)
+      bahce_alani_birim = (
+          (fonk_toplam_arsa / adet) if adet > 0 else fonk_toplam_arsa
+      )
+      ortalama_brut_birim = (
+          (fonk_toplam_brut / adet) if adet > 0 else fonk_toplam_brut
+      )
+
+      # Kurumsal Kart Tasarımı
+      st.markdown(
+          f"""
+            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 22px; margin-bottom: 22px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+                <h4 style="color: #0f172a; margin-top: 0; margin-bottom: 15px; font-size: 16px; border-bottom: 2px solid #94a3b8; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                    <span>📌 Fonksiyon: <span style="color: #1e3a8a;">{fonk_name}</span></span>
+                    <span style="font-size: 12px; font-weight: normal; color: #475569; background: #e2e8f0; padding: 3px 10px; border-radius: 6px;">{conf.get('proje_tipi', '-')}</span>
+                </h4>
+            """,
+          unsafe_allow_html=True,
+      )
+
+      mc1, mc2, mc3 = st.columns(3)
+      with mc1:
+        st.metric("Bağımsız Bölüm Adedi", f"{adet} Adet")
+      with mc2:
+        st.metric("Ortalama Konut / Birim Brüt Alanı", f"{ortalama_brut_birim:,.2f} m²")
+      with mc3:
+        st.metric("Havuz Konsept Tercihi", conf.get("havuz_mod", "-"))
+
+      st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+      
+      # Bahçe / Arsa payı birim ve toplam alan vurgusu
+      st.markdown(
+          f"""
+            <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <span style="font-weight: 700; color: #334155; font-size: 13px;">🌿 Bağımsız Bölüme Düşen Bahçe / Arsa Alanı:</span>
+                    <span style="color: #0f172a; font-weight: 800; font-size: 14px; margin-left: 6px;">{bahce_alani_birim:,.2f} m² / birim</span>
+                    <div style="color: #64748b; font-size: 11px; margin-top: 2px;">(Toplam Fonksiyon Arsa Alanı: {fonk_toplam_arsa:,.2f} m²)</div>
+                </div>
+                <div>
+                    <span style="font-weight: 700; color: #334155; font-size: 13px;">🏗️ Fonksiyon Toplam Brüt İnşaat:</span>
+                    <span style="color: #1e3a8a; font-weight: 800; font-size: 14px; margin-left: 6px;">{fonk_toplam_brut:,.2f} m²</span>
+                </div>
+            </div>
+            </div>
+            """,
+          unsafe_allow_html=True,
+      )
 
   with tab3:
     st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılım Matrisi")
