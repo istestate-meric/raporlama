@@ -750,7 +750,7 @@ if selected_keys:
       calc_results.append({
           "Parsel": item["Parsel"],
           "Fonksiyon": item["Fonksiyon"],
-          "Toplam Brüt İnşaat Alanı (m²)": f"{item['Brüt İnşaat (m²)]:,.2f}",
+          "Toplam Brüt İnşaat Alanı (m²)": f"{item['Brüt İnşaat (m²)']:,.2f}",
       })
     st.table(pd.DataFrame(calc_results))
     st.metric(
