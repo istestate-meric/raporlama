@@ -332,19 +332,13 @@ if selected_keys:
     toplam_brut_arsa_alani = 0.0
     toplam_net_arsa_alani = 0.0
 
-    if "parcel_net_overrides" not in st.session_state:
-        st.session_state["parcel_net_overrides"] = {}
-
     for key, p in active_parcel_db.items():
         toplam_brut_m2 = p["toplam_alan"]
         toplam_brut_arsa_alani += toplam_brut_m2
         is_terkli = p["terk_yapilmis_mi"]
         
-        varsayilan_net = toplam_brut_m2
-        if key not in st.session_state["parcel_net_overrides"]:
-            st.session_state["parcel_net_overrides"][key] = varsayilan_net
-            
-        parsel_net_arsa = st.session_state["parcel_net_overrides"][key]
+        # Net arsa alanı doğrudan toplam alan üzerinden hesaplanır (Çift terk önlendi)
+        parsel_net_arsa = toplam_brut_m2 if is_terkli else toplam_brut_m2 * 0.70
         toplam_net_arsa_alani += parsel_net_arsa
 
         toplam_giren_fonk_m2 = sum(
@@ -437,24 +431,32 @@ if selected_keys:
     
     with tab1:
         st.subheader("Seçilen Parsellerin İmar ve Fonksiyon Bazlı Arsa Dağılımı")
-        st.info("💡 Her fonksiyon satırı için Net Arsa Alanı, imar raporundaki ilgili fonksiyon alanı (`giren_m2`) ile birebir eşleştirilmiştir.")
+        st.info("💡 Net arsa alanı doğrudan **Toplam Arsa (m²)** üzerinden (terksizler için %30 kesintiyle) hesaplanarak çift kesinti önlenmiştir.")
         
         table_rows = []
         for key, p in active_parcel_db.items():
-            terk_lbl = "Terki Yapılmış (Net)" if p["terk_yapilmis_mi"] else "Terki Yapılmamış"
+            is_terkli = p["terk_yapilmis_mi"]
+            toplam_brut = p["toplam_alan"]
+            parsel_net_arsa = toplam_brut if is_terkli else toplam_brut * 0.70
+            
+            toplam_fonk_alan = sum(f["giren_m2"] for f in p["fonksiyonlar"])
+            terk_lbl = "Terki Yapılmış (Net)" if is_terkli else "Terki Yapılmamış (%30 Kesintili)"
             
             for f in p["fonksiyonlar"]:
-                fonksiyon_net_alani = f["giren_m2"]
+                fonks_m2 = f["giren_m2"]
+                fonk_oran = (fonks_m2 / toplam_fonk_alan) if toplam_fonk_alan > 0 else (1.0 / len(p["fonksiyonlar"]))
+                net_m2 = parsel_net_arsa * fonk_oran
+                
                 hedef_bb = st.session_state.get("hedef_bagimsiz_bolum", 1)
-                unite_basi_fonk_net = fonksiyon_net_alani / hedef_bb if hedef_bb > 0 else 0
+                unite_basi_fonk_net = net_m2 / hedef_bb if hedef_bb > 0 else 0
                 
                 table_rows.append({
                     "Parsel Bilgisi": key,
                     "Mahalle": p["mahalle"],
-                    "Toplam Arsa (m²)": f"{p['toplam_alan']:,.2f}",
+                    "Toplam Arsa (m²)": f"{toplam_brut:,.2f}",
                     "Fonksiyon": f["fonksiyon_adi"],
-                    "Fonksiyon Alanı (m²)": f"{f['giren_m2']:,.2f}",
-                    "Net Arsa (m²)": f"{fonksiyon_net_alani:,.2f}",
+                    "Fonksiyon Alanı (m²)": f"{fonks_m2:,.2f}",
+                    "Net Arsa (m²)": f"{net_m2:,.2f}",
                     "Ünite Başı Net Arsa Payı": f"{unite_basi_fonk_net:,.2f} m² / Ünite",
                     "TAKS": f"{f['taks']:.2f}",
                     "KAKS (Emsal)": f"{f['kaks']:.2f}",
