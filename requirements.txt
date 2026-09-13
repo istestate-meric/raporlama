@@ -1,4 +1,4 @@
-streamlit>=1.38.0
-watchdog>=4.0.0
-pdfplumber
+weasyprint>=60.0
+streamlit
 pandas
+pdfplumber
