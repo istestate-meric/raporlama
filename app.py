@@ -1352,7 +1352,7 @@ if selected_keys:
 <td style="border: 1px solid #cbd5e1; padding: 4px 8px; text-align: right; color: #1e3a8a;">₺{mutaahhit_net_kar_tl:,.2f} (%{yg_orani:.1f} YG)</td>
 </tr>"""
 
-    # --- ELITE CORPORATE WEASYPRINT HTML/CSS ŞABLONU ---
+    # --- REVISED ELITE CORPORATE WEASYPRINT HTML/CSS ŞABLONU ---
     report_html_template = f"""
         <!DOCTYPE html>
         <html>
@@ -1361,7 +1361,7 @@ if selected_keys:
         <style>
             @page {{
                 size: A4 landscape;
-                margin: 8mm 10mm;
+                margin: 6mm 8mm;
             }}
             body {{
                 font-family: 'Helvetica', 'Arial', sans-serif;
@@ -1369,25 +1369,32 @@ if selected_keys:
                 background: #ffffff;
                 margin: 0;
                 padding: 0;
-                font-size: 9.5px;
-                line-height: 1.15;
+                font-size: 8.5px;
+                line-height: 1.12;
             }}
             .report-container {{
                 background: #ffffff;
                 padding: 0;
             }}
-            .top-accent-bar {{
-                height: 3px;
-                background: #1e3a8a;
-                width: 100%;
-                margin-bottom: 6px;
+            /* Güçlü Üst Banner / Vurgu Alanı */
+            .top-banner-bar {{
+                background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+                color: #ffffff;
+                padding: 6px 12px;
+                text-align: center;
+                font-weight: bold;
+                font-size: 9.5px;
+                letter-spacing: 0.8px;
+                text-transform: uppercase;
+                margin-bottom: 5px;
+                border-radius: 3px;
             }}
             .header-table {{
                 width: 100%;
                 border-collapse: collapse;
                 border-bottom: 2px solid #0f172a;
-                padding-bottom: 4px;
-                margin-bottom: 6px;
+                padding-bottom: 3px;
+                margin-bottom: 4px;
             }}
             .header-table td {{
                 border: none;
@@ -1398,28 +1405,31 @@ if selected_keys:
                 text-align: center;
             }}
             h2 {{
-                font-size: 15px;
+                font-size: 13px;
                 font-weight: 800;
                 color: #0f172a;
                 margin: 0;
                 letter-spacing: -0.5px;
             }}
             p.sub {{
-                font-size: 10px;
+                font-size: 9px;
                 color: #475569;
-                margin: 2px 0 0 0;
+                margin: 1px 0 0 0;
                 font-weight: 600;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
             }}
             .section-title {{
-                font-size: 10px;
+                font-size: 9px;
                 font-weight: bold;
                 color: #1e3a8a;
-                border-bottom: 1.2px solid #cbd5e1;
+                border-left: 3px solid #1e3a8a;
+                padding-left: 5px;
+                background-color: #f1f5f9;
+                padding-top: 2px;
                 padding-bottom: 2px;
-                margin-top: 6px;
-                margin-bottom: 3px;
+                margin-top: 5px;
+                margin-bottom: 2px;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
             }}
@@ -1427,39 +1437,40 @@ if selected_keys:
                 width: 100%;
                 border-collapse: collapse;
                 margin-top: 1px;
-                font-size: 9px;
+                font-size: 8.5px;
             }}
             .data-table th {{
                 background-color: #f8fafc;
                 border: 1px solid #cbd5e1;
-                padding: 4px 6px;
+                padding: 3px 5px;
                 text-align: left;
                 color: #0f172a;
                 font-weight: 700;
             }}
             .data-table td {{
                 border: 1px solid #cbd5e1;
-                padding: 4px 6px;
+                padding: 3px 5px;
             }}
             .footer {{
-                font-size: 8px;
+                font-size: 7.5px;
                 color: #64748b;
                 text-align: center;
-                margin-top: 8px;
+                margin-top: 6px;
                 border-top: 1px dashed #cbd5e1;
-                padding-top: 3px;
+                padding-top: 2px;
             }}
         </style>
         </head>
         <body>
         <div class="report-container">
-            <div class="top-accent-bar"></div>
+            <div class="top-banner-bar">İstestate & Meriç İnşaat — Yatırım Komitesi Onaylı Fizibilite Raporu</div>
+            
             <table class="header-table">
                 <tr>
                     <td style="width: 25%; text-align: left;">{pdf_logo1_html}</td>
                     <td style="width: 50%;" class="title-box">
                         <h2>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT</h2>
-                        <p class="sub">Yatırım Komitesi Onaylı Akıllı Fizibilite Raporu</p>
+                        <p class="sub">Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu</p>
                     </td>
                     <td style="width: 25%; text-align: right;">{pdf_logo2_html}</td>
                 </tr>
@@ -1491,7 +1502,7 @@ if selected_keys:
                 </tbody>
             </table>
             
-            <div style="font-size: 9.5px; font-weight: bold; color: #1e3a8a; text-transform: uppercase; margin-top: 5px; margin-bottom: 2px;">{birim_etiketi} Başına Detaylı Alan ve Dağılımı</div>
+            <div style="font-size: 8.5px; font-weight: bold; color: #1e3a8a; border-left: 3px solid #1e3a8a; padding-left: 5px; background-color: #f1f5f9; padding-top: 2px; padding-bottom: 2px; text-transform: uppercase; margin-top: 4px; margin-bottom: 2px;">{birim_etiketi} Başına Detaylı Alan ve Dağılımı</div>
             <table class="data-table">
                 <thead>
                     <tr>
