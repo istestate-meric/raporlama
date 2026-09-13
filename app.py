@@ -578,14 +578,46 @@ if selected_keys:
             f_col3.metric("İş Modeli", "Doğrudan Yatırım")
         f_col4.metric("Müteahhit Net Karı", f"${mutaahhit_net_kar_usd:,.2f}", f"₺{mutaahhit_net_kar_tl:,.2f} (%{roi:.1f} ROI)")
         
-        st.info("💡 **İpucu:** Raporun kurumsal canlı ön izlemesini incelemek ve PDF olarak indirmek için yandaki **'🖨️ Rapor Ön İzleme & PDF'** sekmesine geçiş yapabilirsiniz.")
+        st.info("💡 **İpucu:** Raporun kurumsal ön izlemesini incelemek ve PDF olarak indirmek için yandaki **'🖨️ Rapor Ön İzleme & PDF'** sekmesine geçiş yapabilirsiniz.")
 
     # --- 5. SEKME: RAPOR ÖN İZLEME VE PDF İNDİRME MERKEZİ ---
     with tab5:
         st.subheader("🖨️ Kurumsal Rapor Ön İzleme ve PDF İndirme Merkezi")
-        st.write("Aşağıda hazırlanan raporun canlı ön izlemesi yer almaktadır. Butona tıklayarak doğrudan **PDF Olarak İndirebilirsiniz**.")
+        st.write("Aşağıda hazırlanan raporun profesyonel ekran ön izlemesi yer almaktadır. Butona tıklayarak doğrudan **PDF Olarak İndirebilirsiniz**.")
+        st.markdown("---")
         
-        # Dinamik Tablo Satırı Oluşumu
+        # Ekran Ön İzlemesi İçin Temiz Streamlit Bileşenleri (Kod kirliliği olmadan)
+        st.markdown(f"### 🏢 İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK")
+        st.markdown(f"**Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu**")
+        
+        st.markdown("#### 1. Proje ve Lokasyon Künyesi")
+        st.markdown(f"- **Seçilen Lokasyon / Mahalle:** {detected_mahalle}")
+        st.markdown(f"- **Proje Tipi:** {selected_proje_tipi}")
+        st.markdown(f"- **İş Modeli:** {is_modeli}")
+        st.markdown(f"- **Yasal Brüt Emsal Tavanı:** {yasal_max_brut_insaat_alani:,.2f} m²")
+        
+        st.markdown("#### 2. Mimari ve Bağımsız Bölüm Planlaması")
+        st.markdown(f"- **Bağımsız Bölüm / Villa Adedi:** {curr_hb} Adet")
+        st.markdown(f"- **Havuz Planlama Modeli:** {curr_hp}")
+        st.markdown(f"- **Ortalama Ünite Brüt Alanı:** {ortalama_unite_brut_alan:,.2f} m²")
+        
+        st.markdown("#### 3. Finansal Fizibilite ve Ciro Analizi ($ USD)")
+        
+        # Ön izleme için şık bir tablo oluşturalım
+        preview_table_data = [
+            {"Finansal Kalem": "Toplam Tahmini Brüt Ciro", "Tutar (USD $)": f"${toplam_ciro_usd:,.2f}", "Tutar (TL ₺)": f"₺{toplam_ciro_tl:,.2f}"},
+            {"Finansal Kalem": "Toplam İnşaat Maliyeti + Bonus", "Tutar (USD $)": f"${toplam_maliyet_usd:,.2f}", "Tutar (TL ₺)": f"₺{toplam_maliyet_tl:,.2f}"}
+        ]
+        if "Kat Karşılığı" in is_modeli:
+            preview_table_data.append({"Finansal Kalem": "Arsa Sahibi Payı", "Tutar (USD $)": f"${arsa_sahibi_payi_usd:,.2f}", "Tutar (TL ₺)": "-"})
+        
+        preview_table_data.append({"Finansal Kalem": "Müteahhit Net Kârı", "Tutar (USD $)": f"${mutaahhit_net_kar_usd:,.2f}", "Tutar (TL ₺)": f"₺{mutaahhit_net_kar_tl:,.2f} (%{roi:.1f} ROI)"})
+        
+        st.table(pd.DataFrame(preview_table_data))
+        
+        st.markdown("---")
+        
+        # PDF çıktı şablonu (WeasyPrint için profesyonel HTML-CSS tasarımı)
         arsa_sahibi_row_html = ""
         if "Kat Karşılığı" in is_modeli:
             arsa_sahibi_row_html = f"""
@@ -596,7 +628,6 @@ if selected_keys:
                     </tr>
             """
 
-        # Ortak Kurumsal HTML Şablonu
         report_html_template = f"""
         <!DOCTYPE html>
         <html>
@@ -671,12 +702,7 @@ if selected_keys:
         </html>
         """
         
-        # 1. Streamlit İçinde Canlı HTML Ön İzleme Gösterimi (Kodlar görünmez, doğrudan render edilir)
-        st.markdown(report_html_template, unsafe_allow_html=True)
-        
-        st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
-        
-        # 2. WeasyPrint ile Doğrudan İndirme Butonu
+        # WeasyPrint ile PDF İndirme Butonu
         pdf_bytes = HTML(string=report_html_template).write_pdf()
         
         st.download_button(
