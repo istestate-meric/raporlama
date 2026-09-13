@@ -1080,8 +1080,7 @@ if selected_keys:
         tab5_saf_unite_brut + tab5_bodrum_payi_m2
     )
 
-    st.markdown(f"### 🏢 İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK")
-    st.markdown(f"**Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu**")
+    st.markdown(f"**AKILLI GAYRİMENKUL GELİŞTİRME VE FİZİBİLİTE RAPORU**")
 
     # --- TABLO 1: PROJE VE LOKASYON KÜNYESİ ---
     st.markdown("#### 1. Proje ve Lokasyon Künyesi")
@@ -1376,19 +1375,6 @@ if selected_keys:
                 background: #ffffff;
                 padding: 0;
             }}
-            /* Güçlü Üst Banner / Vurgu Alanı */
-            .top-banner-bar {{
-                background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
-                color: #ffffff;
-                padding: 6px 12px;
-                text-align: center;
-                font-weight: bold;
-                font-size: 9.5px;
-                letter-spacing: 0.8px;
-                text-transform: uppercase;
-                margin-bottom: 5px;
-                border-radius: 3px;
-            }}
             .header-table {{
                 width: 100%;
                 border-collapse: collapse;
@@ -1405,19 +1391,12 @@ if selected_keys:
                 text-align: center;
             }}
             h2 {{
-                font-size: 13px;
+                font-size: 12px;
                 font-weight: 800;
                 color: #0f172a;
                 margin: 0;
                 letter-spacing: -0.5px;
-            }}
-            p.sub {{
-                font-size: 9px;
-                color: #475569;
-                margin: 1px 0 0 0;
-                font-weight: 600;
                 text-transform: uppercase;
-                letter-spacing: 0.5px;
             }}
             .section-title {{
                 font-size: 9px;
@@ -1463,14 +1442,11 @@ if selected_keys:
         </head>
         <body>
         <div class="report-container">
-            <div class="top-banner-bar">İstestate & Meriç İnşaat — Yatırım Komitesi Onaylı Fizibilite Raporu</div>
-            
             <table class="header-table">
                 <tr>
                     <td style="width: 25%; text-align: left;">{pdf_logo1_html}</td>
                     <td style="width: 50%;" class="title-box">
-                        <h2>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT</h2>
-                        <p class="sub">Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu</p>
+                        <h2>AKILLI GAYRİMENKUL GELİŞTİRME VE FİZİBİLİTE RAPORU</h2>
                     </td>
                     <td style="width: 25%; text-align: right;">{pdf_logo2_html}</td>
                 </tr>
