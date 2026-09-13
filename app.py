@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 import pdfplumber
 import pandas as pd
 import streamlit as st
+from weasyprint import HTML, CSS
 
 st.set_page_config(
     page_title="İstestate & Meriç İnşaat - Fizibilite Portalı",
@@ -577,14 +578,14 @@ if selected_keys:
             f_col3.metric("İş Modeli", "Doğrudan Yatırım")
         f_col4.metric("Müteahhit Net Karı", f"${mutaahhit_net_kar_usd:,.2f}", f"₺{mutaahhit_net_kar_tl:,.2f} (%{roi:.1f} ROI)")
         
-        st.info("💡 **İpucu:** Raporun kurumsal taslak ön izlemesini incelemek ve PDF olarak indirmek için yandaki **'🖨️ Rapor Ön İzleme & PDF'** sekmesine geçiş yapabilirsiniz.")
+        st.info("💡 **İpucu:** Raporun kurumsal canlı ön izlemesini incelemek ve PDF olarak indirmek için yandaki **'🖨️ Rapor Ön İzleme & PDF'** sekmesine geçiş yapabilirsiniz.")
 
     # --- 5. SEKME: RAPOR ÖN İZLEME VE PDF İNDİRME MERKEZİ ---
     with tab5:
         st.subheader("🖨️ Kurumsal Rapor Ön İzleme ve PDF İndirme Merkezi")
-        st.write("Aşağıda hazırlanan raporun canlı ön izlemesi yer almaktadır. Butona tıklayarak raporu yeni bir pencerede açabilir ve doğrudan **PDF Olarak Kaydedebilirsiniz**.")
+        st.write("Aşağıda hazırlanan raporun canlı ön izlemesi yer almaktadır. Butona tıklayarak doğrudan **PDF Olarak İndirebilirsiniz**.")
         
-        # Dinamik Tablo Satırı Oluşumu (Güvenli HTML Ayrıştırma)
+        # Dinamik Tablo Satırı Oluşumu
         arsa_sahibi_row_html = ""
         if "Kat Karşılığı" in is_modeli:
             arsa_sahibi_row_html = f"""
@@ -595,86 +596,95 @@ if selected_keys:
                     </tr>
             """
 
-        # Ortak HTML Şablonu
+        # Ortak Kurumsal HTML Şablonu
         report_html_template = f"""
-        <div id="printable-report" style="font-family: 'Helvetica', 'Arial', sans-serif; color: #1e293b; background: #ffffff; padding: 30px; border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-            <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 25px;">
-                <h2 style="font-size: 22px; font-weight: bold; color: #0f172a; margin: 0;">İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK</h2>
-                <p style="font-size: 14px; color: #475569; margin-top: 5px; font-weight: 600;">Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu</p>
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <meta charset="utf-8">
+        <style>
+            body {{ font-family: 'Helvetica', 'Arial', sans-serif; color: #1e293b; background: #ffffff; padding: 20px; }}
+            .report-container {{ background: #ffffff; padding: 25px; border: 1px solid #cbd5e1; border-radius: 12px; }}
+            .header-title {{ text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 25px; }}
+            h2 {{ font-size: 20px; font-weight: bold; color: #0f172a; margin: 0; }}
+            p.sub {{ font-size: 13px; color: #475569; margin-top: 5px; font-weight: 600; }}
+            h3 {{ font-size: 14px; font-weight: bold; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-top: 20px; }}
+            p.content-line {{ font-size: 12px; margin: 5px 0; }}
+            table {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }}
+            th {{ background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 6px; text-align: left; }}
+            td {{ border: 1px solid #cbd5e1; padding: 6px; }}
+            .footer {{ font-size: 10px; color: #64748b; text-align: center; margin-top: 30px; border-top: 1px dashed #cbd5e1; padding-top: 10px; }}
+        </style>
+        </head>
+        <body>
+        <div class="report-container">
+            <div class="header-title">
+                <h2>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK</h2>
+                <p class="sub">Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu</p>
             </div>
             
-            <h3 style="font-size: 15px; font-weight: bold; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-top: 20px;">1. Proje ve Lokasyon Künyesi</h3>
-            <p style="font-size: 13px; margin: 6px 0;"><b>Seçilen Lokasyon / Mahalle:</b> {detected_mahalle}</p>
-            <p style="font-size: 13px; margin: 6px 0;"><b>Proje Tipi:</b> {selected_proje_tipi}</p>
-            <p style="font-size: 13px; margin: 6px 0;"><b>İş Modeli:</b> {is_modeli}</p>
-            <p style="font-size: 13px; margin: 6px 0;"><b>Yasal Brüt Emsal Tavanı:</b> {yasal_max_brut_insaat_alani:,.2f} m²</p>
+            <h3>1. Proje ve Lokasyon Künyesi</h3>
+            <p class="content-line"><b>Seçilen Lokasyon / Mahalle:</b> {detected_mahalle}</p>
+            <p class="content-line"><b>Proje Tipi:</b> {selected_proje_tipi}</p>
+            <p class="content-line"><b>İş Modeli:</b> {is_modeli}</p>
+            <p class="content-line"><b>Yasal Brüt Emsal Tavanı:</b> {yasal_max_brut_insaat_alani:,.2f} m²</p>
             
-            <h3 style="font-size: 15px; font-weight: bold; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-top: 20px;">2. Mimari ve Bağımsız Bölüm Planlaması</h3>
-            <p style="font-size: 13px; margin: 6px 0;"><b>Bağımsız Bölüm / Villa Adedi:</b> {curr_hb} Adet</p>
-            <p style="font-size: 13px; margin: 6px 0;"><b>Havuz Planlama Modeli:</b> {curr_hp}</p>
-            <p style="font-size: 13px; margin: 6px 0;"><b>Ortalama Ünite Brüt Alanı:</b> {ortalama_unite_brut_alan:,.2f} m²</p>
+            <h3>2. Mimari ve Bağımsız Bölüm Planlaması</h3>
+            <p class="content-line"><b>Bağımsız Bölüm / Villa Adedi:</b> {curr_hb} Adet</p>
+            <p class="content-line"><b>Havuz Planlama Modeli:</b> {curr_hp}</p>
+            <p class="content-line"><b>Ortalama Ünite Brüt Alanı:</b> {ortalama_unite_brut_alan:,.2f} m²</p>
             
-            <h3 style="font-size: 15px; font-weight: bold; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-top: 20px;">3. Finansal Fizibilite ve Ciro Analizi ($ USD)</h3>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px;">
+            <h3>3. Finansal Fizibilite ve Ciro Analizi ($ USD)</h3>
+            <table>
                 <thead>
-                    <tr style="background-color: #f8fafc;">
-                        <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">Finansal Kalem</th>
-                        <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">Tutar (USD $)</th>
-                        <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">Tutar (TL ₺)</th>
+                    <tr>
+                        <th>Finansal Kalem</th>
+                        <th style="text-align: right;">Tutar (USD $)</th>
+                        <th style="text-align: right;">Tutar (TL ₺)</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td style="border: 1px solid #cbd5e1; padding: 8px;">Toplam Tahmini Brüt Ciro</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">${toplam_ciro_usd:,.2f}</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">₺{toplam_ciro_tl:,.2f}</td>
+                        <td>Toplam Tahmini Brüt Ciro</td>
+                        <td style="text-align: right;">${toplam_ciro_usd:,.2f}</td>
+                        <td style="text-align: right;">₺{toplam_ciro_tl:,.2f}</td>
                     </tr>
                     <tr>
-                        <td style="border: 1px solid #cbd5e1; padding: 8px;">Toplam İnşaat Maliyeti + Bonus</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">${toplam_maliyet_usd:,.2f}</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">₺{toplam_maliyet_tl:,.2f}</td>
+                        <td>Toplam İnşaat Maliyeti + Bonus</td>
+                        <td style="text-align: right;">${toplam_maliyet_usd:,.2f}</td>
+                        <td style="text-align: right;">₺{toplam_maliyet_tl:,.2f}</td>
                     </tr>
                     {arsa_sahibi_row_html}
                     <tr style="background-color: #f1f5f9; font-weight: bold;">
-                        <td style="border: 1px solid #cbd5e1; padding: 8px;">Müteahhit Net Kârı</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">${mutaahhit_net_kar_usd:,.2f}</td>
-                        <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">₺{mutaahhit_net_kar_tl:,.2f} (%{roi:.1f} ROI)</td>
+                        <td>Müteahhit Net Kârı</td>
+                        <td style="text-align: right;">${mutaahhit_net_kar_usd:,.2f}</td>
+                        <td style="text-align: right;">₺{mutaahhit_net_kar_tl:,.2f} (%{roi:.1f} ROI)</td>
                     </tr>
                 </tbody>
             </table>
             
-            <p style="font-size: 11px; color: #64748b; text-align: center; margin-top: 35px; border-top: 1px dashed #cbd5e1; padding-top: 15px;">
+            <div class="footer">
                 Bu rapor İstestate Gayrimenkul & Meriç İnşaat Emlak Akıllı Fizibilite Portalı tarafından otomatik olarak üretilmiştir.
-            </p>
+            </div>
         </div>
+        </body>
+        </html>
         """
         
-        # 1. Streamlit İçinde Canlı HTML Ön İzleme Gösterimi
+        # 1. Streamlit İçinde Canlı HTML Ön İzleme Gösterimi (Kodlar görünmez, doğrudan render edilir)
         st.markdown(report_html_template, unsafe_allow_html=True)
         
         st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
         
-        # 2. Yeni Pencerede Açıp Tam Raporu Yazdıran Güvenli JS Scripti
-        escaped_html = report_html_template.replace("`", "\\`").replace("$", "\\$").replace("\n", " ")
-        print_button_html = f"""
-        <script>
-        function printReport() {{
-            var myWindow = window.open('', '_blank', 'width=900,height=800');
-            myWindow.document.write('<html><head><title>İstestate & Meriç İnşaat - Fizibilite Raporu</title></head><body style="padding: 30px; background: #fff;">');
-            myWindow.document.write(`{escaped_html}`);
-            myWindow.document.write('</body></html>');
-            myWindow.document.close();
-            myWindow.focus();
-            setTimeout(function() {{
-                myWindow.print();
-            }}, 500);
-        }}
-        </script>
-        <button onclick="printReport()" style="width: 100%; background-color: #0f172a; color: white; padding: 14px 20px; font-size: 15px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-            🖨️ Yeni Pencerede Aç & PDF Olarak Kaydet
-        </button>
-        """
+        # 2. WeasyPrint ile Doğrudan İndirme Butonu
+        pdf_bytes = HTML(string=report_html_template).write_pdf()
         
-        st.components.v1.html(print_button_html, height=70)
+        st.download_button(
+            label="📥 Kurumsal Fizibilite Raporunu PDF Olarak İndir",
+            data=pdf_bytes,
+            file_name=f"Fizibilite_Raporu_{detected_mahalle}_{selected_proje_tipi.replace(' ', '_')}.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
 else:
     st.info("👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden bir **Ada** seçip ilgili parselleri işaretleyin veya yeni bir imar belgesi (PDF) yükleyin.")
