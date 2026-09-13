@@ -660,42 +660,41 @@ if selected_keys:
         st.markdown(f"- **Ünite Başına Düşen Net Arsa Payı:** {toplam_net_arsa_alani:,.2f} m² ({tab5_unite_basi_net_arsa:,.2f} m² / Ünite)")
         
         st.markdown("#### Bağımsız Bölüm Başına Detaylı Alan ve Dağılımı")
-        pdf_detay_rows_html = f"""
-            <tr>
-                <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ana Ünite İnşaat Alanı (Brüt)</td>
-                <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ortalama Bağımsız Bölüm Kapalı Alanı</td>
-                <td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{tab5_saf_unite_brut:,.2f} m²</td>
-            </tr>
-            <tr>
-                <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Bodrum Payı</td>
-                <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ortalama Bodrum Payı</td>
-                <td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{tab5_bodrum_payi_m2:,.2f} m²</td>
-            </tr>
-            <tr>
-                <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Havuz Payı</td>
-                <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">{curr_hp}</td>
-                <td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{tab5_havuz_payi_m2:,.2f} m²</td>
-            </tr>
-            <tr style="background-color: #f8fafc; font-weight: bold;">
-                <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Toplam Bağımsız Bölüm Brüt Alanı (Eklentiler Dahil)</td>
-                <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ana Ünite + Bodrum + Havuz Payı</td>
-                <td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; color: #1e3a8a;">{tab5_toplam_unite_brut_dahil_eklentiler:,.2f} m²</td>
-            </tr>
-        """
-        st.markdown(f"""
-        <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 15px;">
-            <thead>
-                <tr style="background-color: #f1f5f9;">
-                    <th style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: left;">Bileşen</th>
-                    <th style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: left;">Açıklama / Model</th>
-                    <th style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right;">Birim Değeri</th>
-                </tr>
-            </thead>
-            <tbody>
-                {pdf_detay_rows_html}
-            </tbody>
-        </table>
-        """, unsafe_allow_html=True)
+        
+        # HTML etiketlerinin en soldan başlaması (girintisiz olması) kod bloğu hatasını engeller
+        pdf_detay_rows_html = f"""<tr>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ana Ünite İnşaat Alanı (Brüt)</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ortalama Bağımsız Bölüm Kapalı Alanı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{tab5_saf_unite_brut:,.2f} m²</td>
+</tr>
+<tr>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Bodrum Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ortalama Bodrum Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{tab5_bodrum_payi_m2:,.2f} m²</td>
+</tr>
+<tr>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Havuz Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">{curr_hp}</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{tab5_havuz_payi_m2:,.2f} m²</td>
+</tr>
+<tr style="background-color: #f8fafc; font-weight: bold;">
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Toplam Bağımsız Bölüm Brüt Alanı (Eklentiler Dahil)</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ana Ünite + Bodrum + Havuz Payı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; color: #1e3a8a;">{tab5_toplam_unite_brut_dahil_eklentiler:,.2f} m²</td>
+</tr>"""
+
+        st.markdown(f"""<table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 15px;">
+<thead>
+<tr style="background-color: #f1f5f9;">
+<th style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: left;">Bileşen</th>
+<th style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: left;">Açıklama / Model</th>
+<th style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right;">Birim Değeri</th>
+</tr>
+</thead>
+<tbody>
+{pdf_detay_rows_html}
+</tbody>
+</table>""", unsafe_allow_html=True)
         
         st.markdown("#### 3. Finansal Fizibilite ve Ciro Analizi ($ USD)")
         
