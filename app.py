@@ -558,40 +558,40 @@ if selected_keys:
         tekil_havuz_payi = 30.0 if havuz_tercihi == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 / hedef_bagimsiz_bolum if havuz_tercihi == "Ortak / Sosyal Tesis Havuzu" else 0.0)
         toplam_unite_brut_dahil_eklentiler = ortalama_unite_alani + ortalama_bodrum_alani + tekil_havuz_payi
 
-        # 3 Sütunlu Finansal Tablo Yapısına Uyarlanmış HTML Tablosu (Tab 3 ve Tab 5 için)
+        # Kurumsal Tam Uyumlu, Net Okunabilir Özel Tablo Tasarımı (Koyu mod ve beyaz mod uyumlu)
         tab3_detay_rows_html = f"""<tr>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ana Ünite İnşaat Alanı (Brüt)</td>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ortalama Bağımsız Bölüm Kapalı Alanı</td>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{ortalama_unite_alani:,.2f} m²</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ana Ünite İnşaat Alanı (Brüt)</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ortalama Bağımsız Bölüm Kapalı Alanı</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #0f172a; text-align: right; font-weight: 700;">{ortalama_unite_alani:,.2f} m²</td>
 </tr>
 <tr>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Bodrum Payı</td>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ortalama Bodrum Payı</td>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{ortalama_bodrum_alani:,.2f} m²</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #1e293b;">Bodrum Payı</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #1e293b;">Ortalama Bodrum Payı</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #1e293b; text-align: right; font-weight: 700;">{ortalama_bodrum_alani:,.2f} m²</td>
 </tr>
 <tr>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Havuz Payı</td>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">{havuz_tercihi}</td>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; font-weight: 600;">{tekil_havuz_payi:,.2f} m²</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Havuz Payı</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">{havuz_tercihi}</td>
+<td style="border: 1px solid #475569; padding: 10px 14px; color: #38bdf8; background-color: #0f172a; text-align: right; font-weight: 700;">{tekil_havuz_payi:,.2f} m²</td>
 </tr>
-<tr style="background-color: #f8fafc; font-weight: bold;">
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Toplam Bağımsız Bölüm Brüt Alanı (Eklentiler Dahil)</td>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ana Ünite + Bodrum + Havuz Payı</td>
-<td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; color: #1e3a8a;">{toplam_unite_brut_dahil_eklentiler:,.2f} m²</td>
+<tr style="font-weight: bold;">
+<td style="border: 1px solid #475569; padding: 11px 14px; color: #ffffff; background-color: #1e3a8a;">Toplam Bağımsız Bölüm Brüt Alanı (Eklentiler Dahil)</td>
+<td style="border: 1px solid #475569; padding: 11px 14px; color: #ffffff; background-color: #1e3a8a;">Ana Ünite + Bodrum + Havuz Payı</td>
+<td style="border: 1px solid #475569; padding: 11px 14px; color: #38bdf8; background-color: #1e3a8a; text-align: right; font-weight: 800;">{toplam_unite_brut_dahil_eklentiler:,.2f} m²</td>
 </tr>"""
 
-        st.markdown(f"""<table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 15px;">
+        st.markdown(f"""<div style="overflow-x: auto; margin-bottom: 20px;"><table style="width: 100%; border-collapse: collapse; font-size: 14px;">
 <thead>
-<tr style="background-color: #f1f5f9;">
-<th style="border: 1px solid #cbd5e1; padding: 9px 12px; text-align: left;">Bileşen</th>
-<th style="border: 1px solid #cbd5e1; padding: 9px 12px; text-align: left;">Açıklama / Model</th>
-<th style="border: 1px solid #cbd5e1; padding: 9px 12px; text-align: right;">Birim Değeri</th>
+<tr style="background-color: #020617; color: #ffffff;">
+<th style="border: 1px solid #475569; padding: 12px 14px; text-align: left; font-weight: 700;">Bileşen</th>
+<th style="border: 1px solid #475569; padding: 12px 14px; text-align: left; font-weight: 700;">Açıklama / Model</th>
+<th style="border: 1px solid #475569; padding: 12px 14px; text-align: right; font-weight: 700;">Birim Değeri</th>
 </tr>
 </thead>
 <tbody>
 {tab3_detay_rows_html}
 </tbody>
-</table>""", unsafe_allow_html=True)
+</table></div>""", unsafe_allow_html=True)
 
     with tab4:
         st.subheader("📑 Proje Raporu ve Finansal Fizibilite Matrisi")
@@ -772,7 +772,7 @@ if selected_keys:
                 width: 100%;
                 border-collapse: collapse;
                 border-bottom: 2px solid #0f172a;
-                padding-bottom: 15px;
+                padding-bottom: 15mm;
                 margin-bottom: 20px;
             }}
             .header-table td {{
