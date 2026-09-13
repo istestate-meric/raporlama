@@ -1489,7 +1489,7 @@ if selected_keys:
                 </tbody>
             </table>
             
-            <div class="section-title">2. Mimari e Bağımsız Bölüm Planlaması</div>
+            <div class="section-title">2. Mimari ve Bağımsız Bölüm Planlaması</div>
             <table class="data-table">
                 <thead>
                     <tr>
