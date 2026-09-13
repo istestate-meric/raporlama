@@ -327,7 +327,7 @@ if selected_keys:
                 base_toplab_m2 = f["giren_m2"]
                 yasal_max_brut_insaat_alani += base_toplab_m2 * f["kaks"] * emsal_artis_orani
 
-    # --- KÜRESEL KONTROL PANELİ (PROJE TİPİ VE OTOMATİK PARAMETRE TÜRETME) ---
+    # --- KÜRESEL KONTROL PANELİ (PROJE TİPİ, İŞ MODELİ VE KAT KARŞILIĞI PARAMETRELERİ) ---
     st.markdown("---")
     st.subheader("⚙️ Küresel Proje Parametreleri ve İş Modeli")
     col_global1, col_global2 = st.columns(2)
@@ -352,6 +352,20 @@ if selected_keys:
             ],
             key="global_is_modeli"
         )
+
+    # Kat Karşılığı seçildiğinde küresel alanda aktifleşen özel parametreler
+    arsa_payi_orani = 0.0
+    arsa_bonus_usd = 0.0
+    if "Kat Karşılığı" in is_modeli:
+        st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+        col_gk1, col_gk2 = st.columns(2)
+        with col_gk1:
+            arsa_payi_orani = st.slider("Arsa Sahibi Payı / Kat Karşılığı Oranı (%)", min_value=0, max_value=70, value=50, key="global_arsa_payi_slider")
+        with col_gk2:
+            arsa_bonus_usd = st.number_input("💵 Arsa Sahibine Verilecek Nakit Bonus / İmza Parası ($)", min_value=0.0, value=0.0, step=10000.0, format="%.2f", key="global_arsa_bonus_input")
+    else:
+        st.info("ℹ️ Doğrudan Satılık / Arsa Yatırım Raporu modülündesiniz. Arsa bedeli doğrudan yatırım maliyetine eklenecektir.")
+
     st.markdown("---")
 
     # PROJE TİPİNE GÖRE BRÜT MİMARİ KARAKTERİSTİK MATRİSİ
@@ -373,7 +387,7 @@ if selected_keys:
         st.session_state["last_proje_tipi"] = selected_proje_tipi
         st.session_state["hedef_bagimsiz_bolum"] = tahmini_ideal_adet
         st.session_state["havuz_tercihi"] = tahmini_havuz_modeli
-        st.session_state["hb_input"] = tahmini_ideal_adet  # Streamlit number_input state senkronizasyonu
+        st.session_state["hb_input"] = tahmini_ideal_adet
 
     tab1, tab2, tab3, tab4 = st.tabs(["📊 Seçilen Parseller Özeti", "📐 İnşaat Alanı Hesabı", "🏛️ Mimari Fizibilite", "📑 Proje Raporu & Fizibilite"])
     
@@ -513,7 +527,7 @@ if selected_keys:
         st.success(f"⚡ **Canlı TCMB Dolar Kuru:** 1 USD = {rates['USD']:.2f} TL | **Yasal Brüt Emsal Tavanı:** {yasal_max_brut_insaat_alani:,.2f} m² | **Hesaplama Tabanı:** Tamamen Brüt Alanlar Üzerinden")
 
         st.markdown("---")
-        col_f1, col_f2, col_f3 = st.columns(3)
+        col_f1, col_f2 = st.columns(2)
         
         if manual_override:
             birim_maliyet = col_f1.number_input("İnşaat M² Brüt Maliyeti ($) [Özel]", value=float(real_maliyet_usd), step=50.0)
@@ -521,14 +535,6 @@ if selected_keys:
         else:
             birim_maliyet = col_f1.number_input("İnşaat M² Brüt Maliyeti ($) [Piyasa]", value=float(real_maliyet_usd), disabled=True)
             birim_satis = col_f2.number_input("M² Brüt Satış Fiyatı ($) [Piyasa]", value=float(real_satis_usd), disabled=True)
-
-        arsa_bonus_usd = 0.0
-        if "Kat Karşılığı" in is_modeli:
-            arsa_payi_orani = col_f3.slider("Arsa Sahibi Payı / Kat Karşılığı Oranı (%)", min_value=0, max_value=70, value=50)
-            arsa_bonus_usd = st.number_input("💵 Arsa Sahibine Verilecek Nakit Bonus / İmza Parası ($)", min_value=0.0, value=0.0, step=10000.0, format="%.2f")
-        else:
-            arsa_payi_orani = 0.0
-            col_f3.info("ℹ️ Doğrudan Satılık modelinde arsa bedeli doğrudan yatırım maliyetine eklenir.")
 
         toplam_maliyet_usd = (yasal_max_brut_insaat_alani * birim_maliyet) + arsa_bonus_usd
         
