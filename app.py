@@ -409,7 +409,14 @@ if selected_keys:
         st.session_state["havuz_tercihi"] = tahmini_havuz_modeli
         st.session_state["hb_input"] = tahmini_ideal_adet
 
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 Seçilen Parseller Özeti", "📐 İnşaat Alanı Hesabı", "🏛️ Mimari Fizibilite", "📑 Proje Raporu & PDF İndir"])
+    # --- 5 SEKME YAPISI ---
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "📊 Seçilen Parseller Özeti", 
+        "📐 İnşaat Alanı Hesabı", 
+        "🏛️ Mimari Fizibilite", 
+        "📑 Proje Raporu & Fizibilite",
+        "🖨️ Rapor Ön İzleme & PDF"
+    ])
     
     with tab1:
         st.subheader("Seçilen Parsellerin İmar Özet Tablosu")
@@ -517,7 +524,7 @@ if selected_keys:
         m_col4.metric("Mimari Ölçek Uygunluğu", risk_durumu)
 
     with tab4:
-        st.subheader("📑 Proje Raporu, Fizibilite ve PDF İndirme Aracı")
+        st.subheader("📑 Proje Raporu ve Finansal Fizibilite Matrisi")
         
         curr_hb = st.session_state["hedef_bagimsiz_bolum"]
         curr_hp = st.session_state["havuz_tercihi"]
@@ -532,7 +539,7 @@ if selected_keys:
         with col_m1:
             st.caption(f"📍 Referans Lokasyon: **{detected_mahalle}** | Proje Tipi: **{selected_proje_tipi}**")
         with col_m2:
-            manual_override = st.checkbox("Özel / Manuel Fiyat Girişi Yap", value=False)
+            manual_override = st.checkbox("Özel / Manuel Fiyat Girişi Yap", value=False, key="tab4_manual_override")
 
         real_satis_usd, real_maliyet_usd, otomatik_bodrum_orani = get_realistic_market_pricing(detected_mahalle, selected_proje_tipi, rates["USD"])
 
@@ -542,11 +549,11 @@ if selected_keys:
         col_f1, col_f2 = st.columns(2)
         
         if manual_override:
-            birim_maliyet = col_f1.number_input("İnşaat M² Brüt Maliyeti ($) [Özel]", value=float(real_maliyet_usd), step=50.0)
-            birim_satis = col_f2.number_input("M² Brüt Satış Fiyatı ($) [Özel]", value=float(real_satis_usd), step=100.0)
+            birim_maliyet = col_f1.number_input("İnşaat M² Brüt Maliyeti ($) [Özel]", value=float(real_maliyet_usd), step=50.0, key="tab4_maliyet")
+            birim_satis = col_f2.number_input("M² Brüt Satış Fiyatı ($) [Özel]", value=float(real_satis_usd), step=100.0, key="tab4_satis")
         else:
-            birim_maliyet = col_f1.number_input("İnşaat M² Brüt Maliyeti ($) [Piyasa]", value=float(real_maliyet_usd), disabled=True)
-            birim_satis = col_f2.number_input("M² Brüt Satış Fiyatı ($) [Piyasa]", value=float(real_satis_usd), disabled=True)
+            birim_maliyet = col_f1.number_input("İnşaat M² Brüt Maliyeti ($) [Piyasa]", value=float(real_maliyet_usd), disabled=True, key="tab4_maliyet_dis")
+            birim_satis = col_f2.number_input("M² Brüt Satış Fiyatı ($) [Piyasa]", value=float(real_satis_usd), disabled=True, key="tab4_satis_dis")
 
         toplam_maliyet_usd = (yasal_max_brut_insaat_alani * birim_maliyet) + arsa_bonus_usd
         normal_ciro = net_emsal_tabani_rapor * birim_satis
@@ -576,71 +583,91 @@ if selected_keys:
         else:
             f_col3.metric("İş Modeli", "Doğrudan Yatırım")
         f_col4.metric("Müteahhit Net Karı", f"${mutaahhit_net_kar_usd:,.2f}", f"₺{mutaahhit_net_kar_tl:,.2f} (%{roi:.1f} ROI)")
+        
+        st.info("💡 **İpucu:** Raporun kurumsal taslak ön izlemesini incelemek ve PDF olarak indirmek için yandaki **'🖨️ Rapor Ön İzleme & PDF'** sekmesine geçiş yapabilirsiniz.")
 
-        st.markdown("---")
+    # --- 5. SEKME: RAPOR ÖN İZLEME VE PDF İNDİRME MERKEZİ ---
+    with tab5:
+        st.subheader("🖨️ Kurumsal Rapor Ön İzleme ve PDF İndirme Merkezi")
+        st.write("Aşağıda hazırlanan raporun tarayıcı içi canlı ön izlemesi yer almaktadır. Tasarımı onaylıyorsanız alt kısımdaki butonu kullanarak doğrudan PDF belgesini indirebilirsiniz.")
         
-        # --- PDF ÖN İZLEME VE İNDİRME BÖLÜMÜ ---
-        st.subheader("📥 Kurumsal PDF Raporu Oluştur")
+        # Ortak HTML Şablonu Değişkeni
+        report_html_template = f"""
+        <div style="font-family: 'Helvetica', 'Arial', sans-serif; color: #1e293b; background: #ffffff; padding: 30px; border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+            <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 25px;">
+                <h2 style="font-size: 22px; font-weight: bold; color: #0f172a; margin: 0;">İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK</h2>
+                <p style="font-size: 14px; color: #475569; margin-top: 5px; font-weight: 600;">Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu</p>
+            </div>
+            
+            <h3 style="font-size: 15px; font-weight: bold; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-top: 20px;">1. Proje ve Lokasyon Künyesi</h3>
+            <p style="font-size: 13px; margin: 6px 0;"><b>Seçilen Lokasyon / Mahalle:</b> {detected_mahalle}</p>
+            <p style="font-size: 13px; margin: 6px 0;"><b>Proje Tipi:</b> {selected_proje_tipi}</p>
+            <p style="font-size: 13px; margin: 6px 0;"><b>İş Modeli:</b> {is_modeli}</p>
+            <p style="font-size: 13px; margin: 6px 0;"><b>Yasal Brüt Emsal Tavanı:</b> {yasal_max_brut_insaat_alani:,.2f} m²</p>
+            
+            <h3 style="font-size: 15px; font-weight: bold; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-top: 20px;">2. Mimari ve Bağımsız Bölüm Planlaması</h3>
+            <p style="font-size: 13px; margin: 6px 0;"><b>Bağımsız Bölüm / Villa Adedi:</b> {curr_hb} Adet</p>
+            <p style="font-size: 13px; margin: 6px 0;"><b>Havuz Planlama Modeli:</b> {curr_hp}</p>
+            <p style="font-size: 13px; margin: 6px 0;"><b>Ortalama Ünite Brüt Alanı:</b> {ortalama_unite_brut_alan:,.2f} m²</p>
+            
+            <h3 style="font-size: 15px; font-weight: bold; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-top: 20px;">3. Finansal Fizibilite ve Ciro Analizi ($ USD)</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px;">
+                <thead>
+                    <tr style="background-color: #f8fafc;">
+                        <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: left;">Finansal Kalem</th>
+                        <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">Tutar (USD $)</th>
+                        <th style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">Tutar (TL ₺)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="border: 1px solid #cbd5e1; padding: 8px;">Toplam Tahmini Brüt Ciro</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">${toplam_ciro_usd:,.2f}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">₺{toplam_ciro_tl:,.2f}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #cbd5e1; padding: 8px;">Toplam İnşaat Maliyeti + Bonus</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">${toplam_maliyet_usd:,.2f}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">₺{toplam_maliyet_tl:,.2f}</td>
+                    </tr>
+                    {"<tr><td style='border: 1px solid #cbd5e1; padding: 8px;'>Arsa Sahibi Payı</td><td style='border: 1px solid #cbd5e1; padding: 8px; text-align: right;'>$" + f"{arsa_sahibi_payi_usd:,.2f}" + "</td><td style='border: 1px solid #cbd5e1; padding: 8px; text-align: right;'>-</td></tr>" if "Kat Karşılığı" in is_modeli else ""}
+                    <tr style="background-color: #f1f5f9; font-weight: bold;">
+                        <td style="border: 1px solid #cbd5e1; padding: 8px;">Müteahhit Net Kârı</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">${mutaahhit_net_kar_usd:,.2f}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">₺{mutaahhit_net_kar_tl:,.2f} (%{roi:.1f} ROI)</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <p style="font-size: 11px; color: #64748b; text-align: center; margin-top: 35px; border-top: 1px dashed #cbd5e1; padding-top: 15px;">
+                Bu rapor İstestate Gayrimenkul & Meriç İnşaat Emlak Akıllı Fizibilite Portalı tarafından otomatik olarak üretilmiştir.
+            </p>
+        </div>
+        """
         
+        # 1. Streamlit İçinde HTML Ön İzleme Gösterimi
+        st.markdown(report_html_template, unsafe_allow_html=True)
+        
+        st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
+        
+        # 2. PDF İndirme İşlemi
         if WEASYPRINT_AVAILABLE:
-            if st.button("🚀 PDF Raporunu Hazırla ve İndir", type="primary"):
-                # HTML Rapor İçeriği Oluşturma
-                html_content = f"""
-                <html>
-                <head>
-                    <meta charset="utf-8">
-                    <style>
-                        body {{ font-family: 'Helvetica', 'Arial', sans-serif; color: #1e293b; margin: 0; padding: 20px; }}
-                        .header {{ text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 25px; }}
-                        .title {{ font-size: 20px; font-weight: bold; color: #0f172a; }}
-                        .subtitle {{ font-size: 14px; color: #475569; margin-top: 5px; }}
-                        .section-title {{ font-size: 16px; font-weight: bold; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-top: 20px; margin-bottom: 10px; }}
-                        table {{ width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 12px; }}
-                        th, td {{ border: 1px solid #cbd5e1; padding: 8px; text-align: left; }}
-                        th {{ background-color: #f8fafc; color: #0f172a; }}
-                        .kpi-box {{ background: #f1f5f9; border-radius: 8px; padding: 12px; margin-bottom: 10px; }}
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <div class="title">İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK</div>
-                        <div class="subtitle">Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu</div>
-                    </div>
-                    
-                    <div class="section-title">1. Proje ve Lokasyon Künyesi</div>
-                    <p><b>Seçilen Lokasyon / Mahalle:</b> {detected_mahalle}</p>
-                    <p><b>Proje Tipi:</b> {selected_proje_tipi}</p>
-                    <p><b>İş Modeli:</b> {is_modeli}</p>
-                    <p><b>Yasal Brüt Emsal Tavanı:</b> {yasal_max_brut_insaat_alani:,.2f} m²</p>
-                    
-                    <div class="section-title">2. Mimari ve Bağımsız Bölüm Planlaması</div>
-                    <p><b>Bağımsız Bölüm / Villa Adedi:</b> {curr_hb} Adet</p>
-                    <p><b>Havuz Planlama Modeli:</b> {curr_hp}</p>
-                    <p><b>Ortalama Ünite Brüt Alanı:</b> {ortalama_unite_brut_alan:,.2f} m²</p>
-                    
-                    <div class="section-title">3. Finansal Fizibilite ve Ciro Analizi ($ USD)</div>
-                    <table>
-                        <tr><th>Finansal Kalem</th><th>Tutar (USD $)</th><th>Tutar (TL ₺)</th></tr>
-                        <tr><td>Toplam Tahmini Brüt Ciro</td><td>${toplam_ciro_usd:,.2f}</td><td>₺{toplam_ciro_tl:,.2f}</td></tr>
-                        <tr><td>Toplam İnşaat Maliyeti + Bonus</td><td>${toplam_maliyet_usd:,.2f}</td><td>₺{toplam_maliyet_tl:,.2f}</td></tr>
-                        {'<tr><td>Arsa Sahibi Payı</td><td>$' + f'{arsa_sahibi_payi_usd:,.2f}' + '</td><td>-</td></tr>' if "Kat Karşılığı" in is_modeli else ''}
-                        <tr><td><b>Müteahhit Net Kârı</b></td><td><b>${mutaahhit_net_kar_usd:,.2f}</b></td><td><b>₺{mutaahhit_net_kar_tl:,.2f} (%{roi:.1f} ROI)</b></td></tr>
-                    </table>
-                    
-                    <p style="font-size: 10px; color: #64748b; text-align: center; margin-top: 40px;">Bu rapor İstestate Gayrimenkul & Meriç İnşaat Emlak Akıllı Fizibilite Portalı tarafından otomatik olarak üretilmiştir.</p>
-                </body>
-                </html>
-                """
+            col_dl1, col_dl2 = st.columns([2, 1])
+            with col_dl1:
+                st.success("✅ Ön izleme başarıyla oluşturuldu. Raporu PDF formatında bilgisayarınıza indirebilirsiniz.")
+            with col_dl2:
+                full_pdf_html = f"<html><head><meta charset='utf-8'></head><body>{report_html_template}</body></html>"
+                pdf_bytes = HTML(string=full_pdf_html).write_pdf()
                 
-                pdf_bytes = HTML(string=html_content).write_pdf()
                 st.download_button(
-                    label="📥 PDF Dosyasını Bilgisayara İndir",
+                    label="📥 PDF Raporunu İndir",
                     data=pdf_bytes,
-                    file_name=f"Fizibilite_Raporu_{detected_mahalle}.pdf",
-                    mime="application/pdf"
+                    file_name=f"Fizibilite_Raporu_{detected_mahalle}_Ada_{list(active_parcel_db.values())[0].get('ada', '0')}.pdf",
+                    mime="application/pdf",
+                    type="primary",
+                    use_container_width=True
                 )
-                st.success("✅ PDF Başarıyla Hazırlandı! Yukarıdaki butona tıklayarak indirebilirsiniz.")
         else:
-            st.info("ℹ️ PDF indirme altyapısı (WeasyPrint) aktif. Ön izleme verileri yukarıda eksiksiz sunulmaktadır.")
+            st.warning("⚠️ WeasyPrint kütüphanesi aktif değil. Ön izlemeden faydalanabilir ancak doğrudan PDF dosyası indiremezsiniz.")
 else:
     st.info("👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden bir **Ada** seçip ilgili parselleri işaretleyin veya yeni bir imar belgesi (PDF) yükleyin.")
