@@ -668,7 +668,6 @@ if selected_keys:
             f_col3.metric("İş Modeli", "Doğrudan Yatırım")
         f_col4.metric("Müteahhit Net Karı", f"${mutaahhit_net_kar_usd:,.2f}", f"₺{mutaahhit_net_kar_tl:,.2f} (%{yg_orani:.1f} YG)")
 
-        # --- DÜZELTİLDİ: BAŞINDA BOŞLUK OLMAYAN HTML SATIRLARI ---
         arsa_sahibi_tab4_row_html = ""
         if "Kat Karşılığı" in is_modeli:
             arsa_sahibi_tab4_row_html = f"""<tr>
@@ -730,18 +729,71 @@ if selected_keys:
         st.markdown(f"### 🏢 İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK")
         st.markdown(f"**Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu**")
         
+        # --- TABLO 1: PROJE VE LOKASYON KÜNYESİ ---
         st.markdown("#### 1. Proje ve Lokasyon Künyesi")
-        st.markdown(f"- **Seçilen Lokasyon / Mahalle:** {detected_mahalle}")
-        st.markdown(f"- **Proje Tipi:** {selected_proje_tipi}")
-        st.markdown(f"- **İş Modeli:** {is_modeli}")
-        st.markdown(f"- **Toplam Brüt Arsa Alanı:** {toplam_brut_arsa_alani:,.2f} m²")
-        st.markdown(f"- **Toplam Net Arsa Alanı:** {toplam_net_arsa_alani:,.2f} m²")
-        st.markdown(f"- **Toplam Brüt İnşaat Alanı:** {yasal_max_brut_insaat_alani:,.2f} m²")
+        preview_kunye_rows_html = f"""<tr>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff;">Seçilen Lokasyon / Mahalle</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff; text-align: right; font-weight: 700;">{detected_mahalle}</td>
+</tr>
+<tr>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc;">Proje Tipi</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc; text-align: right; font-weight: 700;">{selected_proje_tipi}</td>
+</tr>
+<tr>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff;">İş Modeli</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff; text-align: right; font-weight: 700;">{is_modeli}</td>
+</tr>
+<tr>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc;">Toplam Brüt Arsa Alanı</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc; text-align: right; font-weight: 700;">{toplam_brut_arsa_alani:,.2f} m²</td>
+</tr>
+<tr>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff;">Toplam Net Arsa Alanı</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff; text-align: right; font-weight: 700;">{toplam_net_arsa_alani:,.2f} m²</td>
+</tr>
+<tr style="font-weight: bold;">
+<td style="border: 1px solid #cbd5e1; padding: 11px 14px; color: #0f172a; background-color: #f1f5f9;">Toplam Brüt İnşaat Alanı</td>
+<td style="border: 1px solid #cbd5e1; padding: 11px 14px; color: #1e3a8a; background-color: #f1f5f9; text-align: right; font-weight: 800;">{yasal_max_brut_insaat_alani:,.2f} m²</td>
+</tr>"""
+
+        st.markdown(f"""<div style="overflow-x: auto; margin-bottom: 20px;"><table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+<thead>
+<tr style="background-color: #f8fafc; color: #0f172a;">
+<th style="border: 1px solid #cbd5e1; padding: 12px 14px; text-align: left; font-weight: 700;">Künye Parametresi</th>
+<th style="border: 1px solid #cbd5e1; padding: 12px 14px; text-align: right; font-weight: 700;">Değer / Açıklama</th>
+</tr>
+</thead>
+<tbody>
+{preview_kunye_rows_html}
+</tbody>
+</table></div>""", unsafe_allow_html=True)
         
+        # --- TABLO 2: MİMARİ VE BAĞIMSIZ BÖLÜM PLANLAMASI ---
         st.markdown("#### 2. Mimari ve Bağımsız Bölüm Planlaması")
-        st.markdown(f"- **{birim_etiketi} Adedi:** {curr_hb} Adet")
-        st.markdown(f"- **Havuz Planlama Modeli:** {curr_hp}")
-        st.markdown(f"- **{birim_etiketi_alt} Başına Net Arsa:** {unite_basi_net_arsa_genel:,.2f} m² / {birim_etiketi_alt}")
+        preview_mimari_rows_html = f"""<tr>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff;">{birim_etiketi} Adedi</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #ffffff; text-align: right; font-weight: 700;">{curr_hb} Adet</td>
+</tr>
+<tr>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc;">Havuz Planlama Modeli</td>
+<td style="border: 1px solid #cbd5e1; padding: 10px 14px; color: #0f172a; background-color: #f8fafc; text-align: right; font-weight: 700;">{curr_hp}</td>
+</tr>
+<tr style="font-weight: bold;">
+<td style="border: 1px solid #cbd5e1; padding: 11px 14px; color: #0f172a; background-color: #f1f5f9;">{birim_etiketi_alt} Başına Net Arsa</td>
+<td style="border: 1px solid #cbd5e1; padding: 11px 14px; color: #1e3a8a; background-color: #f1f5f9; text-align: right; font-weight: 800;">{unite_basi_net_arsa_genel:,.2f} m² / {birim_etiketi_alt}</td>
+</tr>"""
+
+        st.markdown(f"""<div style="overflow-x: auto; margin-bottom: 20px;"><table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+<thead>
+<tr style="background-color: #f8fafc; color: #0f172a;">
+<th style="border: 1px solid #cbd5e1; padding: 12px 14px; text-align: left; font-weight: 700;">Planlama Parametresi</th>
+<th style="border: 1px solid #cbd5e1; padding: 12px 14px; text-align: right; font-weight: 700;">Değer / Model</th>
+</tr>
+</thead>
+<tbody>
+{preview_mimari_rows_html}
+</tbody>
+</table></div>""", unsafe_allow_html=True)
         
         st.markdown(f"#### {birim_etiketi} Başına Detaylı Alan ve Dağılımı")
         
@@ -827,6 +879,46 @@ if selected_keys:
         
         pdf_logo1_html = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 55px; width: auto; object-fit: contain;'>" if img1_base64 else "<span style='font-size:18px; font-weight:bold; color:#1e3a8a;'>İSTESTATE</span>"
         pdf_logo2_html = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 55px; width: auto; object-fit: contain;'>" if img2_base64 else "<span style='font-size:18px; font-weight:bold; color:#1e3a8a;'>MERİÇ İNŞAAT</span>"
+
+        # --- PDF İÇİN KÜNYE TABLOSU HTML ---
+        pdf_kunye_rows_html = f"""<tr>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff;">Seçilen Lokasyon / Mahalle</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff; text-align: right; font-weight: 600;">{detected_mahalle}</td>
+</tr>
+<tr>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc;">Proje Tipi</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc; text-align: right; font-weight: 600;">{selected_proje_tipi}</td>
+</tr>
+<tr>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff;">İş Modeli</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff; text-align: right; font-weight: 600;">{is_modeli}</td>
+</tr>
+<tr>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc;">Toplam Arsa Alanı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc; text-align: right; font-weight: 600;">{toplam_brut_arsa_alani:,.2f} m²</td>
+</tr>
+<tr>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff;">Toplam Net Arsa Alanı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff; text-align: right; font-weight: 600;">{toplam_net_arsa_alani:,.2f} m²</td>
+</tr>
+<tr style="background-color: #f1f5f9; font-weight: bold;">
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Toplam Brüt İnşaat Alanı</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; color: #1e3a8a;">{yasal_max_brut_insaat_alani:,.2f} m²</td>
+</tr>"""
+
+        # --- PDF İÇİN MİMARİ PLANLAMA TABLOSU HTML ---
+        pdf_mimari_rows_html = f"""<tr>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff;">{birim_etiketi} Adedi</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff; text-align: right; font-weight: 600;">{curr_hb} Adet</td>
+</tr>
+<tr>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc;">Havuz Planlama Modeli</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #f8fafc; text-align: right; font-weight: 600;">{curr_hp}</td>
+</tr>
+<tr style="background-color: #f1f5f9; font-weight: bold;">
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px;">{birim_etiketi_alt} Başına Net Arsa</td>
+<td style="border: 1px solid #cbd5e1; padding: 7px 10px; text-align: right; color: #1e3a8a;">{unite_basi_net_arsa_genel:,.2f} m² / {birim_etiketi_alt}</td>
+</tr>"""
 
         pdf_detay_rows_html = f"""<tr>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px; background-color: #ffffff;">Ana Ünite Kapalı Alanı (Brüt)</td>
@@ -938,15 +1030,10 @@ if selected_keys:
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
             }}
-            .content-line {{
-                font-size: 12px;
-                margin: 4px 0;
-                color: #334155;
-            }}
             .data-table {{
                 width: 100%;
                 border-collapse: collapse;
-                margin-top: 10px;
+                margin-top: 5px;
                 font-size: 11px;
             }}
             .data-table th {{
@@ -985,19 +1072,32 @@ if selected_keys:
             </table>
             
             <div class="section-title">1. Proje ve Lokasyon Künyesi</div>
-            <p class="content-line"><b>Seçilen Lokasyon / Mahalle:</b> {detected_mahalle}</p>
-            <p class="content-line"><b>Proje Tipi:</b> {selected_proje_tipi}</p>
-            <p class="content-line"><b>İş Modeli:</b> {is_modeli}</p>
-            <p class="content-line"><b>Toplam Arsa Alanı:</b> {toplam_brut_arsa_alani:,.2f} m²</p>
-            <p class="content-line"><b>Toplam Net Arsa Alanı:</b> {toplam_net_arsa_alani:,.2f} m²</p>
-            <p class="content-line"><b>Toplam Brüt İnşaat Alanı:</b> {yasal_max_brut_insaat_alani:,.2f} m²</p>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Künye Parametresi</th>
+                        <th style="text-align: right;">Değer / Açıklama</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {pdf_kunye_rows_html}
+                </tbody>
+            </table>
             
-            <div class="section-title">2. Mimari ve Planlama</div>
-            <p class="content-line"><b>{birim_etiketi} Adedi:</b> {curr_hb} Adet</p>
-            <p class="content-line"><b>Havuz Planlama Modeli:</b> {curr_hp}</p>
-            <p class="content-line"><b>{birim_etiketi_alt} Başına Net Arsa:</b> {unite_basi_net_arsa_genel:,.2f} m² / {birim_etiketi_alt}</p>
+            <div class="section-title">2. Mimari ve Bağımsız Bölüm Planlaması</div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Planlama Parametresi</th>
+                        <th style="text-align: right;">Değer / Model</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {pdf_mimari_rows_html}
+                </tbody>
+            </table>
             
-            <div style="font-size: 12px; font-weight: bold; color: #0f172a; margin-top: 10px; margin-bottom: 5px;">{birim_etiketi} Başına Detaylı Alan ve Dağılımı</div>
+            <div style="font-size: 11px; font-weight: bold; color: #1e3a8a; text-transform: uppercase; margin-top: 12px; margin-bottom: 5px;">{birim_etiketi} Başına Detaylı Alan ve Dağılımı</div>
             <table class="data-table">
                 <thead>
                     <tr>
