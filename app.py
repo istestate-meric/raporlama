@@ -554,6 +554,24 @@ if selected_keys:
         risk_durumu = "⚠️ RİSKLİ (Çok küçük ölçek)" if ortalama_unite_alani < min_sinir and hedef_bagimsiz_bolum > 1 else "✅ Uygun Ölçek"
         m_col4.metric("Mimari Ölçek Uygunluğu", risk_durumu)
 
+        # --- YENİ: BAĞIMSIZ BÖLÜM BAŞINA DETAYLI ALAN VE EKLENTİ DAĞILIMI ---
+        st.markdown("---")
+        st.markdown("### 🏷️ Bağımsız Bölüm Başına Detaylı Alan ve Eklenti Dağılımı")
+        st.info("💡 Her bir bağımsız ünitenin yapısal bileşenleri, inşaat alanları ve ek yapı payları aşağıda detaylandırılmıştır.")
+
+        tekil_havuz_payi = 30.0 if havuz_tercihi == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 / hedef_bagimsiz_bolum if havuz_tercihi == "Ortak / Sosyal Tesis Havuzu" else 0.0)
+        toplam_unite_brut_dahil_eklentiler = ortalama_unite_alani + ortalama_bodrum_alani + tekil_havuz_payi
+
+        birim_detay_data = [
+            {"Bileşen / Alan Türü": "Ünite Tipi (Mimari Model)", "Açıklama / Model": selected_proje_tipi, "Birim Başına Düşen Değer": f"{hedef_bagimsiz_bolum} Adet Toplam"},
+            {"Bileşen / Alan Türü": "Ana Ünite İnşaat Alanı (Brüt)", "Açıklama / Model": "Ortalama Bağımsız Bölüm Kapalı Alanı", "Birim Başına Düşen Değer": f"{ortalama_unite_alani:,.2f} m²"},
+            {"Bileşen / Alan Türü": "Eklenti: Bodrum / Teras Payı", "Açıklama / Model": p_spec["etiket_bodrum"], "Birim Başına Düşen Değer": f"{ortalama_bodrum_alani:,.2f} m²"},
+            {"Bileşen / Alan Türü": "Eklenti: Havuz / Sosyal Donatı Payı", "Açıklama / Model": havuz_tercihi, "Birim Başına Düşen Değer": f"{tekil_havuz_payi:,.2f} m²"},
+            {"Bileşen / Alan Türü": "Ünite Başına Düşen Net Arsa Payı", "Açıklama / Model": "Parsel Net Arsa / Toplam Ünite Adedi", "Birim Başına Düşen Değer": f"{unite_basi_net_arsa_genel:,.2f} m²"},
+            {"Bileşen / Alan Türü": "Toplam Bağımsız Bölüm Brüt Alanı (Eklentiler Dahil)", "Açıklama / Model": "Ana Ünite + Bodrum + Havuz Payı", "Birim Başına Düşen Değer": f"{toplam_unite_brut_dahil_eklentiler:,.2f} m²"}
+        ]
+        st.table(pd.DataFrame(birim_detay_data))
+
     with tab4:
         st.subheader("📑 Proje Raporu ve Finansal Fizibilite Matrisi")
         
