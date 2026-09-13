@@ -554,7 +554,7 @@ if selected_keys:
             arsa_sahibi_payi_usd = 0.0
             mutaahhit_net_kar_usd = toplam_ciro_usd - toplam_maliyet_usd
             
-        roi = (mutaahhit_net_kar_usd / toplam_maliyet_usd * 100) if toplam_maliyet_usd > 0 else 0
+        yg_orani = (mutaahhit_net_kar_usd / toplam_maliyet_usd * 100) if toplam_maliyet_usd > 0 else 0
         toplam_ciro_tl = toplam_ciro_usd * rates['USD']
         toplam_maliyet_tl = toplam_maliyet_usd * rates['USD']
         mutaahhit_net_kar_tl = mutaahhit_net_kar_usd * rates['USD']
@@ -569,7 +569,7 @@ if selected_keys:
             f_col3.metric("Arsa Sahibi Payı", f"${arsa_sahibi_payi_usd:,.2f}")
         else:
             f_col3.metric("İş Modeli", "Doğrudan Yatırım")
-        f_col4.metric("Müteahhit Net Karı", f"${mutaahhit_net_kar_usd:,.2f}", f"₺{mutaahhit_net_kar_tl:,.2f} (%{roi:.1f} ROI)")
+        f_col4.metric("Müteahhit Net Karı", f"${mutaahhit_net_kar_usd:,.2f}", f"₺{mutaahhit_net_kar_tl:,.2f} (%{yg_orani:.1f} YG)")
         
         st.info("💡 **İpucu:** Raporun kurumsal ön izlemesini incelemek ve PDF olarak indirmek için yandaki **'🖨️ Rapor Ön İzleme & PDF'** sekmesine geçiş yapabilirsiniz.")
 
@@ -612,12 +612,12 @@ if selected_keys:
         if "Kat Karşılığı" in is_modeli:
             preview_table_data.append({"Finansal Kalem": "Arsa Sahibi Payı", "Tutar (USD $)": f"${arsa_sahibi_payi_usd:,.2f}", "Tutar (TL ₺)": "-"})
         
-        preview_table_data.append({"Finansal Kalem": "Müteahhit Net Kârı", "Tutar (USD $)": f"${mutaahhit_net_kar_usd:,.2f}", "Tutar (TL ₺)": f"₺{mutaahhit_net_kar_tl:,.2f} (%{roi:.1f} ROI)"})
+        preview_table_data.append({"Finansal Kalem": "Müteahhit Net Kârı", "Tutar (USD $)": f"${mutaahhit_net_kar_usd:,.2f}", "Tutar (TL ₺)": f"₺{mutaahhit_net_kar_tl:,.2f} (%{yg_orani:.1f} YG)"})
         
         st.table(pd.DataFrame(preview_table_data))
         st.markdown("---")
         
-        # PDF çıktı şablonu (WeasyPrint HTML-CSS - "Toplam Brüt İnşaat Alanı" revizyonlu)
+        # PDF çıktı şablonu (WeasyPrint HTML-CSS - "YG" revizyonlu)
         arsa_sahibi_row_html = ""
         if "Kat Karşılığı" in is_modeli:
             arsa_sahibi_row_html = f"""
@@ -693,7 +693,7 @@ if selected_keys:
                     <tr style="background-color: #f1f5f9; font-weight: bold;">
                         <td>Müteahhit Net Kârı</td>
                         <td style="text-align: right;">${mutaahhit_net_kar_usd:,.2f}</td>
-                        <td style="text-align: right;">₺{mutaahhit_net_kar_tl:,.2f} (%{roi:.1f} ROI)</td>
+                        <td style="text-align: right;">₺{mutaahhit_net_kar_tl:,.2f} (%{yg_orani:.1f} YG)</td>
                     </tr>
                 </tbody>
             </table>
