@@ -337,13 +337,17 @@ if selected_keys:
             if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"])
         )
         
-        varsayilan_net = (toplam_giren_fonk_m2 * 0.70) if not is_terkli else (toplam_giren_fonk_m2 if toplam_giren_fonk_m2 > 0 else toplam_brut_m2)
+        # GÜVENLİ NET ARSA HESABI (FONKSİYON ALANI YOKSA BRÜT ALANA FALLBACK)
+        base_net_base = toplam_giren_fonk_m2 if toplam_giren_fonk_m2 > 0 else toplam_brut_m2
+        varsayilan_net = (base_net_base * 0.70) if not is_terkli else base_net_base
+        
         if key not in st.session_state["parcel_net_overrides"]:
             st.session_state["parcel_net_overrides"][key] = varsayilan_net
             
         parsel_net_arsa = st.session_state["parcel_net_overrides"][key]
         toplam_net_arsa_alani += parsel_net_arsa
 
+        # İNŞAAT ALANI HESABI (ORİJİNAL KURALLAR KESİNLİKLE KORUNDU)
         for f in p["fonksiyonlar"]:
             if any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                 continue
@@ -352,7 +356,7 @@ if selected_keys:
                 esas_m2 = toplam_brut_m2 * fonk_pay_orani
                 yasal_max_brut_insaat_alani += esas_m2 * 0.70 * f["kaks"] * emsal_artis_orani
             else:
-                base_toplab_m2 = f["giren_m2"]
+                base_toplab_m2 = f["giren_m2"] if f["giren_m2"] > 0 else toplam_brut_m2
                 yasal_max_brut_insaat_alani += base_toplab_m2 * f["kaks"] * emsal_artis_orani
 
     st.markdown("---")
@@ -489,14 +493,14 @@ if selected_keys:
                     esas_m2 = toplam_brut_m2 * fonk_pay_orani
                     brut_insaat_m2 = esas_m2 * 0.70 * f["kaks"] * emsal_artis_orani
                 else:
-                    esas_m2 = f["giren_m2"]
-                    brut_insaat_m2 = esas_m2 * f["kaks"] * emsal_artis_orani
+                    base_toplab_m2 = f["giren_m2"] if f["giren_m2"] > 0 else toplam_brut_m2
+                    brut_insaat_m2 = base_toplab_m2 * f["kaks"] * emsal_artis_orani
                 
                 calc_results.append({
                     "Parsel": key,
                     "Fonksiyon": f["fonksiyon_adi"],
                     "Terk Durumu": "Terksiz (%30 Kesintili Orijinal Kural)" if not is_terkli else "Terkli (Net Alan)",
-                    "Hesaba Esas Arsa Payı (m²)": f"{esas_m2:,.2f}",
+                    "Hesaba Esas Arsa Payı (m²)": f"{esas_m2:,.2f}" if not is_terkli else f"{base_toplab_m2:,.2f}",
                     "KAKS (Emsal)": f"{f['kaks']:.2f}",
                     "Toplam Brüt İnşaat Alanı (m²)": f"{brut_insaat_m2:,.2f}"
                 })
@@ -685,7 +689,6 @@ if selected_keys:
         
         st.markdown("#### Bağımsız Bölüm Başına Detaylı Alan ve Dağılımı")
         
-        # Ön izleme ekranı için Tab 3 ile birebir aynı koyu tema kurumsal tablo tasarımı
         preview_detay_rows_html = f"""<tr>
 <td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ana Ünite İnşaat Alanı (Brüt)</td>
 <td style="border: 1px solid #475569; padding: 10px 14px; color: #f8fafc; background-color: #0f172a;">Ortalama Bağımsız Bölüm Kapalı Alanı</td>
@@ -737,7 +740,6 @@ if selected_keys:
         pdf_logo1_html = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 55px; width: auto; object-fit: contain;'>" if img1_base64 else "<span style='font-size:18px; font-weight:bold; color:#1e3a8a;'>İSTESTATE</span>"
         pdf_logo2_html = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 55px; width: auto; object-fit: contain;'>" if img2_base64 else "<span style='font-size:18px; font-weight:bold; color:#1e3a8a;'>MERİÇ İNŞAAT</span>"
 
-        # PDF çıktısı için yazıcı dostu açık renkli tablo satırları
         pdf_detay_rows_html = f"""<tr>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ana Ünite İnşaat Alanı (Brüt)</td>
 <td style="border: 1px solid #cbd5e1; padding: 7px 10px;">Ortalama Bağımsız Bölüm Kapalı Alanı</td>
