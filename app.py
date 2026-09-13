@@ -68,9 +68,10 @@ img1_tag = (
 )
 img2_tag = (
     f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 65px;"
-    " width: auto; object-fit: contain;'>" )
+    " width: auto; object-fit: contain;'>"
     if img2_base64
     else "<h2 style='color:#1e3a8a; margin:0;'>MERİÇ İNŞAAT</h2>"
+)
 
 
 # --- 1. TCMB CANLI DÖVİZ KURU SERVİSİ ---
@@ -975,9 +976,7 @@ if selected_keys:
     mutaahhit_net_kar_tl = mutaahhit_net_kar_usd * rates["USD"]
 
     st.markdown("---")
-    st.markdown(
-        f"### 📊 Rapor Özeti: {is_modeli} ({selected_proje_tipi})"
-    )
+    st.markdown(f"### 📊 Rapor Özeti: {is_modeli} ({selected_proje_tipi})")
 
     f_col1, f_col2, f_col3, f_col4 = st.columns(4)
     f_col1.metric(
@@ -1081,9 +1080,7 @@ if selected_keys:
         tab5_saf_unite_brut + tab5_bodrum_payi_m2
     )
 
-    st.markdown(
-        f"### 🏢 İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK"
-    )
+    st.markdown(f"### 🏢 İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK")
     st.markdown(f"**Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu**")
 
     # --- TABLO 1: PROJE VE LOKASYON KÜNYESİ ---
@@ -1223,7 +1220,7 @@ if selected_keys:
 {arsa_sahibi_preview_row_html}
 <tr style="font-weight: bold;">
 <td style="border: 1px solid #cbd5e1; padding: 6px 10px; color: #0f172a; background-color: #f1f5f9;">Müteahhit Net Kârı</td>
-<td style="border: 1px solid #cbd5e1; padding: 6px 10px; color: #0f172a; background-color: #f1f5f9;">Toplam Kâr ve Yatırım Getirisi (%{yg_orani:.1f} YG)</td>
+<td style="border: 1px solid #cbd5e1; padding: 6px 10px; color: #475569; background-color: #f1f5f9;">Toplam Kâr ve Yatırım Getirisi (%{yg_orani:.1f} YG)</td>
 <td style="border: 1px solid #cbd5e1; padding: 6px 10px; color: #1e3a8a; background-color: #f1f5f9; text-align: right; font-weight: 800;">${mutaahhit_net_kar_usd:,.2f}</td>
 <td style="border: 1px solid #cbd5e1; padding: 6px 10px; color: #1e3a8a; background-color: #f1f5f9; text-align: right; font-weight: 800;">₺{mutaahhit_net_kar_tl:,.2f}</td>
 </tr>"""
