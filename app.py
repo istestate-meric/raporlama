@@ -8,13 +8,6 @@ import pdfplumber
 import pandas as pd
 import streamlit as st
 
-# WeasyPrint PDF üretimi için (isteğe bağlı/kurulu değilse hata vermemesi için korumalı import)
-try:
-    from weasyprint import HTML
-    WEASYPRINT_AVAILABLE = True
-except ImportError:
-    WEASYPRINT_AVAILABLE = False
-
 st.set_page_config(
     page_title="İstestate & Meriç İnşaat - Fizibilite Portalı",
     page_icon="🏢",
@@ -589,11 +582,22 @@ if selected_keys:
     # --- 5. SEKME: RAPOR ÖN İZLEME VE PDF İNDİRME MERKEZİ ---
     with tab5:
         st.subheader("🖨️ Kurumsal Rapor Ön İzleme ve PDF İndirme Merkezi")
-        st.write("Aşağıda hazırlanan raporun tarayıcı içi canlı ön izlemesi yer almaktadır. Tasarımı onaylıyorsanız alt kısımdaki butonu kullanarak doğrudan PDF belgesini indirebilirsiniz.")
+        st.write("Aşağıda hazırlanan raporun tarayıcı içi canlı ön izlemesi yer almaktadır. Tarayıcının yazdırma özelliğini kullanarak belgeyi doğrudan **PDF Olarak Kaydedebilirsiniz**.")
         
+        # Dinamik Tablo Satırı Oluşumu (HTML kodlarının ekranda görünmesini önlemek için güvenli ayrıştırma)
+        arsa_sahibi_row_html = ""
+        if "Kat Karşılığı" in is_modeli:
+            arsa_sahibi_row_html = f"""
+                    <tr>
+                        <td style="border: 1px solid #cbd5e1; padding: 8px;">Arsa Sahibi Payı</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">${arsa_sahibi_payi_usd:,.2f}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">-</td>
+                    </tr>
+            """
+
         # Ortak HTML Şablonu Değişkeni
         report_html_template = f"""
-        <div style="font-family: 'Helvetica', 'Arial', sans-serif; color: #1e293b; background: #ffffff; padding: 30px; border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+        <div id="printable-report" style="font-family: 'Helvetica', 'Arial', sans-serif; color: #1e293b; background: #ffffff; padding: 30px; border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
             <div style="text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 25px;">
                 <h2 style="font-size: 22px; font-weight: bold; color: #0f172a; margin: 0;">İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK</h2>
                 <p style="font-size: 14px; color: #475569; margin-top: 5px; font-weight: 600;">Akıllı Gayrimenkul Geliştirme ve Fizibilite Raporu</p>
@@ -630,7 +634,7 @@ if selected_keys:
                         <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">${toplam_maliyet_usd:,.2f}</td>
                         <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">₺{toplam_maliyet_tl:,.2f}</td>
                     </tr>
-                    {"<tr><td style='border: 1px solid #cbd5e1; padding: 8px;'>Arsa Sahibi Payı</td><td style='border: 1px solid #cbd5e1; padding: 8px; text-align: right;'>$" + f"{arsa_sahibi_payi_usd:,.2f}" + "</td><td style='border: 1px solid #cbd5e1; padding: 8px; text-align: right;'>-</td></tr>" if "Kat Karşılığı" in is_modeli else ""}
+                    {arsa_sahibi_row_html}
                     <tr style="background-color: #f1f5f9; font-weight: bold;">
                         <td style="border: 1px solid #cbd5e1; padding: 8px;">Müteahhit Net Kârı</td>
                         <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right;">${mutaahhit_net_kar_usd:,.2f}</td>
@@ -650,24 +654,22 @@ if selected_keys:
         
         st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
         
-        # 2. PDF İndirme İşlemi
-        if WEASYPRINT_AVAILABLE:
-            col_dl1, col_dl2 = st.columns([2, 1])
-            with col_dl1:
-                st.success("✅ Ön izleme başarıyla oluşturuldu. Raporu PDF formatında bilgisayarınıza indirebilirsiniz.")
-            with col_dl2:
-                full_pdf_html = f"<html><head><meta charset='utf-8'></head><body>{report_html_template}</body></html>"
-                pdf_bytes = HTML(string=full_pdf_html).write_pdf()
-                
-                st.download_button(
-                    label="📥 PDF Raporunu İndir",
-                    data=pdf_bytes,
-                    file_name=f"Fizibilite_Raporu_{detected_mahalle}_Ada_{list(active_parcel_db.values())[0].get('ada', '0')}.pdf",
-                    mime="application/pdf",
-                    type="primary",
-                    use_container_width=True
-                )
-        else:
-            st.warning("⚠️ WeasyPrint kütüphanesi aktif değil. Ön izlemeden faydalanabilir ancak doğrudan PDF dosyası indiremezsiniz.")
+        # 2. Alternatif PDF / Yazdırma Çözümü (Tarayıcı Yerel Yazdırma Motoru)
+        col_dl1, col_dl2 = st.columns([2, 1])
+        with col_dl1:
+            st.success("✅ Rapor ön izlemesi sorunsuz şekilde oluşturuldu. Aşağıdaki butonu kullanarak raporu doğrudan PDF olarak indirebilir veya yazdırabilirsiniz.")
+        with col_dl2:
+            # Tarayıcı JavaScript Yazdır Butonu Entegrasyonu
+            print_button_html = """
+            <script>
+            function printReport() {
+                window.print();
+            }
+            </script>
+            <button onclick="window.print()" style="width: 100%; background-color: #0f172a; color: white; padding: 10px 20px; font-size: 14px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                🖨️ PDF Olarak Kaydet / Yazdır
+            </button>
+            """
+            st.components.v1.html(print_button_html, height=50)
 else:
     st.info("👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden bir **Ada** seçip ilgili parselleri işaretleyin veya yeni bir imar belgesi (PDF) yükleyin.")
