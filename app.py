@@ -319,13 +319,12 @@ else:
 if selected_keys:
     active_parcel_db = {k: st.session_state["parcel_db"][k] for k in selected_keys}
 
-    # --- TOPLAM BRÜT İNŞAAT ALANI VE NET ARSA ALANI HESABI (DİNAMİK PARSEL NET ALANLARI) ---
+    # --- TOPLAM BRÜT İNŞAAT ALANI (ORİJİNAL KURALINA DÖNDÜRÜLDÜ) VE NET ARSA ALANI HESABI ---
     emsal_artis_orani = 1.30
     yasal_max_brut_insaat_alani = 0.0
     toplam_brut_arsa_alani = 0.0
     toplam_net_arsa_alani = 0.0
 
-    # Kullanıcının her parselin kalan net arsa alanını doğrudan girebilmesi/düzenleyebilmesi için session state takibi
     if "parcel_net_overrides" not in st.session_state:
         st.session_state["parcel_net_overrides"] = {}
 
@@ -339,24 +338,22 @@ if selected_keys:
             if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"])
         )
         
-        varsayilan_net = toplam_giren_fonk_m2 if toplam_giren_fonk_m2 > 0 else toplam_brut_m2
-        # Eğer daha önce manuel bir net alan override girilmediyse varsayılanı ata
+        # Varsayılan net alan (Ünite başı net arsa payı ve tablo için)
+        varsayilan_net = (toplam_giren_fonk_m2 * 0.70) if not is_terkli else (toplam_giren_fonk_m2 if toplam_giren_fonk_m2 > 0 else toplam_brut_m2)
         if key not in st.session_state["parcel_net_overrides"]:
             st.session_state["parcel_net_overrides"][key] = varsayilan_net
             
         parsel_net_arsa = st.session_state["parcel_net_overrides"][key]
         toplam_net_arsa_alani += parsel_net_arsa
 
+        # İNŞAAT ALANI HESABI (ORİJİNAL KURALINA UYGUN: Terksiz parsellerde standart %30 kesinti / %70 kalan kuralı)
         for f in p["fonksiyonlar"]:
             if any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                 continue
             if not is_terkli:
-                # Terksiz parsellerde imar hesabına esas brüt oranlama (raporun kendi oranına sadık kalarak)
                 fonk_pay_orani = f["giren_m2"] / toplam_giren_fonk_m2 if toplam_giren_fonk_m2 > 0 else 1.0
                 esas_m2 = toplam_brut_m2 * fonk_pay_orani
-                # Emsal hesabı için parselin net alan oranı (parsel_net_arsa / toplam_brut_m2 veya rapor oranı) baz alınır
-                net_oran = parsel_net_arsa / toplam_brut_m2 if toplam_brut_m2 > 0 else 0.70
-                yasal_max_brut_insaat_alani += esas_m2 * net_oran * f["kaks"] * emsal_artis_orani
+                yasal_max_brut_insaat_alani += esas_m2 * 0.70 * f["kaks"] * emsal_artis_orani
             else:
                 base_toplab_m2 = f["giren_m2"]
                 yasal_max_brut_insaat_alani += base_toplab_m2 * f["kaks"] * emsal_artis_orani
@@ -435,7 +432,7 @@ if selected_keys:
     
     with tab1:
         st.subheader("Seçilen Parsellerin İmar ve Net Arsa Payı Yönetimi")
-        st.info("💡 Her parselin terk sonrası kalacak net alanını aşağıdan doğrudan güncelleyebilirsiniz. Sabit oranlar yerine parsele özel net alanlar esas alınmaktadır.")
+        st.info("💡 Her parselin net arsa alanını dilediğiniz gibi güncelleyebilirsiniz. Bu alan ünite başı net arsa payı hesaplamalarında kullanılır, ana inşaat alanı hesaplama kurallarını bozmaz.")
         
         for key, p in active_parcel_db.items():
             st.markdown(f"**Parsel:** `{key}` (Toplam Brüt: {p['toplam_alan']:,.2f} m² | Durum: {'Terki Yapılmış' if p['terk_yapilmis_mi'] else 'Terki Yapılmamış'})")
@@ -443,7 +440,7 @@ if selected_keys:
             with col_p1:
                 current_net_val = st.session_state["parcel_net_overrides"].get(key, p["toplam_alan"])
                 new_net_val = st.number_input(
-                    f"Terk Sonrası Net Arsa Alanı (m²) - {key}",
+                    f"Net Arsa Alanı (m²) - {key}",
                     min_value=0.0,
                     value=float(current_net_val),
                     step=10.0,
@@ -454,7 +451,7 @@ if selected_keys:
         st.markdown("---")
         table_rows = []
         for key, p in active_parcel_db.items():
-            terk_lbl = "Terki Yapılmış (Net)" if p["terk_yapilmis_mi"] else "Terki Yapılmamış (Özel Net Alan)"
+            terk_lbl = "Terki Yapılmış (Net)" if p["terk_yapilmis_mi"] else "Terki Yapılmamış"
             parsel_net_pay = st.session_state["parcel_net_overrides"].get(key, p["toplam_alan"])
             unite_basi_net_arsa = parsel_net_pay / st.session_state["hedef_bagimsiz_bolum"] if st.session_state["hedef_bagimsiz_bolum"] > 0 else 0
             
@@ -464,7 +461,7 @@ if selected_keys:
                     "Mahalle": p["mahalle"],
                     "Toplam Brüt Arsa (m²)": f"{p['toplam_alan']:,.2f}",
                     "Fonksiyon": f["fonksiyon_adi"],
-                    "Terk Sonrası Net Arsa (m²)": f"{parsel_net_pay:,.2f}",
+                    "Net Arsa (m²)": f"{parsel_net_pay:,.2f}",
                     "Ünite Başı Net Arsa Payı": f"{unite_basi_net_arsa:,.2f} m² / Ünite",
                     "TAKS": f"{f['taks']:.2f}",
                     "KAKS (Emsal)": f"{f['kaks']:.2f}",
@@ -475,14 +472,13 @@ if selected_keys:
 
     with tab2:
         st.subheader("Seçilen Parseller İçin Çoklu Fonksiyon Destekli Brüt İnşaat Kapasite Hesabı")
-        st.info("ℹ️ İnşaat hesabı sabit **1.30 Genel Emsal Artış Katsayısı** ile yürütülmektedir.")
+        st.info("ℹ️ İnşaat hesabı orijinal kurallara uygun olarak yürütülmektedir (Sabit **1.30 Genel Emsal Artış Katsayısı**).")
         st.markdown("---")
         
         calc_results = []
         for key, p in active_parcel_db.items():
             toplam_brut_m2 = p["toplam_alan"]
             is_terkli = p["terk_yapilmis_mi"]
-            parsel_net_arsa = st.session_state["parcel_net_overrides"].get(key, toplam_brut_m2)
             
             toplam_giren_fonk_m2 = sum(
                 f["giren_m2"] for f in p["fonksiyonlar"]
@@ -494,8 +490,7 @@ if selected_keys:
                 if not is_terkli:
                     fonk_pay_orani = f["giren_m2"] / toplam_giren_fonk_m2 if toplam_giren_fonk_m2 > 0 else 1.0
                     esas_m2 = toplam_brut_m2 * fonk_pay_orani
-                    net_oran = parsel_net_arsa / toplam_brut_m2 if toplam_brut_m2 > 0 else 0.70
-                    brut_insaat_m2 = esas_m2 * net_oran * f["kaks"] * emsal_artis_orani
+                    brut_insaat_m2 = esas_m2 * 0.70 * f["kaks"] * emsal_artis_orani
                 else:
                     esas_m2 = f["giren_m2"]
                     brut_insaat_m2 = esas_m2 * f["kaks"] * emsal_artis_orani
@@ -503,7 +498,7 @@ if selected_keys:
                 calc_results.append({
                     "Parsel": key,
                     "Fonksiyon": f["fonksiyon_adi"],
-                    "Terk Durumu": "Terksiz (Özel Net Oran)" if not is_terkli else "Terkli (Net Alan)",
+                    "Terk Durumu": "Terksiz (%30 Kesintili Orijinal Kural)" if not is_terkli else "Terkli (Net Alan)",
                     "Hesaba Esas Arsa Payı (m²)": f"{esas_m2:,.2f}",
                     "KAKS (Emsal)": f"{f['kaks']:.2f}",
                     "Toplam Brüt İnşaat Alanı (m²)": f"{brut_insaat_m2:,.2f}"
@@ -822,7 +817,7 @@ if selected_keys:
                         <td style="text-align: right; color: #334155;">₺{toplam_ciro_tl:,.2f}</td>
                     </tr>
                     <tr>
-                        <td style="text-align: right; color: #0f172a; font-weight: 600;">Toplam İnşaat Maliyeti + Bonus</td>
+                        <td style="color: #334155;">Toplam İnşaat Maliyeti + Bonus</td>
                         <td style="text-align: right; color: #0f172a; font-weight: 600;">${toplam_maliyet_usd:,.2f}</td>
                         <td style="text-align: right; color: #334155;">₺{toplam_maliyet_tl:,.2f}</td>
                     </tr>
