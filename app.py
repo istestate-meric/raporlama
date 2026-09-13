@@ -144,7 +144,7 @@ def parse_tr_float(val_str):
 
 def detect_terk_status(text, toplam_alan, fonksiyonlar):
     text_upper = text.upper()
-    terksiz_kaliplar = ["YOLA TERK VE KAMUYA AYRILAN KISIMLAR KAMU ELİNE GEÇMEDEN", "TERK YAPILMAMIŞ", "TERKİ YAPILMAMIŞ", "TERK YAPILMADAN", "TERKİ YAPILMADAN", "DOP TERKİ YAPILMAMIŞ"]
+    terksiz_kaliplar = ["YOLA TERK VE KAMUYA AYRILAN KISIMLAR KAMU ELİNE GEÇMEDEN", "TERK YAPILMAMIŞ", "TERKİ YAPILAMIŞ", "TERK YAPILMADAN", "TERKİ YAPILMADAN", "DOP TERKİ YAPILMAMIŞ"]
     for kalip in terksiz_kaliplar:
         if kalip in text_upper:
             return False
@@ -474,21 +474,34 @@ if selected_keys:
 
         net_konut_innsaat_alani = max(0.0, yasal_max_emsal_alani - havuz_emsele_maliyet_m2)
 
-        ortalama_villa_alani = net_konut_innsaat_alani / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
-        simulated_bodrum_alani = net_konut_innsaat_alani * 0.50
+        ortalama_unite_alani = net_konut_innsaat_alani / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
+        
+        # PROJE TİPİNE GÖRE DİNAMİK BODRUM ORANI VE ETİKET BELİRLEME
+        proje_bodrum_oranlari = {
+            "Lüks Villa / Müstakil Proje": (0.50, "Net Konut / Villa Alanı (Ortalama)", "Ortalama Ünite Bodrum Alanı (%50)"),
+            "Üst Segment Konut / Rezidans": (0.30, "Net Rezidans Daire Alanı (Ortalama)", "Ortalama Depo / Bodrum Payı (%30)"),
+            "Standart Konut / Apartman": (0.20, "Net Daire Alanı (Ortalama)", "Ortalama Otopark/Depo Bod. (%20)"),
+            "Ticari / Ofis Kompleksi": (0.40, "Net Ofis / Dükkan Alanı (Ortalama)", "Ortalama Bodrum / Depo Alanı (%40)"),
+            "Karma Proje (Konut + Ticari)": (0.35, "Net Ünite Alanı (Ortalama)", "Ortalama Bodrum Alanı (%35)")
+        }
+        
+        aktif_bodrum_orani, etiket_unite, etiket_bodrum = proje_bodrum_oranlari.get(selected_proje_tipi, (0.40, "Net Ünite Alanı (Ortalama)", "Ortalama Bodrum Alanı (%40)"))
+
+        simulated_bodrum_alani = net_konut_innsaat_alani * aktif_bodrum_orani
         ortalama_bodrum_alani = simulated_bodrum_alani / hedef_bagimsiz_bolum if hedef_bagimsiz_bolum > 0 else 0
 
         st.markdown("---")
         m_col1, m_col2, m_col3, m_col4 = st.columns(4)
-        m_col1.metric("Net Konut / Villa Alanı (Ortalama)", f"{ortalama_villa_alani:,.2f} m²", f"Toplam: {net_konut_innsaat_alani:,.2f} m²")
-        m_col2.metric("Ortalama Ünite Bodrum Alanı (%50)", f"{ortalama_bodrum_alani:,.2f} m²", f"Toplam Bodrum: {simulated_bodrum_alani:,.2f} m²")
+        m_col1.metric(etiket_unite, f"{ortalama_unite_alani:,.2f} m²", f"Toplam: {net_konut_innsaat_alani:,.2f} m²")
+        m_col2.metric(etiket_bodrum, f"{ortalama_bodrum_alani:,.2f} m²", f"Toplam Bodrum: {simulated_bodrum_alani:,.2f} m²")
         m_col3.metric("Emsalden Düşülen Havuz Payı", f"-{havuz_emsele_maliyet_m2:,.2f} m²")
         
-        risk_durumu = "⚠️ RİSKLİ (Çok küçük ölçek)" if ortalama_villa_alani < 120 and hedef_bagimsiz_bolum > 1 else "✅ Uygun Ölçek"
+        risk_durumu = "⚠️ RİSKLİ (Çok küçük ölçek)" if ortalama_unite_alani < (80 if "Ticari" not in selected_proje_tipi else 50) and hedef_bagimsiz_bolum > 1 else "✅ Uygun Ölçek"
         m_col4.metric("Mimari Ölçek Uygunluğu", risk_durumu)
 
-        if ortalama_villa_alani < 120 and hedef_bagimsiz_bolum > 1:
-            st.warning("⚠️ **Uyarı:** Havuz kesintisi sonrası bağımsız bölüm ortalama alanları 120 m² altına düşmektedir. Plan notları ve konfor için ünite sayısını azaltabilirsiniz.")
+        min_sinir = 120 if "Villa" in selected_proje_tipi else 75
+        if ortalama_unite_alani < min_sinir and hedef_bagimsiz_bolum > 1:
+            st.warning(f"⚠️ **Uyarı:** Seçilen ünite sayısıyla ortalama alanlar {min_sinir} m² altına düşmektedir. Mimari konfor için bağımsız bölüm sayısını revize edebilirsiniz.")
         else:
             st.success("✅ Seçilen bağımsız bölüm sayısı ve havuz dengesi yasal emsal tavanına uygundur.")
 
@@ -498,7 +511,8 @@ if selected_keys:
         curr_hb = st.session_state["hedef_bagimsiz_bolum"]
         curr_hp = st.session_state["havuz_tercihi"]
         
-        simulated_bodrum_alani = (yasal_max_emsal_alani - (curr_hb * 30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 if curr_hp == "Ortak / Sosyal Tesis Havuzu" else 0.0))) * 0.50
+        net_emsal_tabani_rapor = yasal_max_emsal_alani - (curr_hb * 30.0 if curr_hp == "Her Bağımsız Bölüme 1 Özel Havuz" else (120.0 if curr_hp == "Ortak / Sosyal Tesis Havuzu" else 0.0))
+        simulated_bodrum_alani = max(0.0, net_emsal_tabani_rapor) * aktif_bodrum_orani
 
         first_parcel = list(active_parcel_db.values())[0]
         detected_mahalle = first_parcel.get("mahalle", "VARSAYILAN").upper()
@@ -533,7 +547,7 @@ if selected_keys:
 
         toplam_maliyet_usd = (yasal_max_emsal_alani * birim_maliyet) + arsa_bonus_usd
         
-        normal_ciro = yasal_max_emsal_alani * birim_satis
+        normal_ciro = net_emsal_tabani_rapor * birim_satis
         bodrum_ciro = simulated_bodrum_alani * birim_satis * otomatik_bodrum_orani
         toplam_ciro_usd = normal_ciro + bodrum_ciro
         
