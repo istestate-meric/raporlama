@@ -252,7 +252,6 @@ def parse_imar_pdf(uploaded_file):
         if al_m and parcel_data["toplam_alan"] == 0.0:
             parcel_data["toplam_alan"] = parse_tr_float(al_m.group(1))
 
-    # Eğer hiç fonksiyon bulunamadıysa varsayılan ana fonksiyon ekle
     if not parcel_data["fonksiyonlar"]:
         parcel_data["fonksiyonlar"].append({
             "fonksiyon_adi": "Konut Alanı",
@@ -438,38 +437,25 @@ if selected_keys:
     
     with tab1:
         st.subheader("Seçilen Parsellerin İmar ve Fonksiyon Bazlı Arsa Dağılımı")
-        st.info("💡 Her parselin net arsa alanını dilediğiniz gibi güncelleyebilirsiniz. Çoklu fonksiyonlar parsel alanına orantılı olarak listelenir.")
+        st.info("💡 Her fonksiyon satırı için Net Arsa Alanı, imar raporundaki ilgili fonksiyon alanı (`giren_m2`) ile birebir eşleştirilmiştir.")
         
-        for key, p in active_parcel_db.items():
-            st.markdown(f"**Parsel:** `{key}` (Toplam Alan: {p['toplam_alan']:,.2f} m² | Durum: {'Terki Yapılmış' if p['terk_yapilmis_mi'] else 'Terki Yapılmamış'})")
-            col_p1, col_p2 = st.columns([2, 3])
-            with col_p1:
-                current_net_val = st.session_state["parcel_net_overrides"].get(key, p["toplam_alan"])
-                new_net_val = st.number_input(
-                    f"Net Arsa Alanı (m²) - {key}",
-                    min_value=0.0,
-                    value=float(current_net_val),
-                    step=10.0,
-                    key=f"net_input_{key}"
-                )
-                st.session_state["parcel_net_overrides"][key] = new_net_val
-
-        st.markdown("---")
         table_rows = []
         for key, p in active_parcel_db.items():
             terk_lbl = "Terki Yapılmış (Net)" if p["terk_yapilmis_mi"] else "Terki Yapılmamış"
-            parsel_net_pay = st.session_state["parcel_net_overrides"].get(key, p["toplam_alan"])
-            unite_basi_net_arsa = parsel_net_pay / st.session_state["hedef_bagimsiz_bolum"] if st.session_state["hedef_bagimsiz_bolum"] > 0 else 0
             
             for f in p["fonksiyonlar"]:
+                fonksiyon_net_alani = f["giren_m2"]
+                hedef_bb = st.session_state.get("hedef_bagimsiz_bolum", 1)
+                unite_basi_fonk_net = fonksiyon_net_alani / hedef_bb if hedef_bb > 0 else 0
+                
                 table_rows.append({
                     "Parsel Bilgisi": key,
                     "Mahalle": p["mahalle"],
                     "Toplam Arsa (m²)": f"{p['toplam_alan']:,.2f}",
                     "Fonksiyon": f["fonksiyon_adi"],
                     "Fonksiyon Alanı (m²)": f"{f['giren_m2']:,.2f}",
-                    "Net Arsa (m²)": f"{parsel_net_pay:,.2f}",
-                    "Ünite Başı Net Arsa Payı": f"{unite_basi_net_arsa:,.2f} m² / Ünite",
+                    "Net Arsa (m²)": f"{fonksiyon_net_alani:,.2f}",
+                    "Ünite Başı Net Arsa Payı": f"{unite_basi_fonk_net:,.2f} m² / Ünite",
                     "TAKS": f"{f['taks']:.2f}",
                     "KAKS (Emsal)": f"{f['kaks']:.2f}",
                     "Terk Durumu": terk_lbl
