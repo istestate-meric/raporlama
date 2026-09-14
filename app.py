@@ -919,10 +919,9 @@ if selected_keys:
   with tab2:
     st.subheader("🏛️ Parsel Bazlı Mimari ve Yerleşim Fizibilitesi")
     st.markdown(
-        "<p style='color: #64748b; font-size: 13px;'>Nitelik bilgileri"
-        " <b>Arsa</b> ve <b>Bahçe</b> olarak ayrıştırılmış; terk durumlarına"
-        " göre <b>Terk Yapılmış</b> veya <b>Terk Yapılmamış</b> olarak"
-        " düzenlenmiştir.</p>",
+        "<p style='color: #64748b; font-size: 13px;'>Her parsel"
+        " <b>yalnızca tek satırda</b> listelenmiş olup, inşaat alanına esas"
+        " nitelik ve terk durumları özetlenmiştir.</p>",
         unsafe_allow_html=True,
     )
 
@@ -943,10 +942,9 @@ if selected_keys:
           continue
 
         kaks = f["kaks"]
-        fonksiyon_giren_m2 = f["giren_m2"]
 
-        # 1. ARSA SATIRI (Nitelik ve Terk Durumu Ayrımı)
-        nitelik_arsa = (
+        # Nitelik bilgisini terk durumuna göre Arsa/Bahçe bazlı inşaat perspektifinde belirleme
+        nitelik_str = (
             "Arsa (Terk Yapılmış)"
             if is_terkli
             else "Arsa (Terk Yapılmamış)"
@@ -961,35 +959,13 @@ if selected_keys:
             "MAHALLE": mahalle,
             "ADA": ada,
             "PARSEL": parsel,
-            "NİTELİK": nitelik_arsa,
+            "NİTELİK": nitelik_str,
             "ALAN (M²)": f"{toplam_arsa_m2:,.2f}",
             "HESABA ALINAN (M²)": f"{hesaba_alinan_arsa:,.2f}",
             "NET ALAN (M²)": f"{net_alan_arsa:,.2f}",
             "FONKSİYON": fonk_name,
             "KAKS": f"{kaks:.2f}",
             "İNŞAAT ALANI (BRÜT M²)": f"{brut_insaat_arsa:,.2f}",
-        })
-
-        # 2. BAHÇE SATIRI (Nitelik ve Terk Durumu Ayrımı)
-        nitelik_bahce = (
-            "Bahçe (Terk Yapılmış)"
-            if is_terkli
-            else "Bahçe (Terk Yapılmamış)"
-        )
-        bahce_hesaba_alinan = fonksiyon_giren_m2
-        bahce_net_alan = fonksiyon_giren_m2 * (1.0 - (bahce_terk_orani / 100.0))
-
-        mimari_table_rows.append({
-            "MAHALLE": mahalle,
-            "ADA": ada,
-            "PARSEL": parsel,
-            "NİTELİK": nitelik_bahce,
-            "ALAN (M²)": f"{fonksiyon_giren_m2:,.2f}",
-            "HESABA ALINAN (M²)": f"{bahce_hesaba_alinan:,.2f}",
-            "NET ALAN (M²)": f"{bahce_net_alan:,.2f}",
-            "FONKSİYON": f"{fonk_name} (Bahçe Alanı)",
-            "KAKS": "-",
-            "İNŞAAT ALANI (BRÜT M²)": "-",
         })
 
     st.dataframe(pd.DataFrame(mimari_table_rows), use_container_width=True)
