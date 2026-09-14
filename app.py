@@ -495,12 +495,28 @@ if selected_keys:
       "Bahçe Alanı Terk Oranı (%)", 0, 80, 40, step=1
   )
 
+  # --- TÜM SEÇİLEN PARSELLERİN TÜM FONKSİYONLARINI BENZERSİZ OLARAK TOPLA ---
+  all_parcel_functions_list = []
+  for parcel_key, p_data in active_parcel_db.items():
+    ada_val = p_data.get("ada", "0")
+    parsel_val = p_data.get("parsel", "0")
+    for f in p_data["fonksiyonlar"]:
+      fonk_name = f["fonksiyon_adi"]
+      if any(
+          x in fonk_name.upper()
+          for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
+      ):
+        continue
+      unique_id = f"{parcel_key}_{fonk_name}"
+      display_label = f"Parsel [Ada: {ada_val} / Parsel: {parsel_val}] - {fonk_name}"
+      all_parcel_functions_list.append({
+          "unique_id": unique_id,
+          "display_label": display_label,
+          "fonk_name": fonk_name,
+      })
+
   # --- FONKSİYON TÜRLERİNE GÖRE DİNAMİK PROJE TİPİ KISITLAMASI ---
-  all_funcs_text = " ".join([
-      f["fonksiyon_adi"].upper()
-      for p in active_parcel_db.values()
-      for f in p["fonksiyonlar"]
-  ])
+  all_funcs_text = " ".join([item["fonk_name"].upper() for item in all_parcel_functions_list])
 
   has_ticaret_only = (
       ("TİCARET" in all_funcs_text or "TİCARİ" in all_funcs_text)
@@ -641,32 +657,11 @@ if selected_keys:
       else:
         arsa_bonus_usd = raw_bonus_val
 
-  # --- TEK VEYA ÇOKLU FONKSiyONA GÖRE AKILLI HEDEF ALAN YÖNETİMİ ---
-  unique_active_functions = sorted(
-      list(
-          set([
-              f["fonksiyon_adi"]
-              for p in active_parcel_db.values()
-              for f in p["fonksiyonlar"]
-              if not any(
-                  x in f["fonksiyon_adi"].upper()
-                  for x in [
-                      "PARK",
-                      "TEKNİK ALTYAPI",
-                      "LİSE",
-                      "KÜLTÜREL",
-                      "ANAOKULU",
-                  ]
-              )
-          ])
-      )
-  )
-
+  # --- PARSEL VE FONKSİYON BAZLI AKILLI HEDEF ALAN YÖNETİMİ ---
   function_target_sizes = {}
-  if len(unique_active_functions) == 1:
-    # TEK FONKSİYONLU PARSELLER İÇİN TEKİL ALAN BELİRLEME
-    fonk_adi = unique_active_functions[0]
-    f_upper = fonk_adi.upper()
+  if len(all_parcel_functions_list) == 1:
+    item = all_parcel_functions_list[0]
+    f_upper = item["fonk_name"].upper()
     if "TİCARET" in f_upper or "TİCARİ" in f_upper:
       def_sz, min_sz, max_sz, step_sz = 150, 60, 800, 10
       label_txt = f"🏢 Ticari Alan Hedef Birim Alanı (m²)"
@@ -679,53 +674,51 @@ if selected_keys:
 
     st.markdown(
         "<div style='margin-top: 12px; font-weight: 700; color: #0f172a; font-size:"
-        f" 13px;'>📐 Parsel Fonksiyonu Hedef Alanı ({fonk_adi}):</div>",
+        f" 13px;'>📐 Parsel Fonksiyonu Hedef Alanı ({item['display_label']}):</div>",
         unsafe_allow_html=True,
     )
-    function_target_sizes[fonk_adi] = st.slider(
+    function_target_sizes[item["unique_id"]] = st.slider(
         label_txt,
         min_value=min_sz,
         max_value=max_sz,
         value=def_sz,
         step=step_sz,
-        key=f"target_size_single_{fonk_adi}",
+        key=f"target_size_single_{item['unique_id']}",
     )
   else:
-    # ÇOK FONKSİYONLU VEYA KISITLI KARMA PARSELLER İÇİN AYRIŞTIRILMIŞ SLİDERLAR
     st.markdown(
         "<div style='margin-top: 12px; font-weight: 700; color: #0f172a; font-size:"
-        " 13px;'>📐 Fonksiyon Bazlı Hedef Ortalama Bağımsız Bölüm Alanları"
-        " (Ticari m², Konut m², Ticaret + Konut vb.)</div>",
+        " 13px;'>📐 Parsel ve Fonksiyon Bazlı Hedef Ortalama Bağımsız Bölüm Alanları (m²)</div>",
         unsafe_allow_html=True,
     )
-    fn_cols = st.columns(
-        len(unique_active_functions) if unique_active_functions else 1
-    )
-    for idx, fonk_adi in enumerate(unique_active_functions):
-      f_upper = fonk_adi.upper()
+    
+    # Grid yapısı yerine her parsel/fonksiyon için alt alta veya sütunlu esnek yapı
+    fn_cols = st.columns(min(len(all_parcel_functions_list), 3))
+    for idx, item in enumerate(all_parcel_functions_list):
+      f_upper = item["fonk_name"].upper()
       if (
           "TİCARET" in f_upper and ("KONUT" in f_upper or "MESKEN" in f_upper)
       ) or "TİCARET+KONUT" in f_upper:
         def_sz, min_sz, max_sz, step_sz = 120, 60, 500, 10
-        label_txt = f"🏢+🏠 Ticaret + Konut Ort. Alan (m²)"
+        label_txt = f"🏢+🏠 {item['display_label']} (m²)"
       elif "TİCARET" in f_upper or "TİCARİ" in f_upper:
         def_sz, min_sz, max_sz, step_sz = 150, 60, 800, 10
-        label_txt = f"🏢 Ticari Alan Ort. Alan (m²)"
+        label_txt = f"🏢 {item['display_label']} (m²)"
       elif "VİLLA" in f_upper:
         def_sz, min_sz, max_sz, step_sz = 250, 180, 550, 10
-        label_txt = f"🏡 Villa Alanı Ort. Alan (m²)"
+        label_txt = f"🏡 {item['display_label']} (m²)"
       else:
         def_sz, min_sz, max_sz, step_sz = 95, 55, 250, 5
-        label_txt = f"🏠 Konut Alanı Ort. Alan (m²)"
+        label_txt = f"🏠 {item['display_label']} (m²)"
 
       with fn_cols[idx % len(fn_cols)]:
-        function_target_sizes[fonk_adi] = st.slider(
+        function_target_sizes[item["unique_id"]] = st.slider(
             label_txt,
             min_value=min_sz,
             max_value=max_sz,
             value=def_sz,
             step=step_sz,
-            key=f"target_size_multi_{fonk_adi}",
+            key=f"target_size_multi_{item['unique_id']}",
         )
 
   first_mahalle = list(active_parcel_db.values())[0].get("mahalle", "VARSAYILAN")
@@ -777,8 +770,9 @@ if selected_keys:
       fonk_hesaba_alinan_m2 = parsel_net_arsa * fonk_alan_orani
       fonk_toplam_brut_m2 = fonk_hesaba_alinan_m2 * f["kaks"] * emsal_artis_orani
 
+      parsel_fonk_key = f"{key}_{fonk_name}"
       effective_target_size = max(
-          10.0, float(function_target_sizes.get(fonk_name, 95.0))
+          10.0, float(function_target_sizes.get(parsel_fonk_key, 95.0))
       )
       calculated_adet = round(fonk_toplam_brut_m2 / effective_target_size)
       def_adet = max(1, int(calculated_adet))
@@ -786,7 +780,6 @@ if selected_keys:
       r_satis, r_maliyet, r_bodrum_orani = get_realistic_market_pricing(
           first_mahalle, toplu_p_tipi, rates["USD"]
       )
-      parsel_fonk_key = f"{key}_{fonk_name}"
       function_configs[parsel_fonk_key] = {
           "proje_tipi": toplu_p_tipi,
           "adet": int(def_adet),
