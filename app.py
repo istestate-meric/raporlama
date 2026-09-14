@@ -37,12 +37,12 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- FONKSİYON ADI AKILLI TEMİZLEME MOTORU (GÜNCELLENDİ) ---
+# --- DİNAMİK FONKSİYON ADI ÇÖZÜMLEME MOTORU ---
 def clean_fonksiyon_adi(name):
     if not name:
         return "KONUT ALANI"
     n = str(name).upper().strip()
-    # Oran, yüzde, alan ölçüleri veya geçersiz ifadeleri ayıkla
+    # Oran, yüzde, alan ölçüleri veya geçersiz ifadeler hariç gerçek fonksiyonu koru
     if "%" in n or "M²" in n or re.match(r'^[\d\.,\s\-%]+$', n) or len(n) < 2 or n in ["-", "--", ".", "0", "N/A", "İMAR DURUMU"]:
         return "KONUT ALANI"
     return n
@@ -199,7 +199,7 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
             
     return False
 
-# --- GELİŞTİRİLMİŞ İMAR PDF AYRIŞTIRMA MOTORU ---
+# --- GELİŞTİRİLMİŞ İMAR PDF AYRIŞTIRMA MOTORU (DİNAMİK FONKSİYON) ---
 def parse_imar_pdf(uploaded_file):
     parcel_data = {
         "filename": uploaded_file.name,
@@ -224,7 +224,6 @@ def parse_imar_pdf(uploaded_file):
                 for table in tables:
                     for r_idx, row in enumerate(table):
                         cells = [str(c).strip().replace("\n", " ") if c is not None else "" for c in row]
-                        row_str = " ".join(cells)
                         
                         if any("Mahalle" in c for c in cells) and any("Ada" in c for c in cells):
                             if r_idx + 1 < len(table):
@@ -241,26 +240,41 @@ def parse_imar_pdf(uploaded_file):
                                         elif "Alan" in head and val:
                                             parcel_data["toplam_alan"] = parse_tr_float(val)
 
-                    # Yapılandırılmış fonksiyon bloklarını tarama
+                    # Fonksiyon tablosu satır taraması
                     r = 0
                     while r < len(table):
                         row = table[r]
                         row_cells = [str(c).strip().replace("\n", " ") if c is not None else "" for c in row]
                         row_text = " ".join(row_cells).upper()
                         
-                        if "FONKSİYON ADI" in row_text or (len(row_cells) > 1 and "FONKSİYON" in row_cells[0].upper()):
-                            fonk_name = "KONUT ALANI"
+                        if "FONKSİYON" in row_text or any("FONKSİYON" in c.upper() for c in row_cells):
+                            fonk_name = ""
+                            # Yanındaki veya sonraki hücrelerde fonksiyon adını arama
                             for c_idx, c in enumerate(row_cells):
-                                if "FONKSİYON" in c.upper() and c_idx + 1 < len(row_cells) and row_cells[c_idx+1]:
-                                    cleaned = clean_fonksiyon_adi(row_cells[c_idx+1])
-                                    if cleaned != "KONUT ALANI":
+                                if "FONKSİYON" in c.upper():
+                                    if c_idx + 1 < len(row_cells) and row_cells[c_idx+1]:
+                                        cleaned = clean_fonksiyon_adi(row_cells[c_idx+1])
+                                        if cleaned != "KONUT ALANI":
+                                            fonk_name = cleaned
+                                            break
+                            
+                            if not fonk_name and len(row_cells) > 1:
+                                for cell_val in row_cells[1:]:
+                                    cleaned = clean_fonksiyon_adi(cell_val)
+                                    if cleaned != "KONUT ALANI" and len(cleaned) > 2:
                                         fonk_name = cleaned
                                         break
-                            if fonk_name == "KONUT ALANI" and len(row_cells) > 1 and row_cells[1]:
-                                cleaned = clean_fonksiyon_adi(row_cells[1])
-                                if cleaned != "KONUT ALANI":
-                                    fonk_name = cleaned
-                                    
+                                        
+                            if not fonk_name:
+                                # Tablodaki metin satırlarından akıllı fonksiyon tespiti
+                                for kw in ["TİCARET", "KONUT", "VİLLA", "SANAYİ", "TURİZM", "EĞİTİM", "SAĞLIK", "İDARİ"]:
+                                    if kw in row_text:
+                                        fonk_name = kw + " ALANI"
+                                        break
+                            
+                            if not fonk_name:
+                                fonk_name = "KONUT ALANI"
+                                
                             cur_taks = global_taks
                             cur_kaks = global_kaks
                             cur_giren_m2 = 0.0
@@ -318,9 +332,15 @@ def parse_imar_pdf(uploaded_file):
             if al_m and parcel_data["toplam_alan"] == 0.0:
                 parcel_data["toplam_alan"] = parse_tr_float(al_m.group(1))
                 
+        # Eğer tabloda fonksiyon bulunamadıysa metin içerisinden gerçek imar fonksiyonunu yakala
         if not parcel_data["fonksiyonlar"]:
+            detected_f = "KONUT ALANI"
+            for candidate in ["TİCARET ALANI", "KONUT ALANI", "TİCARET + KONUT", "VİLLA ALANI", "GELİŞME KONUT ALANI", "TURİZM ALANI"]:
+                if candidate in full_text.upper():
+                    detected_f = candidate
+                    break
             parcel_data["fonksiyonlar"].append({
-                "fonksiyon_adi": "KONUT ALANI",
+                "fonksiyon_adi": detected_f,
                 "taks": 0.30,
                 "kaks": 0.40,
                 "giren_m2": 0.0
@@ -644,11 +664,10 @@ if selected_keys:
     ])
 
     with tab1:
-        st.subheader("📊 Seçilen Parseller & Fonksiyon Bazlı İnşaat Alanı")
+        st.subheader("📊 Seçilen Parseller & Dinamik Fonksiyon Bazlı İnşaat Alanı")
         table_rows = []
         sum_alan = 0.0
         sum_hesaba_alinan = 0.0
-        sum_net_alan = 0.0
         sum_brut_insaat = 0.0
         
         for key, p in active_parcel_db.items():
@@ -681,7 +700,6 @@ if selected_keys:
                     
                 sum_alan += (toplam_arsa_m2 * fonk_alan_orani)
                 sum_hesaba_alinan += hesaba_alinan_m2
-                sum_net_alan += fonk_giren_m2
                 sum_brut_insaat += brut_insaat_arsa
                 
                 table_rows.append({
@@ -708,7 +726,7 @@ if selected_keys:
             st.warning("Seçilen parseller için görüntülenecek geçerli imar fonksiyonu verisi bulunamadı.")
 
     with tab2:
-        st.subheader("🏛️ Mimari Fizibilite & Potansiyel Senaryo Dağılım Matrisi (Nitelik Bazlı)")
+        st.subheader("🏛️ Mimari Fizibilite & Senaryo Dağılım Matrisi")
         mimari_rows = []
         mimari_sum_brut = 0.0
         mimari_sum_adet = 0
