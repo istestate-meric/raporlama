@@ -919,9 +919,11 @@ if selected_keys:
   with tab2:
     st.subheader("🏛️ Parsel Bazlı Mimari ve Yerleşim Fizibilitesi")
     st.markdown(
-        "<p style='color: #64748b; font-size: 13px;'>Seçilen parsellerin"
-        " arsa ve bahçe niteliklerine göre alan, net alan, fonksiyon, KAKS ve"
-        " brüt inşaat alanı dağılımları aşağıda listelenmiştir.</p>",
+        "<p style='color: #64748b; font-size: 13px;'>İmar hesaplamalarında"
+        " <b>HESABA ALINAN (M²)</b> (terk durumuna göre netleşen arsa alanı),"
+        " bahçe hesaplamalarında ise <b>NET ALAN (M²)</b> (fonksiyon alanı"
+        " üzerinden) baz alınarak oluşturulan güncel mimari dağılım"
+        " tablosudur.</p>",
         unsafe_allow_html=True,
     )
 
@@ -942,9 +944,12 @@ if selected_keys:
           continue
 
         kaks = f["kaks"]
-        fonksiyon_alani = f["giren_m2"]
+        fonksiyon_giren_m2 = f[
+            "giren_m2"
+        ]  # Fonksiyon alanından gelen dinamik m2
 
-        # 1. ARSA SATIRI (İmar ve İnşaat Hesabına Esas Alan)
+        # 1. ARSA SATIRI (İmar ve İnşaat Hesabına Esas)
+        # HESABA ALINAN (M²): İmar ve inşaat hesabında kullanılan net arsa alanı
         hesaba_alinan_arsa = (
             toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
         )
@@ -963,21 +968,27 @@ if selected_keys:
             "İNŞAAT ALANI (BRÜT M²)": f"{brut_insaat_arsa:,.2f}",
         })
 
-        # 2. BAHÇE SATIRI (Fonksiyon üzerinden hesaplanan bahçe terki / alanı)
-        bahce_alani = fonksiyon_alani * (bahce_terk_orani / 100.0)
-        if bahce_alani > 0:
-          mimari_table_rows.append({
-              "MAHALLE": mahalle,
-              "ADA": ada,
-              "PARSEL": parsel,
-              "NİTELİK (Arsa,Bahçe)": "Bahçe",
-              "ALAN (M²)": f"{fonksiyon_alani:,.2f}",
-              "HESABA ALINAN (M²)": f"{bahce_alani:,.2f}",
-              "NET ALAN (M²)": f"{bahce_alani:,.2f}",
-              "FONKSİYON": f"{fonk_name} (Bahçe Payı)",
-              "KAKS": "-",
-              "İNŞAAT ALANI (BRÜT M²)": "-",
-          })
+        # 2. BAHÇE SATIRI (Bahçe Hesabına Esas)
+        # NET ALAN (M²): Fonksiyon alanları ile eşleştirilmiş, bahçe hesaplamalarında kullanılan net alan
+        bahce_net_alan = fonksiyon_giren_m2 * (
+            1.0 - (bahce_terk_orani / 100.0)
+        )  # Kalan yeşil/bahçe net alanı
+        bahce_hesaba_alinan = (
+            fonksiyon_giren_m2  # Fonksiyona giren brüt/esas alan
+        )
+
+        mimari_table_rows.append({
+            "MAHALLE": mahalle,
+            "ADA": ada,
+            "PARSEL": parsel,
+            "NİTELİK (Arsa,Bahçe)": "Bahçe",
+            "ALAN (M²)": f"{fonksiyon_giren_m2:,.2f}",
+            "HESABA ALINAN (M²)": f"{bahce_hesaba_alinan:,.2f}",
+            "NET ALAN (M²)": f"{bahce_net_alan:,.2f}",
+            "FONKSİYON": f"{fonk_name} (Bahçe Alanı)",
+            "KAKS": "-",
+            "İNŞAAT ALANI (BRÜT M²)": "-",
+        })
 
     st.dataframe(pd.DataFrame(mimari_table_rows), use_container_width=True)
 
