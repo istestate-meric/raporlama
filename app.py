@@ -782,6 +782,12 @@ if selected_keys:
     )
 
     table_rows = []
+    # Toplam hesaplamaları için değişkenler
+    sum_alan = 0.0
+    sum_hesaba_alinan = 0.0
+    sum_net_alan = 0.0
+    sum_brut_insaat = 0.0
+
     for key, p in active_parcel_db.items():
       mahalle = p.get("mahalle", "BİLİNMİYOR")
       ada = p.get("ada", "0")
@@ -798,7 +804,6 @@ if selected_keys:
           continue
 
         kaks = f["kaks"]
-        # İmar hesabı baz alınan alan üzerinden yapılır
         hesaba_alinan_m2 = (
             toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
         )
@@ -806,11 +811,14 @@ if selected_keys:
         if brut_insaat_arsa <= 0:
           continue
 
-        # Net Alan sütunu: Fonksiyon alanında bulunan m2 (giren_m2)
         net_alan_m2 = f.get("giren_m2", toplam_arsa_m2)
-
-        # Nitelik durumu: Terk yapıldıysa "Arsa", yapılmadıysa "Bahçe"
         nitelik_str = "Arsa" if is_terkli else "Bahçe"
+
+        # Toplamlara ekle
+        sum_alan += toplam_arsa_m2
+        sum_hesaba_alinan += hesaba_alinan_m2
+        sum_net_alan += net_alan_m2
+        sum_brut_insaat += brut_insaat_arsa
 
         table_rows.append({
             "MAHALLE": mahalle,
@@ -827,13 +835,31 @@ if selected_keys:
 
     st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
 
+    # --- TOPLU BİLGİ / ÖZET TABLOSU ---
+    st.markdown(
+        "<div style='margin-top: 20px; margin-bottom: 8px;'><h5"
+        " style='color: #1e3a8a; margin: 0; font-size: 15px;'>📋 Seçilen Toplam"
+        " Parsel Özet Bilgileri</h5></div>",
+        unsafe_allow_html=True,
+    )
+
+    summary_df = pd.DataFrame([{
+        "SORGULANAN PARSEL SAYISI": f"{len(active_parcel_db)} Adet",
+        "TOPLAM ARSA ALANI (M²)": f"{sum_alan:,.2f}",
+        "TOPLAM HESABA ALINAN ALAN (M²)": f"{sum_hesaba_alinan:,.2f}",
+        "TOPLAM NET ALAN (M²)": f"{sum_net_alan:,.2f}",
+        "TOPLAM İNŞAAT ALANI (BRÜT M²)": f"{sum_brut_insaat:,.2f}",
+    }])
+
+    st.dataframe(summary_df, use_container_width=True)
+
   with tab2:
     st.subheader(
         "🏛️ Mimari Fizibilite & Potansiyel Senaryo Dağılım Matrisi"
     )
     st.markdown(
         "<p style='color: #64748b; font-size: 13px;'>Seçilen Proje Tipi"
-        " ve Havuz durumuna göre piyasa koşullarına uygun mimari potansiyel"
+        " and Havuz durumuna göre piyasa koşullarına uygun mimari potansiyel"
         " senaryo tablosu aşağıdadır.</p>",
         unsafe_allow_html=True,
     )
