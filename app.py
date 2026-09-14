@@ -40,9 +40,14 @@ st.markdown(
 # --- FONKSİYON ADI AKILLI TEMİZLEME MOTORU ---
 def clean_fonksiyon_adi(name):
     if not name:
-        return ""
+        return "KONUT ALANI"
     n = str(name).upper().strip()
     
+    if "KONUT DIŞI" in n or "KOBİ" in n or "KÜÇÜK SANAYİ" in n:
+        if "SANAYİ" in n or "TİCARET" in n:
+            return "KONUT DIŞI KENTSEL ÇALIŞMA ALANI"
+        return "KONUT DIŞI ALAN"
+        
     if "TİCARET" in n and "KONUT" in n:
         return "TİCARET VE KONUT ALANI"
     elif "TİCARET" in n or "TİCARİ" in n:
@@ -55,19 +60,20 @@ def clean_fonksiyon_adi(name):
         return "SANAYİ ALANI"
     elif "TURİZM" in n:
         return "TURİZM ALANI"
-    elif "PARK" in n:
+    elif "PARK" in n or "YEŞİL" in n:
         return "PARK ALANI"
     elif "SAĞLIK" in n:
         return "SAĞLIK TESİSİ ALANI"
     elif "EĞİTİM" in n:
         return "EĞİTİM TESİSİ ALANI"
+    elif "TARIM" in n:
+        return "TARIM ALANI"
 
     n_clean = re.sub(r'[%–\-\d\.,]+', '', n).replace('M²', '').replace('M2', '').strip()
-    
-    if not re.search(r'[A-ZÇĞİÖŞÜ]', n_clean) or len(n_clean) < 2:
-        return ""
+    if len(n_clean) >= 3:
+        return n_clean
         
-    return n_clean
+    return "KONUT ALANI"
 
 # --- KALİCİ DOSYA TABANLI VERİTABANI YÖNETİMİ ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) if "__file__" in locals() else os.getcwd()
@@ -263,17 +269,14 @@ def parse_imar_pdf(uploaded_file):
                                         elif "Alan" in head and val:
                                             parcel_data["toplam_alan"] = parse_tr_float(val)
                                             
-                        # KESİN FONKSİYON TESPİTİ: Sadece Başlık / Etiket içeren hücrelerin yanındaki veya altındaki değerler taranır
                         for c_idx, c in enumerate(cells):
                             c_upper = c.upper()
-                            if any(lbl in c_upper for lbl in ["FONKSİYON", "LEJANT", "KULLANIM", "PLAN AMACI"]):
-                                # Aynı satırdaki sonraki hücreleri kontrol et
+                            if any(lbl in c_upper for lbl in ["FONKSİYON", "LEJANT", "KULLANIM", "PLAN AMACI", "PLAN TÜRÜ", "İMAR DURUMU"]):
                                 for t_idx in range(c_idx + 1, len(cells)):
                                     val = cells[t_idx]
                                     cleaned = clean_fonksiyon_adi(val)
                                     if cleaned and cleaned not in raw_found_functions:
                                         raw_found_functions.append(cleaned)
-                                # Bir sonraki satırdaki aynı sütunu kontrol et
                                 if not raw_found_functions and r_idx + 1 < len(table):
                                     next_row = [str(x).strip().replace("\n", " ") if x is not None else "" for x in table[r_idx + 1]]
                                     if c_idx < len(next_row):
@@ -288,7 +291,16 @@ def parse_imar_pdf(uploaded_file):
                             global_taks = parse_tr_float(t_m.group(1))
                         if k_m:
                             global_kaks = parse_tr_float(k_m.group(1))
-                            
+            
+            # Eğer tablo başlıklarında bulunamadıysa ama belgede konut/ticaret geçiyorsa güvenli tarama yap
+            if not raw_found_functions:
+                if "TİCARET" in full_text.upper():
+                    raw_found_functions.append("TİCARET ALANI")
+                elif "VİLLA" in full_text.upper():
+                    raw_found_functions.append("VİLLA ALANI")
+                else:
+                    raw_found_functions.append("KONUT ALANI")
+                    
             for fn in raw_found_functions:
                 parcel_data["fonksiyonlar"].append({
                     "fonksiyon_adi": fn,
@@ -312,7 +324,6 @@ def parse_imar_pdf(uploaded_file):
             if al_m and parcel_data["toplam_alan"] == 0.0:
                 parcel_data["toplam_alan"] = parse_tr_float(al_m.group(1))
                 
-        # Eğer özel etiketle fonksiyon bulunamadıysa, varsayılan olarak boş bırakmak yerine belgenin niteliğine göre güvenli fallback uygula
         if not parcel_data["fonksiyonlar"]:
             parcel_data["fonksiyonlar"].append({
                 "fonksiyon_adi": "KONUT ALANI",
@@ -690,14 +701,17 @@ if selected_keys:
                     "İNŞAAT ALANI (BRÜT M²)": f"{brut_insaat_arsa:,.2f}"
                 })
                 
-        st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
-        summary_df = pd.DataFrame([{
-            "SORGULANAN PARSEL": f"{len(active_parcel_db)} Adet",
-            "TOPLAM ARSA PAYI (M²)": f"{sum_alan:,.2f}",
-            "HESABA ALINAN (M²)": f"{sum_hesaba_alinan:,.2f}",
-            "TOPLAM İNŞAAT (BRÜT M²)": f"{sum_brut_insaat:,.2f}"
-        }])
-        st.dataframe(summary_df, use_container_width=True)
+        if table_rows:
+            st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
+            summary_df = pd.DataFrame([{
+                "SORGULANAN PARSEL": f"{len(active_parcel_db)} Adet",
+                "TOPLAM ARSA PAYI (M²)": f"{sum_alan:,.2f}",
+                "HESABA ALINAN (M²)": f"{sum_hesaba_alinan:,.2f}",
+                "TOPLAM İNŞAAT (BRÜT M²)": f"{sum_brut_insaat:,.2f}"
+            }])
+            st.dataframe(summary_df, use_container_width=True)
+        else:
+            st.warning("Seçilen parseller için görüntülenecek geçerli imar fonksiyonu verisi bulunamadı.")
 
     with tab2:
         st.subheader("🏛️ Mimari Fizibilite & Potansiyel Senaryo Dağılım Matrisi (Nitelik Bazlı)")
@@ -760,19 +774,20 @@ if selected_keys:
                     "BODRUM (M²)": f"{sim_bodrum:,.2f}"
                 })
                 
-        st.dataframe(pd.DataFrame(mimari_rows), use_container_width=True)
-        
-        st.markdown("### 📋 Toplu Proje ve Mimari Özet Matrisi")
-        toplu_ortalama_birim = mimari_sum_brut / mimari_sum_adet if mimari_sum_adet > 0 else 0.0
-        toplu_ozet_df = pd.DataFrame([{
-            "İNCELENEN PARSEL SAYISI": f"{len(active_parcel_db)} Adet",
-            "TOPLAM BAĞIMSIZ BÖLÜM (ADET)": f"{mimari_sum_adet:,} Adet",
-            "TOPLAM YASAL BRÜT İNŞAAT (M²)": f"{mimari_sum_brut:,.2f} m²",
-            "TOPLAM SİMÜLE BODRUM (M²)": f"{mimari_sum_bodrum:,.2f} m²",
-            "GENEL ORTALAMA BİRİM ALAN (M²)": f"{toplu_ortalama_birim:,.2f} m²",
-            "SEÇİLEN KONSEPT / HAVUZ": f"{toplu_p_tipi} - {toplu_havuz}"
-        }])
-        st.dataframe(toplu_ozet_df, use_container_width=True)
+        if mimari_rows:
+            st.dataframe(pd.DataFrame(mimari_rows), use_container_width=True)
+            
+            st.markdown("### 📋 Toplu Proje ve Mimari Özet Matrisi")
+            toplu_ortalama_birim = mimari_sum_brut / mimari_sum_adet if mimari_sum_adet > 0 else 0.0
+            toplu_ozet_df = pd.DataFrame([{
+                "İNCELENEN PARSEL SAYISI": f"{len(active_parcel_db)} Adet",
+                "TOPLAM BAĞIMSIZ BÖLÜM (ADET)": f"{mimari_sum_adet:,} Adet",
+                "TOPLAM YASAL BRÜT İNŞAAT (M²)": f"{mimari_sum_brut:,.2f} m²",
+                "TOPLAM SİMÜLE BODRUM (M²)": f"{mimari_sum_bodrum:,.2f} m²",
+                "GENEL ORTALAMA BİRİM ALAN (M²)": f"{toplu_ortalama_birim:,.2f} m²",
+                "SEÇİLEN KONSEPT / HAVUZ": f"{toplu_p_tipi} - {toplu_havuz}"
+            }])
+            st.dataframe(toplu_ozet_df, use_container_width=True)
 
     with tab3:
         st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılım Matrisi")
