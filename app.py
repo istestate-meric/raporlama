@@ -700,7 +700,6 @@ if selected_keys:
           .replace("Ö", "O")
       )
       total_b_m2 = function_total_brut_areas.get(fonk_adi, 0.0)
-      total_oran = function_total_ratios.get(fonk_adi, 100.0)
 
       if "TICARET" in f_upper:
         def_sz, min_sz, max_sz, step_sz = 150, 60, 800, 10
@@ -712,9 +711,9 @@ if selected_keys:
         def_sz, min_sz, max_sz, step_sz = 95, 55, 250, 5
         icon_prefix = "🏠"
 
+      # İstenen format: Fonksiyon Adı : ( Toplam Brüt: .... m² )
       label_txt = (
-          f"{icon_prefix} {fonk_adi}  —  (Pay: %{total_oran:.1f} | Toplam Brüt:"
-          f" {total_b_m2:,.2f} m²)"
+          f"{icon_prefix} {fonk_adi} : ( Toplam Brüt: {total_b_m2:,.2f} m² )"
       )
 
       with fn_cols[idx % len(fn_cols)]:
