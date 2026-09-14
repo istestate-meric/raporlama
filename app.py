@@ -833,11 +833,11 @@ if selected_keys:
     st.subheader("Fonksiyon Bazlı Brüt İnşaat Kapasite Hesabı")
     calc_results = []
     for item in function_results_detail:
-      # Toplam Brüt İnşaat Alanı (m²) 0 olanları bu tabloda göstermeyelim şartı:
+      # Toplam Brüt İnşaat Alanı (m²) 0 olanları göstermiyoruz ve sütun adı İmar Fonksiyon Adı
       if item["Brüt İnşaat (m²)"] > 0:
         calc_results.append({
             "Parsel": item["Parsel"],
-            "Fonksiyon Adı": item["Fonksiyon"],  # Fonksiyon adı eklendi
+            "İmar Fonksiyon Adı": item["Fonksiyon"],
             "Toplam Brüt İnşaat Alanı (m²)": f"{item['Brüt İnşaat (m²)']:,.2f}",
         })
     st.table(pd.DataFrame(calc_results))
