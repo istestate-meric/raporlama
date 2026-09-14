@@ -37,7 +37,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- FONKSİYON ADI AKILLI TEMİZLEME MOTORU ---
+# --- FONKSİYON ADI AKILLI TEMİZLEME MOTORU (GÜNCELLENDİ) ---
 def clean_fonksiyon_adi(name):
     if not name:
         return "KONUT ALANI"
@@ -52,14 +52,19 @@ def clean_fonksiyon_adi(name):
         return "VİLLA ALANI"
     elif "KONUT" in n or "MESKEN" in n:
         return "KONUT ALANI"
+    elif "SANAYİ" in n:
+        return "SANAYİ ALANI"
+    elif "TURİZM" in n:
+        return "TURİZM ALANI"
 
     # Gereksiz sayısal, yüzde ve m2 kalıplarını temizle
-    n_clean = re.sub(r'[%–\-\d\.,]+\s*m²?', '', n).strip()
-    n_clean = re.sub(r'\d+', '', n_clean).strip()
+    n_clean = re.sub(r'[%–\-\d\.,]+', '', n).replace('M²', '').replace('M2', '').strip()
     
-    if len(n_clean) > 2:
-        return n_clean
-    return "KONUT ALANI"
+    # Eğer geriye Türkçe harfler içeren anlamlı bir metin kalmıyorsa varsayılanı dön
+    if not re.search(r'[A-ZÇĞİÖŞÜ]', n_clean) or len(n_clean) < 2:
+        return "KONUT ALANI"
+        
+    return n_clean
 
 # --- KALİCİ DOSYA TABANLI VERİTABANI YÖNETİMİ ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) if "__file__" in locals() else os.getcwd()
@@ -252,7 +257,6 @@ def parse_imar_pdf(uploaded_file):
                                         elif "Alan" in head and val:
                                             parcel_data["toplam_alan"] = parse_tr_float(val)
                                             
-                        # Tablo içerisindeki TÜM fonksiyon satırlarını eksiksiz toplamak için kontrol
                         if "Fonksiyon Adı" in row_str or any("Fonksiyon" in str(c) for c in cells) or "%" in row_str or "m²" in row_str:
                             fonk_raw = ""
                             taks_val, kaks_val, giren_m2 = 0.30, 0.40, 0.0
@@ -263,14 +267,11 @@ def parse_imar_pdf(uploaded_file):
                                 
                                 for c in sub_cells:
                                     c_upper = c.upper()
-                                    if any(k in c_upper for k in ["KONUT", "TİCARET", "TİCARİ", "VİLLA", "MESKEN", "İMAR", "KONUT+TİCAret", "TİCARET+KONUT"]):
+                                    if any(k in c_upper for k in ["KONUT", "TİCARET", "TİCARİ", "VİLLA", "MESKEN", "İMAR", "SANAYİ", "TURİZM"]):
                                         if "FONKSİYON" not in c_upper:
                                             fonk_raw = c
                                             break
-                                if not fonk_raw and len(sub_cells) > 0 and sub_cells[0] and "FONKSİYON" not in sub_cells[0].upper():
-                                    if not any(char.isdigit() for char in sub_cells[0]):
-                                        fonk_raw = sub_cells[0]
-                                        
+                                            
                                 t_m = re.search(r'Taks\s*\|?\s*([\d\.,]+)', sub_str, re.IGNORECASE)
                                 k_m = re.search(r'Kaks\s*\(Emsal\)\s*\|?\s*([\d\.,]+)', sub_str, re.IGNORECASE)
                                 if t_m:
@@ -286,7 +287,6 @@ def parse_imar_pdf(uploaded_file):
                             if fonk_raw:
                                 clean_name = clean_fonksiyon_adi(fonk_raw)
                                 if clean_name:
-                                    # Aynı fonksiyon türü daha önce eklenmediyse veya farklı yüzdelik/alan dağılımı varsa listeye ekle
                                     parcel_data["fonksiyonlar"].append({
                                         "fonksiyon_adi": clean_name,
                                         "taks": taks_val,
@@ -309,7 +309,6 @@ def parse_imar_pdf(uploaded_file):
             if al_m and parcel_data["toplam_alan"] == 0.0:
                 parcel_data["toplam_alan"] = parse_tr_float(al_m.group(1))
                 
-        # Eğer tablodan fonksiyon yakalanamadıysa metin içerisinden çoklu fonksiyon araması yap
         if not parcel_data["fonksiyonlar"]:
             found_fonks = []
             if "KONUT" in full_text.upper():
