@@ -714,9 +714,10 @@ if selected_keys:
         def_sz, min_sz, max_sz, step_sz = 95, 55, 250, 5
         icon_prefix = "🏠"
 
-      # DÜZELTME: Fonksiyon adı başa alındı, oran ve m² parantez içinde doğru şekilde konumlandırıldı
+      # KESİN ÇÖZÜM: Fonksiyon adı tamamen bağımsız ve net bir şekilde en başta yer alıyor
       label_txt = (
-          f"{icon_prefix} {fonk_adi} (%{total_oran:.2f} - {total_b_m2:,.2f} m²)"
+          f"{icon_prefix} {fonk_adi}  —  (Pay: %{total_oran:.1f} | Toplam Brüt:"
+          f" {total_b_m2:,.2f} m²)"
       )
 
       with fn_cols[idx % len(fn_cols)]:
@@ -742,7 +743,7 @@ if selected_keys:
       f"</div>",
       unsafe_allow_html=True,
   )
-  st.markdown("</div>", unsafe_allow_html=True)
+  st.markdown("</div>", unsafe_allow_html=True, unsafe_allow_html=True)
 
   # --- FONKSİYONA GÖRE KISITLAMALI HEDEF ORTALAMA ALAN SEÇİMİ VE İNŞAAT HESABI ---
   function_configs = {}
