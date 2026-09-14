@@ -37,14 +37,16 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- DİNAMİK FONKSİYON ADI ÇÖZÜMLEME MOTORU ---
+# --- DİNAMİK VE GERÇEKÇİ FONKSİYON ADI ÇÖZÜMLEME MOTORU ---
 def clean_fonksiyon_adi(name):
     if not name:
-        return "KONUT ALANI"
+        return ""
     n = str(name).upper().strip()
-    # Oran, yüzde, alan ölçüleri veya geçersiz ifadeler hariç gerçek fonksiyonu koru
-    if "%" in n or "M²" in n or re.match(r'^[\d\.,\s\-%]+$', n) or len(n) < 2 or n in ["-", "--", ".", "0", "N/A", "İMAR DURUMU"]:
-        return "KONUT ALANI"
+    # Sadece sayısal, yüzde veya geçersiz sembollerden oluşan, anlam içermeyen girdileri ele
+    if n in ["-", "--", ".", "0", "N/A", "İMAR DURUMu", ""]:
+        return ""
+    if re.match(r'^[\d\.,\s\-%]+$', n) and not any(kw in n for kw in ["MİA", "TİCARET", "KONUT", "İMAR"]):
+        return ""
     return n
 
 # --- KALİCİ DOSYA TABANLI VERİTABANI YÖNETİMİ ---
@@ -199,7 +201,7 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
             
     return False
 
-# --- GELİŞTİRİLMİŞ İMAR PDF AYRIŞTIRMA MOTORU (DİNAMİK FONKSİYON) ---
+# --- GELİŞTİRİLMİŞ İMAR PDF AYRIŞTIRMA MOTORU (KESİN VE GERÇEKÇİ FONKSİYON) ---
 def parse_imar_pdf(uploaded_file):
     parcel_data = {
         "filename": uploaded_file.name,
@@ -240,7 +242,7 @@ def parse_imar_pdf(uploaded_file):
                                         elif "Alan" in head and val:
                                             parcel_data["toplam_alan"] = parse_tr_float(val)
 
-                    # Fonksiyon tablosu satır taraması
+                    # Gelişmiş Tablo Satır Taraması ve Gerçek Fonksiyon Yakalama
                     r = 0
                     while r < len(table):
                         row = table[r]
@@ -249,29 +251,28 @@ def parse_imar_pdf(uploaded_file):
                         
                         if "FONKSİYON" in row_text or any("FONKSİYON" in c.upper() for c in row_cells):
                             fonk_name = ""
-                            # Yanındaki veya sonraki hücrelerde fonksiyon adını arama
+                            
+                            # 1. Hücre bazlı tarama
                             for c_idx, c in enumerate(row_cells):
                                 if "FONKSİYON" in c.upper():
-                                    if c_idx + 1 < len(row_cells) and row_cells[c_idx+1]:
-                                        cleaned = clean_fonksiyon_adi(row_cells[c_idx+1])
-                                        if cleaned != "KONUT ALANI":
-                                            fonk_name = cleaned
-                                            break
+                                    if c_idx + 1 < len(row_cells) and clean_fonksiyon_adi(row_cells[c_idx+1]):
+                                        fonk_name = clean_fonksiyon_adi(row_cells[c_idx+1])
+                                        break
                             
                             if not fonk_name and len(row_cells) > 1:
                                 for cell_val in row_cells[1:]:
                                     cleaned = clean_fonksiyon_adi(cell_val)
-                                    if cleaned != "KONUT ALANI" and len(cleaned) > 2:
+                                    if cleaned and len(cleaned) > 2 and not "FONKSİYON" in cleaned:
                                         fonk_name = cleaned
                                         break
                                         
+                            # 2. Metin analizi ile kesin fonksiyon tespiti
                             if not fonk_name:
-                                # Tablodaki metin satırlarından akıllı fonksiyon tespiti
-                                for kw in ["TİCARET", "KONUT", "VİLLA", "SANAYİ", "TURİZM", "EĞİTİM", "SAĞLIK", "İDARİ"]:
+                                for kw in ["TİCARET + KONUT", "TİCARET", "KONUT", "VİLLA", "SANAYİ", "TURİZM", "EĞİTİM", "SAĞLIK", "İDARİ", "PARK", "BELEDİYE HİZMET"]:
                                     if kw in row_text:
-                                        fonk_name = kw + " ALANI"
+                                        fonk_name = kw + (" ALANI" if not "ALANI" in kw else "")
                                         break
-                            
+                                        
                             if not fonk_name:
                                 fonk_name = "KONUT ALANI"
                                 
@@ -309,12 +310,14 @@ def parse_imar_pdf(uploaded_file):
                                 if m2_match:
                                     cur_giren_m2 = parse_tr_float(m2_match.group(1))
                                     
-                            parcel_data["fonksiyonlar"].append({
-                                "fonksiyon_adi": fonk_name,
-                                "taks": cur_taks,
-                                "kaks": cur_kaks,
-                                "giren_m2": cur_giren_m2
-                            })
+                            # Mükerrer eklemeyi önle
+                            if not any(existing["fonksiyon_adi"] == fonk_name for existing in parcel_data["fonksiyonlar"]):
+                                parcel_data["fonksiyonlar"].append({
+                                    "fonksiyon_adi": fonk_name,
+                                    "taks": cur_taks,
+                                    "kaks": cur_kaks,
+                                    "giren_m2": cur_giren_m2
+                                })
                         r += 1
                                     
         if parcel_data["mahalle"] == "BİLİNMİYOR" or parcel_data["ada"] == "0":
@@ -332,15 +335,21 @@ def parse_imar_pdf(uploaded_file):
             if al_m and parcel_data["toplam_alan"] == 0.0:
                 parcel_data["toplam_alan"] = parse_tr_float(al_m.group(1))
                 
-        # Eğer tabloda fonksiyon bulunamadıysa metin içerisinden gerçek imar fonksiyonunu yakala
+        # Tabloda fonksiyon bulunamadıysa metin içerisinden gerçek imar fonksiyonunu dinamik tara
         if not parcel_data["fonksiyonlar"]:
-            detected_f = "KONUT ALANI"
-            for candidate in ["TİCARET ALANI", "KONUT ALANI", "TİCARET + KONUT", "VİLLA ALANI", "GELİŞME KONUT ALANI", "TURİZM ALANI"]:
+            for candidate in ["TİCARET + KONUT", "TİCARET ALANI", "GELİŞME KONUT ALANI", "VİLLA ALANI", "TURİZM ALANI", "KONUT ALANI"]:
                 if candidate in full_text.upper():
-                    detected_f = candidate
+                    parcel_data["fonksiyonlar"].append({
+                        "fonksiyon_adi": candidate,
+                        "taks": 0.30,
+                        "kaks": 0.40,
+                        "giren_m2": 0.0
+                    })
                     break
+                    
+        if not parcel_data["fonksiyonlar"]:
             parcel_data["fonksiyonlar"].append({
-                "fonksiyon_adi": detected_f,
+                "fonksiyon_adi": "KONUT ALANI",
                 "taks": 0.30,
                 "kaks": 0.40,
                 "giren_m2": 0.0
