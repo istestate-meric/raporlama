@@ -666,7 +666,9 @@ if selected_keys:
 
   st.markdown(
       f"<div style='font-size: 13px; color: #334155; margin-top: 10px; background: #f8fafc; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0;'>"
-      f"💡 Seçilen <b>{toplu_p_tipi}</b> için piyasa verileri işlendi: Maliyet: <b>${auto_maliyet:,.2f}/m²</b> | Satış Fiyatı: <b>${auto_satis:,.2f}/m²</b>"
+      f"💡 Seçilen <b>{toplu_p_tipi}</b> için piyasa verileri işlendi: Maliyet:"
+      f" <b>${auto_maliyet:,.2f}/m²</b> | Satış Fiyatı:"
+      f" <b>${auto_satis:,.2f}/m²</b>"
       f"</div>",
       unsafe_allow_html=True,
   )
@@ -899,7 +901,9 @@ if selected_keys:
         calc_results.append({
             "Parsel": item["Parsel"],
             "İmar Fonksiyon Adı": item["Fonksiyon"],
-            "Toplam Brüt İnşaat Alanı (m²)": f"{item['Brüt İnşaat (m²)]:,.2f}",
+            "Toplam Brüt İnşaat Alanı (m²)": (
+                f"{item['Brüt İnşaat (m²)']:,.2f}"
+            ),
             "Bahçe Alanı Terki (Fonksiyon Üzerinden)": (
                 f"{item['Bahçe Terki (m²)']:,.2f} m²"
             ),
