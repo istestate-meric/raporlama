@@ -926,7 +926,6 @@ if selected_keys:
             else (toplam_arsa_m2 * 0.70 * f["kaks"] * emsal_artis_orani)
         )
 
-        # Sadece inşaat alanı olan (pozitif brüt inşaat) kayıtları filtrele
         if brut_insaat <= 0:
           continue
 
