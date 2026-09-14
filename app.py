@@ -775,10 +775,9 @@ if selected_keys:
   with tab1:
     st.subheader("📊 Seçilen Parseller & İnşaat Alanı")
     st.markdown(
-        "<p style='color: #64748b; font-size: 13px;'>Fonksiyon sütunundaki"
-        " m² bilgisi fiili olarak kullanılacak net alanı ifade eder; imar"
-        " hesaplamaları ise parselin toplam alanı üzerinden"
-        " yapılmıştır.</p>",
+        "<p style='color: #64748b; font-size: 13px;'>İmar hesaplamaları"
+        " parselin Alan/Hesaba Alınan alanı üzerinden yapılırken; Net Alan"
+        " sütununda PDF belgesindeki Fonksiyon m² verisi yer almaktadır.</p>",
         unsafe_allow_html=True,
     )
 
@@ -799,7 +798,7 @@ if selected_keys:
           continue
 
         kaks = f["kaks"]
-        # İmar hesabı için baz alınan alan
+        # İmar hesabı baz alınan alan üzerinden yapılır
         hesaba_alinan_m2 = (
             toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
         )
@@ -807,8 +806,8 @@ if selected_keys:
         if brut_insaat_arsa <= 0:
           continue
 
-        # Net alan: İmar hesaba alınan alan üzerinden bahçe/terk düşüldükten sonra kalan fiili net kullanım alanı
-        net_alan_m2 = hesaba_alinan_m2 * (1.0 - (bahce_terk_orani / 100.0))
+        # Net Alan sütunu: Fonksiyon alanında bulunan m2 (giren_m2)
+        net_alan_m2 = f.get("giren_m2", toplam_arsa_m2)
 
         # Nitelik durumu: Terk yapıldıysa "Arsa", yapılmadıysa "Bahçe"
         nitelik_str = "Arsa" if is_terkli else "Bahçe"
@@ -821,9 +820,7 @@ if selected_keys:
             "ALAN (M²)": f"{toplam_arsa_m2:,.2f}",
             "HESABA ALINAN (M²)": f"{hesaba_alinan_m2:,.2f}",
             "NET ALAN (M²)": f"{net_alan_m2:,.2f}",
-            "FONKSİYON (FİİLİ NET M²)": (
-                f"{net_alan_m2:,.2f} m² ({fonk_name})"
-            ),
+            "FONKSİYON": fonk_name,
             "KAKS": f"{kaks:.2f}",
             "İNŞAAT ALANI (BRÜT M²)": f"{brut_insaat_arsa:,.2f}",
         })
@@ -951,7 +948,7 @@ if selected_keys:
             <div class="section-title">1. Proje ve Lokasyon Künyesi (Toplu Parsel)</div>
             <table class="data-table">
                 <tr><td>Lokasyon / Mahalle</td><td style="text-align: right; font-weight: bold;">{first_mahalle} ({len(active_parcel_db)} Parsel)</td></tr>
-                <tr><td>Toplam Brüt İnşaat Alanı (Net Alan Üzerinden)</td><td style="text-align: right; font-weight: bold; color: #1e3a8a;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
+                <tr><td>Toplam Brüt İnşaat Alanı</td><td style="text-align: right; font-weight: bold; color: #1e3a8a;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
                 <tr><td>Toplam Bahçe Alanı Terki</td><td style="text-align: right; font-weight: bold;">{total_bahce_alani_terki:,.2f} m²</td></tr>
             </table>
             <div class="section-title">2. Fonksiyon Bazlı Finansal Fizibilite Özeti</div>
