@@ -675,119 +675,36 @@ if selected_keys:
   )
   st.markdown("</div>", unsafe_allow_html=True)
 
-  with st.expander(
-      "🛠️ Gelişmiş / Özel Koşullar: Fonksiyon Bazlı Opsiyonel Özelleştirme"
-  ):
-    st.markdown(
-        "<p style='color: #64748b; font-size: 13px; margin-bottom: 15px;'>Eğer"
-        " toplu proje dışında bazı fonksiyonlara özel adet veya fiyat"
-        " müdahalesi yapmak istiyorsanız aşağıdaki alanları kullanabilirsiniz."
-        " Varsayılan olarak üstteki toplu seçim geçerlidir.</p>",
-        unsafe_allow_html=True,
+  for fonk_name, items in all_functions_map.items():
+    allowed_types = get_allowed_project_types(fonk_name)
+    default_type = (
+        toplu_p_tipi if toplu_p_tipi in allowed_types else allowed_types[0]
     )
 
-    for fonk_name, items in all_functions_map.items():
-      allowed_types = get_allowed_project_types(fonk_name)
-      fc1, fc2, fc3, fc4, fc5 = st.columns([1.5, 1.4, 1.1, 1.0, 1.0])
+    fonk_toplam_brut_m2 = temp_function_bruts.get(fonk_name, 300.0)
+    hedef_birim_m2 = (
+        300.0
+        if "Villa" in default_type
+        else (
+            160.0
+            if "Rezidan" in default_type or "Üst Segment" in default_type
+            else (180.0 if "Ticari" in default_type else 115.0)
+        )
+    )
+    def_adet = max(1, round(fonk_toplam_brut_m2 / (hedef_birim_m2 * 1.35)))
 
-      with fc1:
-        def_val = (
-            toplu_p_tipi
-            if toplu_p_tipi in allowed_types
-            else allowed_types[0]
-        )
-        sel_p_tipi = st.selectbox(
-            f"Proje Tipi ({fonk_name})",
-            options=allowed_types,
-            index=(
-                allowed_types.index(def_val) if def_val in allowed_types else 0
-            ),
-            key=f"opt_p_tipi_{fonk_name}",
-        )
-      with fc2:
-        fonk_toplam_brut_m2 = temp_function_bruts.get(fonk_name, 300.0)
-        hedef_birim_m2 = (
-            300.0
-            if "Villa" in sel_p_tipi
-            else (
-                160.0
-                if "Rezidan" in sel_p_tipi or "Üst Segment" in sel_p_tipi
-                else (180.0 if "Ticari" in sel_p_tipi else 115.0)
-            )
-        )
-        def_adet = max(1, round(fonk_toplam_brut_m2 / (hedef_birim_m2 * 1.35)))
-        adet = st.number_input(
-            f"Adet ({fonk_name})",
-            min_value=1,
-            value=int(def_adet),
-            step=1,
-            key=f"opt_adet_{fonk_name}",
-        )
-      with fc3:
-        havuz_mod = st.selectbox(
-            f"Havuz ({fonk_name})",
-            options=["Özel/Ortak Havuzlu", "Havuz İptal"],
-            index=(
-                0
-                if toplu_havuz == "Özel/Ortak Havuzlu"
-                else (1 if "Havuz İptal" == toplu_havuz else 1)
-            ),
-            key=f"opt_havuz_{fonk_name}",
-        )
+    r_satis, r_maliyet, r_bodrum_orani = get_realistic_market_pricing(
+        first_mahalle, default_type, rates["USD"]
+    )
 
-      r_satis, r_maliyet, r_bodrum_orani = get_realistic_market_pricing(
-          first_mahalle, sel_p_tipi, rates["USD"]
-      )
-
-      with fc4:
-        fonk_maliyet = st.number_input(
-            f"Maliyet $ ({fonk_name})",
-            value=float(r_maliyet),
-            step=50.0,
-            key=f"opt_mal_{fonk_name}",
-        )
-      with fc5:
-        fonk_satis = st.number_input(
-            f"Satış $ ({fonk_name})",
-            value=float(r_satis),
-            step=100.0,
-            key=f"opt_sat_{fonk_name}",
-        )
-
-      function_configs[fonk_name] = {
-          "proje_tipi": sel_p_tipi,
-          "adet": adet,
-          "havuz_mod": havuz_mod,
-          "maliyet": fonk_maliyet,
-          "satis": fonk_satis,
-          "bodrum_orani": r_bodrum_orani,
-      }
-      st.divider()
-
-  for fonk_name, items in all_functions_map.items():
-    if fonk_name not in function_configs:
-      allowed_types = get_allowed_project_types(fonk_name)
-      default_type = (
-          toplu_p_tipi if toplu_p_tipi in allowed_types else allowed_types[0]
-      )
-      function_configs[fonk_name] = {
-          "proje_tipi": default_type,
-          "adet": max(
-              1,
-              round(
-                  temp_function_bruts.get(fonk_name, 300.0)
-                  / (
-                      130.0
-                      if "Villa" not in default_type
-                      else 300.0 * 1.35
-                  )
-              ),
-          ),
-          "havuz_mod": toplu_havuz,
-          "maliyet": auto_maliyet,
-          "satis": auto_satis,
-          "bodrum_orani": auto_bodrum_orani,
-      }
+    function_configs[fonk_name] = {
+        "proje_tipi": default_type,
+        "adet": int(def_adet),
+        "havuz_mod": toplu_havuz,
+        "maliyet": r_maliyet,
+        "satis": r_satis,
+        "bodrum_orani": r_bodrum_orani,
+    }
 
   total_yasal_brut_insaat = 0.0
   total_simulated_bodrum = 0.0
@@ -873,72 +790,15 @@ if selected_keys:
   ])
 
   with tab1:
-    st.subheader("Seçilen Parsellerin İmar ve Alan Bazlı Dağılımı")
-    table_rows = []
-    for key, p in active_parcel_db.items():
-      is_terkli = p["terk_yapilmis_mi"]
-      toplam_brut = p["toplam_alan"]
-      terk_lbl = (
-          "Terk Yapılmış (Fonksiyon m² x KAKS x 1.3)"
-          if is_terkli
-          else "Terk Yapılmamış (%70 Fonksiyon m² x KAKS x 1.3)"
-      )
-
-      for f in p["fonksiyonlar"]:
-        fonk_giren_m2 = f["giren_m2"] if f["giren_m2"] > 0 else toplam_brut
-        net_m2 = fonk_giren_m2 if is_terkli else fonk_giren_m2 * 0.70
-        table_rows.append({
-            "Parsel Kimliği": key,
-            "Mahalle Adı": p["mahalle"],
-            "Brüt Parsel Alanı (m²)": f"{toplam_brut:,.2f}",
-            "İmar Fonksiyonu": f["fonksiyon_adi"],
-            "Hesaba Esas Net Arsa (m²)": f"{net_m2:,.2f}",
-            "Fonksiyon Alanı (m²)": f"{fonk_giren_m2:,.2f}",
-            "TAKS Oranı": f"{f['taks']:.2f}",
-            "KAKS / Emsal Katsayısı": f"{f['kaks']:.2f}",
-            "İmar ve Terk Durum Analizi": terk_lbl,
-        })
-    st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
-
-    st.markdown("---")
-    st.subheader("Fonksiyon Bazlı Brüt İnşaat ve Bahçe Terk Hesaplama Özeti")
-    calc_results = []
-    for item in function_results_detail:
-      if item["Brüt İnşaat (m²)"] > 0:
-        calc_results.append({
-            "Parsel": item["Parsel"],
-            "İmar Fonksiyon Adı": item["Fonksiyon"],
-            "Toplam Brüt İnşaat Alanı (m²)": (
-                f"{item['Brüt İnşaat (m²)']:,.2f}"
-            ),
-            "Bahçe Alanı Terki (Fonksiyon Üzerinden)": (
-                f"{item['Bahçe Terki (m²)']:,.2f} m²"
-            ),
-        })
-    st.table(pd.DataFrame(calc_results))
-
-    m1, m2 = st.columns(2)
-    m1.metric(
-        label="🏗️ Toplam Brüt İnşaat Alanı (Net Alan Bazlı)",
-        value=f"{total_yasal_brut_insaat:,.2f} m²",
-    )
-    m2.metric(
-        label="🌳 Toplam Bahçe Alanı Terki (Fonksiyon Alanı Bazlı)",
-        value=f"{total_bahce_alani_terki:,.2f} m²",
-    )
-
-  with tab2:
-    st.subheader("🏛️ Parsel Bazlı Mimari ve Yerleşim Fizibilitesi")
+    st.subheader("📊 Seçilen Parseller & İnşaat Alanı")
     st.markdown(
         "<p style='color: #64748b; font-size: 13px;'>Her parsel"
-        " <b>yalnızca tek satırda</b> listelenmiş olup; imar hesaplamalarında"
-        " <b>HESABA ALINAN (M²)</b>, bahçe ve peyzaj hesaplamalarında ise"
-        " <b>NET ALAN (M²)</b> esas alınmıştır. İnşaat alanı sıfır olanlar"
-        " filtrelenmiştir.</p>",
+        " <b>yalnızca tek satırda</b> listelenmiş olup, inşaat alanı sıfır"
+        " olanlar filtrelenmiştir.</p>",
         unsafe_allow_html=True,
     )
 
-    mimari_table_rows = []
+    table_rows = []
     for key, p in active_parcel_db.items():
       mahalle = p.get("mahalle", "BİLİNMİYOR")
       ada = p.get("ada", "0")
@@ -959,26 +819,21 @@ if selected_keys:
             f["giren_m2"] if f["giren_m2"] > 0 else toplam_arsa_m2
         )
 
-        # İmar hesaplamalarında kullanılacak HESABA ALINAN (M²)
         hesaba_alinan_m2 = (
             fonk_giren_m2 if is_terkli else fonk_giren_m2 * 0.70
         )
-
-        # Brüt İnşaat Alanı Kontrolü (Sıfır olanları elemek için)
         brut_insaat_arsa = hesaba_alinan_m2 * kaks * emsal_artis_orani
         if brut_insaat_arsa <= 0:
           continue
 
-        # Bahçe hesaplamalarında kullanılacak NET ALAN (M²)
         net_alan_m2 = hesaba_alinan_m2 * (1.0 - (bahce_terk_orani / 100.0))
-
         nitelik_str = (
             "Arsa (Terk Yapılmış)"
             if is_terkli
             else "Arsa (Terk Yapılmamış)"
         )
 
-        mimari_table_rows.append({
+        table_rows.append({
             "MAHALLE": mahalle,
             "ADA": ada,
             "PARSEL": parsel,
@@ -991,7 +846,74 @@ if selected_keys:
             "İNŞAAT ALANI (BRÜT M²)": f"{brut_insaat_arsa:,.2f}",
         })
 
-    st.dataframe(pd.DataFrame(mimari_table_rows), use_container_width=True)
+    st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
+
+  with tab2:
+    st.subheader(
+        "🏛️ Mimari Fizibilite & Potansiyel Senaryo Dağılım Matrisi"
+    )
+    st.markdown(
+        "<p style='color: #64748b; font-size: 13px;'>Seçilen Proje Tipi"
+        " ve Havuz durumuna göre piyasa koşullarına uygun mimari potansiyel"
+        " senaryo tablosu aşağıdadır.</p>",
+        unsafe_allow_html=True,
+    )
+
+    mimari_rows = []
+    for key, p in active_parcel_db.items():
+      mahalle = p.get("mahalle", "BİLİNMİYOR")
+      ada = p.get("ada", "0")
+      parsel = p.get("parsel", "0")
+      toplam_arsa_m2 = p.get("toplam_alan", 0.0)
+      is_terkli = p.get("terk_yapilmis_mi", False)
+
+      for f in p["fonksiyonlar"]:
+        fonk_name = f["fonksiyon_adi"]
+        if any(
+            x in fonk_name.upper()
+            for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
+        ):
+          continue
+
+        conf = function_configs.get(
+            fonk_name,
+            {
+                "proje_tipi": toplu_p_tipi,
+                "adet": 1,
+                "havuz_mod": toplu_havuz,
+                "maliyet": 900,
+                "satis": 95000,
+                "bodrum_orani": 0.4,
+            },
+        )
+        kaks = f["kaks"]
+        fonk_giren_m2 = (
+            f["giren_m2"] if f["giren_m2"] > 0 else toplam_arsa_m2
+        )
+        hesaba_alinan_m2 = (
+            fonk_giren_m2 if is_terkli else fonk_giren_m2 * 0.70
+        )
+        brut_insaat = hesaba_alinan_m2 * kaks * emsal_artis_orani
+        if brut_insaat <= 0:
+          continue
+
+        konut_adeti = conf["adet"]
+        ortalama_birim_m2 = (
+            brut_insaat / konut_adeti if konut_adeti > 0 else brut_insaat
+        )
+
+        mimari_rows.append({
+            "MAHALLE": mahalle,
+            "ADA": ada,
+            "PARSEL": parsel,
+            "PROJE TİPİ": conf["proje_tipi"],
+            "HAVUZ DURUMU": conf["havuz_mod"],
+            "TOPLAM İNŞAAT (BRÜT M²)": f"{brut_insaat:,.2f}",
+            "BAĞIMSIZ BÖLÜM ADEDİ": konut_adeti,
+            "ORTALAMA BİRİM (BRÜT M²)": f"{ortalama_birim_m2:,.2f}",
+        })
+
+    st.dataframe(pd.DataFrame(mimari_rows), use_container_width=True)
 
   with tab3:
     st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılım Matrisi")
