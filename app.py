@@ -414,6 +414,7 @@ def get_allowed_project_types(fonksiyon_adi):
         "Standart Konut / Apartman",
     ]
   else:
+    # Genel veya tanımlanamayan alanlar için tüm imar tiplerine izin ver
     return [
         "Lüks Villa / Müstakil Proje",
         "Üst Segment Konut / Rezidans",
@@ -611,20 +612,28 @@ if selected_keys:
         all_functions_map[f_name] = []
       all_functions_map[f_name].append((key, f))
 
-  combined_allowed_types = set()
+  # --- İMAR NİTELİĞİNE GÖRE KESİN KISIT (KESİŞİM / İLGİLİ LİSTE) ---
+  combined_allowed_types = None
   for fonk_name in all_functions_map.keys():
-    combined_allowed_types.update(get_allowed_project_types(fonk_name))
-  combined_allowed_types_list = (
-      list(combined_allowed_types)
-      if combined_allowed_types
-      else [
-          "Standart Konut / Apartman",
-          "Üst Segment Konut / Rezidans",
-          "Lüks Villa / Müstakil Proje",
-          "Ticari / Ofis Kompleksi",
-          "Karma Proje (Konut + Ticari)",
-      ]
-  )
+    allowed_for_func = set(get_allowed_project_types(fonk_name))
+    if combined_allowed_types is None:
+      combined_allowed_types = allowed_for_func
+    else:
+      combined_allowed_types = combined_allowed_types.intersection(
+          allowed_for_func
+      )
+
+  # Eğer kesişim boş kalırsa veya tüm fonksiyonlar genel ise güvenli liste
+  if not combined_allowed_types:
+    combined_allowed_types = {
+        "Standart Konut / Apartman",
+        "Üst Segment Konut / Rezidans",
+        "Lüks Villa / Müstakil Proje",
+        "Ticari / Ofis Kompleksi",
+        "Karma Proje (Konut + Ticari)",
+    }
+
+  combined_allowed_types_list = sorted(list(combined_allowed_types))
 
   function_configs = {}
   first_mahalle = list(active_parcel_db.values())[0].get("mahalle", "VARSAYILAN")
@@ -634,7 +643,7 @@ if selected_keys:
       """
     <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
         <h4 style="margin: 0 0 10px 0; color: #1e3a8a; font-size: 16px;">⚡ Toplu Parsel Proje Tipi ve Otomatik Finansal Yönetim</h4>
-        <p style="color: #64748b; font-size: 13px; margin-bottom: 15px;">Seçilen tüm parseller için geçerli olacak toplu proje tipini seçin. Sistem maliyetleri, satış fiyatlarını ve mimari dağılımı tam otomatik olarak uygular.</p>
+        <p style="color: #64748b; font-size: 13px; margin-bottom: 15px;">Seçilen parsellerin imar niteliğine göre filtrelenmiş toplu proje tipini seçin. Sistem maliyetleri, satış fiyatlarını ve mimari dağılımı tam otomatik olarak uygular.</p>
     """,
       unsafe_allow_html=True,
   )
