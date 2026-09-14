@@ -657,9 +657,8 @@ if selected_keys:
   )
   st.markdown("</div>", unsafe_allow_html=True)
 
-  # Fonksiyon eşleştirmeleri
-  all_functions_map = {}
-  temp_function_bruts = {}
+  # Fonksiyon tabanlı benzersiz konfigürasyon yapısı (Çoklu KAKS / Karma imar hatası düzeltildi)
+  function_configs = {}
   for key, p in active_parcel_db.items():
     toplam_arsa_m2 = p["toplam_alan"]
     is_terkli = p["terk_yapilmis_mi"]
@@ -670,33 +669,27 @@ if selected_keys:
           for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
       ):
         continue
+
+      # Her parselin fonksiyon bazlı kendine ait KAKS'ı ile hesap (Tek tip olmayan arazilere tam uyumlu)
+      parsel_fonk_key = f"{key}_{fonk_name}"
       hesaba_alinan_m2 = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
-      brut_insaat = hesaba_alinan_m2 * f["kaks"] * emsal_artis_orani
-      temp_function_bruts[fonk_name] = (
-          temp_function_bruts.get(fonk_name, 0.0) + brut_insaat
+      fonk_toplam_brut_m2 = hesaba_alinan_m2 * f["kaks"] * emsal_artis_orani
+
+      effective_target_size = max(10.0, float(global_hedef_birim_m2))
+      calculated_adet = round(fonk_toplam_brut_m2 / effective_target_size)
+      def_adet = max(1, int(calculated_adet))
+
+      r_satis, r_maliyet, r_bodrum_orani = get_realistic_market_pricing(
+          first_mahalle, toplu_p_tipi, rates["USD"]
       )
-      if fonk_name not in all_functions_map:
-        all_functions_map[fonk_name] = []
-      all_functions_map[fonk_name].append((key, f))
-
-  function_configs = {}
-  for fonk_name in all_functions_map.keys():
-    fonk_toplam_brut_m2 = temp_function_bruts.get(fonk_name, 300.0)
-    effective_target_size = max(10.0, float(global_hedef_birim_m2))
-    calculated_adet = round(fonk_toplam_brut_m2 / effective_target_size)
-    def_adet = max(1, int(calculated_adet))
-
-    r_satis, r_maliyet, r_bodrum_orani = get_realistic_market_pricing(
-        first_mahalle, toplu_p_tipi, rates["USD"]
-    )
-    function_configs[fonk_name] = {
-        "proje_tipi": toplu_p_tipi,
-        "adet": int(def_adet),
-        "havuz_mod": toplu_havuz,
-        "maliyet": r_maliyet,
-        "satis": r_satis,
-        "bodrum_orani": r_bodrum_orani,
-    }
+      function_configs[parsel_fonk_key] = {
+          "proje_tipi": toplu_p_tipi,
+          "adet": int(def_adet),
+          "havuz_mod": toplu_havuz,
+          "maliyet": r_maliyet,
+          "satis": r_satis,
+          "bodrum_orani": r_bodrum_orani,
+      }
 
   total_yasal_brut_insaat = 0.0
   total_simulated_bodrum = 0.0
@@ -714,7 +707,12 @@ if selected_keys:
           for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
       ):
         continue
-      conf = function_configs.get(fonk_adi)
+
+      parsel_fonk_key = f"{key}_{fonk_adi}"
+      conf = function_configs.get(parsel_fonk_key)
+      if not conf:
+        continue
+
       kaks = f["kaks"]
       hesaba_alinan_m2 = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
       brut_insaat = hesaba_alinan_m2 * kaks * emsal_artis_orani
@@ -842,8 +840,10 @@ if selected_keys:
             for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
         ):
           continue
+
+        parsel_fonk_key = f"{key}_{fonk_name}"
         conf = function_configs.get(
-            fonk_name,
+            parsel_fonk_key,
             {
                 "proje_tipi": toplu_p_tipi,
                 "adet": 1,
@@ -889,7 +889,7 @@ if selected_keys:
 
     st.dataframe(pd.DataFrame(mimari_rows), use_container_width=True)
 
-    # --- İSTEDİĞİNİZ TOPLU BİLGİ VEREN ÖZET TABLO ---
+    # --- TOPLU BİLGİ VEREN ÖZET TABLO ---
     st.markdown("### 📋 Toplu Proje ve Mimari Özet Matrisi")
     toplu_ortalama_birim = (
         mimari_sum_brut / mimari_sum_adet if mimari_sum_adet > 0 else 0.0
