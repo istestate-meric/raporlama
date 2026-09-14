@@ -615,14 +615,87 @@ if selected_keys:
 
   with st.expander(
       "🏛️ Fonksiyona Özel Mimari ve Finansal Parametreler (İmar Kısıtlı Matris)",
-      expanded=False,
+      expanded=True,
   ):
     st.markdown(
-        "<p style='color: #64748b; font-size: 12px; margin-bottom: 10px;'>Seçilen"
+        "<p style='color: #64748b; font-size: 13px; margin-bottom: 15px;'>Seçilen"
         " parsellerin imar fonksiyonu türüne göre uygun proje tipleri otomatik"
-        " kısıtlanmıştır.</p>",
+        " kısıtlanmıştır. Çoklu seçimleriniz için aşağıdaki <b>Toplu Uygula</b>"
+        " panelini kullanabilirsiniz.</p>",
         unsafe_allow_html=True,
     )
+
+    # --- TOPLU UYGULAMA PANELİ ---
+    st.markdown(
+        """
+        <div style="background: #e2e8f0; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #cbd5e1;">
+            <h4 style="margin: 0 0 10px 0; color: #1e3a8a; font-size: 15px;">⚡ Tüm Fonksiyonlara Toplu Uygula</h4>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    tc1, tc2, tc3, tc4 = st.columns(4)
+    first_mahalle = list(active_parcel_db.values())[0].get(
+        "mahalle", "VARSAYILAN"
+    )
+
+    with tc1:
+      toplu_p_tipi = st.selectbox(
+          "Toplu Proje Tipi",
+          options=[
+              "Standart Konut / Apartman",
+              "Üst Segment Konut / Rezidans",
+              "Lüks Villa / Müstakil Proje",
+              "Ticari / Ofis Kompleksi",
+              "Karma Proje (Konut + Ticari)",
+          ],
+          key="toplu_p_tipi",
+      )
+    with tc2:
+      toplu_havuz = st.selectbox(
+          "Toplu Havuz Modu",
+          options=["Havuz İptal", "Özel/Ortak Havuzlu"],
+          key="toplu_havuz",
+      )
+
+    r_satis_genel, r_maliyet_genel, _ = get_realistic_market_pricing(
+        first_mahalle, toplu_p_tipi, rates["USD"]
+    )
+
+    with tc3:
+      toplu_mal = st.number_input(
+          "Toplu Maliyet ($/m²)",
+          value=float(r_maliyet_genel),
+          step=50.0,
+          key="toplu_mal",
+      )
+    with tc4:
+      toplu_sat = st.number_input(
+          "Toplu Satış ($/m²)",
+          value=float(r_satis_genel),
+          step=100.0,
+          key="toplu_sat",
+      )
+
+    apply_bulk = st.button(
+        "🚀 Tüm Matrise Uygula",
+        type="primary",
+        use_container_width=True,
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    if apply_bulk:
+      for fonk_name in all_functions_map.keys():
+        st.session_state[f"p_tipi_{fonk_name}"] = toplu_p_tipi
+        st.session_state[f"havuz_{fonk_name}"] = toplu_havuz
+        st.session_state[f"mal_{fonk_name}"] = toplu_mal
+        st.session_state[f"sat_{fonk_name}"] = toplu_sat
+      st.success(
+          "Tüm fonksiyonlara toplu parametreler başarıyla uygulandı!"
+      )
+      st.rerun()
+
+    st.markdown("---")
 
     for fonk_name, items in all_functions_map.items():
       allowed_types = get_allowed_project_types(fonk_name)
@@ -668,9 +741,6 @@ if selected_keys:
             label_visibility="collapsed",
         )
 
-      first_mahalle = list(active_parcel_db.values())[0].get(
-          "mahalle", "VARSAYILAN"
-      )
       r_satis, r_maliyet, r_bodrum_orani = get_realistic_market_pricing(
           first_mahalle, sel_p_tipi, rates["USD"]
       )
@@ -803,7 +873,7 @@ if selected_keys:
   ])
 
   with tab1:
-    st.subheader("Seçilen Parsellerin İmar ve Alan Bazlı Dağılımı")
+    st.subheader("Seçilen Parsellerin İmar and Alan Bazlı Dağılımı")
     table_rows = []
     for key, p in active_parcel_db.items():
       is_terkli = p["terk_yapilmis_mi"]
@@ -824,7 +894,7 @@ if selected_keys:
             "Hesaba Esas Net Arsa (m²)": f"{net_m2:,.2f}",
             "TAKS Oranı": f"{f['taks']:.2f}",
             "KAKS / Emsal Katsayısı": f"{f['kaks']:.2f}",
-            "İmar ve Terk Durum Analizi": terk_lbl,
+            "İmar and Terk Durum Analizi": terk_lbl,
         })
     st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
 
@@ -845,7 +915,7 @@ if selected_keys:
     )
 
   with tab2:
-    st.subheader("🏛️ Fonksiyona Özel Mimari ve Yerleşim Fizibilitesi")
+    st.subheader("🏛️ Fonksiyona Özel Mimari and Yerleşim Fizibilitesi")
     st.markdown(
         "<p style='color: #64748b; font-size: 13px;'>Seçilen parsellerdeki"
         " fonksiyonların bağımsız bölüm dağılımları ve yapı tipleri güncel"
