@@ -659,7 +659,6 @@ if selected_keys:
           fonk_hesaba_alinan_m2 * f["kaks"] * emsal_artis_orani
       )
 
-      # Sadece inşaat alanı 0'dan büyük olanları listeye ekle ve toplam brüt alanını topla
       if fonk_toplam_brut_m2 > 0:
         if fonk_name not in valid_active_functions_with_area:
           valid_active_functions_with_area.append(fonk_name)
@@ -683,13 +682,13 @@ if selected_keys:
 
       if "TİCARET" in f_upper or "TİCARİ" in f_upper or "TICARET" in f_upper:
         def_sz, min_sz, max_sz, step_sz = 150, 60, 800, 10
-        label_txt = f"🏢 {fonk_adi} ({total_b_m2:,.2f} m²)"
+        label_txt = f"🏢 Ticari Alan ({total_b_m2:,.2f} m²)"
       elif "VİLLA" in f_upper:
         def_sz, min_sz, max_sz, step_sz = 250, 180, 550, 10
-        label_txt = f"🏡 {fonk_adi} ({total_b_m2:,.2f} m²)"
+        label_txt = f"🏡 Villa Alanı ({total_b_m2:,.2f} m²)"
       else:
         def_sz, min_sz, max_sz, step_sz = 95, 55, 250, 5
-        label_txt = f"🏠 {fonk_adi} ({total_b_m2:,.2f} m²)"
+        label_txt = f"🏠 Konut Alanı ({total_b_m2:,.2f} m²)"
 
       with fn_cols[idx % len(fn_cols)]:
         function_target_sizes[fonk_adi] = st.slider(
@@ -750,7 +749,6 @@ if selected_keys:
       fonk_hesaba_alinan_m2 = parsel_net_arsa * fonk_alan_orani
       fonk_toplam_brut_m2 = fonk_hesaba_alinan_m2 * f["kaks"] * emsal_artis_orani
 
-      # İnşaat alanı 0 olan bölümleri işleme ve hesaplamaya katma
       if fonk_toplam_brut_m2 <= 0:
         continue
 
