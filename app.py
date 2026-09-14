@@ -40,7 +40,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ (GÜÇLENDİRİLMİŞ) ---
+# --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ ---
 BASE_DIR = (
     os.path.dirname(os.path.abspath(__file__))
     if "__file__" in locals()
@@ -50,14 +50,12 @@ DB_FILE = os.path.join(BASE_DIR, "imar_veritabani.json")
 
 
 def load_persistent_db():
-  # Önce session state kontrolü yapalım (sayfa yenilenmelerine karşı)
   if (
       "parcel_db" in st.session_state
       and len(st.session_state["parcel_db"]) > 0
   ):
     return st.session_state["parcel_db"]
 
-  # Disk üzerinde dosya var mı kontrol edelim
   if os.path.exists(DB_FILE):
     try:
       with open(DB_FILE, "r", encoding="utf-8") as f:
@@ -72,7 +70,6 @@ def load_persistent_db():
 
 def save_persistent_db(db_data):
   try:
-    # Hem session state'e hem diske eş zamanlı kaydedelim
     st.session_state["parcel_db"] = db_data
     with open(DB_FILE, "w", encoding="utf-8") as f:
       json.dump(db_data, f, ensure_ascii=False, indent=4)
@@ -80,7 +77,6 @@ def save_persistent_db(db_data):
     st.error(f"Veritabanı kaydedilirken hata oluştu: {e}")
 
 
-# Veritabanını başlat
 if "parcel_db" not in st.session_state:
   st.session_state["parcel_db"] = load_persistent_db()
 
@@ -142,7 +138,7 @@ def get_live_exchange_rates():
     return {"USD": 34.00, "EUR": 37.50}
 
 
-# --- 2. BEYKOZ GERÇEKÇİ PİYASA VE PROJE TİPİ MATRİSİ (CANLI OTOMATİK) ---
+# --- 2. BEYKOZ GERÇEKÇİ PİYASA VE PROJE TİPİ MATRİSİ ---
 def get_realistic_market_pricing(mahalle_adi, proje_tipi, usd_rate):
   mahalle_base_tl = {
       "ACARLAR": 140000,
@@ -462,7 +458,6 @@ if uploaded_files:
     st.session_state["parcel_db"][unique_key] = p_data
     just_uploaded_keys.append(unique_key)
 
-  # Değişiklikleri hem belleğe hem JSON dosyasına kalıcı olarak kaydet
   save_persistent_db(st.session_state["parcel_db"])
   st.sidebar.success(f"{len(uploaded_files)} Adet Belge Arşive Eklendi!")
 
@@ -520,7 +515,6 @@ if selected_keys:
 
   emsal_artis_orani = 1.30
 
-  # --- KURUMSAL VE ESTETİK İŞ MODELİ / GENEL PARAMETRELER ALANI ---
   st.markdown(
       """
     <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #cbd5e1; border-radius: 14px; padding: 24px; margin-bottom: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
@@ -580,19 +574,12 @@ if selected_keys:
 
   st.markdown("</div>", unsafe_allow_html=True)
 
-  # --- ÖNCEDEN GEÇİCİ HESAPLAMA İÇİN FONKSİYON BRÜT ALANLARININ ÇIKARILMASI ---
+  # --- ÖNCEDEN GEÇİCİ HESAPLAMA İÇİN BRÜT ALANLARININ ÇIKARILMASI ---
   temp_function_bruts = {}
   for key, p in active_parcel_db.items():
-    toplam_brut_m2 = p["toplam_alan"]
+    toplam_arsa_m2 = p["toplam_alan"]
     is_terkli = p["terk_yapilmis_mi"]
-    toplam_giren_fonk_m2 = sum(
-        f["giren_m2"]
-        for f in p["fonksiyonlar"]
-        if not any(
-            x in f["fonksiyon_adi"]
-            for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
-        )
-    )
+
     for f in p["fonksiyonlar"]:
       fonk_adi = f["fonksiyon_adi"]
       if any(
@@ -600,21 +587,16 @@ if selected_keys:
           for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
       ):
         continue
-      giren_m2 = f["giren_m2"] if f["giren_m2"] > 0 else toplam_brut_m2
-      if not is_terkli:
-        fonk_pay_orani = (
-            (giren_m2 / toplam_giren_fonk_m2) if toplam_giren_fonk_m2 > 0 else 1.0
-        )
-        esas_m2 = toplam_brut_m2 * fonk_pay_orani
-        brut_insaat = esas_m2 * 0.70 * f["kaks"] * emsal_artis_orani
+
+      if is_terkli:
+        brut_insaat = toplam_arsa_m2 * f["kaks"] * emsal_artis_orani
       else:
-        brut_insaat = giren_m2 * f["kaks"] * emsal_artis_orani
+        brut_insaat = toplam_arsa_m2 * 0.70 * f["kaks"] * emsal_artis_orani
 
       temp_function_bruts[fonk_adi] = (
           temp_function_bruts.get(fonk_adi, 0.0) + brut_insaat
       )
 
-  # --- KOMPAKT VE KURUMSAL AKORDEON YAPISI ---
   all_functions_map = {}
   for key, p in active_parcel_db.items():
     for f in p["fonksiyonlar"]:
@@ -745,7 +727,7 @@ if selected_keys:
           "bodrum_orani": r_bodrum_orani,
       }
 
-  # --- GENEL HESAPLAMA MOTORU ---
+  # --- GENEL HESAPLAMA MOTORU (GÜNCELLENMİŞ KURALLAR) ---
   total_yasal_brut_insaat = 0.0
   total_simulated_bodrum = 0.0
   total_ciro_usd = 0.0
@@ -754,17 +736,8 @@ if selected_keys:
   function_results_detail = []
 
   for key, p in active_parcel_db.items():
-    toplam_brut_m2 = p["toplam_alan"]
+    toplam_arsa_m2 = p["toplam_alan"]
     is_terkli = p["terk_yapilmis_mi"]
-
-    toplam_giren_fonk_m2 = sum(
-        f["giren_m2"]
-        for f in p["fonksiyonlar"]
-        if not any(
-            x in f["fonksiyon_adi"]
-            for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
-        )
-    )
 
     for f in p["fonksiyonlar"]:
       fonk_adi = f["fonksiyon_adi"]
@@ -775,20 +748,18 @@ if selected_keys:
         continue
 
       conf = function_configs.get(fonk_adi)
+      kaks = f["kaks"]
 
-      giren_m2 = f["giren_m2"] if f["giren_m2"] > 0 else toplam_brut_m2
-      if not is_terkli:
-        fonk_pay_orani = (
-            (giren_m2 / toplam_giren_fonk_m2) if toplam_giren_fonk_m2 > 0 else 1.0
-        )
-        esas_m2 = toplam_brut_m2 * fonk_pay_orani
-        brut_insaat = esas_m2 * 0.70 * f["kaks"] * emsal_artis_orani
+      # Güncellenmiş formül mimarisi:
+      if is_terkli:
+        brut_insaat = toplam_arsa_m2 * kaks * emsal_artis_orani
       else:
-        esas_m2 = giren_m2
-        brut_insaat = esas_m2 * f["kaks"] * emsal_artis_orani
+        brut_insaat = toplam_arsa_m2 * 0.70 * kaks * emsal_artis_orani
 
       total_yasal_brut_insaat += brut_insaat
 
+      # Bodrum katlar toplam inşaat alanına dahil değildir (1.20 cm şartı)
+      # Havuzlar toplam inşaat alanından hesaplanmaktadır.
       tekil_havuz_payi = 30.0 if "Özel" in conf["havuz_mod"] else 0.0
       sim_bodrum = (
           brut_insaat - (tekil_havuz_payi * conf["adet"])
@@ -826,7 +797,7 @@ if selected_keys:
       else 0
   )
 
-  # --- SEKME YAPISI (4 SEKME OLARAK BİRLEŞTİRİLDİ) ---
+  # --- SEKME YAPISI ---
   tab1, tab2, tab3, tab4 = st.tabs([
       "📊 Seçilen Parseller & İnşaat Alanı",
       "🏛️ Mimari Fizibilite",
@@ -841,20 +812,19 @@ if selected_keys:
       is_terkli = p["terk_yapilmis_mi"]
       toplam_brut = p["toplam_alan"]
       terk_lbl = (
-          "Terki Yapılmış (Net)"
+          "Terki Yapılmış (Toplam Arsa x KAKS x 1.3)"
           if is_terkli
-          else "Terki Yapılmamış (%30 Kesintili İmar Hesabı)"
+          else "Terki Yapılmamış (Toplam Arsa x 0.7 KAKS x 1.3)"
       )
 
       for f in p["fonksiyonlar"]:
         fonks_m2 = f["giren_m2"] if f["giren_m2"] > 0 else toplam_brut
-        net_m2 = fonks_m2 if is_terkli else toplam_brut * 0.70
+        net_m2 = toplam_brut if is_terkli else toplam_brut * 0.70
         table_rows.append({
             "Parsel Bilgisi": key,
             "Mahalle": p["mahalle"],
             "Toplam Arsa (m²)": f"{toplam_brut:,.2f}",
-            "Alan Adı (Bahçe/Kullanım Alanı)": f["fonksiyon_adi"],
-            "Alan Miktarı (m²)": f"{fonks_m2:,.2f}",
+            "Alan Adı": f["fonksiyon_adi"],
             "Net Arsa (m²)": f"{net_m2:,.2f}",
             "TAKS": f"{f['taks']:.2f}",
             "KAKS (Emsal)": f"{f['kaks']:.2f}",
@@ -873,7 +843,7 @@ if selected_keys:
       })
     st.table(pd.DataFrame(calc_results))
     st.metric(
-        label="🏗️ Toplam Brüt İnşaat Alanı",
+        label="🏗️ Toplam Brüt İnşaat Alanı (Bodrum Hariç)",
         value=f"{total_yasal_brut_insaat:,.2f} m²",
     )
 
@@ -881,9 +851,8 @@ if selected_keys:
     st.subheader("🏛️ Fonksiyona Özel Mimari ve Yerleşim Fizibilitesi")
     st.markdown(
         "<p style='color: #64748b; font-size: 13px;'>Seçilen parsellerdeki"
-        " fonksiyonların bağımsız bölüm dağılımları, yapı tipleri ve her bir"
-        " bağımsız bölüme düşen bahçe / arsa payı analizi aşağıda kurumsal"
-        " standartlarda özetlenmiştir.</p>",
+        " fonksiyonların bağımsız bölüm dağılımları ve yapı tipleri güncel"
+        " imar kurallarına göre hesaplanmıştır.</p>",
         unsafe_allow_html=True,
     )
 
@@ -903,52 +872,23 @@ if selected_keys:
         birim_etiket = "Ortalama Konut Brüt Alanı"
 
       fonk_toplam_brut = 0.0
-      fonk_toplam_alan_miktari = 0.0
+      fonk_toplam_arsa = 0.0
       for key, f in items:
         p = active_parcel_db[key]
-        toplam_brut_m2 = p["toplam_alan"]
+        toplam_arsa_m2 = p["toplam_alan"]
         is_terkli = p["terk_yapilmis_mi"]
-        giren_m2 = f["giren_m2"] if f["giren_m2"] > 0 else toplam_brut_m2
 
-        if not is_terkli:
-          toplam_giren_fonk_m2 = sum(
-              x["giren_m2"]
-              for x in p["fonksiyonlar"]
-              if not any(
-                  sub in x["fonksiyon_adi"].upper()
-                  for sub in [
-                      "PARK",
-                      "TEKNİK ALTYAPI",
-                      "LİSE",
-                      "KÜLTÜREL",
-                      "ANAOKULU",
-                  ]
-              )
-          )
-          fonk_pay_orani = (
-              (giren_m2 / toplam_giren_fonk_m2)
-              if toplam_giren_fonk_m2 > 0
-              else 1.0
-          )
-          esas_m2 = toplam_brut_m2 * fonk_pay_orani * 0.70
-          brut_insaat = (
-              (toplam_brut_m2 * fonk_pay_orani)
-              * 0.70
-              * f["kaks"]
-              * emsal_artis_orani
-          )
+        if is_terkli:
+          brut_insaat = toplam_arsa_m2 * f["kaks"] * emsal_artis_orani
         else:
-          esas_m2 = giren_m2
-          brut_insaat = esas_m2 * f["kaks"] * emsal_artis_orani
+          brut_insaat = toplam_arsa_m2 * 0.70 * f["kaks"] * emsal_artis_orani
 
         fonk_toplam_brut += brut_insaat
-        fonk_toplam_alan_miktari += esas_m2
+        fonk_toplam_arsa += toplam_arsa_m2
 
       adet = conf.get("adet", 1)
-      bahce_alani_birim = (
-          (fonk_toplam_alan_miktari / adet)
-          if adet > 0
-          else fonk_toplam_alan_miktari
+      arsa_payi_birim = (
+          (fonk_toplam_arsa / adet) if adet > 0 else fonk_toplam_arsa
       )
       ortalama_brut_birim = (
           (fonk_toplam_brut / adet) if adet > 0 else fonk_toplam_brut
@@ -974,16 +914,11 @@ if selected_keys:
         st.metric("Havuz Konsept Tercihi", conf.get("havuz_mod", "-"))
 
       st.markdown(
-          "<div style='margin-top: 10px;'></div>", unsafe_allow_html=True
-      )
-
-      st.markdown(
           f"""
-            <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
                 <div>
-                    <span style="font-weight: 700; color: #334155; font-size: 13px;">🌿 Bağımsız Bölüme Düşen Bahçe / Arsa Alanı:</span>
-                    <span style="color: #0f172a; font-weight: 800; font-size: 14px; margin-left: 6px;">{bahce_alani_birim:,.2f} m² / birim</span>
-                    <div style="color: #64748b; font-size: 11px; margin-top: 2px;">(Toplam Fonksiyon Alan Miktarı: {fonk_toplam_alan_miktari:,.2f} m²)</div>
+                    <span style="font-weight: 700; color: #334155; font-size: 13px;">🌿 Bağımsız Bölüme Düşen Arsa Alanı:</span>
+                    <span style="color: #0f172a; font-weight: 800; font-size: 14px; margin-left: 6px;">{arsa_payi_birim:,.2f} m² / birim</span>
                 </div>
                 <div>
                     <span style="font-weight: 700; color: #334155; font-size: 13px;">🏗️ Fonksiyon Toplam Brüt İnşaat:</span>
@@ -1053,7 +988,7 @@ if selected_keys:
             <div class="section-title">1. Proje ve Lokasyon Künyesi</div>
             <table class="data-table">
                 <tr><td>Lokasyon / Mahalle</td><td style="text-align: right; font-weight: bold;">{first_mahalle}</td></tr>
-                <tr><td>Toplam Brüt İnşaat Alanı</td><td style="text-align: right; font-weight: bold; color: #1e3a8a;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
+                <tr><td>Toplam Brüt İnşaat Alanı (Bodrum Hariç)</td><td style="text-align: right; font-weight: bold; color: #1e3a8a;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
             </table>
             <div class="section-title">2. Fonksiyon Bazlı Finansal Fizibilite Özeti</div>
             <table class="data-table">
