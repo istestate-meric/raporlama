@@ -37,7 +37,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- DİNAMİK VE GERÇEKÇİ FONKSİYON ADI ÇÖZÜMLEME MOTORU (GÜNCELLENDİ) ---
+# --- DİNAMİK VE GERÇEKÇİ FONKSİYON ADI ÇÖZÜMLEME MOTORU ---
 def clean_fonksiyon_adi(name):
     if not name:
         return ""
@@ -51,7 +51,7 @@ def clean_fonksiyon_adi(name):
         return ""
     return n
 
-# --- KALİCİ DOSYA TABANLI VERİTABANI YÖNETİMİ ---
+# --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) if "__file__" in locals() else os.getcwd()
 DB_FILE = os.path.join(BASE_DIR, "imar_veritabani.json")
 
@@ -406,9 +406,11 @@ if all_db_keys:
     
     filtered_keys = [k for k, p_data in st.session_state["parcel_db"].items() if str(p_data.get("ada", "")).strip() == str(selected_ada_filter).strip()] if selected_ada_filter != "Seçiniz..." else all_db_keys
     
-    default_selection = just_uploaded_keys if just_uploaded_keys else filtered_keys[:min(3, len(filtered_keys))]
+    # GÜVENLİ VARSAYILAN SEÇİM (StreamlitDefaultNotinOptionsError hatasını önler)
+    raw_default = just_uploaded_keys if just_uploaded_keys else filtered_keys[:min(3, len(filtered_keys))]
+    safe_default = [k for k in raw_default if k in filtered_keys]
     
-    selected_keys = st.sidebar.multiselect("Raporlanacak Parselleri Seçin:", options=filtered_keys, default=default_selection)
+    selected_keys = st.sidebar.multiselect("Raporlanacak Parselleri Seçin:", options=filtered_keys, default=safe_default)
 else:
     st.sidebar.info("Arşivde kayıtlı parsel yok. Sol üstten PDF imar belgesi yükleyin.")
     selected_keys = []
