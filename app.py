@@ -37,43 +37,17 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- FONKSİYON ADI AKILLI TEMİZLEME MOTORU ---
+# --- FONKSİYON ADI AKILLI TEMİZLEME MOTORU (GELİŞTİRİLDİ) ---
 def clean_fonksiyon_adi(name):
     if not name:
         return "KONUT ALANI"
     n = str(name).upper().strip()
     
-    if "KONUT DIŞI" in n or "KOBİ" in n or "KÜÇÜK SANAYİ" in n:
-        if "SANAYİ" in n or "TİCARET" in n:
-            return "KONUT DIŞI KENTSEL ÇALIŞMA ALANI"
-        return "KONUT DIŞI ALAN"
-        
-    if "TİCARET" in n and "KONUT" in n:
-        return "TİCARET VE KONUT ALANI"
-    elif "TİCARET" in n or "TİCARİ" in n:
-        return "TİCARET ALANI"
-    elif "VİLLA" in n:
-        return "VİLLA ALANI"
-    elif "KONUT" in n or "MESKEN" in n:
+    if len(n) < 2 or n in ["-", "--", ".", "0", "N/A", "İMAR DURUMU"]:
         return "KONUT ALANI"
-    elif "SANAYİ" in n:
-        return "SANAYİ ALANI"
-    elif "TURİZM" in n:
-        return "TURİZM ALANI"
-    elif "PARK" in n or "YEŞİL" in n:
-        return "PARK ALANI"
-    elif "SAĞLIK" in n:
-        return "SAĞLIK TESİSİ ALANI"
-    elif "EĞİTİM" in n:
-        return "EĞİTİM TESİSİ ALANI"
-    elif "TARIM" in n:
-        return "TARIM ALANI"
-
-    n_clean = re.sub(r'[%–\-\d\.,]+', '', n).replace('M²', '').replace('M2', '').strip()
-    if len(n_clean) >= 3:
-        return n_clean
         
-    return "KONUT ALANI"
+    # Belgedeki özgün imar lejant/fonksiyon tanımını doğrudan koru
+    return n
 
 # --- KALİCİ DOSYA TABANLI VERİTABANI YÖNETİMİ ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) if "__file__" in locals() else os.getcwd()
@@ -271,7 +245,7 @@ def parse_imar_pdf(uploaded_file):
                                             
                         for c_idx, c in enumerate(cells):
                             c_upper = c.upper()
-                            if any(lbl in c_upper for lbl in ["FONKSİYON", "LEJANT", "KULLANIM", "PLAN AMACI", "PLAN TÜRÜ", "İMAR DURUMU"]):
+                            if any(lbl in c_upper for lbl in ["FONKSİYON", "LEJANT", "KULLANIM", "PLAN AMACI", "PLAN TÜRÜ", "İMAR DURUMU", "NİTELİK"]):
                                 for t_idx in range(c_idx + 1, len(cells)):
                                     val = cells[t_idx]
                                     cleaned = clean_fonksiyon_adi(val)
@@ -284,6 +258,14 @@ def parse_imar_pdf(uploaded_file):
                                         cleaned = clean_fonksiyon_adi(val)
                                         if cleaned and cleaned not in raw_found_functions:
                                             raw_found_functions.append(cleaned)
+                        
+                        # Tablolarda etiket başlığı olmasa bile anlamlı metinleri yakala
+                        for c in cells:
+                            if len(c) > 3 and not c.replace('.', '', 1).isdigit():
+                                c_up = c.upper()
+                                if any(k in c_up for k in ["KONUT", "TİCARET", "VİLLA", "SANAYİ", "TURİZM", "MERKEZ", "GELİŞME", "ARSA", "NİTELİK"]):
+                                    if c_up not in raw_found_functions and not any(h in c_up for h in ["MAHALLE", "ADA", "PARSEL", "İMAR DURUMU BELGESİ"]):
+                                        raw_found_functions.append(c_up)
                                             
                         t_m = re.search(r'Taks\s*\|?\s*([\d\.,]+)', row_str, re.IGNORECASE)
                         k_m = re.search(r'Kaks\s*\(Emsal\)\s*\|?\s*([\d\.,]+)', row_str, re.IGNORECASE)
@@ -292,14 +274,8 @@ def parse_imar_pdf(uploaded_file):
                         if k_m:
                             global_kaks = parse_tr_float(k_m.group(1))
             
-            # Eğer tablo başlıklarında bulunamadıysa ama belgede konut/ticaret geçiyorsa güvenli tarama yap
             if not raw_found_functions:
-                if "TİCARET" in full_text.upper():
-                    raw_found_functions.append("TİCARET ALANI")
-                elif "VİLLA" in full_text.upper():
-                    raw_found_functions.append("VİLLA ALANI")
-                else:
-                    raw_found_functions.append("KONUT ALANI")
+                raw_found_functions.append("KONUT ALANI")
                     
             for fn in raw_found_functions:
                 parcel_data["fonksiyonlar"].append({
@@ -520,7 +496,7 @@ if selected_keys:
                 def_sz, min_sz, max_sz, step_sz = 95, 55, 250, 5
                 icon_prefix = "🏠"
                 
-            label_txt = f"{icon_prefix} {fonk_adi} : ( Toplam Brüt: {total_b_m2:,.2f} m² )"
+            label_txt = f"{icon_prefix} {fonk_adi[:25]}... : ({total_b_m2:,.1f} m²)"
             
             with fn_cols[idx % len(fn_cols)]:
                 function_target_sizes[fonk_adi] = st.slider(
@@ -529,7 +505,7 @@ if selected_keys:
                     max_value=max_sz,
                     value=def_sz,
                     step=step_sz,
-                    key=f"target_size_{fonk_adi}"
+                    key=f"target_size_{idx}_{fonk_adi}"
                 )
 
     first_mahalle = list(active_parcel_db.values())[0].get("mahalle", "VARSAYILAN")
