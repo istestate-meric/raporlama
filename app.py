@@ -155,7 +155,16 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, usd_rate):
       "VARSAYILAN": 95000,
   }
 
-  clean_mahalle = mahalle_adi.upper().strip()
+  clean_mahalle = (
+      mahalle_adi.upper()
+      .replace("İ", "I")
+      .replace("Ç", "C")
+      .replace("Ş", "S")
+      .replace("Ğ", "G")
+      .replace("Ü", "U")
+      .replace("Ö", "O")
+      .strip()
+  )
   base_tl = mahalle_base_tl.get(clean_mahalle, mahalle_base_tl["VARSAYILAN"])
 
   proje_carpanlari = {
@@ -252,7 +261,7 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
       f["giren_m2"]
       for f in fonksiyonlar
       if not any(
-          x in f["fonksiyon_adi"]
+          x in f["fonksiyon_adi"].upper()
           for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
       )
   )
@@ -496,18 +505,21 @@ if selected_keys:
   )
 
   combined_fonk_text = " ".join([
-      f["fonksiyon_adi"].upper()
+      f["fonksiyon_adi"]
+      .upper()
+      .replace("İ", "I")
+      .replace("Ç", "C")
+      .replace("Ş", "S")
+      .replace("Ğ", "G")
+      .replace("Ü", "U")
+      .replace("Ö", "O")
       for p in active_parcel_db.values()
       for f in p["fonksiyonlar"]
   ])
 
-  has_ticaret = any(
-      x in combined_fonk_text for x in ["TİCARET", "TİCARİ", "TICARET"]
-  )
+  has_ticaret = any(x in combined_fonk_text for x in ["TICARET", "TICARI"])
   has_konut = any(x in combined_fonk_text for x in ["KONUT", "MESKEN"])
-  has_villa = any(
-      x in combined_fonk_text for x in ["VİLLA", "AYRIK", "İKİZ"]
-  )
+  has_villa = any(x in combined_fonk_text for x in ["VILLA", "AYRIK", "IKIZ"])
 
   if has_ticaret and has_konut:
     allowed_project_types = [
@@ -677,18 +689,28 @@ if selected_keys:
     fn_cols = st.columns(len(valid_active_functions_with_area))
 
     for idx, fonk_adi in enumerate(valid_active_functions_with_area):
-      f_upper = fonk_adi.upper()
+      f_upper = (
+          fonk_adi.upper()
+          .replace("İ", "I")
+          .replace("Ç", "C")
+          .replace("Ş", "S")
+          .replace("Ğ", "G")
+          .replace("Ü", "U")
+          .replace("Ö", "O")
+      )
       total_b_m2 = function_total_brut_areas.get(fonk_adi, 0.0)
 
-      if "TİCARET" in f_upper or "TİCARİ" in f_upper or "TICARET" in f_upper:
+      if "TICARET" in f_upper:
         def_sz, min_sz, max_sz, step_sz = 150, 60, 800, 10
-        label_txt = f"🏢 Ticari Alan ({total_b_m2:,.2f} m²)"
-      elif "VİLLA" in f_upper:
+        icon_prefix = "🏢"
+      elif "VILLA" in f_upper:
         def_sz, min_sz, max_sz, step_sz = 250, 180, 550, 10
-        label_txt = f"🏡 Villa Alanı ({total_b_m2:,.2f} m²)"
+        icon_prefix = "🏡"
       else:
         def_sz, min_sz, max_sz, step_sz = 95, 55, 250, 5
-        label_txt = f"🏠 Konut Alanı ({total_b_m2:,.2f} m²)"
+        icon_prefix = "🏠"
+
+      label_txt = f"{icon_prefix} {fonk_adi} ({total_b_m2:,.2f} m²)"
 
       with fn_cols[idx % len(fn_cols)]:
         function_target_sizes[fonk_adi] = st.slider(
