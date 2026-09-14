@@ -37,12 +37,13 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- FONKSİYON ADI AKILLI TEMİZLEME MOTORU ---
+# --- FONKSİYON ADI AKILLI TEMİZLEME MOTORU (GÜNCELLENDİ) ---
 def clean_fonksiyon_adi(name):
     if not name:
         return "KONUT ALANI"
     n = str(name).upper().strip()
-    if len(n) < 2 or n in ["-", "--", ".", "0", "N/A", "İMAR DURUMU"]:
+    # Oran, yüzde, alan ölçüleri veya geçersiz ifadeleri ayıkla
+    if "%" in n or "M²" in n or re.match(r'^[\d\.,\s\-%]+$', n) or len(n) < 2 or n in ["-", "--", ".", "0", "N/A", "İMAR DURUMU"]:
         return "KONUT ALANI"
     return n
 
@@ -251,11 +252,15 @@ def parse_imar_pdf(uploaded_file):
                             fonk_name = "KONUT ALANI"
                             for c_idx, c in enumerate(row_cells):
                                 if "FONKSİYON" in c.upper() and c_idx + 1 < len(row_cells) and row_cells[c_idx+1]:
-                                    fonk_name = clean_fonksiyon_adi(row_cells[c_idx+1])
-                                    break
+                                    cleaned = clean_fonksiyon_adi(row_cells[c_idx+1])
+                                    if cleaned != "KONUT ALANI":
+                                        fonk_name = cleaned
+                                        break
                             if fonk_name == "KONUT ALANI" and len(row_cells) > 1 and row_cells[1]:
-                                fonk_name = clean_fonksiyon_adi(row_cells[1])
-                                
+                                cleaned = clean_fonksiyon_adi(row_cells[1])
+                                if cleaned != "KONUT ALANI":
+                                    fonk_name = cleaned
+                                    
                             cur_taks = global_taks
                             cur_kaks = global_kaks
                             cur_giren_m2 = 0.0
