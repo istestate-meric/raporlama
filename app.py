@@ -197,27 +197,41 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, usd_rate):
   return satis_fiyati_usd, maliyet_fiyati_usd, bodrum_orani
 
 
-def get_function_based_project_type_and_pricing(
-    mahalle_adi, fonk_name, usd_rate
-):
+def get_allowed_project_types(fonk_name):
   f_upper = fonk_name.upper()
+  all_types = [
+      "Standart Konut / Apartman",
+      "Üst Segment Konut / Rezidans",
+      "Lüks Villa / Müstakil Proje",
+      "Ticari / Ofis Kompleksi",
+      "Karma Proje (Konut + Ticari)",
+  ]
+
   if (
       "TİCARET VE KONUT" in f_upper
       or "KONUT VE TİCARET" in f_upper
       or ("TİCARET" in f_upper and "KONUT" in f_upper)
   ):
-    p_tipi = "Karma Proje (Konut + Ticari)"
+    return [
+        "Karma Proje (Konut + Ticari)",
+        "Ticari / Ofis Kompleksi",
+        "Standart Konut / Apartman",
+    ]
   elif "TİCARET" in f_upper or "TİCARİ" in f_upper or "TICARET" in f_upper:
-    p_tipi = "Ticari / Ofis Kompleksi"
+    return ["Ticari / Ofis Kompleksi", "Karma Proje (Konut + Ticari)"]
   elif "VİLLA" in f_upper:
-    p_tipi = "Lüks Villa / Müstakil Proje"
+    return [
+        "Lüks Villa / Müstakil Proje",
+        "Üst Segment Konut / Rezidans",
+        "Standart Konut / Apartman",
+    ]
   else:
-    p_tipi = "Standart Konut / Apartman"
-
-  satis, maliyet, bodrum = get_realistic_market_pricing(
-      mahalle_adi, p_tipi, usd_rate
-  )
-  return p_tipi, satis, maliyet, bodrum
+    return [
+        "Standart Konut / Apartman",
+        "Üst Segment Konut / Rezidans",
+        "Lüks Villa / Müstakil Proje",
+        "Karma Proje (Konut + Ticari)",
+    ]
 
 
 def parse_tr_float(val_str):
@@ -525,7 +539,7 @@ if selected_keys:
             <span style="font-size: 18px; margin-right: 8px;">⚙️</span>
             <div>
                 <h3 style="color: #0f172a; margin: 0; font-size: 15px; font-weight: 700;">Gelişmiş Fizibilite ve Proje Parametreleri</h3>
-                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına ve niteliklerine göre otomatik eşleşen proje tipleri, havuz senaryoları ve iş modelleri.</p>
+                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına göre filtrelenmiş uygun proje tiplerini seçebilir, bağımsız bölüm ve iş modellerini özelleştirebilirsiniz.</p>
             </div>
         </div>
     """,
@@ -585,15 +599,15 @@ if selected_keys:
         arsa_bonus_usd = raw_bonus_val
 
   first_mahalle = list(active_parcel_db.values())[0].get("mahalle", "VARSAYILAN")
-  st.markdown(
-      f"<div style='font-size: 12px; color: #334155; margin-top: 10px; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0;'>"
-      f"💡 <b>Çoklu Fonksiyon Modu:</b> Her parseldeki nitelikler (Konut, Ticaret vb.) kendi imar amaçlarına uygun proje tipleri ve piyasa değerleri ile otomatik eşleştirilmiştir."
-      f"</div>",
-      unsafe_allow_html=True,
-  )
   st.markdown("</div>", unsafe_allow_html=True)
 
-  # --- FONKSİYON VE NİTELİK BAZLI OTOMATİK PROJE TİPİ VE FİYATLANDIRMA ---
+  # --- FONKSİYON BAZLI KULLANICI SEÇİMLİ PROJE TİPİ VE FİYATLANDIRMA ---
+  st.markdown("### 🧩 İmar Fonksiyonları ve Proje Tipi Eşleştirme Paneli")
+  st.markdown(
+      "<p style='color: #64748b; font-size: 12px; margin-top: -10px;'>Aşağıda seçtiğiniz parsellerdeki imar fonksiyonları listelenmiştir. Her fonksiyon için en uygun proje tipini filtreli listeden seçebilirsiniz.</p>",
+      unsafe_allow_html=True,
+  )
+
   function_configs = {}
   for key, p in active_parcel_db.items():
     toplam_arsa_m2 = p["toplam_alan"]
@@ -618,35 +632,58 @@ if selected_keys:
       ):
         continue
 
-      fonk_giren_m2 = f.get("giren_m2", toplam_arsa_m2)
-      if fonk_giren_m2 <= 0:
-        fonk_giren_m2 = toplam_arsa_m2
-      fonk_alan_orani = fonk_giren_m2 / toplam_f_m2
+      parsel_fonk_key = f"{key}_{fonk_name}"
+      allowed_types = get_allowed_project_types(fonk_name)
 
-      parsel_net_arsa = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
-      fonk_hesaba_alinan_m2 = parsel_net_arsa * fonk_alan_orani
-      fonk_toplam_brut_m2 = fonk_hesaba_alinan_m2 * f["kaks"] * emsal_artis_orani
-
-      effective_target_size = max(10.0, float(global_hedef_birim_m2))
-      calculated_adet = round(fonk_toplam_brut_m2 / effective_target_size)
-      def_adet = max(1, int(calculated_adet))
-
-      # Nitelik adına göre doğru proje tipini ve piyasa fiyatını otomatik seç
-      auto_p_tipi, r_satis, r_maliyet, r_bodrum_orani = (
-          get_function_based_project_type_and_pricing(
-              first_mahalle, fonk_name, rates["USD"]
+      with st.expander(
+          f"📍 {key} — Fonksiyon: {fonk_name} (Alan: {f.get('giren_m2', toplam_arsa_m2):,.2f} m²)",
+          expanded=True,
+      ):
+        col_f1, col_f2 = st.columns([2, 1])
+        with col_f1:
+          selected_p_tipi = st.selectbox(
+              f"Bu Fonksiyon İçin Uygun Proje Tipi ({fonk_name})",
+              options=allowed_types,
+              key=f"p_type_{parsel_fonk_key}",
           )
+        with col_f2:
+          fonk_giren_m2 = f.get("giren_m2", toplam_arsa_m2)
+          if fonk_giren_m2 <= 0:
+            fonk_giren_m2 = toplam_arsa_m2
+          fonk_alan_orani = fonk_giren_m2 / toplam_f_m2
+
+          parsel_net_arsa = (
+              toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
+          )
+          fonk_hesaba_alinan_m2 = parsel_net_arsa * fonk_alan_orani
+          fonk_toplam_brut_m2 = (
+              fonk_hesaba_alinan_m2 * f["kaks"] * emsal_artis_orani
+          )
+
+          effective_target_size = max(10.0, float(global_hedef_birim_m2))
+          calculated_adet = round(fonk_toplam_brut_m2 / effective_target_size)
+          def_adet = max(1, int(calculated_adet))
+
+          selected_adet = st.number_input(
+              "Bağımsız Bölüm Adeti",
+              min_value=1,
+              value=int(def_adet),
+              step=1,
+              key=f"p_adet_{parsel_fonk_key}",
+          )
+
+      r_satis, r_maliyet, r_bodrum_orani = get_realistic_market_pricing(
+          first_mahalle, selected_p_tipi, rates["USD"]
       )
       havuz_mod = (
           "Havuz İptal / Yapılmayacak"
-          if "Ticari" in auto_p_tipi
+          if "Ticari" in selected_p_tipi
           else "Standart Ortak Havuzlu Proje"
       )
 
-      parsel_fonk_key = f"{key}_{fonk_name}"
       function_configs[parsel_fonk_key] = {
-          "proje_tipi": auto_p_tipi,
-          "adet": int(def_adet),
+          "proje_tipi": selected_p_tipi,
+          "adet": int(selected_adet),
           "havuz_mod": havuz_mod,
           "maliyet": r_maliyet,
           "satis": r_satis,
@@ -810,7 +847,7 @@ if selected_keys:
 
   with tab2:
     st.subheader(
-        "🏛️ Mimari Fizibilite & Nitelik Bazlı Otomatik Eşleşen Proje Matrisi"
+        "🏛️ Mimari Fizibilite & Fonksiyon Bazlı Seçilebilir Proje Matrisi"
     )
     mimari_rows = []
     mimari_sum_brut = 0.0
@@ -882,7 +919,7 @@ if selected_keys:
             "MAHALLE": mahalle,
             "ADA/PARSEL": f"{ada}/{parsel}",
             "FONKSİYON / NİTELİK": fonk_name,
-            "UYUMLU PROJE TİPİ": conf["proje_tipi"],
+            "SEÇİLEN PROJE TİPİ": conf["proje_tipi"],
             "BRÜT İNŞAAT (M²)": f"{brut_insaat:,.2f}",
             "ADET": konut_adeti,
             "BİRİM BRÜT (M²)": f"{birim_m2:,.2f}",
@@ -901,9 +938,7 @@ if selected_keys:
         "TOPLAM YASAL BRÜT İNŞAAT (M²)": f"{mimari_sum_brut:,.2f} m²",
         "TOPLAM SİMÜLE BODRUM (M²)": f"{mimari_sum_bodrum:,.2f} m²",
         "GENEL ORTALAMA BİRİM ALAN (M²)": f"{toplu_ortalama_birim:,.2f} m²",
-        "EŞLEŞTİRME MODELİ": (
-            "Nitelik Bazlı Otomatik Karma/Tekil Eşleştirme"
-        ),
+        "EŞLEŞTİRME MODELİ": "Fonksiyona Göre Filtrelenmiş Manuel Seçim",
     }])
     st.dataframe(toplu_ozet_df, use_container_width=True)
 
@@ -964,7 +999,7 @@ if selected_keys:
             <div class="section-title">1. Proje ve Lokasyon Künyesi (Toplu Parsel)</div>
             <table class="data-table">
                 <tr><td>Lokasyon / Mahalle</td><td style="text-align: right; font-weight: bold;">{first_mahalle} ({len(active_parcel_db)} Parsel)</td></tr>
-                <tr><td>Proje Eşleştirme Modeli</td><td style="text-align: right; font-weight: bold; color: #1e3a8a;">Nitelik Bazlı Otomatik Uyumlu Eşleştirme</td></tr>
+                <tr><td>Proje Eşleştirme Modeli</td><td style="text-align: right; font-weight: bold; color: #1e3a8a;">Fonksiyona Göre Filtrelenmiş Seçilebilir Eşleştirme</td></tr>
                 <tr><td>Toplam Brüt İnşaat Alanı</td><td style="text-align: right; font-weight: bold;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
                 <tr><td>Toplam Bahçe Alanı Terki</td><td style="text-align: right; font-weight: bold;">{total_bahce_alani_terki:,.2f} m²</td></tr>
             </table>
