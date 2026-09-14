@@ -658,6 +658,48 @@ if selected_keys:
         key="toplu_havuz_master",
     )
 
+  # --- YENİ: MANUEL ADET ÖZELLEŞTİRME TOGGLE VE ALANI ---
+  manuel_adet_aktif = st.checkbox(
+      "🎛️ Bağımsız Bölüm Adedini Manuel Düzenle (Piyasa Otomasyonu yerine özel"
+      " adet gir)",
+      value=False,
+      key="manuel_adet_toggle",
+  )
+
+  # Her fonksiyon için dinamik adet saklama sözlüğü
+  fonksiyon_manuel_adetler = {}
+  if manuel_adet_aktif:
+    st.markdown(
+        "<div style='background: #f8fafc; padding: 12px 16px; border-radius:"
+        " 8px; border: 1px solid #cbd5e1; margin-top: 10px;'><h5"
+        " style='color:#0f172a; margin:0 0 8px 0; font-size:14px;'>Fonksiyon"
+        " Bazlı Özel Adet Tanımlama</h5>",
+        unsafe_allow_html=True,
+    )
+    for fonk_name in all_functions_map.keys():
+      fonk_toplam_brut_m2 = temp_function_bruts.get(fonk_name, 300.0)
+      def_auto_m2 = (
+          300.0
+          if "Villa" in toplu_p_tipi
+          else (
+              160.0
+              if "Rezidan" in toplu_p_tipi or "Üst Segment" in toplu_p_tipi
+              else (180.0 if "Ticari" in toplu_p_tipi else 115.0)
+          )
+      )
+      def_calc_adet = max(
+          1, round(fonk_toplam_brut_m2 / (def_auto_m2 * 1.35))
+      )
+
+      fonksiyon_manuel_adetler[fonk_name] = st.number_input(
+          f"🔹 {fonk_name} için Bağımsız Bölüm / Konut Adedi",
+          min_value=1,
+          value=int(def_calc_adet),
+          step=1,
+          key=f"manuel_adet_{fonk_name}",
+      )
+    st.markdown("</div>", unsafe_allow_html=True)
+
   auto_satis, auto_maliyet, auto_bodrum_orani = get_realistic_market_pricing(
       first_mahalle, toplu_p_tipi, rates["USD"]
   )
@@ -679,16 +721,20 @@ if selected_keys:
     )
 
     fonk_toplam_brut_m2 = temp_function_bruts.get(fonk_name, 300.0)
-    hedef_birim_m2 = (
-        300.0
-        if "Villa" in default_type
-        else (
-            160.0
-            if "Rezidan" in default_type or "Üst Segment" in default_type
-            else (180.0 if "Ticari" in default_type else 115.0)
-        )
-    )
-    def_adet = max(1, round(fonk_toplam_brut_m2 / (hedef_birim_m2 * 1.35)))
+
+    if manuel_adet_aktif and fonk_name in fonksiyon_manuel_adetler:
+      def_adet = fonksiyon_manuel_adetler[fonk_name]
+    else:
+      hedef_birim_m2 = (
+          300.0
+          if "Villa" in default_type
+          else (
+              160.0
+              if "Rezidan" in default_type or "Üst Segment" in default_type
+              else (180.0 if "Ticari" in default_type else 115.0)
+          )
+      )
+      def_adet = max(1, round(fonk_toplam_brut_m2 / (hedef_birim_m2 * 1.35)))
 
     r_satis, r_maliyet, r_bodrum_orani = get_realistic_market_pricing(
         first_mahalle, default_type, rates["USD"]
