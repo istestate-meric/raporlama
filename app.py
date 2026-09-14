@@ -491,7 +491,6 @@ if selected_keys:
   )
 
   # --- İMAR NİTELİĞİNE GÖRE AKILLI PROJE TİPİ KISITLAMASI ---
-  # Seçilen parsellerin fonksiyon metinlerini tarayarak uygun proje tiplerini belirliyoruz
   combined_fonk_text = " ".join([
       f["fonksiyon_adi"].upper()
       for p in active_parcel_db.values()
@@ -519,7 +518,6 @@ if selected_keys:
     ]
     default_p_idx = 0
   else:
-    # Genel konut veya arsa imarları için tüm mantıksal tipler
     allowed_project_types = [
         "Standart Konut / Apartman",
         "Üst Segment Konut / Rezidans",
@@ -564,7 +562,6 @@ if selected_keys:
         key="toplu_p_tipi_master",
     )
 
-  # PROJE TİPİNE VE VİLLA SEÇENEKLERİNE GÖRE DİNAMİK HAVUZ MODLARI
   if "Villa" in toplu_p_tipi:
     available_pool_options = [
         "Müstakil Özel Havuzlu Villa Projesi",
@@ -586,7 +583,6 @@ if selected_keys:
         key="toplu_havuz_master",
     )
 
-  # Kat Karşılığı ise ek detay alanları
   arsa_payi_orani = 0.0
   arsa_bonus_usd = 0.0
   if "Kat Karşılığı" in is_modeli:
@@ -619,7 +615,6 @@ if selected_keys:
       else:
         arsa_bonus_usd = raw_bonus_val
 
-  # Slider Alanı ve Proje Tipine Göre Alan Optimizasyonu
   if "Villa" in toplu_p_tipi:
     min_v, max_v, def_v, step_v = 180, 550, 250, 10
     slider_label = (
@@ -730,7 +725,6 @@ if selected_keys:
       bahce_terki = hesaba_alinan_m2 * (bahce_terk_orani / 100.0)
       total_bahce_alani_terki += bahce_terki
 
-      # Müstakil havuzda her villaya ek havuz maliyeti/payı düşülür, ortak havuzda site geneline yansıtılır
       tekil_havuz_payi = (
           35.0 if "Müstakil Özel Havuzlu" in conf["havuz_mod"] else 0.0
       )
@@ -825,7 +819,10 @@ if selected_keys:
     st.dataframe(summary_df, use_container_width=True)
 
   with tab2:
-    st.subheader("🏛️ Mimari Fizibilite & Potansiyel Senaryo Dağılım Matrisi")
+    st.subheader(
+        "🏛️ Mimari Fizibilite & Potansiyel Senaryo Dağılım Matrisi (Tekil"
+        " Detay)"
+    )
     mimari_rows = []
     mimari_sum_brut = 0.0
     mimari_sum_adet = 0
@@ -891,6 +888,21 @@ if selected_keys:
         })
 
     st.dataframe(pd.DataFrame(mimari_rows), use_container_width=True)
+
+    # --- İSTEDİĞİNİZ TOPLU BİLGİ VEREN ÖZET TABLO ---
+    st.markdown("### 📋 Toplu Proje ve Mimari Özet Matrisi")
+    toplu_ortalama_birim = (
+        mimari_sum_brut / mimari_sum_adet if mimari_sum_adet > 0 else 0.0
+    )
+    toplu_ozet_df = pd.DataFrame([{
+        "İNCELENEN PARSEL SAYISI": f"{len(active_parcel_db)} Adet",
+        "TOPLAM BAĞIMSIZ BÖLÜM (ADET)": f"{mimari_sum_adet:,} Adet",
+        "TOPLAM YASAL BRÜT İNŞAAT (M²)": f"{mimari_sum_brut:,.2f} m²",
+        "TOPLAM SİMÜLE BODRUM (M²)": f"{mimari_sum_bodrum:,.2f} m²",
+        "GENEL ORTALAMA BİRİM ALAN (M²)": f"{toplu_ortalama_birim:,.2f} m²",
+        "SEÇİLEN KONSEPT / HAVUZ": f"{toplu_p_tipi} - {toplu_havuz}",
+    }])
+    st.dataframe(toplu_ozet_df, use_container_width=True)
 
   with tab3:
     st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılım Matrisi")
