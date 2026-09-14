@@ -396,35 +396,6 @@ def parse_imar_pdf(uploaded_file):
   return parcel_data
 
 
-def get_allowed_project_types(fonksiyon_adi):
-  f_upper = fonksiyon_adi.upper()
-  if "TİCARET" in f_upper and (
-      "KONUT" in f_upper or "MESKEN" in f_upper or "+" in f_upper
-  ):
-    return ["Karma Proje (Konut + Ticari)", "Ticari / Ofis Kompleksi"]
-  elif "TİCARET" in f_upper or "TİCARİ" in f_upper:
-    return ["Ticari / Ofis Kompleksi"]
-  elif (
-      "KONUT" in f_upper
-      or "MESKEN" in f_upper
-      or "KONUT ALANI" in f_upper
-      or "İSKAN" in f_upper
-  ):
-    return [
-        "Lüks Villa / Müstakil Proje",
-        "Üst Segment Konut / Rezidans",
-        "Standart Konut / Apartman",
-    ]
-  else:
-    return [
-        "Lüks Villa / Müstakil Proje",
-        "Üst Segment Konut / Rezidans",
-        "Standart Konut / Apartman",
-        "Ticari / Ofis Kompleksi",
-        "Karma Proje (Konut + Ticari)",
-    ]
-
-
 # --- KOMPAKT & KURUMSAL HEADER ---
 st.markdown(
     f"""
@@ -548,68 +519,41 @@ if selected_keys:
         key="global_is_modeli",
     )
 
-  # Tüm fonksiyonların uyumlu olabileceği tipleri bulma hazırlığı
-  temp_function_bruts = {}
-  for key, p in active_parcel_db.items():
-    toplam_arsa_m2 = p["toplam_alan"]
-    is_terkli = p["terk_yapilmis_mi"]
-    for f in p["fonksiyonlar"]:
-      fonk_adi = f["fonksiyon_adi"]
-      if any(
-          x in fonk_adi.upper()
-          for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
-      ):
-        continue
-      hesaba_alinan_m2 = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
-      brut_insaat = hesaba_alinan_m2 * f["kaks"] * emsal_artis_orani
-      temp_function_bruts[fonk_adi] = (
-          temp_function_bruts.get(fonk_adi, 0.0) + brut_insaat
-      )
-
-  all_functions_map = {}
-  for key, p in active_parcel_db.items():
-    for f in p["fonksiyonlar"]:
-      f_name = f["fonksiyon_adi"]
-      if any(
-          x in f_name.upper()
-          for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
-      ):
-        continue
-      if f_name not in all_functions_map:
-        all_functions_map[f_name] = []
-      all_functions_map[f_name].append((key, f))
-
-  combined_allowed_types = None
-  for fonk_name in all_functions_map.keys():
-    allowed_for_func = set(get_allowed_project_types(fonk_name))
-    if combined_allowed_types is None:
-      combined_allowed_types = allowed_for_func
-    else:
-      combined_allowed_types = combined_allowed_types.intersection(
-          allowed_for_func
-      )
-
-  if not combined_allowed_types:
-    combined_allowed_types = set()
-    for fonk_name in all_functions_map.keys():
-      combined_allowed_types.update(get_allowed_project_types(fonk_name))
-
-  combined_allowed_types_list = sorted(list(combined_allowed_types))
+  # TÜM PROJE TİPLERİ ARTIK SERBESTÇE SEÇİLEBİLİR (Kısıt Kaldırıldı)
+  universal_project_types = [
+      "Lüks Villa / Müstakil Proje",
+      "Üst Segment Konut / Rezidans",
+      "Standart Konut / Apartman",
+      "Ticari / Ofis Kompleksi",
+      "Karma Proje (Konut + Ticari)",
+  ]
 
   with col_m2:
     toplu_p_tipi = st.selectbox(
         "Toplu Proje Tipi Seçimi",
-        options=combined_allowed_types_list,
+        options=universal_project_types,
         key="toplu_p_tipi_master",
     )
+
+  # PROJE TİPİNE GÖRE DİNAMİK HAVUZ SEÇENEKLERİ
+  if "Villa" in toplu_p_tipi:
+    available_pool_options = [
+        "Müstakil Özel Havuz",
+        "Havuz İptal",
+    ]  # Villalar için ortak havuz yerine müstakil seçenek
+  elif "Ticari" in toplu_p_tipi:
+    available_pool_options = ["Havuz İptal"]  # Ticari projelerde havuz olmaz
+  else:
+    available_pool_options = ["Havuz İptal", "Özel / Ortak Havuzlu"]
+
   with col_m3:
     toplu_havuz = st.selectbox(
         "Toplu Havuz Modu",
-        options=["Havuz İptal", "Özel / Ortak Havuzlu"],
+        options=available_pool_options,
         key="toplu_havuz_master",
     )
 
-  # Kat Karşılığı ise ek detay alanları (aynı satır düzeninde kompakt)
+  # Kat Karşılığı ise ek detay alanları
   arsa_payi_orani = 0.0
   arsa_bonus_usd = 0.0
   if "Kat Karşılığı" in is_modeli:
@@ -642,7 +586,7 @@ if selected_keys:
       else:
         arsa_bonus_usd = raw_bonus_val
 
-  # Slider Alanı
+  # Slider Alanı ve Proje Tipine Göre Ekstra Özellikler / Alan Optimizasyonu
   if "Villa" in toplu_p_tipi:
     min_v, max_v, def_v, step_v = 180, 550, 250, 10
     slider_label = (
@@ -685,22 +629,40 @@ if selected_keys:
   )
   st.markdown("</div>", unsafe_allow_html=True)
 
+  # Fonksiyon eşleştirmeleri
+  all_functions_map = {}
+  temp_function_bruts = {}
+  for key, p in active_parcel_db.items():
+    toplam_arsa_m2 = p["toplam_alan"]
+    is_terkli = p["terk_yapilmis_mi"]
+    for f in p["fonksiyonlar"]:
+      fonk_name = f["fonksiyon_adi"]
+      if any(
+          x in fonk_name.upper()
+          for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
+      ):
+        continue
+      hesaba_alinan_m2 = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
+      brut_insaat = hesaba_alinan_m2 * f["kaks"] * emsal_artis_orani
+      temp_function_bruts[fonk_name] = (
+          temp_function_bruts.get(fonk_name, 0.0) + brut_insaat
+      )
+      if fonk_name not in all_functions_map:
+        all_functions_map[fonk_name] = []
+      all_functions_map[fonk_name].append((key, f))
+
   function_configs = {}
-  for fonk_name, items in all_functions_map.items():
-    allowed_types = get_allowed_project_types(fonk_name)
-    default_type = (
-        toplu_p_tipi if toplu_p_tipi in allowed_types else allowed_types[0]
-    )
+  for fonk_name in all_functions_map.keys():
     fonk_toplam_brut_m2 = temp_function_bruts.get(fonk_name, 300.0)
     effective_target_size = max(10.0, float(global_hedef_birim_m2))
     calculated_adet = round(fonk_toplam_brut_m2 / effective_target_size)
     def_adet = max(1, int(calculated_adet))
 
     r_satis, r_maliyet, r_bodrum_orani = get_realistic_market_pricing(
-        first_mahalle, default_type, rates["USD"]
+        first_mahalle, toplu_p_tipi, rates["USD"]
     )
     function_configs[fonk_name] = {
-        "proje_tipi": default_type,
+        "proje_tipi": toplu_p_tipi,
         "adet": int(def_adet),
         "havuz_mod": toplu_havuz,
         "maliyet": r_maliyet,
@@ -735,7 +697,9 @@ if selected_keys:
       bahce_terki = hesaba_alinan_m2 * (bahce_terk_orani / 100.0)
       total_bahce_alani_terki += bahce_terki
 
-      tekil_havuz_payi = 30.0 if "Özel" in conf["havuz_mod"] else 0.0
+      tekil_havuz_payi = (
+          30.0 if ("Özel" in conf["havuz_mod"] or "Müstakil" in conf["havuz_mod"]) else 0.0
+      )
       sim_bodrum = (
           brut_insaat - (tekil_havuz_payi * conf["adet"])
       ) * conf["bodrum_orani"]
@@ -870,7 +834,9 @@ if selected_keys:
         birim_m2 = (
             brut_insaat / konut_adeti if konut_adeti > 0 else brut_insaat
         )
-        tekil_havuz_payi = 30.0 if "Özel" in conf["havuz_mod"] else 0.0
+        tekil_havuz_payi = (
+            30.0 if ("Özel" in conf["havuz_mod"] or "Müstakil" in conf["havuz_mod"]) else 0.0
+        )
         sim_bodrum = (
             brut_insaat - (tekil_havuz_payi * konut_adeti)
         ) * conf["bodrum_orani"]
