@@ -634,7 +634,6 @@ if selected_keys:
       else:
         arsa_bonus_usd = raw_bonus_val
 
-  # --- ÖNCELİKLE İNŞAAT ALANI OLAN VE GEÇERLİ FONKSİYONLARI VE BRÜT ALANLARINI HESAPLA ---
   valid_active_functions_with_area = []
   function_total_brut_areas = {}
   function_total_ratios = {}
@@ -680,7 +679,6 @@ if selected_keys:
         function_total_brut_areas[fonk_name] += fonk_toplam_brut_m2
         function_total_ratios[fonk_name] += fonk_alan_orani * 100.0
 
-  # --- İNŞAAT ALANI OLAN FONKSİYONLAR İÇİN HEDEF ALAN SLIDER ALANI ---
   function_target_sizes = {}
   if valid_active_functions_with_area:
     st.markdown(
@@ -714,7 +712,6 @@ if selected_keys:
         def_sz, min_sz, max_sz, step_sz = 95, 55, 250, 5
         icon_prefix = "🏠"
 
-      # KESİN ÇÖZÜM: Fonksiyon adı tamamen bağımsız ve net bir şekilde en başta yer alıyor
       label_txt = (
           f"{icon_prefix} {fonk_adi}  —  (Pay: %{total_oran:.1f} | Toplam Brüt:"
           f" {total_b_m2:,.2f} m²)"
@@ -743,9 +740,8 @@ if selected_keys:
       f"</div>",
       unsafe_allow_html=True,
   )
-  st.markdown("</div>", unsafe_allow_html=True, unsafe_allow_html=True)
+  st.markdown("</div>", unsafe_allow_html=True)
 
-  # --- FONKSİYONA GÖRE KISITLAMALI HEDEF ORTALAMA ALAN SEÇİMİ VE İNŞAAT HESABI ---
   function_configs = {}
   for key, p in active_parcel_db.items():
     toplam_arsa_m2 = p["toplam_alan"]
