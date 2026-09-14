@@ -869,9 +869,9 @@ if selected_keys:
       is_terkli = p["terk_yapilmis_mi"]
       toplam_brut = p["toplam_alan"]
       terk_lbl = (
-          "Terki Yapılmış (Brüt Arsa x KAKS x 1.3)"
+          "Terk Yapılmış (Brüt Arsa x KAKS x 1.3)"
           if is_terkli
-          else "Terki Yapılmamış (%70 Net Arsa x KAKS x 1.3)"
+          else "Terk Yapılmamış (%70 Net Arsa x KAKS x 1.3)"
       )
 
       for f in p["fonksiyonlar"]:
@@ -898,7 +898,7 @@ if selected_keys:
             "Parsel": item["Parsel"],
             "İmar Fonksiyon Adı": item["Fonksiyon"],
             "Toplam Brüt İnşaat Alanı (m²)": (
-                f"{item['Brüt İnşaat (m²)']:,.2f}"
+                f"{item['Brüt İnşaat (m²)]']:,.2f}"
             ),
             "Bahçe Alanı Terki (Fonksiyon Üzerinden)": (
                 f"{item['Bahçe Terki (m²)']:,.2f} m²"
@@ -919,11 +919,12 @@ if selected_keys:
   with tab2:
     st.subheader("🏛️ Parsel Bazlı Mimari ve Yerleşim Fizibilitesi")
     st.markdown(
-        "<p style='color: #64748b; font-size: 13px;'>İmar hesaplamalarında"
-        " <b>HESABA ALINAN (M²)</b> (terk durumuna göre netleşen arsa alanı),"
-        " bahçe hesaplamalarında ise <b>NET ALAN (M²)</b> (fonksiyon alanı"
-        " üzerinden) baz alınarak oluşturulan güncel mimari dağılım"
-        " tablosudur.</p>",
+        "<p style='color: #64748b; font-size: 13px;'>Nitelik bilgileri"
+        " <b>Arsa</b> ve <b>Bahçe</b> olarak ayrıştırılmış; bu niteliklerin"
+        " imar durumlarına göre <b>Terk Yapılmış</b> veya <b>Terk Yapılmamış</b>"
+        " statüleri tabloda detaylandırılmıştır. İmar hesaplamalarında"
+        " <b>HESABA ALINAN (M²)</b>, bahçe hesaplamalarında ise <b>NET ALAN"
+        " (M²)</b> baz alınmıştır.</p>",
         unsafe_allow_html=True,
     )
 
@@ -944,12 +945,14 @@ if selected_keys:
           continue
 
         kaks = f["kaks"]
-        fonksiyon_giren_m2 = f[
-            "giren_m2"
-        ]  # Fonksiyon alanından gelen dinamik m2
+        fonksiyon_giren_m2 = f["giren_m2"]
 
-        # 1. ARSA SATIRI (İmar ve İnşaat Hesabına Esas)
-        # HESABA ALINAN (M²): İmar ve inşaat hesabında kullanılan net arsa alanı
+        # 1. ARSA SATIRI (Nitelik ve Terk Durumu Ayrımı)
+        nitelik_arsa = (
+            "Arsa (Terk Yapılmış)"
+            if is_terkli
+            else "Arsa (Terk Yapılmamış)"
+        )
         hesaba_alinan_arsa = (
             toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
         )
@@ -959,7 +962,7 @@ if selected_keys:
             "MAHALLE": mahalle,
             "ADA": ada,
             "PARSEL": parsel,
-            "NİTELİK (Arsa,Bahçe)": "Arsa",
+            "NİTELİK": nitelik_arsa,
             "ALAN (M²)": f"{toplam_arsa_m2:,.2f}",
             "HESABA ALINAN (M²)": f"{hesaba_alinan_arsa:,.2f}",
             "NET ALAN (M²)": f"{hesaba_alinan_arsa:,.2f}",
@@ -968,20 +971,20 @@ if selected_keys:
             "İNŞAAT ALANI (BRÜT M²)": f"{brut_insaat_arsa:,.2f}",
         })
 
-        # 2. BAHÇE SATIRI (Bahçe Hesabına Esas)
-        # NET ALAN (M²): Fonksiyon alanları ile eşleştirilmiş, bahçe hesaplamalarında kullanılan net alan
-        bahce_net_alan = fonksiyon_giren_m2 * (
-            1.0 - (bahce_terk_orani / 100.0)
-        )  # Kalan yeşil/bahçe net alanı
-        bahce_hesaba_alinan = (
-            fonksiyon_giren_m2  # Fonksiyona giren brüt/esas alan
+        # 2. BAHÇE SATIRI (Nitelik ve Terk Durumu Ayrımı)
+        nitelik_bahce = (
+            "Bahçe (Terk Yapılmış)"
+            if is_terkli
+            else "Bahçe (Terk Yapılmamış)"
         )
+        bahce_net_alan = fonksiyon_giren_m2 * (1.0 - (bahce_terk_orani / 100.0))
+        bahce_hesaba_alinan = fonksiyon_giren_m2
 
         mimari_table_rows.append({
             "MAHALLE": mahalle,
             "ADA": ada,
             "PARSEL": parsel,
-            "NİTELİK (Arsa,Bahçe)": "Bahçe",
+            "NİTELİK": nitelik_bahce,
             "ALAN (M²)": f"{fonksiyon_giren_m2:,.2f}",
             "HESABA ALINAN (M²)": f"{bahce_hesaba_alinan:,.2f}",
             "NET ALAN (M²)": f"{bahce_net_alan:,.2f}",
