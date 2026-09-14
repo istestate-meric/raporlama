@@ -37,16 +37,13 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- FONKSİYON ADI AKILLI TEMİZLEME MOTORU (GELİŞTİRİLDİ) ---
+# --- FONKSİYON ADI AKILLI TEMİZLEME MOTORU ---
 def clean_fonksiyon_adi(name):
     if not name:
         return "KONUT ALANI"
     n = str(name).upper().strip()
-    
     if len(n) < 2 or n in ["-", "--", ".", "0", "N/A", "İMAR DURUMU"]:
         return "KONUT ALANI"
-        
-    # Belgedeki özgün imar lejant/fonksiyon tanımını doğrudan koru
     return n
 
 # --- KALİCİ DOSYA TABANLI VERİTABANI YÖNETİMİ ---
@@ -193,7 +190,7 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
     if any(k in text_upper for k in terkli_kaliplar):
         return True
         
-    toplam_fonksiyon_m2 = sum(f["giren_m2"] for f in fonksiyonlar if not any(x in f["fonksiyon_adi"].upper() for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]))
+    toplam_fonksiyon_m2 = sum(f["giren_m2"] for f in fonksiyonlar if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]))
     
     if toplam_alan > 0 and toplam_fonksiyon_m2 > 0:
         if abs(toplam_alan - toplam_fonksiyon_m2) < 1.0 or (toplam_fonksiyon_m2 / toplam_alan) >= 0.99:
@@ -201,6 +198,7 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
             
     return False
 
+# --- GELİŞTİRİLMİŞ İMAR PDF AYRIŞTIRMA MOTORU ---
 def parse_imar_pdf(uploaded_file):
     parcel_data = {
         "filename": uploaded_file.name,
@@ -215,7 +213,6 @@ def parse_imar_pdf(uploaded_file):
     try:
         with pdfplumber.open(uploaded_file) as pdf:
             full_text = ""
-            raw_found_functions = []
             global_taks, global_kaks = 0.30, 0.40
             
             for page in pdf.pages:
@@ -242,48 +239,64 @@ def parse_imar_pdf(uploaded_file):
                                             parcel_data["parsel"] = str(val).strip()
                                         elif "Alan" in head and val:
                                             parcel_data["toplam_alan"] = parse_tr_float(val)
-                                            
-                        for c_idx, c in enumerate(cells):
-                            c_upper = c.upper()
-                            if any(lbl in c_upper for lbl in ["FONKSİYON", "LEJANT", "KULLANIM", "PLAN AMACI", "PLAN TÜRÜ", "İMAR DURUMU", "NİTELİK"]):
-                                for t_idx in range(c_idx + 1, len(cells)):
-                                    val = cells[t_idx]
-                                    cleaned = clean_fonksiyon_adi(val)
-                                    if cleaned and cleaned not in raw_found_functions:
-                                        raw_found_functions.append(cleaned)
-                                if not raw_found_functions and r_idx + 1 < len(table):
-                                    next_row = [str(x).strip().replace("\n", " ") if x is not None else "" for x in table[r_idx + 1]]
-                                    if c_idx < len(next_row):
-                                        val = next_row[c_idx]
-                                        cleaned = clean_fonksiyon_adi(val)
-                                        if cleaned and cleaned not in raw_found_functions:
-                                            raw_found_functions.append(cleaned)
+
+                    # Yapılandırılmış fonksiyon bloklarını tarama
+                    r = 0
+                    while r < len(table):
+                        row = table[r]
+                        row_cells = [str(c).strip().replace("\n", " ") if c is not None else "" for c in row]
+                        row_text = " ".join(row_cells).upper()
                         
-                        # Tablolarda etiket başlığı olmasa bile anlamlı metinleri yakala
-                        for c in cells:
-                            if len(c) > 3 and not c.replace('.', '', 1).isdigit():
-                                c_up = c.upper()
-                                if any(k in c_up for k in ["KONUT", "TİCARET", "VİLLA", "SANAYİ", "TURİZM", "MERKEZ", "GELİŞME", "ARSA", "NİTELİK"]):
-                                    if c_up not in raw_found_functions and not any(h in c_up for h in ["MAHALLE", "ADA", "PARSEL", "İMAR DURUMU BELGESİ"]):
-                                        raw_found_functions.append(c_up)
+                        if "FONKSİYON ADI" in row_text or (len(row_cells) > 1 and "FONKSİYON" in row_cells[0].upper()):
+                            fonk_name = "KONUT ALANI"
+                            for c_idx, c in enumerate(row_cells):
+                                if "FONKSİYON" in c.upper() and c_idx + 1 < len(row_cells) and row_cells[c_idx+1]:
+                                    fonk_name = clean_fonksiyon_adi(row_cells[c_idx+1])
+                                    break
+                            if fonk_name == "KONUT ALANI" and len(row_cells) > 1 and row_cells[1]:
+                                fonk_name = clean_fonksiyon_adi(row_cells[1])
+                                
+                            cur_taks = global_taks
+                            cur_kaks = global_kaks
+                            cur_giren_m2 = 0.0
+                            
+                            for sub_r in range(r + 1, min(r + 6, len(table))):
+                                sub_cells = [str(c).strip().replace("\n", " ") if c is not None else "" for c in table[sub_r]]
+                                for sc_idx, sc in enumerate(sub_cells):
+                                    sc_up = sc.upper()
+                                    if "TAKS" in sc_up and not "ALANA GİREN" in sc_up:
+                                        if sc_idx + 1 < len(sub_cells):
+                                            val_t = parse_tr_float(sub_cells[sc_idx+1])
+                                            if val_t > 0: cur_taks = val_t
+                                    elif "KAKS" in sc_up or "EMSAL" in sc_up:
+                                        if sc_idx + 1 < len(sub_cells):
+                                            val_k = parse_tr_float(sub_cells[sc_idx+1])
+                                            if val_k > 0: cur_kaks = val_k
                                             
-                        t_m = re.search(r'Taks\s*\|?\s*([\d\.,]+)', row_str, re.IGNORECASE)
-                        k_m = re.search(r'Kaks\s*\(Emsal\)\s*\|?\s*([\d\.,]+)', row_str, re.IGNORECASE)
-                        if t_m:
-                            global_taks = parse_tr_float(t_m.group(1))
-                        if k_m:
-                            global_kaks = parse_tr_float(k_m.group(1))
-            
-            if not raw_found_functions:
-                raw_found_functions.append("KONUT ALANI")
-                    
-            for fn in raw_found_functions:
-                parcel_data["fonksiyonlar"].append({
-                    "fonksiyon_adi": fn,
-                    "taks": global_taks,
-                    "kaks": global_kaks,
-                    "giren_m2": 0.0
-                })
+                                    if "ALANA GİREN" in sc_up or "GİREN" in sc_up:
+                                        combined_sub = " ".join(sub_cells)
+                                        m2_match = re.search(r'([\d\.,]+)\s*m²', combined_sub, re.IGNORECASE)
+                                        if not m2_match:
+                                            m2_match = re.search(r'([\d\.,]+)', sc)
+                                        if m2_match:
+                                            parts = combined_sub.split('-')
+                                            if len(parts) > 1:
+                                                cur_giren_m2 = parse_tr_float(parts[-1])
+                                            else:
+                                                cur_giren_m2 = parse_tr_float(m2_match.group(1))
+                            
+                            if cur_giren_m2 <= 0:
+                                m2_match = re.search(r'([\d\.,]+)\s*m²', row_text)
+                                if m2_match:
+                                    cur_giren_m2 = parse_tr_float(m2_match.group(1))
+                                    
+                            parcel_data["fonksiyonlar"].append({
+                                "fonksiyon_adi": fonk_name,
+                                "taks": cur_taks,
+                                "kaks": cur_kaks,
+                                "giren_m2": cur_giren_m2
+                            })
+                        r += 1
                                     
         if parcel_data["mahalle"] == "BİLİNMİYOR" or parcel_data["ada"] == "0":
             m_m = re.search(r'Mahalle\s*\|\s*([A-ZÇĞİÖŞÜa-zçğıöşü]+)', full_text)
