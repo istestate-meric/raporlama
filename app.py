@@ -198,7 +198,7 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
             
     return False
 
-# --- HASSAS TABLO & BLOK TABANLI İMAR PDF AYRIŞTIRMA MOTORU ---
+# --- HASSAS TABLO & BLOK TABANLI İMAR PDF AYRIŞTIRMA MOTORU (GÜNCELLENMİŞ) ---
 def parse_imar_pdf(uploaded_file):
     parcel_data = {
         "filename": uploaded_file.name,
@@ -218,80 +218,89 @@ def parse_imar_pdf(uploaded_file):
                 t = page.extract_text() or ""
                 full_text += "\n" + t
                 
-                # Sayfa içi tabloları ve kelime/blok yapısını analiz et
+                # Tabloları hücre bazlı tara ve KAKS/TAKS sütunlarını esnek yakala
                 tables = page.extract_tables() or []
                 for table in tables:
-                    # Tablo içinde Fonksiyon Adı, Taks, Kaks taraması
-                    header_map = {}
+                    # Tablo sütun başlıklarını incele
+                    col_headers = []
                     for r_idx, row in enumerate(table):
                         cells = [str(c).strip().replace("\n", " ") if c is not None else "" for c in row]
                         
-                        # Başlık satırı tespiti
+                        # Başlık satırı yakalama
                         if any("Mahalle" in c for c in cells) and any("Ada" in c for c in cells):
                             if r_idx + 1 < len(table):
                                 v_row = [str(c).strip().replace("\n", " ") if c is not None else "" for c in table[r_idx + 1]]
                                 for idx, head in enumerate(cells):
                                     if idx < len(v_row):
                                         val = v_row[idx]
-                                        if "Mahalle" in head and val:
-                                            parcel_data["mahalle"] = val.upper()
-                                        elif "Ada" in head and val:
-                                            parcel_data["ada"] = str(val).strip()
-                                        elif "Parsel" in head and val:
-                                            parcel_data["parsel"] = str(val).strip()
-                                        elif "Alan" in head and val:
-                                            parcel_data["toplam_alan"] = parse_tr_float(val)
-                        
-                        # Fonksiyon satırları veya etiket-değer ikilileri tespiti
+                                        if "Mahalle" in head and val: parcel_data["mahalle"] = val.upper()
+                                        elif "Ada" in head and val: parcel_data["ada"] = str(val).strip()
+                                        elif "Parsel" in head and val: parcel_data["parsel"] = str(val).strip()
+                                        elif "Alan" in head and val: parcel_data["toplam_alan"] = parse_tr_float(val)
+
+                        # Fonksiyon veya değer içeren satırlar
                         joined_row_str = " ".join(cells).upper()
-                        if any(kw in joined_row_str for kw in ["KONUT", "TİCARET", "TİCARİ", "PARK", "VİLLA", "GELİŞME"]):
+                        if any(kw in joined_row_str for kw in ["KONUT", "TİCARET", "TİCARİ", "PARK", "VİLLA", "GELİŞME", "EMSAL", "KAKS", "TAKS"]):
                             f_name = ""
-                            f_taks = 0.30
-                            f_kaks = 0.30
+                            f_taks = 0.0
+                            f_kaks = 0.0
                             f_m2 = 0.0
                             
                             for c in cells:
                                 c_up = c.upper()
                                 if any(x in c_up for x in ["KONUT", "TİCARET", "TİCARİ", "PARK", "VİLLA", "GELİŞME"]):
                                     cleaned = clean_fonksiyon_adi(c)
-                                    if cleaned:
-                                        f_name = cleaned
-                                elif "0." in c or re.search(r'\b\d+[\.,]\d+\b', c):
-                                    # Sayısal değer: Taks, Kaks veya m2 olabilir
+                                    if cleaned: f_name = cleaned
+                                elif "TAKS" in c_up:
                                     nums = re.findall(r'([\d\.,]+)', c)
                                     for num_str in nums:
                                         val = parse_tr_float(num_str)
-                                        if 0 < val <= 1.0 and f_taks == 0.30:
+                                        if 0 < val <= 1.0: f_taks = val
+                                elif any(k in c_up for k in ["KAKS", "EMSAL"]):
+                                    nums = re.findall(r'([\d\.,]+)', c)
+                                    for num_str in nums:
+                                        val = parse_tr_float(num_str)
+                                        if 0.05 <= val <= 5.0: f_kaks = val
+                                elif "0." in c or re.search(r'\b\d+[\.,]\d+\b', c):
+                                    nums = re.findall(r'([\d\.,]+)', c)
+                                    for num_str in nums:
+                                        val = parse_tr_float(num_str)
+                                        if 0 < val <= 1.0 and f_taks == 0.0:
                                             f_taks = val
-                                        elif 0 < val <= 5.0:
+                                        elif 0.05 <= val <= 5.0 and f_kaks == 0.0:
                                             f_kaks = val
-                                        elif val > 5.0:
+                                        elif val > 5.0 and f_m2 == 0.0:
                                             f_m2 = val
 
-                            if f_name and not any(x in f_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
+                            # Eğer satırda fonksiyon adı yok ama KAKS/TAKS varsa en son eklenen fonksiyona işle veya yeni oluştur
+                            if f_kaks > 0 and not f_name and parcel_data["fonksiyonlar"]:
+                                parcel_data["fonksiyonlar"][-1]["kaks"] = f_kaks
+                                if f_taks > 0: parcel_data["fonksiyonlar"][-1]["taks"] = f_taks
+                            elif f_name and not any(x in f_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
+                                if f_kaks <= 0: f_kaks = 0.30  # Varsayılan geçici
+                                if f_taks <= 0: f_taks = 0.30
                                 if not any(f["fonksiyon_adi"] == f_name for f in parcel_data["fonksiyonlar"]):
-                                 parcel_data["fonksiyonlar"].append({
-                                     "fonksiyon_adi": f_name,
-                                     "taks": f_taks,
-                                     "kaks": f_kaks,
-                                     "giren_m2": f_m2
-                                 })
+                                    parcel_data["fonksiyonlar"].append({
+                                        "fonksiyon_adi": f_name,
+                                        "taks": f_taks,
+                                        "kaks": f_kaks,
+                                        "giren_m2": f_m2
+                                    })
 
-                # Metin tabanlı satır taraması (Tabloda yakalanamayan ek fonksiyonlar için)
+                # Metin tabanlı satır taraması (Gelişmiş KAKS / EMSAL arama)
                 lines = t.split('\n')
-                curr_fonk = ""
-                curr_taks = 0.30
-                curr_kaks = 0.30
-                curr_m2 = 0.0
-                
                 for i, line in enumerate(lines):
                     line_up = line.upper().strip()
                     if any(kw in line_up for kw in ["KONUT ALANI", "TİCARET ALANI", "TİCARET VE KONUT", "GELİŞME KONUT", "VİLLA ALANI"]):
                         clean_n = clean_fonksiyon_adi(line)
                         if clean_n:
                             curr_fonk = clean_n
-                            # Aşağıdaki ve yukarıdaki 4 satırı incele
-                            for sub_line in lines[max(0, i-3):min(len(lines), i+6)]:
+                            curr_taks = 0.30
+                            curr_kaks = 0.0
+                            curr_m2 = 0.0
+                            
+                            # Etrafındaki 6 satırı tara
+                            for sub_line in lines[max(0, i-4):min(len(lines), i+7)]:
                                 sub_up = sub_line.upper()
                                 if "TAKS" in sub_up:
                                     num_m = re.search(r'([\d\.,]+)', sub_line)
@@ -302,14 +311,31 @@ def parse_imar_pdf(uploaded_file):
                                     num_m = re.search(r'([\d\.,]+)', sub_line)
                                     if num_m:
                                         val = parse_tr_float(num_m.group(1))
-                                        if 0 < val <= 5.0: curr_kaks = val
+                                        if 0.05 <= val <= 5.0: curr_kaks = val
                                 m2_m = re.search(r'([\d\.,]+)\s*m²', sub_line, re.IGNORECASE)
                                 if m2_m:
                                     val = parse_tr_float(m2_m.group(1))
                                     if val > 0: curr_m2 = val
 
+                            # Eğer blok içinde KAKS bulunamadıysa genel metinden satıra özel KAKS ara
+                            if curr_kaks <= 0:
+                                kaks_match = re.search(r'(?:KAKS|EMSAL)\s*[:=]?\s*([\d\.,]+)', line_up)
+                                if kaks_match:
+                                    val = parse_tr_float(kaks_match.group(1))
+                                    if 0.05 <= val <= 5.0: curr_kaks = val
+
                             if curr_fonk and not any(x in curr_fonk for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
-                                if not any(f["fonksiyon_adi"] == curr_fonk for f in parcel_data["fonksiyonlar"]):
+                                existing_f = next((f for f in parcel_data["fonksiyonlar"] if f["fonksiyon_adi"] == curr_fonk), None)
+                                if existing_f:
+                                    if curr_kaks > 0: existing_f["kaks"] = curr_kaks
+                                    if curr_taks > 0: existing_f["taks"] = curr_taks
+                                else:
+                                    if curr_kaks <= 0:
+                                        # Genel belgeden ilk geçen KAKS/EMSAL değerini al veya varsayılan ata
+                                        global_kaks_m = re.search(r'(?:KAKS|EMSAL)\s*[:=]?\s*([\d\.,]+)', full_text)
+                                        curr_kaks = parse_tr_float(global_kaks_m.group(1)) if global_kaks_m else 0.30
+                                        if curr_kaks <= 0 or curr_kaks > 5.0: curr_kaks = 0.30
+                                        
                                     parcel_data["fonksiyonlar"].append({
                                         "fonksiyon_adi": curr_fonk,
                                         "taks": curr_taks,
