@@ -42,7 +42,6 @@ def clean_fonksiyon_adi(name):
     if not name:
         return ""
     n = str(name).upper().strip()
-    # Sadece sayısal, yüzde veya geçersiz sembollerden oluşan, anlam içermeyen girdileri ele
     if n in ["-", "--", ".", "0", "N/A", "İMAR DURUMu", ""]:
         return ""
     if re.match(r'^[\d\.,\s\-%]+$', n) and not any(kw in n for kw in ["MİA", "TİCARET", "KONUT", "İMAR"]):
@@ -201,7 +200,7 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
             
     return False
 
-# --- GELİŞTİRİLMİŞ İMAR PDF AYRIŞTIRMA MOTORU (KESİN VE GERÇEKÇİ FONKSİYON) ---
+# --- GELİŞTİRİLMİŞ İMAR PDF AYRIŞTIRMA MOTORU ---
 def parse_imar_pdf(uploaded_file):
     parcel_data = {
         "filename": uploaded_file.name,
@@ -242,7 +241,6 @@ def parse_imar_pdf(uploaded_file):
                                         elif "Alan" in head and val:
                                             parcel_data["toplam_alan"] = parse_tr_float(val)
 
-                    # Gelişmiş Tablo Satır Taraması ve Gerçek Fonksiyon Yakalama
                     r = 0
                     while r < len(table):
                         row = table[r]
@@ -252,7 +250,6 @@ def parse_imar_pdf(uploaded_file):
                         if "FONKSİYON" in row_text or any("FONKSİYON" in c.upper() for c in row_cells):
                             fonk_name = ""
                             
-                            # 1. Hücre bazlı tarama
                             for c_idx, c in enumerate(row_cells):
                                 if "FONKSİYON" in c.upper():
                                     if c_idx + 1 < len(row_cells) and clean_fonksiyon_adi(row_cells[c_idx+1]):
@@ -266,7 +263,6 @@ def parse_imar_pdf(uploaded_file):
                                         fonk_name = cleaned
                                         break
                                         
-                            # 2. Metin analizi ile kesin fonksiyon tespiti
                             if not fonk_name:
                                 for kw in ["TİCARET + KONUT", "TİCARET", "KONUT", "VİLLA", "SANAYİ", "TURİZM", "EĞİTİM", "SAĞLIK", "İDARİ", "PARK", "BELEDİYE HİZMET"]:
                                     if kw in row_text:
@@ -310,7 +306,6 @@ def parse_imar_pdf(uploaded_file):
                                 if m2_match:
                                     cur_giren_m2 = parse_tr_float(m2_match.group(1))
                                     
-                            # Mükerrer eklemeyi önle
                             if not any(existing["fonksiyon_adi"] == fonk_name for existing in parcel_data["fonksiyonlar"]):
                                 parcel_data["fonksiyonlar"].append({
                                     "fonksiyon_adi": fonk_name,
@@ -335,7 +330,6 @@ def parse_imar_pdf(uploaded_file):
             if al_m and parcel_data["toplam_alan"] == 0.0:
                 parcel_data["toplam_alan"] = parse_tr_float(al_m.group(1))
                 
-        # Tabloda fonksiyon bulunamadıysa metin içerisinden gerçek imar fonksiyonunu dinamik tara
         if not parcel_data["fonksiyonlar"]:
             for candidate in ["TİCARET + KONUT", "TİCARET ALANI", "GELİŞME KONUT ALANI", "VİLLA ALANI", "TURİZM ALANI", "KONUT ALANI"]:
                 if candidate in full_text.upper():
@@ -665,11 +659,13 @@ if selected_keys:
     mutaahhit_net_kar_usd = total_ciro_usd - total_maliyet_usd - arsa_sahibi_payi_usd
     yg_orani = (mutaahhit_net_kar_usd / total_maliyet_usd * 100) if total_maliyet_usd > 0 else 0
 
-    tab1, tab2, tab3, tab4 = st.tabs([
+    # --- SEKMELER (YENİ VERİTABANI SEKMESİ EKLENDİ) ---
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "📊 Seçilen Parseller & İnşaat Alanı", 
         "🏛️ Mimari Fizibilite", 
         "📑 Proje Raporu & Fizibilite", 
-        "🖨️ Rapor Ön İzleme & PDF"
+        "🖨️ Rapor Ön İzleme & PDF",
+        "🗄️ Veritabanı & Arşiv Yönetimi"
     ])
 
     with tab1:
@@ -875,5 +871,51 @@ if selected_keys:
             mime="application/pdf",
             use_container_width=True
         )
+
+    with tab5:
+        st.subheader("🗄️ Veritabanı & Arşiv Yönetimi (`imar_veritabani.json`)")
+        st.markdown("Arşivde bulunan tüm kayıtlı parsellerin ham veritabanı yapısını inceleyebilir, dosya detaylarını görebilir ve kayıt yönetimi yapabilirsiniz.")
+        
+        db_items = st.session_state["parcel_db"]
+        if db_items:
+            db_summary_list = []
+            for k, p_val in db_items.items():
+                db_summary_list.append({
+                    "Kayıt Anahtarı": k,
+                    "Dosya Adı": p_val.get("filename", "-"),
+                    "Mahalle": p_val.get("mahalle", "-"),
+                    "Ada": p_val.get("ada", "-"),
+                    "Parsel": p_val.get("parsel", "-"),
+                    "Toplam Alan (m²)": f"{p_val.get('toplam_alan', 0.0):,.2f}",
+                    "Terk Durumu": "Yapılmış" if p_val.get("terk_yapilmis_mi") else "Yapılmamış / Belirsiz",
+                    "Fonksiyon Sayısı": len(p_val.get("fonksiyonlar", []))
+                })
+            
+            st.dataframe(pd.DataFrame(db_summary_list), use_container_width=True)
+            
+            st.markdown("---")
+            col_db1, col_db2 = st.columns(2)
+            with col_db1:
+                st.markdown("#### 🔍 Ham JSON Veri Görünümü")
+                st.json(db_items)
+            with col_db2:
+                st.markdown("#### ⚙️ Veritabanı İşlemleri")
+                selected_del_key = st.selectbox("Silinecek Parsel Kaydını Seçin:", options=list(db_items.keys()))
+                if st.button("🗑️ Seçili Parseli Arşivden Kaldır", type="primary"):
+                    if selected_del_key in st.session_state["parcel_db"]:
+                        del st.session_state["parcel_db"][selected_del_key]
+                        save_persistent_db(st.session_state["parcel_db"])
+                        st.success(f"'{selected_del_key}' başarıyla silindi ve veritabanı güncellendi!")
+                        st.rerun()
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("⚠️ Tüm Veritabanını Temizle (Sıfırla)", type="secondary"):
+                    st.session_state["parcel_db"] = {}
+                    save_persistent_db({})
+                    st.success("Veritabanı tamamen sıfırlandı!")
+                    st.rerun()
+        else:
+            st.info("Veritabanında (`imar_veritabani.json`) henüz kayıtlı parsel bulunmuyor.")
+
 else:
     st.info("👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden istenilen parselleri çoklu şekilde seçin veya yeni bir imar belgesi (PDF) yükleyin.")
