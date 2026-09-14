@@ -898,7 +898,7 @@ if selected_keys:
             "Parsel": item["Parsel"],
             "İmar Fonksiyon Adı": item["Fonksiyon"],
             "Toplam Brüt İnşaat Alanı (m²)": (
-                f"{item['Brüt İnşaat (m²)]']:,.2f}"
+                f"{item['Brüt İnşaat (m²)']:,.2f}"
             ),
             "Bahçe Alanı Terki (Fonksiyon Üzerinden)": (
                 f"{item['Bahçe Terki (m²)']:,.2f} m²"
