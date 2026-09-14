@@ -401,7 +401,6 @@ def parse_imar_pdf(uploaded_file):
 
 def get_allowed_project_types(fonksiyon_adi):
   f_upper = fonksiyon_adi.upper()
-  # Kesin imar fonksiyonu ayrımı
   if "TİCARET" in f_upper and (
       "KONUT" in f_upper or "MESKEN" in f_upper or "+" in f_upper
   ):
@@ -420,7 +419,6 @@ def get_allowed_project_types(fonksiyon_adi):
         "Standart Konut / Apartman",
     ]
   else:
-    # Eğer fonksiyon adı tam tespit edilemediyse veya genel ise varsayılan konut alt tiplerini dön
     return [
         "Lüks Villa / Müstakil Proje",
         "Üst Segment Konut / Rezidans",
@@ -616,7 +614,6 @@ if selected_keys:
         all_functions_map[f_name] = []
       all_functions_map[f_name].append((key, f))
 
-  # --- KESİN KISIT (INTERSECTION YERİNE ORTAK GEÇERLİ TİPLER) ---
   combined_allowed_types = None
   for fonk_name in all_functions_map.keys():
     allowed_for_func = set(get_allowed_project_types(fonk_name))
@@ -627,7 +624,6 @@ if selected_keys:
           allowed_for_func
       )
 
-  # Eğer kesişim boş küme kalırsa (örneğin farklı nitelikte karma parseller seçildiyse) union ile birleştir
   if not combined_allowed_types:
     combined_allowed_types = set()
     for fonk_name in all_functions_map.keys():
@@ -638,7 +634,6 @@ if selected_keys:
   function_configs = {}
   first_mahalle = list(active_parcel_db.values())[0].get("mahalle", "VARSAYILAN")
 
-  # --- TOPLU YÖNETİM MERKEZİ ---
   st.markdown(
       """
     <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
@@ -674,7 +669,6 @@ if selected_keys:
   )
   st.markdown("</div>", unsafe_allow_html=True)
 
-  # OPSİYONEL ÖZELLEŞTİRME PANELİ
   with st.expander(
       "🛠️ Gelişmiş / Özel Koşullar: Fonksiyon Bazlı Opsiyonel Özelleştirme"
   ):
@@ -789,7 +783,6 @@ if selected_keys:
           "bodrum_orani": auto_bodrum_orani,
       }
 
-  # --- GENEL HESAPLAMA MOTORU ---
   total_yasal_brut_insaat = 0.0
   total_simulated_bodrum = 0.0
   total_ciro_usd = 0.0
@@ -856,7 +849,6 @@ if selected_keys:
       else 0
   )
 
-  # --- SEKME YAPISI ---
   tab1, tab2, tab3, tab4 = st.tabs([
       "📊 Seçilen Parseller & İnşaat Alanı",
       "🏛️ Mimari Fizibilite",
@@ -907,50 +899,64 @@ if selected_keys:
     )
 
   with tab2:
-    st.subheader("🏛️ Fonksiyona Özel Mimari ve Yerleşim Fizibilitesi")
+    st.subheader("🏛️ Parsel Bazlı Mimari ve Yerleşim Fizibilitesi")
     st.markdown(
-        "<p style='color: #64748b; font-size: 13px;'>Seçilen parsellerdeki"
-        " fonksiyonların bağımsız bölüm dağılımları ve yapı tipleri güncel"
-        " imar kurallarına göre toplu olarak aşağıda listelenmiştir.</p>",
+        "<p style='color: #64748b; font-size: 13px;'>Yalnızca inşaat"
+        " alanı bulunan seçili parsellerin bağımsız bölüm dağılımları ve yapı"
+        " tipleri aşağıda listelenmiştir.</p>",
         unsafe_allow_html=True,
     )
 
     summary_table_data = []
-    for fonk_name, items in all_functions_map.items():
-      conf = function_configs.get(fonk_name, {})
-      sel_p_tipi = conf.get("proje_tipi", "Standart Konut / Apartman")
+    for key, p in active_parcel_db.items():
+      toplam_arsa_m2 = p["toplam_alan"]
+      is_terkli = p["terk_yapilmis_mi"]
 
-      fonk_toplam_brut = 0.0
-      fonk_toplam_arsa = 0.0
-      for key, f in items:
-        p = active_parcel_db[key]
-        toplam_arsa_m2 = p["toplam_alan"]
-        is_terkli = p["terk_yapilmis_mi"]
+      for f in p["fonksiyonlar"]:
+        fonk_name = f["fonksiyon_adi"]
+        if any(
+            x in fonk_name.upper()
+            for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
+        ):
+          continue
+
         brut_insaat = (
             (toplam_arsa_m2 * f["kaks"] * emsal_artis_orani)
             if is_terkli
             else (toplam_arsa_m2 * 0.70 * f["kaks"] * emsal_artis_orani)
         )
-        fonk_toplam_brut += brut_insaat
-        fonk_toplam_arsa += toplam_arsa_m2
 
-      adet = conf.get("adet", 1)
-      arsa_payi_birim = (
-          (fonk_toplam_arsa / adet) if adet > 0 else fonk_toplam_arsa
-      )
-      ortalama_brut_birim = (
-          (fonk_toplam_brut / adet) if adet > 0 else fonk_toplam_brut
-      )
+        # Sadece inşaat alanı olan (pozitif brüt inşaat) kayıtları filtrele
+        if brut_insaat <= 0:
+          continue
 
-      summary_table_data.append({
-          "İmar Fonksiyonu": fonk_name,
-          "Seçilen Proje Tipi": sel_p_tipi,
-          "B.B. Adedi": f"{adet} Adet",
-          "Ortalama Birim Brüt Alanı": f"{ortalama_brut_birim:,.2f} m²",
-          "Birim Başına Düşen Arsa": f"{arsa_payi_birim:,.2f} m²",
-          "Toplam Brüt İnşaat": f"{fonk_toplam_brut:,.2f} m²",
-          "Havuz Tercihi": conf.get("havuz_mod", "-"),
-      })
+        conf = function_configs.get(fonk_name, {})
+        sel_p_tipi = conf.get("proje_tipi", "Standart Konut / Apartman")
+
+        total_f_brut = temp_function_bruts.get(fonk_name, 1.0)
+        if total_f_brut <= 0:
+          total_f_brut = 1.0
+        parsel_oran = brut_insaat / total_f_brut
+        fonk_adet = conf.get("adet", 1)
+        parsel_adet = max(1, round(fonk_adet * parsel_oran))
+
+        arsa_payi_birim = (
+            (toplam_arsa_m2 / parsel_adet) if parsel_adet > 0 else toplam_arsa_m2
+        )
+        ortalama_brut_birim = (
+            (brut_insaat / parsel_adet) if parsel_adet > 0 else brut_insaat
+        )
+
+        summary_table_data.append({
+            "Parsel Kimliği": key,
+            "İmar Fonksiyonu": fonk_name,
+            "Seçilen Proje Tipi": sel_p_tipi,
+            "B.B. Adedi": f"{parsel_adet} Adet",
+            "Ortalama Birim Brüt Alanı": f"{ortalama_brut_birim:,.2f} m²",
+            "Birim Başına Düşen Arsa": f"{arsa_payi_birim:,.2f} m²",
+            "Toplam Brüt İnşaat": f"{brut_insaat:,.2f} m²",
+            "Havuz Tercihi": conf.get("havuz_mod", "-"),
+        })
 
     st.dataframe(pd.DataFrame(summary_table_data), use_container_width=True)
 
@@ -1029,9 +1035,7 @@ if selected_keys:
     st.download_button(
         label="📥 Toplu Parsel Kurumsal Fizibilite Raporunu PDF Olarak İndir",
         data=pdf_bytes,
-        file_name=(
-            f"Kurumsal_Toplu_Fizibilite_{first_mahalle}.pdf"
-        ),
+        file_name=f"Kurumsal_Toplu_Fizibilite_{first_mahalle}.pdf",
         mime="application/pdf",
         use_container_width=True,
     )
