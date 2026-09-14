@@ -727,7 +727,7 @@ if selected_keys:
           "bodrum_orani": r_bodrum_orani,
       }
 
-  # --- GENEL HESAPLAMA MOTORU (GÜNCELLENMİŞ KURALLAR) ---
+  # --- GENEL HESAPLAMA MOTORU ---
   total_yasal_brut_insaat = 0.0
   total_simulated_bodrum = 0.0
   total_ciro_usd = 0.0
@@ -809,23 +809,22 @@ if selected_keys:
       is_terkli = p["terk_yapilmis_mi"]
       toplam_brut = p["toplam_alan"]
       terk_lbl = (
-          "Terki Yapılmış (Toplam Arsa x KAKS x 1.3)"
+          "Terki Yapılmış (Brüt Arsa x KAKS x 1.3)"
           if is_terkli
-          else "Terki Yapılmamış (Toplam Arsa x 0.7 KAKS x 1.3)"
+          else "Terki Yapılmamış (%70 Net Arsa x KAKS x 1.3)"
       )
 
       for f in p["fonksiyonlar"]:
-        fonks_m2 = f["giren_m2"] if f["giren_m2"] > 0 else toplam_brut
         net_m2 = toplam_brut if is_terkli else toplam_brut * 0.70
         table_rows.append({
-            "Parsel Bilgisi": key,
-            "Mahalle": p["mahalle"],
-            "Toplam Arsa (m²)": f"{toplam_brut:,.2f}",
-            "Alan Adı": f["fonksiyon_adi"],
-            "Net Arsa (m²)": f"{net_m2:,.2f}",
-            "TAKS": f"{f['taks']:.2f}",
-            "KAKS (Emsal)": f"{f['kaks']:.2f}",
-            "Terk Durumu": terk_lbl,
+            "Parsel Kimliği": key,
+            "Mahalle Adı": p["mahalle"],
+            "Brüt Parsel Alanı (m²)": f"{toplam_brut:,.2f}",
+            "İmar Fonksiyonu": f["fonksiyon_adi"],
+            "Hesaba Esas Net Arsa (m²)": f"{net_m2:,.2f}",
+            "TAKS Oranı": f"{f['taks']:.2f}",
+            "KAKS / Emsal Katsayısı": f"{f['kaks']:.2f}",
+            "İmar ve Terk Durum Analizi": terk_lbl,
         })
     st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
 
@@ -833,7 +832,6 @@ if selected_keys:
     st.subheader("Fonksiyon Bazlı Brüt İnşaat Kapasite Hesabı")
     calc_results = []
     for item in function_results_detail:
-      # Toplam Brüt İnşaat Alanı (m²) 0 olanları göstermiyoruz ve sütun adı İmar Fonksiyon Adı
       if item["Brüt İnşaat (m²)"] > 0:
         calc_results.append({
             "Parsel": item["Parsel"],
