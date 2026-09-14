@@ -40,7 +40,7 @@ st.markdown(
 # --- FONKSİYON ADI AKILLI TEMİZLEME MOTORU ---
 def clean_fonksiyon_adi(name):
     if not name:
-        return "KONUT ALANI"
+        return ""
     n = str(name).upper().strip()
     
     if "TİCARET" in n and "KONUT" in n:
@@ -55,11 +55,17 @@ def clean_fonksiyon_adi(name):
         return "SANAYİ ALANI"
     elif "TURİZM" in n:
         return "TURİZM ALANI"
+    elif "PARK" in n:
+        return "PARK ALANI"
+    elif "SAĞLIK" in n:
+        return "SAĞLIK TESİSİ ALANI"
+    elif "EĞİTİM" in n:
+        return "EĞİTİM TESİSİ ALANI"
 
     n_clean = re.sub(r'[%–\-\d\.,]+', '', n).replace('M²', '').replace('M2', '').strip()
     
     if not re.search(r'[A-ZÇĞİÖŞÜ]', n_clean) or len(n_clean) < 2:
-        return "KONUT ALANI"
+        return ""
         
     return n_clean
 
@@ -257,15 +263,25 @@ def parse_imar_pdf(uploaded_file):
                                         elif "Alan" in head and val:
                                             parcel_data["toplam_alan"] = parse_tr_float(val)
                                             
-                        # HÜCRELERİ DOĞRUDAN TARAYAN ESNEK ÇOKLU FONKSİYON Yakalama
-                        for c in cells:
+                        # KESİN FONKSİYON TESPİTİ: Sadece Başlık / Etiket içeren hücrelerin yanındaki veya altındaki değerler taranır
+                        for c_idx, c in enumerate(cells):
                             c_upper = c.upper()
-                            if any(k in c_upper for k in ["KONUT", "TİCARET", "TİCARİ", "VİLLA", "MESKEN", "İMAR", "SANAYİ", "TURİZM"]):
-                                if "FONKSİYON" not in c_upper and len(c_upper) > 2:
-                                    cleaned = clean_fonksiyon_adi(c)
+                            if any(lbl in c_upper for lbl in ["FONKSİYON", "LEJANT", "KULLANIM", "PLAN AMACI"]):
+                                # Aynı satırdaki sonraki hücreleri kontrol et
+                                for t_idx in range(c_idx + 1, len(cells)):
+                                    val = cells[t_idx]
+                                    cleaned = clean_fonksiyon_adi(val)
                                     if cleaned and cleaned not in raw_found_functions:
                                         raw_found_functions.append(cleaned)
-                                        
+                                # Bir sonraki satırdaki aynı sütunu kontrol et
+                                if not raw_found_functions and r_idx + 1 < len(table):
+                                    next_row = [str(x).strip().replace("\n", " ") if x is not None else "" for x in table[r_idx + 1]]
+                                    if c_idx < len(next_row):
+                                        val = next_row[c_idx]
+                                        cleaned = clean_fonksiyon_adi(val)
+                                        if cleaned and cleaned not in raw_found_functions:
+                                            raw_found_functions.append(cleaned)
+                                            
                         t_m = re.search(r'Taks\s*\|?\s*([\d\.,]+)', row_str, re.IGNORECASE)
                         k_m = re.search(r'Kaks\s*\(Emsal\)\s*\|?\s*([\d\.,]+)', row_str, re.IGNORECASE)
                         if t_m:
@@ -296,24 +312,15 @@ def parse_imar_pdf(uploaded_file):
             if al_m and parcel_data["toplam_alan"] == 0.0:
                 parcel_data["toplam_alan"] = parse_tr_float(al_m.group(1))
                 
+        # Eğer özel etiketle fonksiyon bulunamadıysa, varsayılan olarak boş bırakmak yerine belgenin niteliğine göre güvenli fallback uygula
         if not parcel_data["fonksiyonlar"]:
-            found_fonks = []
-            if "KONUT" in full_text.upper():
-                found_fonks.append("KONUT ALANI")
-            if "TİCARET" in full_text.upper() or "TICARET" in full_text.upper():
-                found_fonks.append("TİCARET ALANI")
-            if not found_fonks:
-                found_fonks.append("KONUT ALANI")
+            parcel_data["fonksiyonlar"].append({
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.30,
+                "kaks": 0.40,
+                "giren_m2": 0.0
+            })
                 
-            for fn in found_fonks:
-                parcel_data["fonksiyonlar"].append({
-                    "fonksiyon_adi": fn,
-                    "taks": 0.30,
-                    "kaks": 0.40,
-                    "giren_m2": 0.0
-                })
-                
-        # Alanları fonksiyonlara eşit veya oranlı dağıt
         num_fonks = len(parcel_data["fonksiyonlar"])
         if num_fonks > 0:
             share_m2 = parcel_data["toplam_alan"] / num_fonks
@@ -461,7 +468,7 @@ if selected_keys:
             
         for f in fonks_list:
             fonk_name = clean_fonksiyon_adi(f["fonksiyon_adi"])
-            if any(x in fonk_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
+            if not fonk_name or any(x in fonk_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                 continue
                 
             fonk_giren_m2 = f.get("giren_m2", toplam_arsa_m2)
@@ -537,7 +544,7 @@ if selected_keys:
             
         for f in fonks_list:
             fonk_name = clean_fonksiyon_adi(f["fonksiyon_adi"])
-            if any(x in fonk_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
+            if not fonk_name or any(x in fonk_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                 continue
                 
             fonk_giren_m2 = f.get("giren_m2", toplam_arsa_m2)
@@ -585,7 +592,7 @@ if selected_keys:
             
         for f in fonks_list:
             fonk_adi = clean_fonksiyon_adi(f["fonksiyon_adi"])
-            if any(x in fonk_adi for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
+            if not fonk_adi or any(x in fonk_adi for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                 continue
                 
             parsel_fonk_key = f"{key}_{fonk_adi}"
@@ -653,7 +660,7 @@ if selected_keys:
                 
             for f in fonks_list:
                 fonk_name = clean_fonksiyon_adi(f["fonksiyon_adi"])
-                if any(x in fonk_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
+                if not fonk_name or any(x in fonk_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                     continue
                 kaks = f["kaks"]
                 fonk_giren_m2 = f.get("giren_m2", toplam_arsa_m2)
@@ -713,7 +720,7 @@ if selected_keys:
                 
             for f in fonks_list:
                 fonk_name = clean_fonksiyon_adi(f["fonksiyon_adi"])
-                if any(x in fonk_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
+                if not fonk_name or any(x in fonk_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                     continue
                     
                 parsel_fonk_key = f"{key}_{fonk_name}"
