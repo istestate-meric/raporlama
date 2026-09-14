@@ -637,6 +637,7 @@ if selected_keys:
   # --- ÖNCELİKLE İNŞAAT ALANI OLAN VE GEÇERLİ FONKSİYONLARI VE BRÜT ALANLARINI HESAPLA ---
   valid_active_functions_with_area = []
   function_total_brut_areas = {}
+  function_total_ratios = {}
 
   for key, p in active_parcel_db.items():
     toplam_arsa_m2 = p["toplam_alan"]
@@ -675,7 +676,9 @@ if selected_keys:
         if fonk_name not in valid_active_functions_with_area:
           valid_active_functions_with_area.append(fonk_name)
           function_total_brut_areas[fonk_name] = 0.0
+          function_total_ratios[fonk_name] = 0.0
         function_total_brut_areas[fonk_name] += fonk_toplam_brut_m2
+        function_total_ratios[fonk_name] += fonk_alan_orani * 100.0
 
   # --- İNŞAAT ALANI OLAN FONKSİYONLAR İÇİN HEDEF ALAN SLIDER ALANI ---
   function_target_sizes = {}
@@ -699,6 +702,7 @@ if selected_keys:
           .replace("Ö", "O")
       )
       total_b_m2 = function_total_brut_areas.get(fonk_adi, 0.0)
+      total_oran = function_total_ratios.get(fonk_adi, 100.0)
 
       if "TICARET" in f_upper:
         def_sz, min_sz, max_sz, step_sz = 150, 60, 800, 10
@@ -710,7 +714,10 @@ if selected_keys:
         def_sz, min_sz, max_sz, step_sz = 95, 55, 250, 5
         icon_prefix = "🏠"
 
-      label_txt = f"{icon_prefix} {fonk_adi} ({total_b_m2:,.2f} m²)"
+      # DÜZELTME: Fonksiyon adı başa alındı, oran ve m² parantez içinde doğru şekilde konumlandırıldı
+      label_txt = (
+          f"{icon_prefix} {fonk_adi} (%{total_oran:.2f} - {total_b_m2:,.2f} m²)"
+      )
 
       with fn_cols[idx % len(fn_cols)]:
         function_target_sizes[fonk_adi] = st.slider(
