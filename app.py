@@ -401,8 +401,11 @@ def parse_imar_pdf(uploaded_file):
 
 def get_allowed_project_types(fonksiyon_adi):
   f_upper = fonksiyon_adi.upper()
-  if "TİCARET" in f_upper and ("KONUT" in f_upper or "MESKEN" in f_upper):
-    return ["Karma Proje (Konut + Ticari)"]
+  # İmar durumuna göre kesin kısıtlama mantığı
+  if "TİCARET" in f_upper and (
+      "KONUT" in f_upper or "MESKEN" in f_upper or "+" in f_upper
+  ):
+    return ["Karma Proje (Konut + Ticari)", "Ticari / Ofis Kompleksi"]
   elif "TİCARET" in f_upper or "TİCARİ" in f_upper:
     return ["Ticari / Ofis Kompleksi"]
   elif "KONUT" in f_upper or "MESKEN" in f_upper:
@@ -412,6 +415,7 @@ def get_allowed_project_types(fonksiyon_adi):
         "Standart Konut / Apartman",
     ]
   else:
+    # Diğer özel fonksiyonlar için genel güvenli konut/ticari seçenekler
     return [
         "Lüks Villa / Müstakil Proje",
         "Üst Segment Konut / Rezidans",
@@ -487,18 +491,18 @@ if all_db_keys:
           == str(selected_ada_filter).strip()
       ]
       if selected_ada_filter != "Seçiniz..."
-      else []
+      else all_db_keys
   )
 
-  default_selection = [
-      k
-      for k in (just_uploaded_keys if just_uploaded_keys else [])
-      if k in filtered_keys
-  ]
+  default_selection = (
+      just_uploaded_keys
+      if just_uploaded_keys
+      else filtered_keys[: min(3, len(filtered_keys))]
+  )
 
   selected_keys = st.sidebar.multiselect(
-      "Raporlanacak Ada-Parsel Seçin:",
-      options=filtered_keys if selected_ada_filter != "Seçiniz..." else [],
+      "Raporlanacak Parselleri Seçin (Çoklu Seçim Uygun):",
+      options=filtered_keys,
       default=default_selection,
   )
 else:
@@ -613,14 +617,13 @@ if selected_keys:
   function_configs = {}
 
   with st.expander(
-      "🏛️ Fonksiyona Özel Mimari ve Finansal Parametreler (Canlı Otomatik"
-      " Matris)",
+      "🏛️ Fonksiyona Özel Mimari ve Finansal Parametreler (İmar Kısıtlı Matris)",
       expanded=False,
   ):
     st.markdown(
-        "<p style='color: #64748b; font-size: 12px; margin-bottom: 10px;'>Bölge"
-        " ve proje konseptine göre birim maliyet/satış fiyatları ile piyasa"
-        " standartlarına uygun adetler anlık olarak hesaplanır.</p>",
+        "<p style='color: #64748b; font-size: 12px; margin-bottom: 10px;'>Seçilen"
+        " parsellerin imar fonksiyonu türüne göre uygun proje tipleri otomatik"
+        " kısıtlanmıştır.</p>",
         unsafe_allow_html=True,
     )
 
@@ -836,11 +839,12 @@ if selected_keys:
         calc_results.append({
             "Parsel": item["Parsel"],
             "İmar Fonksiyon Adı": item["Fonksiyon"],
-            "Toplam Brüt İnşaat Alanı (m²)": f"{item['Brüt İnşaat (m²)']:,.2f}",
+            "Toplam Brüt İnşaat Alanı (m²)": f"{item['Brüt İnşaat (m²)'
+:,.2f}",
         })
     st.table(pd.DataFrame(calc_results))
     st.metric(
-        label="🏗️ Toplam Brüt İnşaat Alanı (Bodrum Hariç)",
+        label="🏗️ Toplam Brüt İnşaat Alanı (Bodrum Hariç - Tüm Seçili Parseller)",
         value=f"{total_yasal_brut_insaat:,.2f} m²",
     )
 
@@ -982,9 +986,9 @@ if selected_keys:
                     <td style="width: 25%; text-align: right;">{pdf_logo2_html}</td>
                 </tr>
             </table>
-            <div class="section-title">1. Proje ve Lokasyon Künyesi</div>
+            <div class="section-title">1. Proje ve Lokasyon Künyesi (Toplu Parsel)</div>
             <table class="data-table">
-                <tr><td>Lokasyon / Mahalle</td><td style="text-align: right; font-weight: bold;">{first_mahalle}</td></tr>
+                <tr><td>Lokasyon / Mahalle</td><td style="text-align: right; font-weight: bold;">{first_mahalle} ({len(active_parcel_db)} Parsel)</td></tr>
                 <tr><td>Toplam Brüt İnşaat Alanı (Bodrum Hariç)</td><td style="text-align: right; font-weight: bold; color: #1e3a8a;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
             </table>
             <div class="section-title">2. Fonksiyon Bazlı Finansal Fizibilite Özeti</div>
@@ -1001,17 +1005,17 @@ if selected_keys:
 
     pdf_bytes = HTML(string=report_html_template).write_pdf()
     st.download_button(
-        label="📥 Tek Sayfa Yatay Kurumsal Fizibilite Raporunu PDF Olarak İndir",
+        label="📥 Toplu Parsel Kurumsal Fizibilite Raporunu PDF Olarak İndir",
         data=pdf_bytes,
         file_name=(
-            f"Kurumsal_Fizibilite_{first_mahalle}_Fonksiyonel.pdf"
+            f"Kurumsal_Toplu_Fizibilite_{first_mahalle}.pdf"
         ),
         mime="application/pdf",
         use_container_width=True,
     )
 else:
   st.info(
-      "👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden bir"
-      " **Ada** seçip ilgili parselleri işaretleyin veya yeni bir imar belgesi"
+      "👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden"
+      " istenilen parselleri çoklu şekilde seçin veya yeni bir imar belgesi"
       " (PDF) yükleyin."
   )
