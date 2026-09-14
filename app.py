@@ -40,7 +40,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ ---
+# --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ (GÜÇLENDİRİLMİŞ) ---
 BASE_DIR = (
     os.path.dirname(os.path.abspath(__file__))
     if "__file__" in locals()
@@ -50,23 +50,37 @@ DB_FILE = os.path.join(BASE_DIR, "imar_veritabani.json")
 
 
 def load_persistent_db():
+  # Önce session state kontrolü yapalım (sayfa yenilenmelerine karşı)
+  if (
+      "parcel_db" in st.session_state
+      and len(st.session_state["parcel_db"]) > 0
+  ):
+    return st.session_state["parcel_db"]
+
+  # Disk üzerinde dosya var mı kontrol edelim
   if os.path.exists(DB_FILE):
     try:
       with open(DB_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
-    except Exception:
-      return {}
+        data = json.load(f)
+        if isinstance(data, dict) and len(data) > 0:
+          return data
+    except Exception as e:
+      st.warning(f"Veritabanı okunurken uyarı: {e}")
+
   return {}
 
 
 def save_persistent_db(db_data):
   try:
+    # Hem session state'e hem diske eş zamanlı kaydedelim
+    st.session_state["parcel_db"] = db_data
     with open(DB_FILE, "w", encoding="utf-8") as f:
       json.dump(db_data, f, ensure_ascii=False, indent=4)
   except Exception as e:
     st.error(f"Veritabanı kaydedilirken hata oluştu: {e}")
 
 
+# Veritabanını başlat
 if "parcel_db" not in st.session_state:
   st.session_state["parcel_db"] = load_persistent_db()
 
@@ -448,6 +462,7 @@ if uploaded_files:
     st.session_state["parcel_db"][unique_key] = p_data
     just_uploaded_keys.append(unique_key)
 
+  # Değişiklikleri hem belleğe hem JSON dosyasına kalıcı olarak kaydet
   save_persistent_db(st.session_state["parcel_db"])
   st.sidebar.success(f"{len(uploaded_files)} Adet Belge Arşive Eklendi!")
 
