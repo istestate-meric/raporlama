@@ -37,13 +37,12 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- FONKSİYON ADI AKILLI TEMİZLEME MOTORU (GÜNCELLENDİ) ---
+# --- FONKSİYON ADI AKILLI TEMİZLEME MOTORU ---
 def clean_fonksiyon_adi(name):
     if not name:
         return "KONUT ALANI"
     n = str(name).upper().strip()
     
-    # Yüzde veya alan içeren satırlardan gerçek fonksiyon adını ayrıştır
     if "TİCARET" in n and "KONUT" in n:
         return "TİCARET VE KONUT ALANI"
     elif "TİCARET" in n or "TİCARİ" in n:
@@ -57,10 +56,8 @@ def clean_fonksiyon_adi(name):
     elif "TURİZM" in n:
         return "TURİZM ALANI"
 
-    # Gereksiz sayısal, yüzde ve m2 kalıplarını temizle
     n_clean = re.sub(r'[%–\-\d\.,]+', '', n).replace('M²', '').replace('M2', '').strip()
     
-    # Eğer geriye Türkçe harfler içeren anlamlı bir metin kalmıyorsa varsayılanı dön
     if not re.search(r'[A-ZÇĞİÖŞÜ]', n_clean) or len(n_clean) < 2:
         return "KONUT ALANI"
         
@@ -257,9 +254,10 @@ def parse_imar_pdf(uploaded_file):
                                         elif "Alan" in head and val:
                                             parcel_data["toplam_alan"] = parse_tr_float(val)
                                             
+                        # GÜNCELLENMİŞ ÇOKLU FONKSİYON TARAMA MANTIĞI
                         if "Fonksiyon Adı" in row_str or any("Fonksiyon" in str(c) for c in cells) or "%" in row_str or "m²" in row_str:
-                            fonk_raw = ""
                             taks_val, kaks_val, giren_m2 = 0.30, 0.40, 0.0
+                            found_fonks_in_row = []
                             
                             for sub_idx in range(max(0, r_idx-1), min(r_idx + 3, len(table))):
                                 sub_cells = [str(c).strip().replace("\n", " ") if c is not None else "" for c in table[sub_idx]]
@@ -269,8 +267,9 @@ def parse_imar_pdf(uploaded_file):
                                     c_upper = c.upper()
                                     if any(k in c_upper for k in ["KONUT", "TİCARET", "TİCARİ", "VİLLA", "MESKEN", "İMAR", "SANAYİ", "TURİZM"]):
                                         if "FONKSİYON" not in c_upper:
-                                            fonk_raw = c
-                                            break
+                                            cleaned = clean_fonksiyon_adi(c)
+                                            if cleaned and cleaned not in found_fonks_in_row:
+                                                found_fonks_in_row.append(cleaned)
                                             
                                 t_m = re.search(r'Taks\s*\|?\s*([\d\.,]+)', sub_str, re.IGNORECASE)
                                 k_m = re.search(r'Kaks\s*\(Emsal\)\s*\|?\s*([\d\.,]+)', sub_str, re.IGNORECASE)
@@ -284,11 +283,10 @@ def parse_imar_pdf(uploaded_file):
                                     if m2_match:
                                         giren_m2 = parse_tr_float(m2_match[-1])
                                         
-                            if fonk_raw:
-                                clean_name = clean_fonksiyon_adi(fonk_raw)
-                                if clean_name:
+                            for fonk_name in found_fonks_in_row:
+                                if not any(f["fonksiyon_adi"] == fonk_name for f in parcel_data["fonksiyonlar"]):
                                     parcel_data["fonksiyonlar"].append({
-                                        "fonksiyon_adi": clean_name,
+                                        "fonksiyon_adi": fonk_name,
                                         "taks": taks_val,
                                         "kaks": kaks_val,
                                         "giren_m2": giren_m2
