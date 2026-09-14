@@ -44,7 +44,6 @@ def clean_fonksiyon_adi(name):
     n = str(name).upper().strip()
     if n in ["-", "--", ".", "0", "N/A", "İMAR DURUMU", "İMAR DURUMU BİLGİLERİ", ""]:
         return ""
-    # Yüzde veya m² içeren ifadelerin fonksiyon adı olarak algılanması kesin olarak engellendi
     if "%" in n or "M²" in n or "M2" in n:
         return ""
     if re.match(r'^[\d\.,\s\-%]+$', n):
@@ -203,7 +202,7 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
             
     return False
 
-# --- GELİŞTİRİLMİŞ İMAR PDF AYRIŞTIRMA MOTORU ---
+# --- GELİŞTİRİLMİŞ İMAR PDF AYRIŞTIRMA MOTORU (ÇOKLU FONKSİYON VE DOĞRU KAKS DESTEKLİ) ---
 def parse_imar_pdf(uploaded_file):
     parcel_data = {
         "filename": uploaded_file.name,
@@ -218,7 +217,6 @@ def parse_imar_pdf(uploaded_file):
     try:
         with pdfplumber.open(uploaded_file) as pdf:
             full_text = ""
-            global_taks, global_kaks = 0.30, 0.40
             
             for page in pdf.pages:
                 t = page.extract_text() or ""
@@ -244,6 +242,7 @@ def parse_imar_pdf(uploaded_file):
                                         elif "Alan" in head and val:
                                             parcel_data["toplam_alan"] = parse_tr_float(val)
 
+                    # Tablo satırlarını tarayarak tüm fonksiyonları ve ilgili KAKS/giren m² değerlerini yakala
                     r = 0
                     while r < len(table):
                         row = table[r]
@@ -273,14 +272,18 @@ def parse_imar_pdf(uploaded_file):
                                         break
                                         
                             if not fonk_name:
-                                fonk_name = "KONUT ALANI"
+                                r += 1
+                                continue
                                 
-                            cur_taks = global_taks
-                            cur_kaks = global_kaks
+                            cur_taks = 0.30
+                            cur_kaks = 0.40
                             cur_giren_m2 = 0.0
                             
-                            for sub_r in range(r + 1, min(r + 6, len(table))):
+                            # Fonksiyona ait alt satırlardan TAKS, KAKS ve Alana Giren m² çekimi
+                            for sub_r in range(r, min(r + 6, len(table))):
                                 sub_cells = [str(c).strip().replace("\n", " ") if c is not None else "" for c in table[sub_r]]
+                                sub_row_text = " ".join(sub_cells).upper()
+                                
                                 for sc_idx, sc in enumerate(sub_cells):
                                     sc_up = sc.upper()
                                     if "TAKS" in sc_up and not "ALANA GİREN" in sc_up:
@@ -293,12 +296,11 @@ def parse_imar_pdf(uploaded_file):
                                             if val_k > 0: cur_kaks = val_k
                                             
                                     if "ALANA GİREN" in sc_up or "GİREN" in sc_up:
-                                        combined_sub = " ".join(sub_cells)
-                                        m2_match = re.search(r'([\d\.,]+)\s*m²', combined_sub, re.IGNORECASE)
+                                        m2_match = re.search(r'([\d\.,]+)\s*m²', sub_row_text, re.IGNORECASE)
                                         if not m2_match:
                                             m2_match = re.search(r'([\d\.,]+)', sc)
                                         if m2_match:
-                                            parts = combined_sub.split('-')
+                                            parts = sub_row_text.split('-')
                                             if len(parts) > 1:
                                                 cur_giren_m2 = parse_tr_float(parts[-1])
                                             else:
@@ -308,12 +310,17 @@ def parse_imar_pdf(uploaded_file):
                                 m2_match = re.search(r'([\d\.,]+)\s*m²', row_text)
                                 if m2_match:
                                     cur_giren_m2 = parse_tr_float(m2_match.group(1))
-                                    
-                            if not any(existing["fonksiyon_adi"] == fonk_name for existing in parcel_data["fonksiyonlar"]):
+
+                            # Eğer listede bu fonksiyon yoksa veya varsa güncelle (Çoklu fonksiyon desteği)
+                            existing_f = next((x for x in parcel_data["fonksiyonlar"] if x["fonksiyon_adi"] == fonk_name), None)
+                            if existing_f:
+                                if cur_kaks > 0: existing_f["kaks"] = cur_kaks
+                                if cur_giren_m2 > 0: existing_f["giren_m2"] = cur_giren_m2
+                            else:
                                 parcel_data["fonksiyonlar"].append({
                                     "fonksiyon_adi": fonk_name,
-                                    "taks": cur_taks,
-                                    "kaks": cur_kaks,
+                                    "taks": cur_taks if cur_taks > 0 else 0.30,
+                                    "kaks": cur_kaks if cur_kaks > 0 else 0.40,
                                     "giren_m2": cur_giren_m2
                                 })
                         r += 1
@@ -333,16 +340,16 @@ def parse_imar_pdf(uploaded_file):
             if al_m and parcel_data["toplam_alan"] == 0.0:
                 parcel_data["toplam_alan"] = parse_tr_float(al_m.group(1))
                 
-        if not parcel_data["fonksiyonlar"]:
-            for candidate in ["TİCARET + KONUT", "TİCARET ALANI", "GELİŞME KONUT ALANI", "VİLLA ALANI", "TURİZM ALANI", "KONUT ALANI"]:
-                if candidate in full_text.upper():
+        # Eğer tablolar dışındaki metinlerden ek fonksiyonlar varsa onları da ekle (Çoklu fonksiyon güvenliği)
+        for candidate in ["TİCARET + KONUT", "TİCARET ALANI", "GELİŞME KONUT ALANI", "VİLLA ALANI", "TURİZM ALANI", "KONUT ALANI"]:
+            if candidate in full_text.upper():
+                if not any(candidate in f["fonksiyon_adi"] for f in parcel_data["fonksiyonlar"]):
                     parcel_data["fonksiyonlar"].append({
                         "fonksiyon_adi": candidate,
                         "taks": 0.30,
                         "kaks": 0.40,
                         "giren_m2": 0.0
                     })
-                    break
                     
         if not parcel_data["fonksiyonlar"]:
             parcel_data["fonksiyonlar"].append({
@@ -354,6 +361,7 @@ def parse_imar_pdf(uploaded_file):
                 
         num_fonks = len(parcel_data["fonksiyonlar"])
         if num_fonks > 0:
+            total_giren_check = sum(f["giren_m2"] for f in parcel_data["fonksiyonlar"])
             share_m2 = parcel_data["toplam_alan"] / num_fonks
             for f in parcel_data["fonksiyonlar"]:
                 if f["giren_m2"] <= 0:
@@ -406,7 +414,7 @@ if all_db_keys:
     
     filtered_keys = [k for k, p_data in st.session_state["parcel_db"].items() if str(p_data.get("ada", "")).strip() == str(selected_ada_filter).strip()] if selected_ada_filter != "Seçiniz..." else all_db_keys
     
-    # GÜVENLİ VARSAYILAN SEÇİM (StreamlitDefaultNotinOptionsError hatasını önler)
+    # GÜVENLİ VARSAYILAN SEÇİM (StreamlitDefaultNotinOptionsError hatasını kesin önler)
     raw_default = just_uploaded_keys if just_uploaded_keys else filtered_keys[:min(3, len(filtered_keys))]
     safe_default = [k for k in raw_default if k in filtered_keys]
     
