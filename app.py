@@ -782,7 +782,6 @@ if selected_keys:
     )
 
     table_rows = []
-    # Toplam hesaplamaları için değişkenler
     sum_alan = 0.0
     sum_hesaba_alinan = 0.0
     sum_net_alan = 0.0
@@ -814,7 +813,6 @@ if selected_keys:
         net_alan_m2 = f.get("giren_m2", toplam_arsa_m2)
         nitelik_str = "Arsa" if is_terkli else "Bahçe"
 
-        # Toplamlara ekle
         sum_alan += toplam_arsa_m2
         sum_hesaba_alinan += hesaba_alinan_m2
         sum_net_alan += net_alan_m2
@@ -835,7 +833,6 @@ if selected_keys:
 
     st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
 
-    # --- TOPLU BİLGİ / ÖZET TABLOSU ---
     st.markdown(
         "<div style='margin-top: 20px; margin-bottom: 8px;'><h5"
         " style='color: #1e3a8a; margin: 0; font-size: 15px;'>📋 Seçilen Toplam"
@@ -858,13 +855,18 @@ if selected_keys:
         "🏛️ Mimari Fizibilite & Potansiyel Senaryo Dağılım Matrisi"
     )
     st.markdown(
-        "<p style='color: #64748b; font-size: 13px;'>Seçilen Proje Tipi"
-        " and Havuz durumuna göre piyasa koşullarına uygun mimari potansiyel"
-        " senaryo tablosu aşağıdadır.</p>",
+        "<p style='color: #64748b; font-size: 13px;'>Seçilen parsellerin"
+        " imar verileri ve proje tipi özelliklerine göre oluşturulan mimari"
+        " potansiyel senaryo ve bağımsız bölüm dağılım tablosu</p>",
         unsafe_allow_html=True,
     )
 
     mimari_rows = []
+    mimari_sum_brut = 0.0
+    mimari_sum_adet = 0
+    mimari_sum_bodrum = 0.0
+    mimari_sum_bahce_terk = 0.0
+
     for key, p in active_parcel_db.items():
       mahalle = p.get("mahalle", "BİLİNMİYOR")
       ada = p.get("ada", "0")
@@ -903,19 +905,53 @@ if selected_keys:
         ortalama_birim_m2 = (
             brut_insaat / konut_adeti if konut_adeti > 0 else brut_insaat
         )
+        bahce_terki = hesaba_alinan_m2 * (bahce_terk_orani / 100.0)
+        tekil_havuz_payi = 30.0 if "Özel" in conf["havuz_mod"] else 0.0
+        sim_bodrum = (
+            brut_insaat - (tekil_havuz_payi * konut_adeti)
+        ) * conf["bodrum_orani"]
+
+        mimari_sum_brut += brut_insaat
+        mimari_sum_adet += konut_adeti
+        mimari_sum_bodrum += sim_bodrum
+        mimari_sum_bahce_terk += bahce_terki
 
         mimari_rows.append({
             "MAHALLE": mahalle,
             "ADA": ada,
             "PARSEL": parsel,
             "PROJE TİPİ": conf["proje_tipi"],
-            "HAVUZ DURUMU": conf["havuz_mod"],
+            "HAVUZ / DONATI": conf["havuz_mod"],
             "TOPLAM İNŞAAT (BRÜT M²)": f"{brut_insaat:,.2f}",
             "BAĞIMSIZ BÖLÜM ADEDİ": konut_adeti,
-            "ORTALAMA BİRİM (BRÜT M²)": f"{ortalama_birim_m2:,.2f}",
+            "ORTALAMA BİRİM (M²)": f"{ortalama_birim_m2:,.2f}",
+            "TAHMİNİ BODRUM (M²)": f"{sim_bodrum:,.2f}",
+            "BAHÇE TERKİ (M²)": f"{bahce_terki:,.2f}",
         })
 
     st.dataframe(pd.DataFrame(mimari_rows), use_container_width=True)
+
+    # --- MİMARİ ÖZET TOPLAM TABLOSU ---
+    st.markdown(
+        "<div style='margin-top: 20px; margin-bottom: 8px;'><h5"
+        " style='color: #1e3a8a; margin: 0; font-size: 15px;'>📋 Toplu Mimari"
+        " Potansiyel ve Senaryo Özet Tablosu</h5></div>",
+        unsafe_allow_html=True,
+    )
+
+    overall_avg_unit = (
+        mimari_sum_brut / mimari_sum_adet if mimari_sum_adet > 0 else 0.0
+    )
+    mimari_summary_df = pd.DataFrame([{
+        "TOPLAM PROJE ADEDİ": f"{len(mimari_rows)} Bölüm / Parsel",
+        "TOPLAM BAĞIMSIZ BÖLÜM": f"{mimari_sum_adet} Adet",
+        "TOPLAM İNŞAAT ALANI (BRÜT M²)": f"{mimari_sum_brut:,.2f}",
+        "ORTALAMA BAĞIMSIZ BÖLÜM (M²)": f"{overall_avg_unit:,.2f}",
+        "TOPLAM BODRUM ALANI (M²)": f"{mimari_sum_bodrum:,.2f}",
+        "TOPLAM BAHÇE TERKİ (M²)": f"{mimari_sum_bahce_terk:,.2f}",
+    }])
+
+    st.dataframe(mimari_summary_df, use_container_width=True)
 
   with tab3:
     st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılım Matrisi")
