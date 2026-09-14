@@ -775,9 +775,10 @@ if selected_keys:
   with tab1:
     st.subheader("📊 Seçilen Parseller & İnşaat Alanı")
     st.markdown(
-        "<p style='color: #64748b; font-size: 13px;'>Her parsel"
-        " <b>yalnızca tek satırda</b> listelenmiş olup, imar hesaplamaları"
-        " toplam arsa alanı üzerinden güncellenmiştir.</p>",
+        "<p style='color: #64748b; font-size: 13px;'>Fonksiyon sütunundaki"
+        " m² bilgisi fiili olarak kullanılacak net alanı ifade eder; imar"
+        " hesaplamaları ise parselin toplam alanı üzerinden"
+        " yapılmıştır.</p>",
         unsafe_allow_html=True,
     )
 
@@ -798,7 +799,7 @@ if selected_keys:
           continue
 
         kaks = f["kaks"]
-        # Hesaba alınan alan parselin toplam alanına göre (terk yapıldıysa tamamı, yapılmadıysa %70'i) hesaplanır
+        # İmar hesabı için baz alınan alan
         hesaba_alinan_m2 = (
             toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
         )
@@ -806,9 +807,10 @@ if selected_keys:
         if brut_insaat_arsa <= 0:
           continue
 
+        # Net alan: İmar hesaba alınan alan üzerinden bahçe/terk düşüldükten sonra kalan fiili net kullanım alanı
         net_alan_m2 = hesaba_alinan_m2 * (1.0 - (bahce_terk_orani / 100.0))
 
-        # Nitelik durumu: Terk yapıldıysa "Arsa", yapılmadıysa "Bahçe" / Terk Yapılmamış Arsa
+        # Nitelik durumu: Terk yapıldıysa "Arsa", yapılmadıysa "Bahçe"
         nitelik_str = "Arsa" if is_terkli else "Bahçe"
 
         table_rows.append({
@@ -819,7 +821,9 @@ if selected_keys:
             "ALAN (M²)": f"{toplam_arsa_m2:,.2f}",
             "HESABA ALINAN (M²)": f"{hesaba_alinan_m2:,.2f}",
             "NET ALAN (M²)": f"{net_alan_m2:,.2f}",
-            "FONKSİYON": fonk_name,
+            "FONKSİYON (FİİLİ NET M²)": (
+                f"{net_alan_m2:,.2f} m² ({fonk_name})"
+            ),
             "KAKS": f"{kaks:.2f}",
             "İNŞAAT ALANI (BRÜT M²)": f"{brut_insaat_arsa:,.2f}",
         })
