@@ -912,6 +912,9 @@ if selected_keys:
       toplam_arsa_m2 = p["toplam_alan"]
       is_terkli = p["terk_yapilmis_mi"]
 
+      # DÜZELTME: Birim başına arsa payı hesabı için imar fonksiyon/net arsa alanı baz alındı (Terkli ise toplam, terksiz ise %70)
+      net_arsa_m2 = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
+
       for f in p["fonksiyonlar"]:
         fonk_name = f["fonksiyon_adi"]
         if any(
@@ -939,8 +942,9 @@ if selected_keys:
         fonk_adet = conf.get("adet", 1)
         parsel_adet = max(1, round(fonk_adet * parsel_oran))
 
+        # DÜZELTME: Net arsa alanı üzerinden pay dağılımı
         arsa_payi_birim = (
-            (toplam_arsa_m2 / parsel_adet) if parsel_adet > 0 else toplam_arsa_m2
+            (net_arsa_m2 / parsel_adet) if parsel_adet > 0 else net_arsa_m2
         )
         ortalama_brut_birim = (
             (brut_insaat / parsel_adet) if parsel_adet > 0 else brut_insaat
