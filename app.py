@@ -920,11 +920,9 @@ if selected_keys:
     st.subheader("🏛️ Parsel Bazlı Mimari ve Yerleşim Fizibilitesi")
     st.markdown(
         "<p style='color: #64748b; font-size: 13px;'>Nitelik bilgileri"
-        " <b>Arsa</b> ve <b>Bahçe</b> olarak ayrıştırılmış; bu niteliklerin"
-        " imar durumlarına göre <b>Terk Yapılmış</b> veya <b>Terk Yapılmamış</b>"
-        " statüleri tabloda detaylandırılmıştır. İmar hesaplamalarında"
-        " <b>HESABA ALINAN (M²)</b>, bahçe hesaplamalarında ise <b>NET ALAN"
-        " (M²)</b> baz alınmıştır.</p>",
+        " <b>Arsa</b> ve <b>Bahçe</b> olarak ayrıştırılmış; terk durumlarına"
+        " göre <b>Terk Yapılmış</b> veya <b>Terk Yapılmamış</b> olarak"
+        " düzenlenmiştir.</p>",
         unsafe_allow_html=True,
     )
 
@@ -956,6 +954,7 @@ if selected_keys:
         hesaba_alinan_arsa = (
             toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
         )
+        net_alan_arsa = hesaba_alinan_arsa
         brut_insaat_arsa = hesaba_alinan_arsa * kaks * emsal_artis_orani
 
         mimari_table_rows.append({
@@ -965,7 +964,7 @@ if selected_keys:
             "NİTELİK": nitelik_arsa,
             "ALAN (M²)": f"{toplam_arsa_m2:,.2f}",
             "HESABA ALINAN (M²)": f"{hesaba_alinan_arsa:,.2f}",
-            "NET ALAN (M²)": f"{hesaba_alinan_arsa:,.2f}",
+            "NET ALAN (M²)": f"{net_alan_arsa:,.2f}",
             "FONKSİYON": fonk_name,
             "KAKS": f"{kaks:.2f}",
             "İNŞAAT ALANI (BRÜT M²)": f"{brut_insaat_arsa:,.2f}",
@@ -977,8 +976,8 @@ if selected_keys:
             if is_terkli
             else "Bahçe (Terk Yapılmamış)"
         )
-        bahce_net_alan = fonksiyon_giren_m2 * (1.0 - (bahce_terk_orani / 100.0))
         bahce_hesaba_alinan = fonksiyon_giren_m2
+        bahce_net_alan = fonksiyon_giren_m2 * (1.0 - (bahce_terk_orani / 100.0))
 
         mimari_table_rows.append({
             "MAHALLE": mahalle,
