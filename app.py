@@ -595,11 +595,8 @@ if selected_keys:
       ):
         continue
 
-      fonk_giren_m2 = (
-          f["giren_m2"] if f["giren_m2"] > 0 else toplam_arsa_m2
-      )
-      net_arsa_m2 = fonk_giren_m2 if is_terkli else fonk_giren_m2 * 0.70
-      brut_insaat = net_arsa_m2 * f["kaks"] * emsal_artis_orani
+      hesaba_alinan_m2 = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
+      brut_insaat = hesaba_alinan_m2 * f["kaks"] * emsal_artis_orani
 
       temp_function_bruts[fonk_adi] = (
           temp_function_bruts.get(fonk_adi, 0.0) + brut_insaat
@@ -728,20 +725,15 @@ if selected_keys:
 
       conf = function_configs.get(fonk_adi)
       kaks = f["kaks"]
-      fonksiyon_giren_m2 = (
-          f["giren_m2"] if f["giren_m2"] > 0 else toplam_arsa_m2
-      )
 
-      net_arsa_m2 = (
-          fonksiyon_giren_m2 if is_terkli else fonksiyon_giren_m2 * 0.70
-      )
-      brut_insaat = net_arsa_m2 * kaks * emsal_artis_orani
+      hesaba_alinan_m2 = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
+      brut_insaat = hesaba_alinan_m2 * kaks * emsal_artis_orani
       if brut_insaat <= 0:
         continue
 
       total_yasal_brut_insaat += brut_insaat
 
-      bahce_terki = fonksiyon_giren_m2 * (bahce_terk_orani / 100.0)
+      bahce_terki = hesaba_alinan_m2 * (bahce_terk_orani / 100.0)
       total_bahce_alani_terki += bahce_terki
 
       tekil_havuz_payi = 30.0 if "Özel" in conf["havuz_mod"] else 0.0
@@ -757,15 +749,6 @@ if selected_keys:
 
       total_ciro_usd += fonk_ciro
       total_maliyet_usd += fonk_maliyet_tot
-
-      function_results_detail.append({
-          "Parsel": key,
-          "Fonksiyon": fonk_adi,
-          "Brüt İnşaat (m²)": brut_insaat,
-          "Bahçe Terki (m²)": bahce_terki,
-          "Tahmini Ciro ($)": fonk_ciro,
-          "Tahmini Maliyet ($)": fonk_maliyet_tot,
-      })
 
   total_maliyet_usd += arsa_bonus_usd
   arsa_sahibi_payi_usd = (
@@ -793,8 +776,8 @@ if selected_keys:
     st.subheader("📊 Seçilen Parseller & İnşaat Alanı")
     st.markdown(
         "<p style='color: #64748b; font-size: 13px;'>Her parsel"
-        " <b>yalnızca tek satırda</b> listelenmiş olup, inşaat alanı sıfır"
-        " olanlar filtrelenmiştir.</p>",
+        " <b>yalnızca tek satırda</b> listelenmiş olup, imar hesaplamaları"
+        " toplam arsa alanı üzerinden güncellenmiştir.</p>",
         unsafe_allow_html=True,
     )
 
@@ -815,23 +798,18 @@ if selected_keys:
           continue
 
         kaks = f["kaks"]
-        fonk_giren_m2 = (
-            f["giren_m2"] if f["giren_m2"] > 0 else toplam_arsa_m2
-        )
-
+        # Hesaba alınan alan parselin toplam alanına göre (terk yapıldıysa tamamı, yapılmadıysa %70'i) hesaplanır
         hesaba_alinan_m2 = (
-            fonk_giren_m2 if is_terkli else fonk_giren_m2 * 0.70
+            toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
         )
         brut_insaat_arsa = hesaba_alinan_m2 * kaks * emsal_artis_orani
         if brut_insaat_arsa <= 0:
           continue
 
         net_alan_m2 = hesaba_alinan_m2 * (1.0 - (bahce_terk_orani / 100.0))
-        nitelik_str = (
-            "Arsa (Terk Yapılmış)"
-            if is_terkli
-            else "Arsa (Terk Yapılmamış)"
-        )
+
+        # Nitelik durumu: Terk yapıldıysa "Arsa", yapılmadıysa "Bahçe" / Terk Yapılmamış Arsa
+        nitelik_str = "Arsa" if is_terkli else "Bahçe"
 
         table_rows.append({
             "MAHALLE": mahalle,
@@ -887,11 +865,8 @@ if selected_keys:
             },
         )
         kaks = f["kaks"]
-        fonk_giren_m2 = (
-            f["giren_m2"] if f["giren_m2"] > 0 else toplam_arsa_m2
-        )
         hesaba_alinan_m2 = (
-            fonk_giren_m2 if is_terkli else fonk_giren_m2 * 0.70
+            toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
         )
         brut_insaat = hesaba_alinan_m2 * kaks * emsal_artis_orani
         if brut_insaat <= 0:
@@ -973,7 +948,7 @@ if selected_keys:
             <table class="data-table">
                 <tr><td>Lokasyon / Mahalle</td><td style="text-align: right; font-weight: bold;">{first_mahalle} ({len(active_parcel_db)} Parsel)</td></tr>
                 <tr><td>Toplam Brüt İnşaat Alanı (Net Alan Üzerinden)</td><td style="text-align: right; font-weight: bold; color: #1e3a8a;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
-                <tr><td>Toplam Bahçe Alanı Terki (Fonksiyon Alanı Üzerinden)</td><td style="text-align: right; font-weight: bold;">{total_bahce_alani_terki:,.2f} m²</td></tr>
+                <tr><td>Toplam Bahçe Alanı Terki</td><td style="text-align: right; font-weight: bold;">{total_bahce_alani_terki:,.2f} m²</td></tr>
             </table>
             <div class="section-title">2. Fonksiyon Bazlı Finansal Fizibilite Özeti</div>
             <table class="data-table">
