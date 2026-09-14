@@ -490,6 +490,44 @@ if selected_keys:
       "Bahçe Alanı Terk Oranı (%)", 0, 80, 40, step=1
   )
 
+  # --- İMAR NİTELİĞİNE GÖRE AKILLI PROJE TİPİ KISITLAMASI ---
+  # Seçilen parsellerin fonksiyon metinlerini tarayarak uygun proje tiplerini belirliyoruz
+  combined_fonk_text = " ".join([
+      f["fonksiyon_adi"].upper()
+      for p in active_parcel_db.values()
+      for f in p["fonksiyonlar"]
+  ])
+
+  if (
+      "TİCARET" in combined_fonk_text
+      or "TİCARİ" in combined_fonk_text
+      or "TICARET" in combined_fonk_text
+  ):
+    allowed_project_types = [
+        "Ticari / Ofis Kompleksi",
+        "Karma Proje (Konut + Ticari)",
+    ]
+    default_p_idx = 0
+  elif (
+      "VİLLA" in combined_fonk_text
+      or "AYRIK" in combined_fonk_text
+      or "İKİZ" in combined_fonk_text
+  ):
+    allowed_project_types = [
+        "Lüks Villa / Müstakil Proje",
+        "Üst Segment Konut / Rezidans",
+    ]
+    default_p_idx = 0
+  else:
+    # Genel konut veya arsa imarları için tüm mantıksal tipler
+    allowed_project_types = [
+        "Standart Konut / Apartman",
+        "Üst Segment Konut / Rezidans",
+        "Lüks Villa / Müstakil Proje",
+        "Karma Proje (Konut + Ticari)",
+    ]
+    default_p_idx = 0
+
   # =========================================================================
   # TEK BİRLEŞTİRİLMİŞ, KOMPAKT VE KURUMSAL PARAMETRE KARTI
   # =========================================================================
@@ -500,14 +538,13 @@ if selected_keys:
             <span style="font-size: 18px; margin-right: 8px;">⚙️</span>
             <div>
                 <h3 style="color: #0f172a; margin: 0; font-size: 15px; font-weight: 700;">Gelişmiş Fizibilite ve Proje Parametreleri</h3>
-                <p style="color: #64748b; margin: 0; font-size: 11px;">İş modelini, ortaklık oranlarını ve proje tipine dayalı optimizasyonları yönetin.</p>
+                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonuna dayalı kısıtlanmış proje tipleri, havuz senaryoları ve iş modelleri.</p>
             </div>
         </div>
     """,
       unsafe_allow_html=True,
   )
 
-  # Satır 1: İş Modeli, Proje Tipi ve Havuz Modu yan yana
   col_m1, col_m2, col_m3 = st.columns(3)
   with col_m1:
     is_modeli = st.selectbox(
@@ -519,36 +556,32 @@ if selected_keys:
         key="global_is_modeli",
     )
 
-  # TÜM PROJE TİPLERİ ARTIK SERBESTÇE SEÇİLEBİLİR (Kısıt Kaldırıldı)
-  universal_project_types = [
-      "Lüks Villa / Müstakil Proje",
-      "Üst Segment Konut / Rezidans",
-      "Standart Konut / Apartman",
-      "Ticari / Ofis Kompleksi",
-      "Karma Proje (Konut + Ticari)",
-  ]
-
   with col_m2:
     toplu_p_tipi = st.selectbox(
-        "Toplu Proje Tipi Seçimi",
-        options=universal_project_types,
+        "Toplu Proje Tipi Seçimi (İmar Kısıtlı)",
+        options=allowed_project_types,
+        index=min(default_p_idx, len(allowed_project_types) - 1),
         key="toplu_p_tipi_master",
     )
 
-  # PROJE TİPİNE GÖRE DİNAMİK HAVUZ SEÇENEKLERİ
+  # PROJE TİPİNE VE VİLLA SEÇENEKLERİNE GÖRE DİNAMİK HAVUZ MODLARI
   if "Villa" in toplu_p_tipi:
     available_pool_options = [
-        "Müstakil Özel Havuz",
-        "Havuz İptal",
-    ]  # Villalar için ortak havuz yerine müstakil seçenek
+        "Müstakil Özel Havuzlu Villa Projesi",
+        "Ortak Havuzlu Villa Sitesi Konsepti",
+        "Havuz İptal / Yapılmayacak",
+    ]
   elif "Ticari" in toplu_p_tipi:
-    available_pool_options = ["Havuz İptal"]  # Ticari projelerde havuz olmaz
+    available_pool_options = ["Havuz İptal / Yapılmayacak"]
   else:
-    available_pool_options = ["Havuz İptal", "Özel / Ortak Havuzlu"]
+    available_pool_options = [
+        "Standart Ortak Havuzlu Proje",
+        "Havuz İptal / Yapılmayacak",
+    ]
 
   with col_m3:
     toplu_havuz = st.selectbox(
-        "Toplu Havuz Modu",
+        "Toplu Havuz ve Site Konsepti",
         options=available_pool_options,
         key="toplu_havuz_master",
     )
@@ -586,7 +619,7 @@ if selected_keys:
       else:
         arsa_bonus_usd = raw_bonus_val
 
-  # Slider Alanı ve Proje Tipine Göre Ekstra Özellikler / Alan Optimizasyonu
+  # Slider Alanı ve Proje Tipine Göre Alan Optimizasyonu
   if "Villa" in toplu_p_tipi:
     min_v, max_v, def_v, step_v = 180, 550, 250, 10
     slider_label = (
@@ -620,9 +653,9 @@ if selected_keys:
 
   st.markdown(
       f"<div style='font-size: 12px; color: #334155; margin-top: 10px; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0;'>"
-      f"💡 <b>{toplu_p_tipi}</b> piyasa verileri: Maliyet:"
+      f"💡 <b>{toplu_p_tipi} ({toplu_havuz})</b> piyasa verileri: Maliyet:"
       f" <b>${auto_maliyet:,.2f}/m²</b> | Satış Fiyatı:"
-      f" <b>${auto_satis:,.2f}/m²</b> | Hedef Ortalama Alan: <b>{global_hedef_birim_m2}"
+      f" <b>${auto_satis:,.2f}/m²</b> | Hedef Alan: <b>{global_hedef_birim_m2}"
       " m²</b>"
       f"</div>",
       unsafe_allow_html=True,
@@ -697,8 +730,9 @@ if selected_keys:
       bahce_terki = hesaba_alinan_m2 * (bahce_terk_orani / 100.0)
       total_bahce_alani_terki += bahce_terki
 
+      # Müstakil havuzda her villaya ek havuz maliyeti/payı düşülür, ortak havuzda site geneline yansıtılır
       tekil_havuz_payi = (
-          30.0 if ("Özel" in conf["havuz_mod"] or "Müstakil" in conf["havuz_mod"]) else 0.0
+          35.0 if "Müstakil Özel Havuzlu" in conf["havuz_mod"] else 0.0
       )
       sim_bodrum = (
           brut_insaat - (tekil_havuz_payi * conf["adet"])
@@ -835,7 +869,7 @@ if selected_keys:
             brut_insaat / konut_adeti if konut_adeti > 0 else brut_insaat
         )
         tekil_havuz_payi = (
-            30.0 if ("Özel" in conf["havuz_mod"] or "Müstakil" in conf["havuz_mod"]) else 0.0
+            35.0 if "Müstakil Özel Havuzlu" in conf["havuz_mod"] else 0.0
         )
         sim_bodrum = (
             brut_insaat - (tekil_havuz_payi * konut_adeti)
@@ -849,7 +883,7 @@ if selected_keys:
             "MAHALLE": mahalle,
             "ADA/PARSEL": f"{ada}/{parsel}",
             "FONKSİYON": fonk_name,
-            "PROJE TİPİ": conf["proje_tipi"],
+            "PROJE TİPİ": f"{conf['proje_tipi']} ({conf['havuz_mod']})",
             "BRÜT İNŞAAT (M²)": f"{brut_insaat:,.2f}",
             "ADET": konut_adeti,
             "BİRİM BRÜT (M²)": f"{birim_m2:,.2f}",
@@ -915,7 +949,8 @@ if selected_keys:
             <div class="section-title">1. Proje ve Lokasyon Künyesi (Toplu Parsel)</div>
             <table class="data-table">
                 <tr><td>Lokasyon / Mahalle</td><td style="text-align: right; font-weight: bold;">{first_mahalle} ({len(active_parcel_db)} Parsel)</td></tr>
-                <tr><td>Toplam Brüt İnşaat Alanı</td><td style="text-align: right; font-weight: bold; color: #1e3a8a;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
+                <tr><td>Seçilen Proje Tipi & Konsept</td><td style="text-align: right; font-weight: bold; color: #1e3a8a;">{toplu_p_tipi} - {toplu_havuz}</td></tr>
+                <tr><td>Toplam Brüt İnşaat Alanı</td><td style="text-align: right; font-weight: bold;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
                 <tr><td>Toplam Bahçe Alanı Terki</td><td style="text-align: right; font-weight: bold;">{total_bahce_alani_terki:,.2f} m²</td></tr>
             </table>
             <div class="section-title">2. Fonksiyon Bazlı Finansal Fizibilite Özeti</div>
