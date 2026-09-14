@@ -189,20 +189,23 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
         return False
         
     terkli_kaliplar = [
-        "TERKİ YAPILMIŞTIR", "TERKİ YAPILMIŞ", "TERK YAPILMIŞTIR", "KAMUYA TERK EDİLMİŞTİR", "DOP TERKİ YAPILMAMIŞTIR"
+        "TERKİ YAPILMIŞTIR", "TERKİ YAPILMIŞ", "TERK YAPILMIŞTIR", "KAMUYA TERK EDİLMİŞTİR"
     ]
     if any(k in text_upper for k in terkli_kaliplar):
         return True
         
     toplam_fonksiyon_m2 = sum(f["giren_m2"] for f in fonksiyonlar if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]))
     
+    # Kullanıcı kuralı: Eğer fonksiyon alanı ile brüt parsel alanı eşit ise terk yapılmamıştır.
     if toplam_alan > 0 and toplam_fonksiyon_m2 > 0:
-        if abs(toplam_alan - toplam_fonksiyon_m2) < 1.0 or (toplam_fonksiyon_m2 / toplam_alan) >= 0.99:
+        if abs(toplam_alan - toplam_fonksiyon_m2) < 0.5 or (toplam_fonksiyon_m2 / toplam_alan) >= 0.995:
+            return False
+        elif toplam_fonksiyon_m2 < toplam_alan * 0.95:
             return True
             
     return False
 
-# --- GELİŞTİRİLMİŞ İMAR PDF AYRIŞTIRMA MOTORU (GÜÇLENDİRİLMİŞ KAKS & EMSAL ALGILAMA) ---
+# --- GELİŞTİRİLMİŞ İMAR PDF AYRIŞTIRMA MOTORU (GÜÇLENDİRİLMİŞ KAKS & EMSAL MANTIĞI) ---
 def parse_imar_pdf(uploaded_file):
     parcel_data = {
         "filename": uploaded_file.name,
@@ -242,7 +245,7 @@ def parse_imar_pdf(uploaded_file):
                                         elif "Alan" in head and val:
                                             parcel_data["toplam_alan"] = parse_tr_float(val)
 
-                    # Tablo satırlarını tarayarak çoklu fonksiyon, KAKS/EMSAL ve m² değerlerini yakala
+                    # Tabloları satır satır tarayıp fonksiyon ve KAKS/EMSAL eşleştirmesi yapalım
                     r = 0
                     while r < len(table):
                         row = table[r]
@@ -279,8 +282,8 @@ def parse_imar_pdf(uploaded_file):
                             cur_kaks = 0.0
                             cur_giren_m2 = 0.0
                             
-                            # Güçlendirilmiş KAKS/EMSAL tarama ve alt hücre eşleme mantığı
-                            for sub_r in range(r, min(r + 8, len(table))):
+                            # KAKS / EMSAL etiketlerini çok daha esnek arayalım
+                            for sub_r in range(r, min(r + 6, len(table))):
                                 sub_cells = [str(c).strip().replace("\n", " ") if c is not None else "" for c in table[sub_r]]
                                 sub_row_text = " ".join(sub_cells).upper()
                                 
@@ -291,20 +294,18 @@ def parse_imar_pdf(uploaded_file):
                                             val_t = parse_tr_float(sub_cells[sc_idx+1])
                                             if val_t > 0: cur_taks = val_t
                                             
-                                    # KAKS / EMSAL etiketlerini çok yönlü yakala
                                     elif "KAKS" in sc_up or "EMSAL" in sc_up or sc_up in ["E", "K.K.S.", "K. K. S."]:
                                         if sc_idx + 1 < len(sub_cells):
                                             val_k = parse_tr_float(sub_cells[sc_idx+1])
                                             if val_k > 0: cur_kaks = val_k
                                         if cur_kaks == 0.0:
-                                            # Aynı satır içinde geçen alternatif sayıları kontrol et
                                             nums_in_row = re.findall(r'\b\d+[\.,]\d+\b', sub_row_text)
                                             for num_s in nums_in_row:
                                                 fv = parse_tr_float(num_s)
                                                 if 0.05 <= fv <= 10.0:
                                                     cur_kaks = fv
                                                     break
-                                            
+                                                    
                                     if "ALANA GİREN" in sc_up or "GİREN" in sc_up:
                                         m2_match = re.search(r'([\d\.,]+)\s*m²', sub_row_text, re.IGNORECASE)
                                         if not m2_match:
@@ -316,9 +317,9 @@ def parse_imar_pdf(uploaded_file):
                                             else:
                                                 cur_giren_m2 = parse_tr_float(m2_match.group(1))
                             
-                            # Eğer tabloda satır bazlı KAKS bulunamadıysa genel metin içi KAKS / EMSAL kalıplarını tara
+                            # Eğer tabloda bulunamadıysa doğrudan satır içinde Emsal / Kaks ara
                             if cur_kaks == 0.0:
-                                general_kaks_match = re.search(r'(?:KAKS|EMSAL|E)\s*[:=]\s*([\d\.,]+)', row_text)
+                                general_kaks_match = re.search(r'(?:KAKS|EMSAL|E)\s*[:=]?\s*([\d\.,]+)', row_text)
                                 if general_kaks_match:
                                     cur_kaks = parse_tr_float(general_kaks_match.group(1))
 
@@ -335,11 +336,20 @@ def parse_imar_pdf(uploaded_file):
                                 parcel_data["fonksiyonlar"].append({
                                     "fonksiyon_adi": fonk_name,
                                     "taks": cur_taks if cur_taks > 0 else 0.30,
-                                    "kaks": cur_kaks if cur_kaks > 0 else 0.40, # Eğer hâlâ 0 ise güvenli varsayılan 0.40
+                                    "kaks": cur_kaks if cur_kaks > 0 else 0.0,
                                     "giren_m2": cur_giren_m2
                                 })
                         r += 1
                                     
+        # Belge genelinde metin bazlı KAKS/EMSAL taraması (Eğer tablolardan yakalanamadıysa)
+        global_kaks_matches = re.findall(r'(?:KAKS|EMSAL|E)\s*[:=]?\s*([\d\.,]+)', full_text, re.IGNORECASE)
+        extracted_global_kaks = 0.0
+        for gk in global_kaks_matches:
+            val_g = parse_tr_float(gk)
+            if 0.05 <= val_g <= 5.0:
+                extracted_global_kaks = val_g
+                break
+
         if parcel_data["mahalle"] == "BİLİNMİYOR" or parcel_data["ada"] == "0":
             m_m = re.search(r'Mahalle\s*\|\s*([A-ZÇĞİÖŞÜa-zçğıöşü]+)', full_text)
             a_m = re.search(r'Ada\s*\|\s*(\d+)', full_text)
@@ -354,43 +364,29 @@ def parse_imar_pdf(uploaded_file):
                 parcel_data["parsel"] = str(p_m.group(1)).strip()
             if al_m and parcel_data["toplam_alan"] == 0.0:
                 parcel_data["toplam_alan"] = parse_tr_float(al_m.group(1))
-                
-        # Belge genelinde Emsal/Kaks regex taraması ile eksik kalan KAKS değerlerini tamamlama
-        if not parcel_data["fonksiyonlar"] or any(f["kaks"] == 0.40 for f in parcel_data["fonksiyonlar"]):
-            global_kaks_search = re.search(r'(?:KAKS|EMSAL|E)\s*[:=]\s*([\d\.,]+)', full_text, re.IGNORECASE)
-            extracted_global_kaks = parse_tr_float(global_kaks_search.group(1)) if global_kaks_search else 0.0
-            
-            for candidate in ["TİCARET VE KONUT ALANI", "TİCARET + KONUT", "TİCARET ALANI", "GELİŞME KONUT ALANI", "VİLLA ALANI", "TURİZM ALANI", "KONUT ALANI"]:
-                if candidate in full_text.upper():
-                    matched_f = next((f for f in parcel_data["fonksiyonlar"] if candidate in f["fonksiyon_adi"]), None)
-                    if matched_f:
-                        if matched_f["kaks"] <= 0.40 and extracted_global_kaks > 0:
-                            matched_f["kaks"] = extracted_global_kaks
-                    else:
-                        parcel_data["fonksiyonlar"].append({
-                            "fonksiyon_adi": candidate,
-                            "taks": 0.30,
-                            "kaks": extracted_global_kaks if extracted_global_kaks > 0 else 0.40,
-                            "giren_m2": 0.0
-                        })
-                    
+
+        # Eğer fonksiyon bulunamadıysa veya KAKS değeri 0 kaldıysa genel metin verileriyle doldur
         if not parcel_data["fonksiyonlar"]:
-            global_kaks_search = re.search(r'(?:KAKS|EMSAL|E)\s*[:=]\s*([\d\.,]+)', full_text, re.IGNORECASE)
-            def_k = parse_tr_float(global_kaks_search.group(1)) if global_kaks_search else 0.40
+            def_k = extracted_global_kaks if extracted_global_kaks > 0 else 0.40
             parcel_data["fonksiyonlar"].append({
                 "fonksiyon_adi": "KONUT ALANI",
                 "taks": 0.30,
-                "kaks": def_k if def_k > 0 else 0.40,
-                "giren_m2": 0.0
+                "kaks": def_k,
+                "giren_m2": parcel_data["toplam_alan"]
             })
-                
-        num_fonks = len(parcel_data["fonksiyonlar"])
-        if num_fonks > 0:
+        else:
             for f in parcel_data["fonksiyonlar"]:
-                if f["giren_m2"] <= 0:
+                if f["kaks"] <= 0.0:
+                    f["kaks"] = extracted_global_kaks if extracted_global_kaks > 0 else 0.40
+                if f["giren_m2"] <= 0.0:
+                    f["giren_m2"] = parcel_data["toplam_alan"]
+
+        num_fonks = len(parcel_data["fonksiyonlar"])
+        if num_fonks > 0 and parcel_data["toplam_alan"] > 0:
+            total_f_m2 = sum(f["giren_m2"] for f in parcel_data["fonksiyonlar"])
+            if total_f_m2 <= 0:
+                for f in parcel_data["fonksiyonlar"]:
                     f["giren_m2"] = parcel_data["toplam_alan"] / num_fonks
-                if f["kaks"] <= 0:
-                    f["kaks"] = 0.40
                 
         parcel_data["terk_yapilmis_mi"] = detect_terk_status(full_text, parcel_data["toplam_alan"], parcel_data["fonksiyonlar"])
     except Exception as e:
@@ -524,7 +520,6 @@ if selected_keys:
     
     for key, p in active_parcel_db.items():
         toplam_arsa_m2 = p["toplam_alan"]
-        is_terkli = p["terk_yapilmis_mi"]
         fonks_list = p["fonksiyonlar"]
         
         parsel_hesap_arsasi = toplam_arsa_m2
@@ -601,7 +596,6 @@ if selected_keys:
     function_configs = {}
     for key, p in active_parcel_db.items():
         toplam_arsa_m2 = p["toplam_alan"]
-        is_terkli = p["terk_yapilmis_mi"]
         fonks_list = p["fonksiyonlar"]
         
         parsel_hesap_arsasi = toplam_arsa_m2
@@ -650,7 +644,6 @@ if selected_keys:
 
     for key, p in active_parcel_db.items():
         toplam_arsa_m2 = p["toplam_alan"]
-        is_terkli = p["terk_yapilmis_mi"]
         fonks_list = p["fonksiyonlar"]
         
         parsel_hesap_arsasi = toplam_arsa_m2
@@ -753,6 +746,7 @@ if selected_keys:
                     "MAHALLE": mahalle,
                     "ADA": ada,
                     "PARSEL": parsel,
+                    "TERK DURUMU": "Yapılmış" if is_terkli else "Yapılmamış",
                     "FONKSİYON / NİTELİK": fonk_name,
                     "ARSA PAYI (M²)": f"{toplam_arsa_m2 * fonk_alan_orani:,.2f}",
                     "HESABA ALINAN (M²)": f"{hesaba_alinan_m2:,.2f}",
@@ -826,6 +820,7 @@ if selected_keys:
                 mimari_rows.append({
                     "MAHALLE": mahalle,
                     "ADA/PARSEL": f"{ada}/{parsel}",
+                    "TERK": "Yapılmış" if is_terkli else "Yapılmamış",
                     "FONKSİYON / NİTELİK": fonk_name,
                     "PROJE TİPİ": f"{conf['proje_tipi']} ({conf['havuz_mod']})",
                     "BRÜT İNŞAAT (M²)": f"{brut_insaat:,.2f}",
@@ -930,7 +925,7 @@ if selected_keys:
                     "Ada": p_val.get("ada", "-"),
                     "Parsel": p_val.get("parsel", "-"),
                     "Toplam Alan (m²)": f"{p_val.get('toplam_alan', 0.0):,.2f}",
-                    "Terk Durumu": "Yapılmış" if p_val.get("terk_yapilmis_mi") else "Yapılmamış / Belirsiz",
+                    "Terk Durumu": "Yapılmış" if p_val.get("terk_yapilmis_mi") else "Yapılmamış",
                     "Fonksiyon Sayısı": len(p_val.get("fonksiyonlar", []))
                 })
             
