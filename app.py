@@ -385,7 +385,6 @@ def parse_imar_pdf(uploaded_file):
           "giren_m2": parcel_data["toplam_alan"],
       })
 
-    # Eğer fonksiyonların giren_m2 toplamı eksik/sıfır kalmışsa toplam alana eşitle
     toplam_f_m2 = sum(f["giren_m2"] for f in parcel_data["fonksiyonlar"])
     if toplam_f_m2 <= 0 and parcel_data["toplam_alan"] > 0:
       for f in parcel_data["fonksiyonlar"]:
@@ -502,21 +501,28 @@ if selected_keys:
       for f in p["fonksiyonlar"]
   ])
 
-  if (
-      "TİCARET" in combined_fonk_text
-      or "TİCARİ" in combined_fonk_text
-      or "TICARET" in combined_fonk_text
-  ):
+  # İmar fonksiyonuna göre akıllı proje tipi kısıtlamaları
+  has_ticaret = any(
+      x in combined_fonk_text for x in ["TİCARET", "TİCARİ", "TICARET"]
+  )
+  has_konut = any(x in combined_fonk_text for x in ["KONUT", "MESKEN"])
+  has_villa = any(
+      x in combined_fonk_text for x in ["VİLLA", "AYRIK", "İKİZ"]
+  )
+
+  if has_ticaret and has_konut:
+    allowed_project_types = [
+        "Karma Proje (Konut + Ticari)",
+        "Ticari / Ofis Kompleksi",
+    ]
+    default_p_idx = 0
+  elif has_ticaret:
     allowed_project_types = [
         "Ticari / Ofis Kompleksi",
         "Karma Proje (Konut + Ticari)",
     ]
     default_p_idx = 0
-  elif (
-      "VİLLA" in combined_fonk_text
-      or "AYRIK" in combined_fonk_text
-      or "İKİZ" in combined_fonk_text
-  ):
+  elif has_villa:
     allowed_project_types = [
         "Lüks Villa / Müstakil Proje",
         "Üst Segment Konut / Rezidans",
@@ -617,31 +623,61 @@ if selected_keys:
       else:
         arsa_bonus_usd = raw_bonus_val
 
-  if "Villa" in toplu_p_tipi:
-    min_v, max_v, def_v, step_v = 180, 550, 250, 10
-    slider_label = (
-        "📐 Villa Projeleri İçin Hedef Ortalama Villa Brüt Alanı (m²)"
-    )
-  elif "Ticari" in toplu_p_tipi:
-    min_v, max_v, def_v, step_v = 80, 1000, 200, 20
-    slider_label = (
-        "📐 Ticari / Ofis Kompleksi İçin Hedef Ortalama Bağımsız Bölüm Alanı"
-        " (m²)"
-    )
-  elif "Karma" in toplu_p_tipi:
-    min_v, max_v, def_v, step_v = 70, 300, 110, 5
-    slider_label = "📐 Karma Proje İçin Hedef Ortalama Bağımsız Bölüm Alanı (m²)"
-  else:
-    min_v, max_v, def_v, step_v = 60, 250, 95, 5
-    slider_label = "📐 Konut / Apartman İçin Hedef Ortalama Daire Brüt Alanı (m²)"
-
-  global_hedef_birim_m2 = st.slider(
-      slider_label,
-      min_value=min_v,
-      max_value=max_v,
-      value=def_v,
-      step=step_v,
+  # --- FONKSİYONA GÖRE KISITLAMALI HEDEF ORTALAMA ALAN SEÇİMİ (YENİ) ---
+  st.markdown(
+      "<div style='margin-top: 12px; font-weight: 700; color: #0f172a; font-size:"
+      " 13px;'>📐 Fonksiyon Bazlı Hedef Ortalama Bağımsız Bölüm Alanları"
+      " (m²)</div>",
+      unsafe_allow_html=True,
   )
+
+  # Aktif parsellerdeki benzersiz fonksiyonları topla
+  unique_active_functions = sorted(
+      list(
+          set([
+              f["fonksiyon_adi"]
+              for p in active_parcel_db.values()
+              for f in p["fonksiyonlar"]
+              if not any(
+                  x in f["fonksiyon_adi"].upper()
+                  for x in [
+                      "PARK",
+                      "TEKNİK ALTYAPI",
+                      "LİSE",
+                      "KÜLTÜREL",
+                      "ANAOKULU",
+                  ]
+              )
+          ])
+      )
+  )
+
+  function_target_sizes = {}
+  fn_cols = st.columns(
+      len(unique_active_functions) if unique_active_functions else 1
+  )
+
+  for idx, fonk_adi in enumerate(unique_active_functions):
+    f_upper = fonk_adi.upper()
+    if "TİCARET" in f_upper or "TİCARİ" in f_upper or "TICARET" in f_upper:
+      def_sz, min_sz, max_sz, step_sz = 150, 60, 800, 10
+      label_txt = f"🏢 {fonk_adi} Alanı Ort. Alan (m²)"
+    elif "VİLLA" in f_upper:
+      def_sz, min_sz, max_sz, step_sz = 250, 180, 550, 10
+      label_txt = f"🏡 {fonk_adi} Ort. Villa Alanı (m²)"
+    else:
+      def_sz, min_sz, max_sz, step_sz = 95, 55, 250, 5
+      label_txt = f"🏠 {fonk_adi} Ort. Daire Alanı (m²)"
+
+    with fn_cols[idx % len(fn_cols)]:
+      function_target_sizes[fonk_adi] = st.slider(
+          label_txt,
+          min_value=min_sz,
+          max_value=max_sz,
+          value=def_sz,
+          step=step_sz,
+          key=f"target_size_{fonk_adi}",
+      )
 
   first_mahalle = list(active_parcel_db.values())[0].get("mahalle", "VARSAYILAN")
   auto_satis, auto_maliyet, auto_bodrum_orani = get_realistic_market_pricing(
@@ -650,10 +686,9 @@ if selected_keys:
 
   st.markdown(
       f"<div style='font-size: 12px; color: #334155; margin-top: 10px; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0;'>"
-      f"💡 <b>{toplu_p_tipi} ({toplu_havuz})</b> piyasa verileri: Maliyet:"
+      f"💡 <b>{toplu_p_tipi} ({toplu_havuz})</b> piyasa maliyet referansı:"
       f" <b>${auto_maliyet:,.2f}/m²</b> | Satış Fiyatı:"
-      f" <b>${auto_satis:,.2f}/m²</b> | Hedef Alan: <b>{global_hedef_birim_m2}"
-      " m²</b>"
+      f" <b>${auto_satis:,.2f}/m²</b>"
       f"</div>",
       unsafe_allow_html=True,
   )
@@ -665,7 +700,6 @@ if selected_keys:
     toplam_arsa_m2 = p["toplam_alan"]
     is_terkli = p["terk_yapilmis_mi"]
 
-    # Parsel içindeki toplam fonksiyon giren m2'leri (oranlama tabanı için)
     toplam_f_m2 = sum(
         f["giren_m2"]
         for f in p["fonksiyonlar"]
@@ -685,21 +719,19 @@ if selected_keys:
       ):
         continue
 
-      # Nitelik/fonksiyon bazlı parsel içi pay oranı (Karma imarlar için doğru alan dağılımı)
       fonk_giren_m2 = f.get("giren_m2", toplam_arsa_m2)
       if fonk_giren_m2 <= 0:
         fonk_giren_m2 = toplam_arsa_m2
 
       fonk_alan_orani = fonk_giren_m2 / toplam_f_m2
-
-      # Terk durumuna göre net arsa payı
       parsel_net_arsa = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
       fonk_hesaba_alinan_m2 = parsel_net_arsa * fonk_alan_orani
-
-      # Fonksiyona ait net inşaat alanı (kendi KAKS değeri ile)
       fonk_toplam_brut_m2 = fonk_hesaba_alinan_m2 * f["kaks"] * emsal_artis_orani
 
-      effective_target_size = max(10.0, float(global_hedef_birim_m2))
+      # İlgili fonksiyon için atanan hedef birim alanı al (tanımlı değilse varsayılan 95m2)
+      effective_target_size = max(
+          10.0, float(function_target_sizes.get(fonk_name, 95.0))
+      )
       calculated_adet = round(fonk_toplam_brut_m2 / effective_target_size)
       def_adet = max(1, int(calculated_adet))
 
