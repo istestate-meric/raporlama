@@ -622,8 +622,10 @@ if selected_keys:
       else:
         arsa_bonus_usd = raw_bonus_val
 
-  # --- ÖNCELİKLE İNŞAAT ALANI OLAN VE GEÇERLİ FONKSİYONLARI TESPİT ET ---
+  # --- ÖNCELİKLE İNŞAAT ALANI OLAN VE GEÇERLİ FONKSİYONLARI VE BRÜT ALANLARINI HESAPLA ---
   valid_active_functions_with_area = []
+  function_total_brut_areas = {}
+
   for key, p in active_parcel_db.items():
     toplam_arsa_m2 = p["toplam_alan"]
     is_terkli = p["terk_yapilmis_mi"]
@@ -657,10 +659,12 @@ if selected_keys:
           fonk_hesaba_alinan_m2 * f["kaks"] * emsal_artis_orani
       )
 
-      # Sadece inşaat alanı 0'dan büyük olanları listeye ekle
+      # Sadece inşaat alanı 0'dan büyük olanları listeye ekle ve toplam brüt alanını topla
       if fonk_toplam_brut_m2 > 0:
         if fonk_name not in valid_active_functions_with_area:
           valid_active_functions_with_area.append(fonk_name)
+          function_total_brut_areas[fonk_name] = 0.0
+        function_total_brut_areas[fonk_name] += fonk_toplam_brut_m2
 
   # --- İNŞAAT ALANI OLAN FONKSİYONLAR İÇİN HEDEF ALAN SLIDER ALANI ---
   function_target_sizes = {}
@@ -675,15 +679,17 @@ if selected_keys:
 
     for idx, fonk_adi in enumerate(valid_active_functions_with_area):
       f_upper = fonk_adi.upper()
+      total_b_m2 = function_total_brut_areas.get(fonk_adi, 0.0)
+
       if "TİCARET" in f_upper or "TİCARİ" in f_upper or "TICARET" in f_upper:
         def_sz, min_sz, max_sz, step_sz = 150, 60, 800, 10
-        label_txt = f"🏢 {fonk_adi} Birim m²"
+        label_txt = f"🏢 {fonk_adi} ({total_b_m2:,.2f} m²)"
       elif "VİLLA" in f_upper:
         def_sz, min_sz, max_sz, step_sz = 250, 180, 550, 10
-        label_txt = f"🏡 {fonk_adi} Birim m²"
+        label_txt = f"🏡 {fonk_adi} ({total_b_m2:,.2f} m²)"
       else:
         def_sz, min_sz, max_sz, step_sz = 95, 55, 250, 5
-        label_txt = f"🏠 {fonk_adi} Birim m²"
+        label_txt = f"🏠 {fonk_adi} ({total_b_m2:,.2f} m²)"
 
       with fn_cols[idx % len(fn_cols)]:
         function_target_sizes[fonk_adi] = st.slider(
