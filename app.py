@@ -423,6 +423,8 @@ def get_allowed_project_types(fonksiyon_adi):
         "Lüks Villa / Müstakil Proje",
         "Üst Segment Konut / Rezidans",
         "Standart Konut / Apartman",
+        "Ticari / Ofis Kompleksi",
+        "Karma Proje (Konut + Ticari)",
     ]
 
 
@@ -638,8 +640,8 @@ if selected_keys:
   st.markdown(
       """
     <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
-        <h4 style="margin: 0 0 10px 0; color: #1e3a8a; font-size: 16px;">⚡ Toplu Parsel Proje Tipi ve Küresel Birim Boyutu Yönetimi</h4>
-        <p style="color: #64748b; font-size: 13px; margin-bottom: 15px;">Seçilen parsellerin imar niteliğine göre proje tipini belirleyin. Aşağıdaki <b>Küresel Hedef Ortalama Daire/Villa Boyutu</b> sürgüsü ile tüm bağımsız bölüm büyüklüklerini tek noktadan toplu olarak ayarlayın.</p>
+        <h4 style="margin: 0 0 10px 0; color: #1e3a8a; font-size: 16px;">⚡ Toplu Parsel Proje Tipi ve Proje Tipine Endeksli Birim Boyutu Yönetimi</h4>
+        <p style="color: #64748b; font-size: 13px; margin-bottom: 15px;">Seçilen parsellerin imar niteliğine göre proje tipini belirleyin. Seçilen proje tipine özel olarak dinamik aralıkta çalışan <b>Hedef Ortalama Bağımsız Bölüm Alanı</b> sürgüsü ile birimleri en yakın net/brüt metrekareye göre optimize edin.</p>
     """,
       unsafe_allow_html=True,
   )
@@ -658,16 +660,34 @@ if selected_keys:
         key="toplu_havuz_master",
     )
 
-  # --- YENİ: KÜLSEL TOPLU BİRİM BOYUTU SLIDER'I ---
+  # --- PROJE TİPİNE GÖRE ENDEKSLİ DİNAMİK SLIDER ARALIKLARI ---
+  if "Villa" in toplu_p_tipi:
+    min_v, max_v, def_v, step_v = 180, 550, 250, 10
+    slider_label = (
+        "📐 Villa Projeleri İçin Hedef Ortalama Villa Brüt Alanı (m²)"
+    )
+  elif "Ticari" in toplu_p_tipi:
+    min_v, max_v, def_v, step_v = 80, 1000, 200, 20
+    slider_label = (
+        "📐 Ticari / Ofis Kompleksi İçin Hedef Ortalama Bağımsız Bölüm Alanı"
+        " (m²)"
+    )
+  elif "Karma" in toplu_p_tipi:
+    min_v, max_v, def_v, step_v = 70, 300, 110, 5
+    slider_label = "📐 Karma Proje İçin Hedef Ortalama Bağımsız Bölüm Alanı (m²)"
+  else:  # Konut / Rezidans / Apartman
+    min_v, max_v, def_v, step_v = 60, 250, 95, 5
+    slider_label = "📐 Konut / Apartman İçin Hedef Ortalama Daire Brüt Alanı (m²)"
+
   global_hedef_birim_m2 = st.slider(
-      "📐 Küresel Hedef Ortalama Bağımsız Bölüm / Daire Brüt Alanı (m²)",
-      min_value=60,
-      max_value=350,
-      value=95,  # Daha gerçekçi ve ideal başlangıç boyutu
-      step=5,
+      slider_label,
+      min_value=min_v,
+      max_value=max_v,
+      value=def_v,
+      step=step_v,
       help=(
-          "Tüm projedeki ortalama daire/villa brüt alanını belirleyerek adetleri"
-          " toplu şekilde otomatik günceller."
+          "Seçilen proje tipinin mimari dinamiklerine uygun olarak ortalama"
+          " bağımsız bölüm boyutunu belirler."
       ),
   )
 
@@ -679,7 +699,7 @@ if selected_keys:
       f"<div style='font-size: 13px; color: #334155; margin-top: 10px; background: #f8fafc; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0;'>"
       f"💡 Seçilen <b>{toplu_p_tipi}</b> piyasa verileri işlendi: Maliyet:"
       f" <b>${auto_maliyet:,.2f}/m²</b> | Satış Fiyatı:"
-      f" <b>${auto_satis:,.2f}/m²</b> | Hedef Ortalama Daire: <b>{global_hedef_birim_m2}"
+      f" <b>${auto_satis:,.2f}/m²</b> | Hedef Ortalama Alan: <b>{global_hedef_birim_m2}"
       " m²</b>"
       f"</div>",
       unsafe_allow_html=True,
@@ -694,10 +714,10 @@ if selected_keys:
 
     fonk_toplam_brut_m2 = temp_function_bruts.get(fonk_name, 300.0)
 
-    # Küresel slider değerine göre adetleri toplu hesapla (brüt / hedef birim boyutu)
-    def_adet = max(
-        1, round(fonk_toplam_brut_m2 / (global_hedef_birim_m2 * 1.35))
-    )
+    # Adet hesaplamasını sıfıra bölünme ve tüm proje tiplerinde kararlı çalışacak şekilde güvenli hale getirdik
+    effective_target_size = max(10.0, float(global_hedef_birim_m2))
+    calculated_adet = round(fonk_toplam_brut_m2 / effective_target_size)
+    def_adet = max(1, int(calculated_adet))
 
     r_satis, r_maliyet, r_bodrum_orani = get_realistic_market_pricing(
         first_mahalle, default_type, rates["USD"]
@@ -940,14 +960,11 @@ if selected_keys:
             "BRÜT İNŞAAT (M²)": f"{brut_insaat:,.2f}",
             "BİRİM ARAZİ (M²)": f"{birim_arazi:,.2f}",
             "HAVUZ PLANLAMA": conf["havuz_mod"],
-            "VİLLA ADEDİ" if is_villa else "DAİRE ADEDİ": (
-                konut_adeti if is_villa else 0
+            "VİLLA ADEDİ" if is_villa else "BAĞIMSIZ BÖLÜM ADEDİ": (
+                konut_adeti
             ),
-            "VİLLA BRÜT (M²)" if is_villa else "DAİRE BRÜT (M²)": (
+            "VİLLA BRÜT (M²)" if is_villa else "BİRİM BRÜT (M²)": (
                 f"{birim_m2:,.2f}"
-            ),
-            "TAM DAİRE ADEDİ" if not is_villa else "EK BÖLÜM ADEDİ": (
-                0 if not is_villa else konut_adeti
             ),
             "TAHMİNİ BODRUM (M²)": f"{sim_bodrum:,.2f}",
         })
