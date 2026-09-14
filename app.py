@@ -22,18 +22,15 @@ st.markdown(
 <style>
     .stSelectbox, .stNumberInput, .stSlider {
         background-color: #ffffff;
-        border-radius: 8px;
+        border-radius: 6px;
     }
     div[data-baseweb="select"] > div {
-        border-radius: 8px;
+        border-radius: 6px;
         border-color: #cbd5e1;
     }
-    .metric-card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 16px;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    .block-container {
+        padding-top: 1.5rem;
+        padding-bottom: 2rem;
     }
 </style>
 """,
@@ -98,16 +95,16 @@ img1_base64 = get_image_base64("istestate_logo.png")
 img2_base64 = get_image_base64("meric_insaat_emlak_logo.png")
 
 img1_tag = (
-    f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 65px;"
+    f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 45px;"
     " width: auto; object-fit: contain;'>"
     if img1_base64
-    else "<h2 style='color:#1e3a8a; margin:0;'>İSTESTATE</h2>"
+    else "<h4 style='color:#1e3a8a; margin:0;'>İSTESTATE</h4>"
 )
 img2_tag = (
-    f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 65px;"
+    f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 45px;"
     " width: auto; object-fit: contain;'>"
     if img2_base64
-    else "<h2 style='color:#1e3a8a; margin:0;'>MERİÇ İNŞAAT</h2>"
+    else "<h4 style='color:#1e3a8a; margin:0;'>MERİÇ İNŞAAT</h4>"
 )
 
 
@@ -428,19 +425,17 @@ def get_allowed_project_types(fonksiyon_adi):
     ]
 
 
-# --- KURUMSAL HEADER ---
+# --- KOMPAKT & KURUMSAL HEADER ---
 st.markdown(
     f"""
-<div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 16px; padding: 30px 40px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08); margin-bottom: 30px;">
+<div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 15px 25px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); margin-bottom: 20px;">
     <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-        <div style="flex: 1; text-align: center;">{img1_tag}</div>
-        <div style="width: 1px; background-color: #cbd5e1; height: 75px; margin: 0 20px;"></div>
-        <div style="flex: 1; text-align: center;">{img2_tag}</div>
-    </div>
-    <hr style="margin: 25px 0 20px 0; border: none; border-top: 1px solid #e2e8f0;">
-    <div style="text-align: center;">
-        <h1 style='color: #0f172a; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; margin-top: 0;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT</h1>
-        <p style='color: #475569; font-size: 15px; font-weight: 600; margin: 0;'>Akıllı Gayrimenkul Geliştirme ve Fizibilite Portalı</p>
+        <div style="flex: 1; text-align: left;">{img1_tag}</div>
+        <div style="flex: 2; text-align: center;">
+            <h2 style='color: #0f172a; font-size: 18px; font-weight: 800; margin: 0; letter-spacing: -0.3px;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT</h2>
+            <p style='color: #475569; font-size: 12px; font-weight: 500; margin: 2px 0 0 0;'>Akıllı Gayrimenkul Geliştirme ve Fizibilite Portalı</p>
+        </div>
+        <div style="flex: 1; text-align: right;">{img2_tag}</div>
     </div>
 </div>
 """,
@@ -504,14 +499,13 @@ if all_db_keys:
   )
 
   selected_keys = st.sidebar.multiselect(
-      "Raporlanacak Parselleri Seçin (Çoklu Seçim Uygun):",
+      "Raporlanacak Parselleri Seçin:",
       options=filtered_keys,
       default=default_selection,
   )
 else:
   st.sidebar.info(
-      "Arşivde henüz kayıtlı parsel yok. Lütfen sol üstten PDF imar belgesi"
-      " yükleyin."
+      "Arşivde kayıtlı parsel yok. Sol üstten PDF imar belgesi yükleyin."
   )
   selected_keys = []
 
@@ -525,27 +519,28 @@ if selected_keys:
       "Bahçe Alanı Terk Oranı (%)", 0, 80, 40, step=1
   )
 
-  # ==========================================
-  # REHBER 1: İŞ MODELİ VE FİNANSAL YAPI KARTI
-  # ==========================================
+  # =========================================================================
+  # TEK BİRLEŞTİRİLMİŞ, KOMPAKT VE KURUMSAL PARAMETRE KARTI
+  # =========================================================================
   st.markdown(
       """
-    <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 14px; padding: 22px 24px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
-        <div style="display: flex; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
-            <span style="font-size: 20px; margin-right: 10px;">📊</span>
+    <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 18px 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+        <div style="display: flex; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+            <span style="font-size: 18px; margin-right: 8px;">⚙️</span>
             <div>
-                <h3 style="color: #0f172a; margin: 0; font-size: 16px; font-weight: 700;">İş Modeli ve Finansal Yapı</h3>
-                <p style="color: #64748b; margin: 0; font-size: 12px;">Sözleşme modelini seçin ve ortaklık oranlarını belirleyin.</p>
+                <h3 style="color: #0f172a; margin: 0; font-size: 15px; font-weight: 700;">Gelişmiş Fizibilite ve Proje Parametreleri</h3>
+                <p style="color: #64748b; margin: 0; font-size: 11px;">İş modelini, ortaklık oranlarını ve proje tipine dayalı optimizasyonları yönetin.</p>
             </div>
         </div>
     """,
       unsafe_allow_html=True,
   )
 
-  col_model, col_empty_m = st.columns([2, 1])
-  with col_model:
+  # Satır 1: İş Modeli, Proje Tipi ve Havuz Modu yan yana
+  col_m1, col_m2, col_m3 = st.columns(3)
+  with col_m1:
     is_modeli = st.selectbox(
-        "İş Modeli / Rapor Türü:",
+        "İş Modeli / Rapor Türü",
         options=[
             "Kat Karşılığı Proje Raporu",
             "Doğrudan Satılık / Arsa Yatırım Raporu",
@@ -553,45 +548,11 @@ if selected_keys:
         key="global_is_modeli",
     )
 
-  arsa_payi_orani = 0.0
-  arsa_bonus_usd = 0.0
-  if "Kat Karşılığı" in is_modeli:
-    st.markdown(
-        "<div style='margin-top: 14px; border-top: 1px dashed #cbd5e1;"
-        " padding-top: 14px;'></div>",
-        unsafe_allow_html=True,
-    )
-    col_gk1, col_gk2, col_gk3 = st.columns([2, 1, 2])
-    with col_gk1:
-      arsa_payi_orani = st.slider(
-          "Arsa Sahibi Payı / Kat Karşılığı Oranı (%)", 0, 70, 50
-      )
-    with col_gk2:
-      bonus_curr = st.selectbox(
-          "Para Birimi", options=["USD ($)", "EUR (€)", "TL (₺)"]
-      )
-    with col_gk3:
-      raw_bonus_val = st.number_input(
-          "💵 Nakit Bonus / İmza Parası Tutar",
-          min_value=0.0,
-          value=0.0,
-          step=10000.0,
-          format="%.2f",
-      )
-      if "EUR" in bonus_curr:
-        arsa_bonus_usd = raw_bonus_val * (rates["EUR"] / rates["USD"])
-      elif "TL" in bonus_curr:
-        arsa_bonus_usd = raw_bonus_val / rates["USD"]
-      else:
-        arsa_bonus_usd = raw_bonus_val
-
-  st.markdown("</div>", unsafe_allow_html=True)
-
+  # Tüm fonksiyonların uyumlu olabileceği tipleri bulma hazırlığı
   temp_function_bruts = {}
   for key, p in active_parcel_db.items():
     toplam_arsa_m2 = p["toplam_alan"]
     is_terkli = p["terk_yapilmis_mi"]
-
     for f in p["fonksiyonlar"]:
       fonk_adi = f["fonksiyon_adi"]
       if any(
@@ -599,10 +560,8 @@ if selected_keys:
           for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
       ):
         continue
-
       hesaba_alinan_m2 = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
       brut_insaat = hesaba_alinan_m2 * f["kaks"] * emsal_artis_orani
-
       temp_function_bruts[fonk_adi] = (
           temp_function_bruts.get(fonk_adi, 0.0) + brut_insaat
       )
@@ -637,41 +596,53 @@ if selected_keys:
 
   combined_allowed_types_list = sorted(list(combined_allowed_types))
 
-  function_configs = {}
-  first_mahalle = list(active_parcel_db.values())[0].get("mahalle", "VARSAYILAN")
-
-  # =========================================================
-  # REHBER 2: PROJE TİPİ VE BİRİM BOYUTU OPTİMİZASYON KARTI
-  # =========================================================
-  st.markdown(
-      """
-    <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 14px; padding: 22px 24px; margin-bottom: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
-        <div style="display: flex; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
-            <span style="font-size: 20px; margin-right: 10px;">⚡</span>
-            <div>
-                <h3 style="color: #0f172a; margin: 0; font-size: 16px; font-weight: 700;">Proje Tipi ve Birim Boyutu Optimizasyonu</h3>
-                <p style="color: #64748b; margin: 0; font-size: 12px;">Seçilen proje tipine özel dinamik aralıkta çalışan hedef ortalama bağımsız bölüm boyutu belirleyin.</p>
-            </div>
-        </div>
-    """,
-      unsafe_allow_html=True,
-  )
-
-  tc1, tc2 = st.columns(2)
-  with tc1:
+  with col_m2:
     toplu_p_tipi = st.selectbox(
-        "Toplu Proje Tipi Seçimi (Nitelik Kısıtlı)",
+        "Toplu Proje Tipi Seçimi",
         options=combined_allowed_types_list,
         key="toplu_p_tipi_master",
     )
-  with tc2:
+  with col_m3:
     toplu_havuz = st.selectbox(
         "Toplu Havuz Modu",
         options=["Havuz İptal", "Özel / Ortak Havuzlu"],
         key="toplu_havuz_master",
     )
 
-  # --- PROJE TİPİNE GÖRE ENDEKSLİ DİNAMİK SLIDER ARALIKLARI ---
+  # Kat Karşılığı ise ek detay alanları (aynı satır düzeninde kompakt)
+  arsa_payi_orani = 0.0
+  arsa_bonus_usd = 0.0
+  if "Kat Karşılığı" in is_modeli:
+    st.markdown(
+        "<div style='margin-top: 10px; border-top: 1px dashed #cbd5e1;"
+        " padding-top: 10px;'></div>",
+        unsafe_allow_html=True,
+    )
+    col_gk1, col_gk2, col_gk3 = st.columns([2, 1, 2])
+    with col_gk1:
+      arsa_payi_orani = st.slider(
+          "Arsa Sahibi Payı / Kat Karşılığı Oranı (%)", 0, 70, 50
+      )
+    with col_gk2:
+      bonus_curr = st.selectbox(
+          "Para Birimi", options=["USD ($)", "EUR (€)", "TL (₺)"]
+      )
+    with col_gk3:
+      raw_bonus_val = st.number_input(
+          "💵 Nakit Bonus / İmza Tutarı",
+          min_value=0.0,
+          value=0.0,
+          step=10000.0,
+          format="%.2f",
+      )
+      if "EUR" in bonus_curr:
+        arsa_bonus_usd = raw_bonus_val * (rates["EUR"] / rates["USD"])
+      elif "TL" in bonus_curr:
+        arsa_bonus_usd = raw_bonus_val / rates["USD"]
+      else:
+        arsa_bonus_usd = raw_bonus_val
+
+  # Slider Alanı
   if "Villa" in toplu_p_tipi:
     min_v, max_v, def_v, step_v = 180, 550, 250, 10
     slider_label = (
@@ -686,7 +657,7 @@ if selected_keys:
   elif "Karma" in toplu_p_tipi:
     min_v, max_v, def_v, step_v = 70, 300, 110, 5
     slider_label = "📐 Karma Proje İçin Hedef Ortalama Bağımsız Bölüm Alanı (m²)"
-  else:  # Konut / Rezidans / Apartman
+  else:
     min_v, max_v, def_v, step_v = 60, 250, 95, 5
     slider_label = "📐 Konut / Apartman İçin Hedef Ortalama Daire Brüt Alanı (m²)"
 
@@ -696,19 +667,16 @@ if selected_keys:
       max_value=max_v,
       value=def_v,
       step=step_v,
-      help=(
-          "Seçilen proje tipinin mimari dinamiklerine uygun olarak ortalama"
-          " bağımsız bölüm boyutunu belirler."
-      ),
   )
 
+  first_mahalle = list(active_parcel_db.values())[0].get("mahalle", "VARSAYILAN")
   auto_satis, auto_maliyet, auto_bodrum_orani = get_realistic_market_pricing(
       first_mahalle, toplu_p_tipi, rates["USD"]
   )
 
   st.markdown(
-      f"<div style='font-size: 13px; color: #334155; margin-top: 14px; background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid #e2e8f0;'>"
-      f"💡 Seçilen <b>{toplu_p_tipi}</b> piyasa verileri işlendi: Maliyet:"
+      f"<div style='font-size: 12px; color: #334155; margin-top: 10px; background: #f8fafc; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0;'>"
+      f"💡 <b>{toplu_p_tipi}</b> piyasa verileri: Maliyet:"
       f" <b>${auto_maliyet:,.2f}/m²</b> | Satış Fiyatı:"
       f" <b>${auto_satis:,.2f}/m²</b> | Hedef Ortalama Alan: <b>{global_hedef_birim_m2}"
       " m²</b>"
@@ -717,14 +685,13 @@ if selected_keys:
   )
   st.markdown("</div>", unsafe_allow_html=True)
 
+  function_configs = {}
   for fonk_name, items in all_functions_map.items():
     allowed_types = get_allowed_project_types(fonk_name)
     default_type = (
         toplu_p_tipi if toplu_p_tipi in allowed_types else allowed_types[0]
     )
-
     fonk_toplam_brut_m2 = temp_function_bruts.get(fonk_name, 300.0)
-
     effective_target_size = max(10.0, float(global_hedef_birim_m2))
     calculated_adet = round(fonk_toplam_brut_m2 / effective_target_size)
     def_adet = max(1, int(calculated_adet))
@@ -732,7 +699,6 @@ if selected_keys:
     r_satis, r_maliyet, r_bodrum_orani = get_realistic_market_pricing(
         first_mahalle, default_type, rates["USD"]
     )
-
     function_configs[fonk_name] = {
         "proje_tipi": default_type,
         "adet": int(def_adet),
@@ -748,12 +714,9 @@ if selected_keys:
   total_ciro_usd = 0.0
   total_maliyet_usd = 0.0
 
-  function_results_detail = []
-
   for key, p in active_parcel_db.items():
     toplam_arsa_m2 = p["toplam_alan"]
     is_terkli = p["terk_yapilmis_mi"]
-
     for f in p["fonksiyonlar"]:
       fonk_adi = f["fonksiyon_adi"]
       if any(
@@ -761,17 +724,14 @@ if selected_keys:
           for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
       ):
         continue
-
       conf = function_configs.get(fonk_adi)
       kaks = f["kaks"]
-
       hesaba_alinan_m2 = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
       brut_insaat = hesaba_alinan_m2 * kaks * emsal_artis_orani
       if brut_insaat <= 0:
         continue
 
       total_yasal_brut_insaat += brut_insaat
-
       bahce_terki = hesaba_alinan_m2 * (bahce_terk_orani / 100.0)
       total_bahce_alani_terki += bahce_terki
 
@@ -783,11 +743,8 @@ if selected_keys:
 
       normal_c = brut_insaat * conf["satis"]
       bodrum_c = sim_bodrum * conf["satis"] * conf["bodrum_orani"]
-      fonk_ciro = normal_c + bodrum_c
-      fonk_maliyet_tot = brut_insaat * conf["maliyet"]
-
-      total_ciro_usd += fonk_ciro
-      total_maliyet_usd += fonk_maliyet_tot
+      total_ciro_usd += normal_c + bodrum_c
+      total_maliyet_usd += brut_insaat * conf["maliyet"]
 
   total_maliyet_usd += arsa_bonus_usd
   arsa_sahibi_payi_usd = (
@@ -813,13 +770,6 @@ if selected_keys:
 
   with tab1:
     st.subheader("📊 Seçilen Parseller & İnşaat Alanı")
-    st.markdown(
-        "<p style='color: #64748b; font-size: 13px;'>İmar hesaplamaları"
-        " parselin Alan/Hesaba Alınan alanı üzerinden yapılırken; Net Alan"
-        " sütununda PDF belgesindeki Fonksiyon m² verisi yer almaktadır.</p>",
-        unsafe_allow_html=True,
-    )
-
     table_rows = []
     sum_alan = 0.0
     sum_hesaba_alinan = 0.0
@@ -840,7 +790,6 @@ if selected_keys:
             for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
         ):
           continue
-
         kaks = f["kaks"]
         hesaba_alinan_m2 = (
             toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
@@ -850,8 +799,6 @@ if selected_keys:
           continue
 
         net_alan_m2 = f.get("giren_m2", toplam_arsa_m2)
-        nitelik_str = "Arsa" if is_terkli else "Bahçe"
-
         sum_alan += toplam_arsa_m2
         sum_hesaba_alinan += hesaba_alinan_m2
         sum_net_alan += net_alan_m2
@@ -861,7 +808,7 @@ if selected_keys:
             "MAHALLE": mahalle,
             "ADA": ada,
             "PARSEL": parsel,
-            "NİTELİK": nitelik_str,
+            "NİTELİK": "Arsa" if is_terkli else "Bahçe",
             "ALAN (M²)": f"{toplam_arsa_m2:,.2f}",
             "HESABA ALINAN (M²)": f"{hesaba_alinan_m2:,.2f}",
             "NET ALAN (M²)": f"{net_alan_m2:,.2f}",
@@ -871,41 +818,20 @@ if selected_keys:
         })
 
     st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
-
-    st.markdown(
-        "<div style='margin-top: 20px; margin-bottom: 8px;'><h5"
-        " style='color: #1e3a8a; margin: 0; font-size: 15px;'>📋 Seçilen Toplam"
-        " Parsel Özet Bilgileri</h5></div>",
-        unsafe_allow_html=True,
-    )
-
     summary_df = pd.DataFrame([{
-        "SORGULANAN PARSEL SAYISI": f"{len(active_parcel_db)} Adet",
-        "TOPLAM ARSA ALANI (M²)": f"{sum_alan:,.2f}",
-        "TOPLAM HESABA ALINAN ALAN (M²)": f"{sum_hesaba_alinan:,.2f}",
-        "TOPLAM NET ALAN (M²)": f"{sum_net_alan:,.2f}",
-        "TOPLAM İNŞAAT ALANI (BRÜT M²)": f"{sum_brut_insaat:,.2f}",
+        "SORGULANAN PARSEL": f"{len(active_parcel_db)} Adet",
+        "TOPLAM ARSA (M²)": f"{sum_alan:,.2f}",
+        "HESABA ALINAN (M²)": f"{sum_hesaba_alinan:,.2f}",
+        "TOPLAM İNŞAAT (BRÜT M²)": f"{sum_brut_insaat:,.2f}",
     }])
-
     st.dataframe(summary_df, use_container_width=True)
 
   with tab2:
-    st.subheader(
-        "🏛️ Mimari Fizibilite & Potansiyel Senaryo Dağılım Matrisi"
-    )
-    st.markdown(
-        "<p style='color: #64748b; font-size: 13px;'>Seçilen projenin"
-        " niteliğine göre optimize edilmiş detaylı mimari potansiyel ve"
-        " bağımsız bölüm senaryo tablosu.</p>",
-        unsafe_allow_html=True,
-    )
-
+    st.subheader("🏛️ Mimari Fizibilite & Potansiyel Senaryo Dağılım Matrisi")
     mimari_rows = []
     mimari_sum_brut = 0.0
     mimari_sum_adet = 0
     mimari_sum_bodrum = 0.0
-    mimari_sum_bahce_terk = 0.0
-    mimari_sum_arazi = 0.0
 
     for key, p in active_parcel_db.items():
       mahalle = p.get("mahalle", "BİLİNMİYOR")
@@ -921,7 +847,6 @@ if selected_keys:
             for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
         ):
           continue
-
         conf = function_configs.get(
             fonk_name,
             {
@@ -945,10 +870,6 @@ if selected_keys:
         birim_m2 = (
             brut_insaat / konut_adeti if konut_adeti > 0 else brut_insaat
         )
-        birim_arazi = (
-            hesaba_alinan_m2 / konut_adeti if konut_adeti > 0 else hesaba_alinan_m2
-        )
-        bahce_terki = hesaba_alinan_m2 * (bahce_terk_orani / 100.0)
         tekil_havuz_payi = 30.0 if "Özel" in conf["havuz_mod"] else 0.0
         sim_bodrum = (
             brut_insaat - (tekil_havuz_payi * konut_adeti)
@@ -957,10 +878,6 @@ if selected_keys:
         mimari_sum_brut += brut_insaat
         mimari_sum_adet += konut_adeti
         mimari_sum_bodrum += sim_bodrum
-        mimari_sum_bahce_terk += bahce_terki
-        mimari_sum_arazi += hesaba_alinan_m2
-
-        is_villa = "Villa" in conf["proje_tipi"]
 
         mimari_rows.append({
             "MAHALLE": mahalle,
@@ -968,44 +885,12 @@ if selected_keys:
             "FONKSİYON": fonk_name,
             "PROJE TİPİ": conf["proje_tipi"],
             "BRÜT İNŞAAT (M²)": f"{brut_insaat:,.2f}",
-            "BİRİM ARAZİ (M²)": f"{birim_arazi:,.2f}",
-            "HAVUZ PLANLAMA": conf["havuz_mod"],
-            "VİLLA ADEDİ" if is_villa else "BAĞIMSIZ BÖLÜM ADEDİ": (
-                konut_adeti
-            ),
-            "VİLLA BRÜT (M²)" if is_villa else "BİRİM BRÜT (M²)": (
-                f"{birim_m2:,.2f}"
-            ),
-            "TAHMİNİ BODRUM (M²)": f"{sim_bodrum:,.2f}",
+            "ADET": konut_adeti,
+            "BİRİM BRÜT (M²)": f"{birim_m2:,.2f}",
+            "BODRUM (M²)": f"{sim_bodrum:,.2f}",
         })
 
     st.dataframe(pd.DataFrame(mimari_rows), use_container_width=True)
-
-    st.markdown(
-        "<div style='margin-top: 20px; margin-bottom: 8px;'><h5"
-        " style='color: #1e3a8a; margin: 0; font-size: 15px;'>📋 Toplu Mimari"
-        " Potansiyel ve Senaryo Özet Tablosu</h5></div>",
-        unsafe_allow_html=True,
-    )
-
-    overall_avg_unit = (
-        mimari_sum_brut / mimari_sum_adet if mimari_sum_adet > 0 else 0.0
-    )
-    overall_avg_arazi = (
-        mimari_sum_arazi / mimari_sum_adet if mimari_sum_adet > 0 else 0.0
-    )
-
-    mimari_summary_df = pd.DataFrame([{
-        "TOPLAM PROJE / PARSEL": f"{len(mimari_rows)} Kalem",
-        "TOPLAM BRÜT İNŞAAT (M²)": f"{mimari_sum_brut:,.2f}",
-        "ORTALAMA BİRİM ARAZİ (M²)": f"{overall_avg_arazi:,.2f}",
-        "TOPLAM BAĞIMSIZ BÖLÜM": f"{mimari_sum_adet} Adet",
-        "ORTALAMA BİRİM BRÜT (M²)": f"{overall_avg_unit:,.2f}",
-        "TOPLAM BODRUM ALANI (M²)": f"{mimari_sum_bodrum:,.2f}",
-        "TOPLAM BAHÇE TERKİ (M²)": f"{mimari_sum_bahce_terk:,.2f}",
-    }])
-
-    st.dataframe(mimari_summary_df, use_container_width=True)
 
   with tab3:
     st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılım Matrisi")
@@ -1025,13 +910,13 @@ if selected_keys:
 
     pdf_logo1_html = (
         f"<img src='data:image/png;base64,{img1_base64}' style='max-height:"
-        " 38px;'>"
+        " 32px;'>"
         if img1_base64
         else "<b>İSTESTATE</b>"
     )
     pdf_logo2_html = (
         f"<img src='data:image/png;base64,{img2_base64}' style='max-height:"
-        " 38px;'>"
+        " 32px;'>"
         if img2_base64
         else "<b>MERİÇ İNŞAAT</b>"
     )
@@ -1045,7 +930,7 @@ if selected_keys:
             @page {{ size: A4 landscape; margin: 6mm 8mm; }}
             body {{ font-family: 'Helvetica', 'Arial', sans-serif; color: #1e293b; font-size: 8.5px; line-height: 1.12; }}
             .report-banner {{ background-color: #0b1d3a; color: #ffffff; width: 100%; border-collapse: collapse; margin-bottom: 6px; }}
-            .report-banner td {{ border: none; padding: 8px 10px; vertical-align: middle; }}
+            .report-banner td {{ border: none; padding: 6px 8px; vertical-align: middle; }}
             .section-title {{ font-size: 9px; font-weight: bold; color: #0b1d3a; border-left: 3px solid #0b1d3a; padding-left: 5px; background-color: #f1f5f9; margin-top: 5px; margin-bottom: 2px; text-transform: uppercase; }}
             .data-table {{ width: 100%; border-collapse: collapse; margin-top: 1px; font-size: 8.5px; }}
             .data-table th, .data-table td {{ border: 1px solid #cbd5e1; padding: 3px 5px; }}
@@ -1057,7 +942,7 @@ if selected_keys:
             <table class="report-banner">
                 <tr>
                     <td style="width: 25%;">{pdf_logo1_html}</td>
-                    <td style="width: 50%; text-align: center;"><h2 style="font-size:11px; margin:0; color:#fff;">AKILLI GAYRİMENKUL GELİŞTİRME VE FİZİBİLİTE RAPORU</h2></td>
+                    <td style="width: 50%; text-align: center;"><h2 style="font-size:10.5px; margin:0; color:#fff;">AKILLI GAYRİMENKUL GELİŞTİRME VE FİZİBİLİTE RAPORU</h2></td>
                     <td style="width: 25%; text-align: right;">{pdf_logo2_html}</td>
                 </tr>
             </table>
