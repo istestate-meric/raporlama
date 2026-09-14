@@ -37,14 +37,17 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- DİNAMİK VE GERÇEKÇİ FONKSİYON ADI ÇÖZÜMLEME MOTORU ---
+# --- DİNAMİK VE GERÇEKÇİ FONKSİYON ADI ÇÖZÜMLEME MOTORU (GÜNCELLENDİ) ---
 def clean_fonksiyon_adi(name):
     if not name:
         return ""
     n = str(name).upper().strip()
-    if n in ["-", "--", ".", "0", "N/A", "İMAR DURUMu", ""]:
+    if n in ["-", "--", ".", "0", "N/A", "İMAR DURUMU", "İMAR DURUMU BİLGİLERİ", ""]:
         return ""
-    if re.match(r'^[\d\.,\s\-%]+$', n) and not any(kw in n for kw in ["MİA", "TİCARET", "KONUT", "İMAR"]):
+    # Yüzde veya m² içeren ifadelerin fonksiyon adı olarak algılanması kesin olarak engellendi
+    if "%" in n or "M²" in n or "M2" in n:
+        return ""
+    if re.match(r'^[\d\.,\s\-%]+$', n):
         return ""
     return n
 
@@ -659,7 +662,7 @@ if selected_keys:
     mutaahhit_net_kar_usd = total_ciro_usd - total_maliyet_usd - arsa_sahibi_payi_usd
     yg_orani = (mutaahhit_net_kar_usd / total_maliyet_usd * 100) if total_maliyet_usd > 0 else 0
 
-    # --- SEKMELER (YENİ VERİTABANI SEKMESİ EKLENDİ) ---
+    # --- SEKMELER ---
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "📊 Seçilen Parseller & İnşaat Alanı", 
         "🏛️ Mimari Fizibilite", 
