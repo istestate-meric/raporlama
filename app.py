@@ -124,7 +124,7 @@ def get_live_exchange_rates():
     except Exception:
         return {"USD": 34.00, "EUR": 37.50}
 
-# --- 2. BEYKOZ PİYASA VE PROJE TİPİ MATRİSİ ---
+# --- 2. BEYKOZ GERÇEKÇİ PİYASA VE PROJE TİPİ MATRİSİ ---
 def get_realistic_market_pricing(mahalle_adi, proje_tipi, usd_rate):
     mahalle_base_tl = {
         "ACARLAR": 140000, "ANADOLU HİSARI": 130000, "KANLICA": 125000, 
@@ -202,7 +202,7 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
             
     return False
 
-# --- GELİŞTİRİLMİŞ İMAR PDF AYRIŞTIRMA MOTORU (ÇOKLU KAKS VE FONKSİYON DESTEKLİ) ---
+# --- GELİŞTİRİLMİŞ İMAR PDF AYRIŞTIRMA MOTORU (ÇOKLU FONKSİYON VE DOĞRU KAKS DESTEKLİ) ---
 def parse_imar_pdf(uploaded_file):
     parcel_data = {
         "filename": uploaded_file.name,
@@ -242,7 +242,7 @@ def parse_imar_pdf(uploaded_file):
                                         elif "Alan" in head and val:
                                             parcel_data["toplam_alan"] = parse_tr_float(val)
 
-                    # Tablo satırlarını tarayarak çoklu fonksiyon, her birine ait KAKS ve giren m² değerlerini yakala
+                    # Tablo satırlarını tarayarak tüm fonksiyonları ve ilgili KAKS/giren m² değerlerini yakala
                     r = 0
                     while r < len(table):
                         row = table[r]
@@ -279,7 +279,7 @@ def parse_imar_pdf(uploaded_file):
                             cur_kaks = 0.40
                             cur_giren_m2 = 0.0
                             
-                            # İlgili fonksiyona ait alt satırlardan TAKS, KAKS ve Alana Giren m² çekimi
+                            # Fonksiyona ait alt satırlardan TAKS, KAKS ve Alana Giren m² çekimi
                             for sub_r in range(r, min(r + 6, len(table))):
                                 sub_cells = [str(c).strip().replace("\n", " ") if c is not None else "" for c in table[sub_r]]
                                 sub_row_text = " ".join(sub_cells).upper()
@@ -311,12 +311,11 @@ def parse_imar_pdf(uploaded_file):
                                 if m2_match:
                                     cur_giren_m2 = parse_tr_float(m2_match.group(1))
 
-                            # Fonksiyon listede varsa güncelle, yoksa yeni özgün KAKS ve m² ile ekle
+                            # Eğer listede bu fonksiyon yoksa veya varsa güncelle (Çoklu fonksiyon desteği)
                             existing_f = next((x for x in parcel_data["fonksiyonlar"] if x["fonksiyon_adi"] == fonk_name), None)
                             if existing_f:
                                 if cur_kaks > 0: existing_f["kaks"] = cur_kaks
                                 if cur_giren_m2 > 0: existing_f["giren_m2"] = cur_giren_m2
-                                if cur_taks > 0: existing_f["taks"] = cur_taks
                             else:
                                 parcel_data["fonksiyonlar"].append({
                                     "fonksiyon_adi": fonk_name,
@@ -341,16 +340,28 @@ def parse_imar_pdf(uploaded_file):
             if al_m and parcel_data["toplam_alan"] == 0.0:
                 parcel_data["toplam_alan"] = parse_tr_float(al_m.group(1))
                 
+        # Eğer tablolar dışındaki metinlerden ek fonksiyonlar varsa onları da ekle (Çoklu fonksiyon güvenliği)
+        for candidate in ["TİCARET + KONUT", "TİCARET ALANI", "GELİŞME KONUT ALANI", "VİLLA ALANI", "TURİZM ALANI", "KONUT ALANI"]:
+            if candidate in full_text.upper():
+                if not any(candidate in f["fonksiyon_adi"] for f in parcel_data["fonksiyonlar"]):
+                    parcel_data["fonksiyonlar"].append({
+                        "fonksiyon_adi": candidate,
+                        "taks": 0.30,
+                        "kaks": 0.40,
+                        "giren_m2": 0.0
+                    })
+                    
         if not parcel_data["fonksiyonlar"]:
             parcel_data["fonksiyonlar"].append({
                 "fonksiyon_adi": "KONUT ALANI",
                 "taks": 0.30,
                 "kaks": 0.40,
-                "giren_m2": parcel_data["toplam_alan"]
+                "giren_m2": 0.0
             })
                 
         num_fonks = len(parcel_data["fonksiyonlar"])
         if num_fonks > 0:
+            total_giren_check = sum(f["giren_m2"] for f in parcel_data["fonksiyonlar"])
             share_m2 = parcel_data["toplam_alan"] / num_fonks
             for f in parcel_data["fonksiyonlar"]:
                 if f["giren_m2"] <= 0:
@@ -403,6 +414,7 @@ if all_db_keys:
     
     filtered_keys = [k for k, p_data in st.session_state["parcel_db"].items() if str(p_data.get("ada", "")).strip() == str(selected_ada_filter).strip()] if selected_ada_filter != "Seçiniz..." else all_db_keys
     
+    # GÜVENLİ VARSAYILAN SEÇİM (StreamlitDefaultNotinOptionsError hatasını kesin önler)
     raw_default = just_uploaded_keys if just_uploaded_keys else filtered_keys[:min(3, len(filtered_keys))]
     safe_default = [k for k in raw_default if k in filtered_keys]
     
@@ -484,32 +496,38 @@ if selected_keys:
 
     valid_active_functions_with_area = []
     function_total_brut_areas = {}
+    function_total_ratios = {}
     
     for key, p in active_parcel_db.items():
         toplam_arsa_m2 = p["toplam_alan"]
         is_terkli = p["terk_yapilmis_mi"]
         fonks_list = p["fonksiyonlar"]
         
+        toplam_f_m2 = sum(f["giren_m2"] for f in fonks_list if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]))
+        if toplam_f_m2 <= 0:
+            toplam_f_m2 = toplam_arsa_m2 if toplam_arsa_m2 > 0 else 1.0
+            
         for f in fonks_list:
             fonk_name = clean_fonksiyon_adi(f["fonksiyon_adi"])
             if not fonk_name or any(x in fonk_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                 continue
                 
             fonk_giren_m2 = f.get("giren_m2", toplam_arsa_m2)
-            
-            # Terk kontrolü: Terk yapıldıysa net (giren m²), yapılmadıysa brüt üzerinden hesaplama
-            if is_terkli:
-                hesaba_alinan_m2 = fonk_giren_m2
-            else:
-                hesaba_alinan_m2 = fonk_giren_m2 * 0.70
+            if fonk_giren_m2 <= 0:
+                fonk_giren_m2 = toplam_arsa_m2 / max(1, len(fonks_list))
                 
-            fonk_toplam_brut_m2 = hesaba_alinan_m2 * f["kaks"] * emsal_artis_orani
+            fonk_alan_orani = fonk_giren_m2 / toplam_f_m2
+            parsel_net_arsa = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
+            fonk_hesaba_alinan_m2 = parsel_net_arsa * fonk_alan_orani
+            fonk_toplam_brut_m2 = fonk_hesaba_alinan_m2 * f["kaks"] * emsal_artis_orani
             
             if fonk_toplam_brut_m2 > 0:
                 if fonk_name not in valid_active_functions_with_area:
                     valid_active_functions_with_area.append(fonk_name)
                     function_total_brut_areas[fonk_name] = 0.0
+                    function_total_ratios[fonk_name] = 0.0
                 function_total_brut_areas[fonk_name] += fonk_toplam_brut_m2
+                function_total_ratios[fonk_name] += (fonk_alan_orani * 100.0)
 
     function_target_sizes = {}
     if valid_active_functions_with_area:
@@ -561,18 +579,23 @@ if selected_keys:
         is_terkli = p["terk_yapilmis_mi"]
         fonks_list = p["fonksiyonlar"]
         
+        toplam_f_m2 = sum(f["giren_m2"] for f in fonks_list if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]))
+        if toplam_f_m2 <= 0:
+            toplam_f_m2 = toplam_arsa_m2 if toplam_arsa_m2 > 0 else 1.0
+            
         for f in fonks_list:
             fonk_name = clean_fonksiyon_adi(f["fonksiyon_adi"])
             if not fonk_name or any(x in fonk_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                 continue
                 
             fonk_giren_m2 = f.get("giren_m2", toplam_arsa_m2)
-            if is_terkli:
-                hesaba_alinan_m2 = fonk_giren_m2
-            else:
-                hesaba_alinan_m2 = fonk_giren_m2 * 0.70
+            if fonk_giren_m2 <= 0:
+                fonk_giren_m2 = toplam_arsa_m2 / max(1, len(fonks_list))
                 
-            fonk_toplam_brut_m2 = hesaba_alinan_m2 * f["kaks"] * emsal_artis_orani
+            fonk_alan_orani = fonk_giren_m2 / toplam_f_m2
+            parsel_net_arsa = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
+            fonk_hesaba_alinan_m2 = parsel_net_arsa * fonk_alan_orani
+            fonk_toplam_brut_m2 = fonk_hesaba_alinan_m2 * f["kaks"] * emsal_artis_orani
             
             if fonk_toplam_brut_m2 <= 0:
                 continue
@@ -590,7 +613,7 @@ if selected_keys:
                 "maliyet": r_maliyet,
                 "satis": r_satis,
                 "bodrum_orani": r_bodrum_orani,
-                "fonk_hesaba_alinan_m2": hesaba_alinan_m2
+                "fonk_hesaba_alinan_m2": fonk_hesaba_alinan_m2
             }
 
     total_yasal_brut_insaat = 0.0
@@ -604,6 +627,10 @@ if selected_keys:
         is_terkli = p["terk_yapilmis_mi"]
         fonks_list = p["fonksiyonlar"]
         
+        toplam_f_m2 = sum(f["giren_m2"] for f in fonks_list if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]))
+        if toplam_f_m2 <= 0:
+            toplam_f_m2 = toplam_arsa_m2 if toplam_arsa_m2 > 0 else 1.0
+            
         for f in fonks_list:
             fonk_adi = clean_fonksiyon_adi(f["fonksiyon_adi"])
             if not fonk_adi or any(x in fonk_adi for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
@@ -616,20 +643,19 @@ if selected_keys:
                 
             kaks = f["kaks"]
             fonk_giren_m2 = f.get("giren_m2", toplam_arsa_m2)
+            if fonk_giren_m2 <= 0:
+                fonk_giren_m2 = toplam_arsa_m2 / max(1, len(fonks_list))
+            fonk_alan_orani = fonk_giren_m2 / toplam_f_m2
             
-            if is_terkli:
-                hesaba_alinan_m2 = fonk_giren_m2
-            else:
-                hesaba_alinan_m2 = fonk_giren_m2 * 0.70
+            parsel_net_arsa = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
+            fonk_hesaba_alinan_m2 = parsel_net_arsa * fonk_alan_orani
             
-            brut_insaat = hesaba_alinan_m2 * kaks * emsal_artis_orani
+            brut_insaat = fonk_hesaba_alinan_m2 * kaks * emsal_artis_orani
             if brut_insaat <= 0:
                 continue
                 
             total_yasal_brut_insaat += brut_insaat
-            
-            # Bahçe ve peyzaj alanları hesaba alınan m² üzerinden şekillenir
-            bahce_terki = hesaba_alinan_m2 * (bahce_terk_orani / 100.0)
+            bahce_terki = fonk_hesaba_alinan_m2 * (bahce_terk_orani / 100.0)
             total_bahce_alani_terki += bahce_terki
             
             tekil_havuz_payi = 35.0 if "Müstakil Özel Havuzlu" in conf["havuz_mod"] else 0.0
@@ -670,23 +696,27 @@ if selected_keys:
             is_terkli = p.get("terk_yapilmis_mi", False)
             fonks_list = p["fonksiyonlar"]
             
+            toplam_f_m2 = sum(f["giren_m2"] for f in fonks_list if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]))
+            if toplam_f_m2 <= 0:
+                toplam_f_m2 = toplam_arsa_m2 if toplam_arsa_m2 > 0 else 1.0
+                
             for f in fonks_list:
                 fonk_name = clean_fonksiyon_adi(f["fonksiyon_adi"])
                 if not fonk_name or any(x in fonk_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                     continue
                 kaks = f["kaks"]
                 fonk_giren_m2 = f.get("giren_m2", toplam_arsa_m2)
+                if fonk_giren_m2 <= 0:
+                    fonk_giren_m2 = toplam_arsa_m2 / max(1, len(fonks_list))
+                fonk_alan_orani = fonk_giren_m2 / toplam_f_m2
                 
-                if is_terkli:
-                    hesaba_alinan_m2 = fonk_giren_m2
-                else:
-                    hesaba_alinan_m2 = fonk_giren_m2 * 0.70
-                    
+                parsel_net_arsa = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
+                hesaba_alinan_m2 = parsel_net_arsa * fonk_alan_orani
                 brut_insaat_arsa = hesaba_alinan_m2 * kaks * emsal_artis_orani
                 if brut_insaat_arsa <= 0:
                     continue
                     
-                sum_alan += fonk_giren_m2
+                sum_alan += (toplam_arsa_m2 * fonk_alan_orani)
                 sum_hesaba_alinan += hesaba_alinan_m2
                 sum_brut_insaat += brut_insaat_arsa
                 
@@ -695,7 +725,7 @@ if selected_keys:
                     "ADA": ada,
                     "PARSEL": parsel,
                     "FONKSİYON / NİTELİK": fonk_name,
-                    "GİREN ARSA (M²)": f"{fonk_giren_m2:,.2f}",
+                    "ARSA PAYI (M²)": f"{toplam_arsa_m2 * fonk_alan_orani:,.2f}",
                     "HESABA ALINAN (M²)": f"{hesaba_alinan_m2:,.2f}",
                     "KAKS": f"{kaks:.2f}",
                     "İNŞAAT ALANI (BRÜT M²)": f"{brut_insaat_arsa:,.2f}"
@@ -705,7 +735,7 @@ if selected_keys:
             st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
             summary_df = pd.DataFrame([{
                 "SORGULANAN PARSEL": f"{len(active_parcel_db)} Adet",
-                "TOPLAM GİREN ARSA (M²)": f"{sum_alan:,.2f}",
+                "TOPLAM ARSA PAYI (M²)": f"{sum_alan:,.2f}",
                 "HESABA ALINAN (M²)": f"{sum_hesaba_alinan:,.2f}",
                 "TOPLAM İNŞAAT (BRÜT M²)": f"{sum_brut_insaat:,.2f}"
             }])
@@ -728,6 +758,10 @@ if selected_keys:
             is_terkli = p.get("terk_yapilmis_mi", False)
             fonks_list = p["fonksiyonlar"]
             
+            toplam_f_m2 = sum(f["giren_m2"] for f in fonks_list if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]))
+            if toplam_f_m2 <= 0:
+                toplam_f_m2 = toplam_arsa_m2 if toplam_arsa_m2 > 0 else 1.0
+                
             for f in fonks_list:
                 fonk_name = clean_fonksiyon_adi(f["fonksiyon_adi"])
                 if not fonk_name or any(x in fonk_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
@@ -740,12 +774,12 @@ if selected_keys:
                     
                 kaks = f["kaks"]
                 fonk_giren_m2 = f.get("giren_m2", toplam_arsa_m2)
+                if fonk_giren_m2 <= 0:
+                    fonk_giren_m2 = toplam_arsa_m2 / max(1, len(fonks_list))
+                fonk_alan_orani = fonk_giren_m2 / toplam_f_m2
                 
-                if is_terkli:
-                    hesaba_alinan_m2 = fonk_giren_m2
-                else:
-                    hesaba_alinan_m2 = fonk_giren_m2 * 0.70
-                    
+                parsel_net_arsa = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
+                hesaba_alinan_m2 = parsel_net_arsa * fonk_alan_orani
                 brut_insaat = hesaba_alinan_m2 * kaks * emsal_artis_orani
                 if brut_insaat <= 0:
                     continue
