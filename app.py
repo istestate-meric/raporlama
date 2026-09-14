@@ -595,7 +595,10 @@ if selected_keys:
       ):
         continue
 
-      net_arsa_m2 = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
+      fonk_giren_m2 = (
+          f["giren_m2"] if f["giren_m2"] > 0 else toplam_arsa_m2
+      )
+      net_arsa_m2 = fonk_giren_m2 if is_terkli else fonk_giren_m2 * 0.70
       brut_insaat = net_arsa_m2 * f["kaks"] * emsal_artis_orani
 
       temp_function_bruts[fonk_adi] = (
@@ -808,13 +811,20 @@ if selected_keys:
 
       conf = function_configs.get(fonk_adi)
       kaks = f["kaks"]
-      fonksiyon_alani = f["giren_m2"]
+      fonksiyon_giren_m2 = (
+          f["giren_m2"] if f["giren_m2"] > 0 else toplam_arsa_m2
+      )
 
-      net_arsa_m2 = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
+      net_arsa_m2 = (
+          fonksiyon_giren_m2 if is_terkli else fonksiyon_giren_m2 * 0.70
+      )
       brut_insaat = net_arsa_m2 * kaks * emsal_artis_orani
+      if brut_insaat <= 0:
+        continue
+
       total_yasal_brut_insaat += brut_insaat
 
-      bahce_terki = fonksiyon_alani * (bahce_terk_orani / 100.0)
+      bahce_terki = fonksiyon_giren_m2 * (bahce_terk_orani / 100.0)
       total_bahce_alani_terki += bahce_terki
 
       tekil_havuz_payi = 30.0 if "Özel" in conf["havuz_mod"] else 0.0
@@ -869,20 +879,21 @@ if selected_keys:
       is_terkli = p["terk_yapilmis_mi"]
       toplam_brut = p["toplam_alan"]
       terk_lbl = (
-          "Terk Yapılmış (Brüt Arsa x KAKS x 1.3)"
+          "Terk Yapılmış (Fonksiyon m² x KAKS x 1.3)"
           if is_terkli
-          else "Terk Yapılmamış (%70 Net Arsa x KAKS x 1.3)"
+          else "Terk Yapılmamış (%70 Fonksiyon m² x KAKS x 1.3)"
       )
 
       for f in p["fonksiyonlar"]:
-        net_m2 = toplam_brut if is_terkli else toplam_brut * 0.70
+        fonk_giren_m2 = f["giren_m2"] if f["giren_m2"] > 0 else toplam_brut
+        net_m2 = fonk_giren_m2 if is_terkli else fonk_giren_m2 * 0.70
         table_rows.append({
             "Parsel Kimliği": key,
             "Mahalle Adı": p["mahalle"],
             "Brüt Parsel Alanı (m²)": f"{toplam_brut:,.2f}",
             "İmar Fonksiyonu": f["fonksiyon_adi"],
             "Hesaba Esas Net Arsa (m²)": f"{net_m2:,.2f}",
-            "Fonksiyon Alanı (m²)": f"{f['giren_m2']:,.2f}",
+            "Fonksiyon Alanı (m²)": f"{fonk_giren_m2:,.2f}",
             "TAKS Oranı": f"{f['taks']:.2f}",
             "KAKS / Emsal Katsayısı": f"{f['kaks']:.2f}",
             "İmar ve Terk Durum Analizi": terk_lbl,
@@ -920,8 +931,10 @@ if selected_keys:
     st.subheader("🏛️ Parsel Bazlı Mimari ve Yerleşim Fizibilitesi")
     st.markdown(
         "<p style='color: #64748b; font-size: 13px;'>Her parsel"
-        " <b>yalnızca tek satırda</b> listelenmiş olup, inşaat alanına esas"
-        " nitelik ve terk durumları özetlenmiştir.</p>",
+        " <b>yalnızca tek satırda</b> listelenmiş olup; imar hesaplamalarında"
+        " <b>HESABA ALINAN (M²)</b>, bahçe ve peyzaj hesaplamalarında ise"
+        " <b>NET ALAN (M²)</b> esas alınmıştır. İnşaat alanı sıfır olanlar"
+        " filtrelenmiştir.</p>",
         unsafe_allow_html=True,
     )
 
@@ -942,18 +955,28 @@ if selected_keys:
           continue
 
         kaks = f["kaks"]
+        fonk_giren_m2 = (
+            f["giren_m2"] if f["giren_m2"] > 0 else toplam_arsa_m2
+        )
 
-        # Nitelik bilgisini terk durumuna göre Arsa/Bahçe bazlı inşaat perspektifinde belirleme
+        # İmar hesaplamalarında kullanılacak HESABA ALINAN (M²)
+        hesaba_alinan_m2 = (
+            fonk_giren_m2 if is_terkli else fonk_giren_m2 * 0.70
+        )
+
+        # Brüt İnşaat Alanı Kontrolü (Sıfır olanları elemek için)
+        brut_insaat_arsa = hesaba_alinan_m2 * kaks * emsal_artis_orani
+        if brut_insaat_arsa <= 0:
+          continue
+
+        # Bahçe hesaplamalarında kullanılacak NET ALAN (M²)
+        net_alan_m2 = hesaba_alinan_m2 * (1.0 - (bahce_terk_orani / 100.0))
+
         nitelik_str = (
             "Arsa (Terk Yapılmış)"
             if is_terkli
             else "Arsa (Terk Yapılmamış)"
         )
-        hesaba_alinan_arsa = (
-            toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
-        )
-        net_alan_arsa = hesaba_alinan_arsa
-        brut_insaat_arsa = hesaba_alinan_arsa * kaks * emsal_artis_orani
 
         mimari_table_rows.append({
             "MAHALLE": mahalle,
@@ -961,8 +984,8 @@ if selected_keys:
             "PARSEL": parsel,
             "NİTELİK": nitelik_str,
             "ALAN (M²)": f"{toplam_arsa_m2:,.2f}",
-            "HESABA ALINAN (M²)": f"{hesaba_alinan_arsa:,.2f}",
-            "NET ALAN (M²)": f"{net_alan_arsa:,.2f}",
+            "HESABA ALINAN (M²)": f"{hesaba_alinan_m2:,.2f}",
+            "NET ALAN (M²)": f"{net_alan_m2:,.2f}",
             "FONKSİYON": fonk_name,
             "KAKS": f"{kaks:.2f}",
             "İNŞAAT ALANI (BRÜT M²)": f"{brut_insaat_arsa:,.2f}",
