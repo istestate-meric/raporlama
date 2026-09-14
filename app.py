@@ -229,6 +229,9 @@ def parse_imar_pdf(uploaded_file):
     try:
         with pdfplumber.open(uploaded_file) as pdf:
             full_text = ""
+            raw_found_functions = []
+            global_taks, global_kaks = 0.30, 0.40
+            
             for page in pdf.pages:
                 t = page.extract_text() or ""
                 full_text += "\n" + t
@@ -254,43 +257,29 @@ def parse_imar_pdf(uploaded_file):
                                         elif "Alan" in head and val:
                                             parcel_data["toplam_alan"] = parse_tr_float(val)
                                             
-                        # GÜNCELLENMİŞ ÇOKLU FONKSİYON TARAMA MANTIĞI
-                        if "Fonksiyon Adı" in row_str or any("Fonksiyon" in str(c) for c in cells) or "%" in row_str or "m²" in row_str:
-                            taks_val, kaks_val, giren_m2 = 0.30, 0.40, 0.0
-                            found_fonks_in_row = []
-                            
-                            for sub_idx in range(max(0, r_idx-1), min(r_idx + 3, len(table))):
-                                sub_cells = [str(c).strip().replace("\n", " ") if c is not None else "" for c in table[sub_idx]]
-                                sub_str = " ".join(sub_cells)
-                                
-                                for c in sub_cells:
-                                    c_upper = c.upper()
-                                    if any(k in c_upper for k in ["KONUT", "TİCARET", "TİCARİ", "VİLLA", "MESKEN", "İMAR", "SANAYİ", "TURİZM"]):
-                                        if "FONKSİYON" not in c_upper:
-                                            cleaned = clean_fonksiyon_adi(c)
-                                            if cleaned and cleaned not in found_fonks_in_row:
-                                                found_fonks_in_row.append(cleaned)
-                                            
-                                t_m = re.search(r'Taks\s*\|?\s*([\d\.,]+)', sub_str, re.IGNORECASE)
-                                k_m = re.search(r'Kaks\s*\(Emsal\)\s*\|?\s*([\d\.,]+)', sub_str, re.IGNORECASE)
-                                if t_m:
-                                    taks_val = parse_tr_float(t_m.group(1))
-                                if k_m:
-                                    kaks_val = parse_tr_float(k_m.group(1))
-                                    
-                                if "m²" in sub_str or "m2" in sub_str or "%" in sub_str:
-                                    m2_match = re.findall(r'([\d\.,]+)\s*m²?', sub_str)
-                                    if m2_match:
-                                        giren_m2 = parse_tr_float(m2_match[-1])
+                        # HÜCRELERİ DOĞRUDAN TARAYAN ESNEK ÇOKLU FONKSİYON Yakalama
+                        for c in cells:
+                            c_upper = c.upper()
+                            if any(k in c_upper for k in ["KONUT", "TİCARET", "TİCARİ", "VİLLA", "MESKEN", "İMAR", "SANAYİ", "TURİZM"]):
+                                if "FONKSİYON" not in c_upper and len(c_upper) > 2:
+                                    cleaned = clean_fonksiyon_adi(c)
+                                    if cleaned and cleaned not in raw_found_functions:
+                                        raw_found_functions.append(cleaned)
                                         
-                            for fonk_name in found_fonks_in_row:
-                                if not any(f["fonksiyon_adi"] == fonk_name for f in parcel_data["fonksiyonlar"]):
-                                    parcel_data["fonksiyonlar"].append({
-                                        "fonksiyon_adi": fonk_name,
-                                        "taks": taks_val,
-                                        "kaks": kaks_val,
-                                        "giren_m2": giren_m2
-                                    })
+                        t_m = re.search(r'Taks\s*\|?\s*([\d\.,]+)', row_str, re.IGNORECASE)
+                        k_m = re.search(r'Kaks\s*\(Emsal\)\s*\|?\s*([\d\.,]+)', row_str, re.IGNORECASE)
+                        if t_m:
+                            global_taks = parse_tr_float(t_m.group(1))
+                        if k_m:
+                            global_kaks = parse_tr_float(k_m.group(1))
+                            
+            for fn in raw_found_functions:
+                parcel_data["fonksiyonlar"].append({
+                    "fonksiyon_adi": fn,
+                    "taks": global_taks,
+                    "kaks": global_kaks,
+                    "giren_m2": 0.0
+                })
                                     
         if parcel_data["mahalle"] == "BİLİNMİYOR" or parcel_data["ada"] == "0":
             m_m = re.search(r'Mahalle\s*\|\s*([A-ZÇĞİÖŞÜa-zçğıöşü]+)', full_text)
@@ -316,18 +305,21 @@ def parse_imar_pdf(uploaded_file):
             if not found_fonks:
                 found_fonks.append("KONUT ALANI")
                 
-            for idx, fn in enumerate(found_fonks):
+            for fn in found_fonks:
                 parcel_data["fonksiyonlar"].append({
                     "fonksiyon_adi": fn,
                     "taks": 0.30,
                     "kaks": 0.40,
-                    "giren_m2": parcel_data["toplam_alan"] / len(found_fonks)
+                    "giren_m2": 0.0
                 })
                 
-        toplam_f_m2 = sum(f["giren_m2"] for f in parcel_data["fonksiyonlar"])
-        if toplam_f_m2 <= 0 and parcel_data["toplam_alan"] > 0:
+        # Alanları fonksiyonlara eşit veya oranlı dağıt
+        num_fonks = len(parcel_data["fonksiyonlar"])
+        if num_fonks > 0:
+            share_m2 = parcel_data["toplam_alan"] / num_fonks
             for f in parcel_data["fonksiyonlar"]:
-                f["giren_m2"] = parcel_data["toplam_alan"] / len(parcel_data["fonksiyonlar"])
+                if f["giren_m2"] <= 0:
+                    f["giren_m2"] = share_m2
                 
         parcel_data["terk_yapilmis_mi"] = detect_terk_status(full_text, parcel_data["toplam_alan"], parcel_data["fonksiyonlar"])
     except Exception as e:
