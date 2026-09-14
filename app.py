@@ -750,7 +750,6 @@ if selected_keys:
       conf = function_configs.get(fonk_adi)
       kaks = f["kaks"]
 
-      # Güncellenmiş formül mimarisi:
       if is_terkli:
         brut_insaat = toplam_arsa_m2 * kaks * emsal_artis_orani
       else:
@@ -758,8 +757,6 @@ if selected_keys:
 
       total_yasal_brut_insaat += brut_insaat
 
-      # Bodrum katlar toplam inşaat alanına dahil değildir (1.20 cm şartı)
-      # Havuzlar toplam inşaat alanından hesaplanmaktadır.
       tekil_havuz_payi = 30.0 if "Özel" in conf["havuz_mod"] else 0.0
       sim_bodrum = (
           brut_insaat - (tekil_havuz_payi * conf["adet"])
@@ -836,11 +833,13 @@ if selected_keys:
     st.subheader("Fonksiyon Bazlı Brüt İnşaat Kapasite Hesabı")
     calc_results = []
     for item in function_results_detail:
-      calc_results.append({
-          "Parsel": item["Parsel"],
-          "Fonksiyon": item["Fonksiyon"],
-          "Toplam Brüt İnşaat Alanı (m²)": f"{item['Brüt İnşaat (m²)']:,.2f}",
-      })
+      # Toplam Brüt İnşaat Alanı (m²) 0 olanları bu tabloda göstermeyelim şartı:
+      if item["Brüt İnşaat (m²)"] > 0:
+        calc_results.append({
+            "Parsel": item["Parsel"],
+            "Fonksiyon Adı": item["Fonksiyon"],  # Fonksiyon adı eklendi
+            "Toplam Brüt İnşaat Alanı (m²)": f"{item['Brüt İnşaat (m²)']:,.2f}",
+        })
     st.table(pd.DataFrame(calc_results))
     st.metric(
         label="🏗️ Toplam Brüt İnşaat Alanı (Bodrum Hariç)",
