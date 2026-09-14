@@ -525,22 +525,25 @@ if selected_keys:
       "Bahçe Alanı Terk Oranı (%)", 0, 80, 40, step=1
   )
 
+  # ==========================================
+  # REHBER 1: İŞ MODELİ VE FİNANSAL YAPI KARTI
+  # ==========================================
   st.markdown(
       """
-    <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #cbd5e1; border-radius: 14px; padding: 24px; margin-bottom: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
-        <div style="display: flex; align-items: center; margin-bottom: 16px; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px;">
-            <span style="font-size: 20px; margin-right: 10px;">⚙️</span>
+    <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 14px; padding: 22px 24px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+        <div style="display: flex; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+            <span style="font-size: 20px; margin-right: 10px;">📊</span>
             <div>
-                <h3 style="color: #0f172a; margin: 0; font-size: 18px; font-weight: 700;">İş Modeli ve Genel Parametreler</h3>
-                <p style="color: #64748b; margin: 0; font-size: 13px;">Projenin finansal kurgusunu ve iş ortaklığı modelini yapılandırın.</p>
+                <h3 style="color: #0f172a; margin: 0; font-size: 16px; font-weight: 700;">İş Modeli ve Finansal Yapı</h3>
+                <p style="color: #64748b; margin: 0; font-size: 12px;">Sözleşme modelini seçin ve ortaklık oranlarını belirleyin.</p>
             </div>
         </div>
     """,
       unsafe_allow_html=True,
   )
 
-  col_global1, col_global_empty = st.columns([2, 1])
-  with col_global1:
+  col_model, col_empty_m = st.columns([2, 1])
+  with col_model:
     is_modeli = st.selectbox(
         "İş Modeli / Rapor Türü:",
         options=[
@@ -554,8 +557,8 @@ if selected_keys:
   arsa_bonus_usd = 0.0
   if "Kat Karşılığı" in is_modeli:
     st.markdown(
-        "<div style='margin-top: 15px; border-top: 1px dashed #cbd5e1;"
-        " padding-top: 15px;'></div>",
+        "<div style='margin-top: 14px; border-top: 1px dashed #cbd5e1;"
+        " padding-top: 14px;'></div>",
         unsafe_allow_html=True,
     )
     col_gk1, col_gk2, col_gk3 = st.columns([2, 1, 2])
@@ -637,16 +640,24 @@ if selected_keys:
   function_configs = {}
   first_mahalle = list(active_parcel_db.values())[0].get("mahalle", "VARSAYILAN")
 
+  # =========================================================
+  # REHBER 2: PROJE TİPİ VE BİRİM BOYUTU OPTİMİZASYON KARTI
+  # =========================================================
   st.markdown(
       """
-    <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
-        <h4 style="margin: 0 0 10px 0; color: #1e3a8a; font-size: 16px;">⚡ Toplu Parsel Proje Tipi ve Proje Tipine Endeksli Birim Boyutu Yönetimi</h4>
-        <p style="color: #64748b; font-size: 13px; margin-bottom: 15px;">Seçilen parsellerin imar niteliğine göre proje tipini belirleyin. Seçilen proje tipine özel olarak dinamik aralıkta çalışan <b>Hedef Ortalama Bağımsız Bölüm Alanı</b> sürgüsü ile birimleri en yakın net/brüt metrekareye göre optimize edin.</p>
+    <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 14px; padding: 22px 24px; margin-bottom: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+        <div style="display: flex; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+            <span style="font-size: 20px; margin-right: 10px;">⚡</span>
+            <div>
+                <h3 style="color: #0f172a; margin: 0; font-size: 16px; font-weight: 700;">Proje Tipi ve Birim Boyutu Optimizasyonu</h3>
+                <p style="color: #64748b; margin: 0; font-size: 12px;">Seçilen proje tipine özel dinamik aralıkta çalışan hedef ortalama bağımsız bölüm boyutu belirleyin.</p>
+            </div>
+        </div>
     """,
       unsafe_allow_html=True,
   )
 
-  tc1, tc2 = st.columns([2, 1])
+  tc1, tc2 = st.columns(2)
   with tc1:
     toplu_p_tipi = st.selectbox(
         "Toplu Proje Tipi Seçimi (Nitelik Kısıtlı)",
@@ -696,7 +707,7 @@ if selected_keys:
   )
 
   st.markdown(
-      f"<div style='font-size: 13px; color: #334155; margin-top: 10px; background: #f8fafc; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0;'>"
+      f"<div style='font-size: 13px; color: #334155; margin-top: 14px; background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid #e2e8f0;'>"
       f"💡 Seçilen <b>{toplu_p_tipi}</b> piyasa verileri işlendi: Maliyet:"
       f" <b>${auto_maliyet:,.2f}/m²</b> | Satış Fiyatı:"
       f" <b>${auto_satis:,.2f}/m²</b> | Hedef Ortalama Alan: <b>{global_hedef_birim_m2}"
@@ -714,7 +725,6 @@ if selected_keys:
 
     fonk_toplam_brut_m2 = temp_function_bruts.get(fonk_name, 300.0)
 
-    # Adet hesaplamasını sıfıra bölünme ve tüm proje tiplerinde kararlı çalışacak şekilde güvenli hale getirdik
     effective_target_size = max(10.0, float(global_hedef_birim_m2))
     calculated_adet = round(fonk_toplam_brut_m2 / effective_target_size)
     def_adet = max(1, int(calculated_adet))
@@ -971,7 +981,6 @@ if selected_keys:
 
     st.dataframe(pd.DataFrame(mimari_rows), use_container_width=True)
 
-    # --- MİMARİ ÖZET TOPLAM TABLOSU ---
     st.markdown(
         "<div style='margin-top: 20px; margin-bottom: 8px;'><h5"
         " style='color: #1e3a8a; margin: 0; font-size: 15px;'>📋 Toplu Mimari"
