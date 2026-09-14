@@ -401,7 +401,6 @@ def parse_imar_pdf(uploaded_file):
 
 def get_allowed_project_types(fonksiyon_adi):
   f_upper = fonksiyon_adi.upper()
-  # İmar durumuna göre kesin kısıtlama mantığı
   if "TİCARET" in f_upper and (
       "KONUT" in f_upper or "MESKEN" in f_upper or "+" in f_upper
   ):
@@ -415,7 +414,6 @@ def get_allowed_project_types(fonksiyon_adi):
         "Standart Konut / Apartman",
     ]
   else:
-    # Diğer özel fonksiyonlar için genel güvenli konut/ticari seçenekler
     return [
         "Lüks Villa / Müstakil Proje",
         "Üst Segment Konut / Rezidans",
@@ -578,7 +576,6 @@ if selected_keys:
 
   st.markdown("</div>", unsafe_allow_html=True)
 
-  # --- ÖNCEDEN GEÇİCİ HESAPLAMA İÇİN BRÜT ALANLARININ ÇIKARILMASI ---
   temp_function_bruts = {}
   for key, p in active_parcel_db.items():
     toplam_arsa_m2 = p["toplam_alan"]
@@ -839,8 +836,7 @@ if selected_keys:
         calc_results.append({
             "Parsel": item["Parsel"],
             "İmar Fonksiyon Adı": item["Fonksiyon"],
-            "Toplam Brüt İnşaat Alanı (m²)": f"{item['Brüt İnşaat (m²)'
-:,.2f}",
+            "Toplam Brüt İnşaat Alanı (m²)": f"{item['Brüt İnşaat (m²)']:,.2f}",
         })
     st.table(pd.DataFrame(calc_results))
     st.metric(
