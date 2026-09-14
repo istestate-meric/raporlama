@@ -401,26 +401,30 @@ def parse_imar_pdf(uploaded_file):
 
 def get_allowed_project_types(fonksiyon_adi):
   f_upper = fonksiyon_adi.upper()
+  # Kesin imar fonksiyonu ayrımı
   if "TİCARET" in f_upper and (
       "KONUT" in f_upper or "MESKEN" in f_upper or "+" in f_upper
   ):
     return ["Karma Proje (Konut + Ticari)", "Ticari / Ofis Kompleksi"]
   elif "TİCARET" in f_upper or "TİCARİ" in f_upper:
     return ["Ticari / Ofis Kompleksi"]
-  elif "KONUT" in f_upper or "MESKEN" in f_upper:
+  elif (
+      "KONUT" in f_upper
+      or "MESKEN" in f_upper
+      or "KONUT ALANI" in f_upper
+      or "İSKAN" in f_upper
+  ):
     return [
         "Lüks Villa / Müstakil Proje",
         "Üst Segment Konut / Rezidans",
         "Standart Konut / Apartman",
     ]
   else:
-    # Genel veya tanımlanamayan alanlar için tüm imar tiplerine izin ver
+    # Eğer fonksiyon adı tam tespit edilemediyse veya genel ise varsayılan konut alt tiplerini dön
     return [
         "Lüks Villa / Müstakil Proje",
         "Üst Segment Konut / Rezidans",
         "Standart Konut / Apartman",
-        "Ticari / Ofis Kompleksi",
-        "Karma Proje (Konut + Ticari)",
     ]
 
 
@@ -612,7 +616,7 @@ if selected_keys:
         all_functions_map[f_name] = []
       all_functions_map[f_name].append((key, f))
 
-  # --- İMAR NİTELİĞİNE GÖRE KESİN KISIT (KESİŞİM / İLGİLİ LİSTE) ---
+  # --- KESİN KISIT (INTERSECTION YERİNE ORTAK GEÇERLİ TİPLER) ---
   combined_allowed_types = None
   for fonk_name in all_functions_map.keys():
     allowed_for_func = set(get_allowed_project_types(fonk_name))
@@ -623,15 +627,11 @@ if selected_keys:
           allowed_for_func
       )
 
-  # Eğer kesişim boş kalırsa veya tüm fonksiyonlar genel ise güvenli liste
+  # Eğer kesişim boş küme kalırsa (örneğin farklı nitelikte karma parseller seçildiyse) union ile birleştir
   if not combined_allowed_types:
-    combined_allowed_types = {
-        "Standart Konut / Apartman",
-        "Üst Segment Konut / Rezidans",
-        "Lüks Villa / Müstakil Proje",
-        "Ticari / Ofis Kompleksi",
-        "Karma Proje (Konut + Ticari)",
-    }
+    combined_allowed_types = set()
+    for fonk_name in all_functions_map.keys():
+      combined_allowed_types.update(get_allowed_project_types(fonk_name))
 
   combined_allowed_types_list = sorted(list(combined_allowed_types))
 
@@ -764,18 +764,21 @@ if selected_keys:
       }
       st.divider()
 
-  # Eğer opsiyonel panel açılıp konfigüre edilmediyse, ana toplu seçimi otomatik fonksiyon matrisine yansıt
   for fonk_name, items in all_functions_map.items():
     if fonk_name not in function_configs:
+      allowed_types = get_allowed_project_types(fonk_name)
+      default_type = (
+          toplu_p_tipi if toplu_p_tipi in allowed_types else allowed_types[0]
+      )
       function_configs[fonk_name] = {
-          "proje_tipi": toplu_p_tipi,
+          "proje_tipi": default_type,
           "adet": max(
               1,
               round(
                   temp_function_bruts.get(fonk_name, 300.0)
                   / (
                       130.0
-                      if "Villa" not in toplu_p_tipi
+                      if "Villa" not in default_type
                       else 300.0 * 1.35
                   )
               ),
@@ -908,27 +911,14 @@ if selected_keys:
     st.markdown(
         "<p style='color: #64748b; font-size: 13px;'>Seçilen parsellerdeki"
         " fonksiyonların bağımsız bölüm dağılımları ve yapı tipleri güncel"
-        " imar kurallarına göre hesaplanmıştır.</p>",
+        " imar kurallarına göre toplu olarak aşağıda listelenmiştir.</p>",
         unsafe_allow_html=True,
     )
 
+    summary_table_data = []
     for fonk_name, items in all_functions_map.items():
       conf = function_configs.get(fonk_name, {})
       sel_p_tipi = conf.get("proje_tipi", "Standart Konut / Apartman")
-
-      birim_etiket = (
-          "Ortalama Villa Brüt Alanı"
-          if "Villa" in sel_p_tipi
-          else (
-              "Ortalama Rezidans / Üst Segment Brüt Alanı"
-              if "Rezidan" in sel_p_tipi or "Üst Segment" in sel_p_tipi
-              else (
-                  "Ortalama Ofis / Ticari Alan Brüt Alanı"
-                  if "Ticari" in sel_p_tipi or "Ofis" in sel_p_tipi
-                  else "Ortalama Konut Brüt Alanı"
-              )
-          )
-      )
 
       fonk_toplam_brut = 0.0
       fonk_toplam_arsa = 0.0
@@ -952,41 +942,17 @@ if selected_keys:
           (fonk_toplam_brut / adet) if adet > 0 else fonk_toplam_brut
       )
 
-      st.markdown(
-          f"""
-            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 22px; margin-bottom: 22px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
-                <h4 style="color: #0f172a; margin-top: 0; margin-bottom: 15px; font-size: 16px; border-bottom: 2px solid #94a3b8; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-                    <span>📌 Fonksiyon: <span style="color: #1e3a8a;">{fonk_name}</span></span>
-                    <span style="font-size: 12px; font-weight: normal; color: #475569; background: #e2e8f0; padding: 3px 10px; border-radius: 6px;">{sel_p_tipi}</span>
-                </h4>
-            """,
-          unsafe_allow_html=True,
-      )
+      summary_table_data.append({
+          "İmar Fonksiyonu": fonk_name,
+          "Seçilen Proje Tipi": sel_p_tipi,
+          "B.B. Adedi": f"{adet} Adet",
+          "Ortalama Birim Brüt Alanı": f"{ortalama_brut_birim:,.2f} m²",
+          "Birim Başına Düşen Arsa": f"{arsa_payi_birim:,.2f} m²",
+          "Toplam Brüt İnşaat": f"{fonk_toplam_brut:,.2f} m²",
+          "Havuz Tercihi": conf.get("havuz_mod", "-"),
+      })
 
-      mc1, mc2, mc3 = st.columns(3)
-      with mc1:
-        st.metric("Bağımsız Bölüm Adedi", f"{adet} Adet")
-      with mc2:
-        st.metric(f"{birim_etiket}", f"{ortalama_brut_birim:,.2f} m²")
-      with mc3:
-        st.metric("Havuz Konsept Tercihi", conf.get("havuz_mod", "-"))
-
-      st.markdown(
-          f"""
-            <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
-                <div>
-                    <span style="font-weight: 700; color: #334155; font-size: 13px;">🌿 Bağımsız Bölüme Düşen Arsa Alanı:</span>
-                    <span style="color: #0f172a; font-weight: 800; font-size: 14px; margin-left: 6px;">{arsa_payi_birim:,.2f} m² / birim</span>
-                </div>
-                <div>
-                    <span style="font-weight: 700; color: #334155; font-size: 13px;">🏗️ Fonksiyon Toplam Brüt İnşaat:</span>
-                    <span style="color: #1e3a8a; font-weight: 800; font-size: 14px; margin-left: 6px;">{fonk_toplam_brut:,.2f} m²</span>
-                </div>
-            </div>
-            </div>
-            """,
-          unsafe_allow_html=True,
-      )
+    st.dataframe(pd.DataFrame(summary_table_data), use_container_width=True)
 
   with tab3:
     st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılım Matrisi")
