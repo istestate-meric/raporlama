@@ -234,6 +234,23 @@ def parse_tr_float(val_str):
     return 0.0
 
 
+def clean_fonksiyon_adi(name):
+  if not name:
+    return "KONUT ALANI"
+  n = name.upper().strip()
+  if "TİCARET" in n and "KONUT" in n:
+    return "TİCARET VE KONUT ALANI"
+  elif "TİCARET" in n or "TİCARİ" in n:
+    return "TİCARET ALANI"
+  elif "VİLLA" in n:
+    return "VİLLA ALANI"
+  elif "KONUT" in n or "MESKEN" in n:
+    return "KONUT ALANI"
+
+  n_clean = re.sub(r"[%–\d\.,]+\s*m²?", "", n).strip()
+  return n_clean if len(n_clean) > 2 else "KONUT ALANI"
+
+
 def detect_terk_status(text, toplam_alan, fonksiyonlar):
   text_upper = text.upper()
   terksiz_kaliplar = [
@@ -326,7 +343,7 @@ def parse_imar_pdf(uploaded_file):
             if "Fonksiyon Adı" in row_str or any(
                 "Fonksiyon" in str(c) for c in cells
             ):
-              fonk_name = ""
+              fonk_raw = ""
               taks_val, kaks_val, giren_m2 = 0.30, 0.40, 0.0
 
               for sub_idx in range(r_idx, min(r_idx + 5, len(table))):
@@ -339,7 +356,7 @@ def parse_imar_pdf(uploaded_file):
                 if "Fonksiyon Adı" in sub_str or "Fonksiyon" in sub_str:
                   for c in sub_cells:
                     if c and "Fonksiyon" not in c and c != "|":
-                      fonk_name = c.strip()
+                      fonk_raw = c.strip()
                       break
 
                 t_m = re.search(
@@ -360,6 +377,7 @@ def parse_imar_pdf(uploaded_file):
                   if m2_match:
                     giren_m2 = parse_tr_float(m2_match.group(1))
 
+              fonk_name = clean_fonksiyon_adi(fonk_raw)
               if fonk_name and not any(
                   f["fonksiyon_adi"] == fonk_name
                   for f in parcel_data["fonksiyonlar"]
@@ -388,7 +406,7 @@ def parse_imar_pdf(uploaded_file):
 
     if not parcel_data["fonksiyonlar"]:
       parcel_data["fonksiyonlar"].append({
-          "fonksiyon_adi": "Konut Alanı",
+          "fonksiyon_adi": "KONUT ALANI",
           "taks": 0.30,
           "kaks": 0.40,
           "giren_m2": parcel_data["toplam_alan"],
@@ -505,16 +523,7 @@ if selected_keys:
   )
 
   combined_fonk_text = " ".join([
-      f["fonksiyon_adi"]
-      .upper()
-      .replace("İ", "I")
-      .replace("Ç", "C")
-      .replace("Ş", "S")
-      .replace("Ğ", "G")
-      .replace("Ü", "U")
-      .replace("Ö", "O")
-      for p in active_parcel_db.values()
-      for f in p["fonksiyonlar"]
+      f["fonksiyon_adi"] for p in active_parcel_db.values() for f in p["fonksiyonlar"]
   ])
 
   has_ticaret = any(x in combined_fonk_text for x in ["TICARET", "TICARI"])
@@ -645,7 +654,7 @@ if selected_keys:
         f["giren_m2"]
         for f in p["fonksiyonlar"]
         if not any(
-            x in f["fonksiyon_adi"].upper()
+            x in f["fonksiyon_adi"]
             for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
         )
     )
@@ -655,7 +664,7 @@ if selected_keys:
     for f in p["fonksiyonlar"]:
       fonk_name = f["fonksiyon_adi"]
       if any(
-          x in fonk_name.upper()
+          x in fonk_name
           for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
       ):
         continue
@@ -690,21 +699,15 @@ if selected_keys:
     fn_cols = st.columns(len(valid_active_functions_with_area))
 
     for idx, fonk_adi in enumerate(valid_active_functions_with_area):
-      f_upper = (
-          fonk_adi.upper()
-          .replace("İ", "I")
-          .replace("Ç", "C")
-          .replace("Ş", "S")
-          .replace("Ğ", "G")
-          .replace("Ü", "U")
-          .replace("Ö", "O")
-      )
       total_b_m2 = function_total_brut_areas.get(fonk_adi, 0.0)
 
-      if "TICARET" in f_upper:
+      if "TİCARET" in fonk_adi and "KONUT" in fonk_adi:
+        def_sz, min_sz, max_sz, step_sz = 120, 60, 400, 10
+        icon_prefix = "🏢🏠"
+      elif "TİCARET" in fonk_adi:
         def_sz, min_sz, max_sz, step_sz = 150, 60, 800, 10
         icon_prefix = "🏢"
-      elif "VILLA" in f_upper:
+      elif "VİLLA" in fonk_adi:
         def_sz, min_sz, max_sz, step_sz = 250, 180, 550, 10
         icon_prefix = "🏡"
       else:
@@ -750,7 +753,7 @@ if selected_keys:
         f["giren_m2"]
         for f in p["fonksiyonlar"]
         if not any(
-            x in f["fonksiyon_adi"].upper()
+            x in f["fonksiyon_adi"]
             for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
         )
     )
@@ -760,7 +763,7 @@ if selected_keys:
     for f in p["fonksiyonlar"]:
       fonk_name = f["fonksiyon_adi"]
       if any(
-          x in fonk_name.upper()
+          x in fonk_name
           for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
       ):
         continue
@@ -810,7 +813,7 @@ if selected_keys:
         f["giren_m2"]
         for f in p["fonksiyonlar"]
         if not any(
-            x in f["fonksiyon_adi"].upper()
+            x in f["fonksiyon_adi"]
             for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
         )
     )
@@ -820,7 +823,7 @@ if selected_keys:
     for f in p["fonksiyonlar"]:
       fonk_adi = f["fonksiyon_adi"]
       if any(
-          x in fonk_adi.upper()
+          x in fonk_adi
           for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
       ):
         continue
@@ -900,7 +903,7 @@ if selected_keys:
           f["giren_m2"]
           for f in p["fonksiyonlar"]
           if not any(
-              x in f["fonksiyon_adi"].upper()
+              x in f["fonksiyon_adi"]
               for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
           )
       )
@@ -910,7 +913,7 @@ if selected_keys:
       for f in p["fonksiyonlar"]:
         fonk_name = f["fonksiyon_adi"]
         if any(
-            x in fonk_name.upper()
+            x in fonk_name
             for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
         ):
           continue
@@ -971,7 +974,7 @@ if selected_keys:
           f["giren_m2"]
           for f in p["fonksiyonlar"]
           if not any(
-              x in f["fonksiyon_adi"].upper()
+              x in f["fonksiyon_adi"]
               for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
           )
       )
@@ -981,7 +984,7 @@ if selected_keys:
       for f in p["fonksiyonlar"]:
         fonk_name = f["fonksiyon_adi"]
         if any(
-            x in fonk_name.upper()
+            x in fonk_name
             for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]
         ):
           continue
