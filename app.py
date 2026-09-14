@@ -519,7 +519,6 @@ if selected_keys:
   }
 
   emsal_artis_orani = 1.30
-  # Kullanıcı Kuralı: Bahçe alanı terk oranı ne olursa olsun fonksiyon alanı üzerinden hesaplanır.
   bahce_terk_orani = st.sidebar.slider(
       "Bahçe Alanı Terk Oranı (%)", 0, 80, 40, step=1
   )
@@ -596,7 +595,6 @@ if selected_keys:
       ):
         continue
 
-      # Kural: Parsel imarı net alan üzerinden yapılır.
       net_arsa_m2 = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
       brut_insaat = net_arsa_m2 * f["kaks"] * emsal_artis_orani
 
@@ -812,12 +810,10 @@ if selected_keys:
       kaks = f["kaks"]
       fonksiyon_alani = f["giren_m2"]
 
-      # Kural 1: Parsel imarı net alan üzerinden yapılır.
       net_arsa_m2 = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
       brut_insaat = net_arsa_m2 * kaks * emsal_artis_orani
       total_yasal_brut_insaat += brut_insaat
 
-      # Kural 2: Bahçe alanı terk oranı, oran ne olursa olsun fonksiyon alanı üzerinden hesaplanır.
       bahce_terki = fonksiyon_alani * (bahce_terk_orani / 100.0)
       total_bahce_alani_terki += bahce_terki
 
@@ -923,17 +919,19 @@ if selected_keys:
   with tab2:
     st.subheader("🏛️ Parsel Bazlı Mimari ve Yerleşim Fizibilitesi")
     st.markdown(
-        "<p style='color: #64748b; font-size: 13px;'>Yalnızca inşaat"
-        " alanı bulunan seçili parsellerin bağımsız bölüm dağılımları ve yapı"
-        " tipleri aşağıda listelenmiştir.</p>",
+        "<p style='color: #64748b; font-size: 13px;'>Seçilen parsellerin"
+        " arsa ve bahçe niteliklerine göre alan, net alan, fonksiyon, KAKS ve"
+        " brüt inşaat alanı dağılımları aşağıda listelenmiştir.</p>",
         unsafe_allow_html=True,
     )
 
-    summary_table_data = []
+    mimari_table_rows = []
     for key, p in active_parcel_db.items():
-      toplam_arsa_m2 = p["toplam_alan"]
-      is_terkli = p["terk_yapilmis_mi"]
-      net_arsa_m2 = toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
+      mahalle = p.get("mahalle", "BİLİNMİYOR")
+      ada = p.get("ada", "0")
+      parsel = p.get("parsel", "0")
+      toplam_arsa_m2 = p.get("toplam_alan", 0.0)
+      is_terkli = p.get("terk_yapilmis_mi", False)
 
       for f in p["fonksiyonlar"]:
         fonk_name = f["fonksiyon_adi"]
@@ -943,39 +941,45 @@ if selected_keys:
         ):
           continue
 
-        brut_insaat = net_arsa_m2 * f["kaks"] * emsal_artis_orani
-        if brut_insaat <= 0:
-          continue
+        kaks = f["kaks"]
+        fonksiyon_alani = f["giren_m2"]
 
-        conf = function_configs.get(fonk_name, {})
-        sel_p_tipi = conf.get("proje_tipi", "Standart Konut / Apartman")
-
-        total_f_brut = temp_function_bruts.get(fonk_name, 1.0)
-        if total_f_brut <= 0:
-          total_f_brut = 1.0
-        parsel_oran = brut_insaat / total_f_brut
-        fonk_adet = conf.get("adet", 1)
-        parsel_adet = max(1, round(fonk_adet * parsel_oran))
-
-        arsa_payi_birim = (
-            (net_arsa_m2 / parsel_adet) if parsel_adet > 0 else net_arsa_m2
+        # 1. ARSA SATIRI (İmar ve İnşaat Hesabına Esas Alan)
+        hesaba_alinan_arsa = (
+            toplam_arsa_m2 if is_terkli else toplam_arsa_m2 * 0.70
         )
-        ortalama_brut_birim = (
-            (brut_insaat / parsel_adet) if parsel_adet > 0 else brut_insaat
-        )
+        brut_insaat_arsa = hesaba_alinan_arsa * kaks * emsal_artis_orani
 
-        summary_table_data.append({
-            "Parsel Kimliği": key,
-            "İmar Fonksiyonu": fonk_name,
-            "Seçilen Proje Tipi": sel_p_tipi,
-            "B.B. Adedi": f"{parsel_adet} Adet",
-            "Ortalama Birim Brüt Alanı": f"{ortalama_brut_birim:,.2f} m²",
-            "Birim Başına Düşen Arsa": f"{arsa_payi_birim:,.2f} m²",
-            "Toplam Brüt İnşaat": f"{brut_insaat:,.2f} m²",
-            "Havuz Tercihi": conf.get("havuz_mod", "-"),
+        mimari_table_rows.append({
+            "MAHALLE": mahalle,
+            "ADA": ada,
+            "PARSEL": parsel,
+            "NİTELİK (Arsa,Bahçe)": "Arsa",
+            "ALAN (M²)": f"{toplam_arsa_m2:,.2f}",
+            "HESABA ALINAN (M²)": f"{hesaba_alinan_arsa:,.2f}",
+            "NET ALAN (M²)": f"{hesaba_alinan_arsa:,.2f}",
+            "FONKSİYON": fonk_name,
+            "KAKS": f"{kaks:.2f}",
+            "İNŞAAT ALANI (BRÜT M²)": f"{brut_insaat_arsa:,.2f}",
         })
 
-    st.dataframe(pd.DataFrame(summary_table_data), use_container_width=True)
+        # 2. BAHÇE SATIRI (Fonksiyon üzerinden hesaplanan bahçe terki / alanı)
+        bahce_alani = fonksiyon_alani * (bahce_terk_orani / 100.0)
+        if bahce_alani > 0:
+          mimari_table_rows.append({
+              "MAHALLE": mahalle,
+              "ADA": ada,
+              "PARSEL": parsel,
+              "NİTELİK (Arsa,Bahçe)": "Bahçe",
+              "ALAN (M²)": f"{fonksiyon_alani:,.2f}",
+              "HESABA ALINAN (M²)": f"{bahce_alani:,.2f}",
+              "NET ALAN (M²)": f"{bahce_alani:,.2f}",
+              "FONKSİYON": f"{fonk_name} (Bahçe Payı)",
+              "KAKS": "-",
+              "İNŞAAT ALANI (BRÜT M²)": "-",
+          })
+
+    st.dataframe(pd.DataFrame(mimari_table_rows), use_container_width=True)
 
   with tab3:
     st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılım Matrisi")
