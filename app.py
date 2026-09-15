@@ -703,7 +703,6 @@ if selected_keys:
             total_yasal_brut_insaat += brut_insaat
             total_bahce_alani_terki += item["bahce_kullanim_alani"]
             
-            # Havuz düşüm mantığı
             if "İptal" not in conf["havuz_mod"]:
                 if "Müstakil" in conf["havuz_mod"]:
                     havuz_dusum = conf["havuz_m2"] * conf["adet"]
@@ -781,6 +780,8 @@ if selected_keys:
     with tab2:
         st.subheader("🏛️ Mimari Fizibilite & Senaryo Dağılım Matrisi")
         mimari_rows = []
+        total_units_sum = 0
+        total_net_insaat_sum = 0.0
         
         for key, p in active_parcel_db.items():
             mahalle = p.get("mahalle", "BİLİNMİYOR")
@@ -801,6 +802,7 @@ if selected_keys:
                     continue
                     
                 konut_adeti = conf["adet"]
+                total_units_sum += konut_adeti
                 
                 if "İptal" not in conf["havuz_mod"]:
                     if "Müstakil" in conf["havuz_mod"]:
@@ -811,6 +813,7 @@ if selected_keys:
                     havuz_dusum = 0.0
 
                 net_konut_insaat = max(0.0, brut_insaat - havuz_dusum)
+                total_net_insaat_sum += net_konut_insaat
                 birim_m2 = net_konut_insaat / konut_adeti if konut_adeti > 0 else net_konut_insaat
                 
                 mimari_rows.append({
@@ -826,6 +829,25 @@ if selected_keys:
                 
         if mimari_rows:
             st.dataframe(pd.DataFrame(mimari_rows), use_container_width=True)
+            
+            # --- TOPLU ÖZET METRİKLERİ VE PAYLAŞIM DAĞILIMI ---
+            avg_unit_m2 = total_net_insaat_sum / total_units_sum if total_units_sum > 0 else 0.0
+            
+            st.markdown("---")
+            st.markdown("#### 📋 Mimari ve Proje Özet Dağılımı")
+            
+            m_col1, m_col2, m_col3, m_col4 = st.columns(4)
+            m_col1.metric("Toplam Bağımsız Bölüm", f"{total_units_sum} Adet")
+            m_col2.metric("Ortalama Net/Brüt Birim Alanı", f"{avg_unit_m2:,.1f} m²")
+            
+            if "Kat Karşılığı" in is_modeli:
+                arsa_sahibi_adet = round(total_units_sum * (arsa_payi_orani / 100))
+                mutaahhit_adet = total_units_sum - arsa_sahibi_adet
+                m_col3.metric("Arsa Sahibi Payı (Adet)", f"~{arsa_sahibi_adet} Adet (%{arsa_payi_orani})")
+                m_col4.metric("Müteahhit Payı (Adet)", f"~{mutaahhit_adet} Adet (%{100 - arsa_payi_orani})")
+            else:
+                m_col3.metric("İş Modeli", "Doğrudan Satılık")
+                m_col4.metric("Müteahhit Payı", f"{total_units_sum} Adet (%100)")
 
     with tab3:
         st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılımı")
