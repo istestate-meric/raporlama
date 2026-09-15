@@ -225,21 +225,9 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
         if kw in text_upper:
             return True
             
-    terk_var_match = re.search(r'(?:YOLA|KAMUYA)?\s*TERK\s*[:=-]\s*(VAR|YAPILACAK|VARDIR)', text_upper)
-    if terk_var_match:
-        return False
-
-    terk_yok_match = re.search(r'(?:YOLA|KAMUYA)?\s*TERK\s*[:=-]\s*(YOK|YAPILMIŞ|0)', text_upper)
-    if terk_yok_match:
-        return True
-
-    toplam_fonksiyon_m2 = sum(f.get("giren_m2", 0.0) for f in fonksiyonlar if not any(x in f.get("fonksiyon_adi", "") for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]))
-    if toplam_alan > 0 and toplam_fonksiyon_m2 > 0:
-        if abs(toplam_alan - toplam_fonksiyon_m2) < 0.5 or (toplam_fonksiyon_m2 / toplam_alan) >= 0.995:
-            return True
     return False
 
-# --- HASSAS VE GÜÇLENDİRİLMİŞ YENÇOK VE KAT ADEDİ AYRIŞTIRICI ---
+# --- DÜZELTİLMİŞ HASSAS YENÇOK VE KAT ADEDİ AYRIŞTIRICI ---
 def extract_yencok_and_kat(text_or_cell):
     s = str(text_or_cell).upper().strip()
     if not s or set(s) <= set('.,-/_ '):
@@ -248,44 +236,32 @@ def extract_yencok_and_kat(text_or_cell):
     yencok_val = "-"
     kat_val = "-"
     
-    if "SERBEST" in s and not any(k in s for k in ["KAT", "Z+"]):
-        yencok_val = "Serbest"
-    
-    # Kat Adedi Ayrıştırma
-    kat_m = re.search(r'(?:KAT\s*ADEDİ|KAT\s*SAYISI|KAT)\s*[:=]?\s*([Zz\d\+\-\s\.]+)', s)
+    # Kat adedini doğru yakalama (örn: "Kat Adedi 2" veya doğrudan "2")
+    kat_m = re.search(r'(?:KAT\s*(?:ADEDİ)?\s*[:=]?\s*(\d+)|(\d+)\s*KAT|Z\s*\+\s*(\d+)|A\s*-\s*(\d+)|\bK\s*[:=]?\s*(\d+))', s)
     if kat_m:
-        val = kat_m.group(1).strip()
-        if val and val != '-':
-            kat_val = val
-    else:
-        z_m = re.search(r'\b(Z\s*\+\s*\d+)\b', s)
-        if z_m:
-            kat_val = z_m.group(1)
-        else:
-            num_kat_m = re.search(r'\b(\d+)\s*KAT\b', s)
-            if num_kat_m:
-                kat_val = num_kat_m.group(1) + " Kat"
-            elif re.match(r'^(?:Z\s*\+\s*\d+|\d+\s*KAT|\d+|Z|A-\d+)$', s) and not any(k in s for k in ['M', 'TAKS', 'KAKS', 'EMSAL']):
-                kat_val = s
-
-    # Yençok (Yükseklik) Ayrıştırma
+        groups = [g for g in kat_m.groups() if g is not None]
+        if groups:
+            kat_val = f"{groups[0]} Kat"
+            
     if "SERBEST" in s:
         yencok_val = "Serbest"
     else:
-        h_m = re.search(r'(?:YENÇOK|HMAX|H\.MAX|H)\s*[:=]?\s*([\d\.,]+\s*M?)', s, re.IGNORECASE)
+        h_m = re.search(r'(?:YENÇOK|HMAX|H)\s*[:=]?\s*([\d\.,]+\s*M?)', s)
         if h_m:
-            yencok_val = h_m.group(1).strip()
+            val_str = h_m.group(1).strip()
+            if val_str not in ["0", "0.0", "0M", "0 M"]:
+                yencok_val = val_str
         else:
-            m_m = re.search(r'\b(\d+[\.,]\d+)\s*M\b', s, re.IGNORECASE)
-            if m_m:
-                yencok_val = m_m.group(1).strip() + " m"
-            else:
-                num_only = re.match(r'^([\d\.,]+)$', s)
-                if num_only:
-                    val_f = parse_tr_float(num_only.group(1))
-                    if 3.0 <= val_f <= 60.0:
-                        yencok_val = f"{val_f} m"
-                        
+            m_m = re.search(r'(\d+[\.,]\d+\s*M\b)', s)
+            if m_m and not "M²" in s:
+                val_str = m_m.group(1).strip()
+                if val_str not in ["0", "0.0", "0M", "0 M"]:
+                    yencok_val = val_str
+                    
+    # Eğer yençok 0 veya belirtilmemişse ancak Kat Adedi varsa, plan notlarına göre "-" veya "Kat Nizamı" atanır
+    if yencok_val in ["-", "0", "0 M", "0.0"]:
+        yencok_val = "Bina Kat Nizamı"
+        
     return yencok_val, kat_val
 
 # --- KAPSAMLI VE TAM OTOMATİK İMAR PDF AYRIŞTIRMA MOTORU ---
@@ -309,11 +285,9 @@ def parse_imar_pdf(uploaded_file):
                 full_text += "\n" + t
                 
                 tables = page.extract_tables() or []
-                header_indices = {}
                 for table in tables:
                     for r_idx, row in enumerate(table):
                         cells = [str(c).strip().replace("\n", " ") if c is not None else "" for c in row]
-                        joined_row_str = " ".join(cells).upper()
                         
                         if any("Mahalle" in c for c in cells) and any("Ada" in c for c in cells):
                             if r_idx + 1 < len(table):
@@ -326,157 +300,56 @@ def parse_imar_pdf(uploaded_file):
                                         elif "Parsel" in head and val: parcel_data["parsel"] = str(val).strip()
                                         elif "Alan" in head and val: parcel_data["toplam_alan"] = parse_tr_float(val)
 
-                        if any(kw in joined_row_str for kw in ["FONKSİYON", "KAT", "YENÇOK", "KAKS", "EMSAL", "TAKS"]):
-                            for idx, cell in enumerate(cells):
-                                cell_up = cell.upper()
-                                if any(k in cell_up for k in ["FONKSİYON", "İMAR DURUMU", "KULLANIM"]):
-                                    header_indices["fonk"] = idx
-                                elif "TAKS" in cell_up:
-                                    header_indices["taks"] = idx
-                                elif any(k in cell_up for k in ["KAKS", "EMSAL", "EMS", "E:"]):
-                                    header_indices["kaks"] = idx
-                                elif any(k in cell_up for k in ["YENÇOK", "HMAX", "H.MAX"]):
-                                    header_indices["yencok"] = idx
-                                elif any(k in cell_up for k in ["KAT ADEDİ", "KAT SAYISI", "KAT"]):
-                                    header_indices["kat"] = idx
-                            continue
-
-                        f_name = ""
-                        f_taks = 0.0
-                        f_kaks = 0.0
-                        f_yencok = "-"
-                        f_kat = "-"
-                        f_m2 = 0.0
-                        
-                        if header_indices:
-                            if "fonk" in header_indices and header_indices["fonk"] < len(cells):
-                                f_name = clean_fonksiyon_adi(cells[header_indices["fonk"]])
-                            if "taks" in header_indices and header_indices["taks"] < len(cells):
-                                t_val = parse_tr_float(cells[header_indices["taks"]])
-                                if 0 < t_val <= 1.0: f_taks = t_val
-                            if "kaks" in header_indices and header_indices["kaks"] < len(cells):
-                                f_kaks = parse_kaks_val(cells[header_indices["kaks"]])
-                            if "yencok" in header_indices and header_indices["yencok"] < len(cells):
-                                yc, _ = extract_yencok_and_kat(cells[header_indices["yencok"]])
-                                if yc != "-": f_yencok = yc
-                            if "kat" in header_indices and header_indices["kat"] < len(cells):
-                                _, kt = extract_yencok_and_kat(cells[header_indices["kat"]])
-                                if kt != "-": f_kat = kt
-
-                        for c in cells:
-                            c_up = c.upper()
-                            if any(x in c_up for x in ["KONUT", "TİCARET", "TİCARİ", "PARK", "VİLLA", "GELİŞME"]):
-                                cleaned = clean_fonksiyon_adi(c)
-                                if cleaned: f_name = cleaned
-                            elif "TAKS" in c_up:
-                                nums = re.findall(r'([\d\.,]+)', c)
-                                for num_str in nums:
-                                    val = parse_tr_float(num_str)
-                                    if 0 < val <= 1.0: f_taks = val
-                            elif any(k in c_up for k in ["KAKS", "EMSAL", "EMS", "E:", "E="]):
-                                val = parse_kaks_val(c)
-                                if val > 0: f_kaks = val
-                            elif any(y in c_up for y in ["YENÇOK", "HMAX"]):
-                                yc, _ = extract_yencok_and_kat(c)
-                                if yc != "-": f_yencok = yc
-                            elif any(k in c_up for k in ["KAT"]):
-                                _, kt = extract_yencok_and_kat(c)
-                                if kt != "-": f_kat = kt
+                        joined_row_str = " ".join(cells).upper()
+                        if any(kw in joined_row_str for kw in ["KONUT", "TİCARET", "TİCARİ", "PARK", "VİLLA", "GELİŞME", "EMSAL", "KAKS", "TAKS", "YENÇOK", "KAT", "E:"]):
+                            f_name = ""
+                            f_taks = 0.0
+                            f_kaks = 0.0
+                            f_yencok = "-"
+                            f_kat = "-"
+                            f_m2 = 0.0
                             
-                            m2_m = re.search(r'([\d\.,]+)\s*(?:M²|M2|%)', c, re.IGNORECASE)
-                            if m2_m and not "ALAN" in c_up:
-                                val = parse_tr_float(m2_m.group(1))
-                                if val > 1.0: f_m2 = val
-
-                        if f_name:
-                            row_yc, row_kt = extract_yencok_and_kat(joined_row_str)
-                            if f_yencok == "-" and row_yc != "-": f_yencok = row_yc
-                            if f_kat == "-" and row_kt != "-": f_kat = row_kt
-
-                        if f_kaks > 0 and not f_name and parcel_data["fonksiyonlar"]:
-                            parcel_data["fonksiyonlar"][-1]["kaks"] = f_kaks
-                            if f_taks > 0: parcel_data["fonksiyonlar"][-1]["taks"] = f_taks
-                            if f_yencok != "-": parcel_data["fonksiyonlar"][-1]["yencok"] = f_yencok
-                            if f_kat != "-": parcel_data["fonksiyonlar"][-1]["kat_adedi"] = f_kat
-                        elif f_name:
-                            cleaned_check = clean_fonksiyon_adi(f_name)
-                            if cleaned_check and not any(x in cleaned_check for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
-                                if not any(f["fonksiyon_adi"] == cleaned_check for f in parcel_data["fonksiyonlar"]):
-                                    parcel_data["fonksiyonlar"].append({
-                                        "fonksiyon_adi": cleaned_check,
-                                        "taks": f_taks,
-                                        "kaks": f_kaks,
-                                        "yencok": f_yencok,
-                                        "kat_adedi": f_kat,
-                                        "giren_m2": f_m2
-                                    })
-
-                lines = t.split('\n')
-                for i, line in enumerate(lines):
-                    line_up = line.upper().strip()
-                    if any(kw in line_up for kw in ["KONUT ALANI", "TİCARET ALANI", "TİCARET VE KONUT", "GELİŞME KONUT", "VİLLA ALANI"]):
-                        clean_n = clean_fonksiyon_adi(line)
-                        if clean_n:
-                            curr_fonk = clean_n
-                            curr_taks = 0.0
-                            curr_kaks = 0.0
-                            curr_yencok = "-"
-                            curr_kat = "-"
-                            curr_m2 = 0.0
-                            
-                            for sub_line in lines[max(0, i-5):min(len(lines), i+8)]:
-                                sub_up = sub_line.upper()
-                                if "TAKS" in sub_up:
-                                    num_m = re.search(r'([\d\.,]+)', sub_line)
-                                    if num_m:
-                                        val = parse_tr_float(num_m.group(1))
-                                        if 0 < val <= 1.0: curr_taks = val
-                                        
-                                if any(k in sub_up for k in ["KAKS", "EMSAL", "EMS", "E:"]):
-                                    val = parse_kaks_val(sub_line)
-                                    if val > 0: curr_kaks = val
-
-                                if any(y in sub_up for y in ["YENÇOK", "HMAX", "H.MAX", "H"]):
-                                    yc, _ = extract_yencok_and_kat(sub_line)
-                                    if yc != "-": curr_yencok = yc
-                                if any(k in sub_up for k in ["KAT ADEDİ", "KAT SAYISI", "KAT"]):
-                                    _, kt = extract_yencok_and_kat(sub_line)
-                                    if kt != "-": curr_kat = kt
-                                        
-                                m2_m = re.search(r'([\d\.,]+)\s*(?:m²|m2|%)', sub_line, re.IGNORECASE)
-                                if m2_m:
+                            for c in cells:
+                                c_up = c.upper()
+                                if any(x in c_up for x in ["KONUT", "TİCARET", "TİCARİ", "PARK", "VİLLA", "GELİŞME"]):
+                                    cleaned = clean_fonksiyon_adi(c)
+                                    if cleaned: f_name = cleaned
+                                elif "TAKS" in c_up:
+                                    nums = re.findall(r'([\d\.,]+)', c)
+                                    for num_str in nums:
+                                        val = parse_tr_float(num_str)
+                                        if 0 < val <= 1.0: f_taks = val
+                                elif any(k in c_up for k in ["KAKS", "EMSAL", "EMS", "E:", "E="]):
+                                    f_kaks = parse_kaks_val(c)
+                                elif any(y in c_up for y in ["YENÇOK", "HMAX", "KAT", "M"]):
+                                    yc, kt = extract_yencok_and_kat(c)
+                                    if yc != "-": f_yencok = yc
+                                    if kt != "-": f_kat = kt
+                                
+                                m2_m = re.search(r'([\d\.,]+)\s*(?:M²|M2|%)', c, re.IGNORECASE)
+                                if m2_m and not "ALAN" in c_up:
                                     val = parse_tr_float(m2_m.group(1))
-                                    if val > 0: curr_m2 = val
+                                    if val > 1.0: f_m2 = val
 
-                            if curr_kaks <= 0:
-                                kaks_match = re.search(r'(?:EMSAL|KAKS|EMS|E)\s*[:=\s]*([\d\.,\s/-]+)', line_up)
-                                if kaks_match:
-                                    curr_kaks = parse_kaks_val(kaks_match.group(1))
+                            if f_name:
+                                row_yc, row_kt = extract_yencok_and_kat(joined_row_str)
+                                if f_yencok == "-" and row_yc != "-": f_yencok = row_yc
+                                if f_kat == "-" and row_kt != "-": f_kat = row_kt
 
-                            if curr_yencok == "-" or curr_kat == "-":
-                                sub_block_text = "\n".join(lines[max(0, i-2):min(len(lines), i+4)])
-                                yc_g, kt_g = extract_yencok_and_kat(sub_block_text)
-                                if curr_yencok == "-" and yc_g != "-": curr_yencok = yc_g
-                                if curr_kat == "-" and kt_g != "-": curr_kat = kt_g
-
-                            if curr_fonk:
-                                cleaned_curr_fonk = clean_fonksiyon_adi(curr_fonk)
-                                if cleaned_curr_fonk and not any(x in cleaned_curr_fonk for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
-                                    existing_f = next((f for f in parcel_data["fonksiyonlar"] if f["fonksiyon_adi"] == cleaned_curr_fonk), None)
-                                    if existing_f:
-                                        if curr_kaks > 0: existing_f["kaks"] = curr_kaks
-                                        if curr_taks > 0: existing_f["taks"] = curr_taks
-                                        if curr_yencok != "-": existing_f["yencok"] = curr_yencok
-                                        if curr_kat != "-": existing_f["kat_adedi"] = curr_kat
-                                        if curr_m2 > 0: existing_f["giren_m2"] = curr_m2
-                                    else:
+                            if f_kaks > 0 and not f_name and parcel_data["fonksiyonlar"]:
+                                parcel_data["fonksiyonlar"][-1]["kaks"] = f_kaks
+                                if f_taks > 0: parcel_data["fonksiyonlar"][-1]["taks"] = f_taks
+                            elif f_name:
+                                cleaned_check = clean_fonksiyon_adi(f_name)
+                                if cleaned_check and not any(x in cleaned_check for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
+                                    if not any(f["fonksiyon_adi"] == cleaned_check for f in parcel_data["fonksiyonlar"]):
                                         parcel_data["fonksiyonlar"].append({
-                                            "fonksiyon_adi": cleaned_curr_fonk,
-                                            "taks": curr_taks,
-                                            "kaks": curr_kaks,
-                                            "yencok": curr_yencok,
-                                            "kat_adedi": curr_kat,
-                                            "giren_m2": curr_m2
+                                            "fonksiyon_adi": cleaned_check,
+                                            "taks": f_taks,
+                                            "kaks": f_kaks,
+                                            "yencok": f_yencok,
+                                            "kat_adedi": f_kat,
+                                            "giren_m2": f_m2
                                         })
 
         global_kaks_val = 0.0
@@ -492,7 +365,7 @@ def parse_imar_pdf(uploaded_file):
         for f in parcel_data["fonksiyonlar"]:
             if f["kaks"] <= 0 and global_kaks_val > 0:
                 f["kaks"] = global_kaks_val
-            if f.get("yencok", "-") == "-" and global_yc != "-":
+            if f.get("yencok", "-") in ["-", "0", "0 M"] and global_yc not in ["-", "0", "0 M"]:
                 f["yencok"] = global_yc
             if f.get("kat_adedi", "-") == "-" and global_kt != "-":
                 f["kat_adedi"] = global_kt
@@ -545,7 +418,6 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
         return []
         
     sum_giren = sum(f.get("giren_m2", 0.0) for f, _, _ in valid_fonks)
-    
     net_arsa_toplam = toplam_arsa_m2 if is_terkli else (toplam_arsa_m2 * 0.7)
     
     results = []
