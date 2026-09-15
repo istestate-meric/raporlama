@@ -433,9 +433,8 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
         else:
             fonk_giren_payi = toplam_arsa_m2 / len(valid_fonks) if len(valid_fonks) > 0 else toplam_arsa_m2
             
-        # Bahçe Kullanım Alanı: İmar durum raporundaki fonksiyon alanına giren m² üzerinden; 
-        # Terk yapılmışsa doğrudan giren m², terk yapılmamışsa uygulama kesintisi (örn. %30) düşülerek net bahçe alanı elde edilir.
-        bahce_kullanim_alani = fonk_giren_payi if is_terkli else (fonk_giren_payi * 0.7)
+        # Bahçe Kullanım Alanı: Terk durumundan bağımsız olarak doğrudan Fonksiyon Alanına Giren m²'dir.
+        bahce_kullanim_alani = fonk_giren_payi
         
         # Net arsa payı inşaat alanı hesabında kullanılır
         if sum_giren > 0:
