@@ -37,7 +37,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- DİNAMİK VE GERÇEKÇİ FONKSİYON ADI ÇÖZÜMLEME MOTORU ---
+# --- DİNAMİK FONKSİYON ADI ÇÖZÜMLEME MOTORU ---
 def clean_fonksiyon_adi(name):
     if not name:
         return ""
@@ -126,7 +126,7 @@ def get_live_exchange_rates():
     except Exception:
         return {"USD": 34.00, "EUR": 37.50}
 
-# --- 2. BEYKOZ GERÇEKÇİ PİYASA VE PROJE TİPİ MATRİSİ ---
+# --- 2. PİYASA VE PROJE TİPİ MATRİSİ ---
 def get_realistic_market_pricing(mahalle_adi, proje_tipi, usd_rate):
     mahalle_base_tl = {
         "ACARLAR": 140000, "ANADOLU HİSARI": 130000, "KANLICA": 125000, 
@@ -183,22 +183,18 @@ def parse_tr_float(val_str):
 
 def detect_terk_status(text, toplam_alan, fonksiyonlar):
     text_upper = text.upper()
-    if any(k in text_upper for k in ["TERKİ YAPILMIŞTIR", "TERKİ YAPILMIŞ", "TERK YAPILMIŞTIR", "KAMUYA TERK EDİLMİŞTİR"]):
+    if any(k in text_upper for k in ["TERKİ YAPILMIŞTIR", "TERKİ YAPILMIŞ", "TERK YAPILMIŞTIR", "KAMUYA TERK EDİLMİŞTİR", "YOLA TERKİ YAPILMIŞTIR"]):
         return True
     if any(k in text_upper for k in ["YOLA TERK VE KAMUYA AYRILAN KISIMLAR KAMU ELİNE GEÇMEDEN", "TERK YAPILMAMIŞ", "TERKİ YAPILAMIŞ", "TERK YAPILMADAN", "DOP TERKİ YAPILMAMIŞ"]):
         return False
         
     toplam_fonksiyon_m2 = sum(f["giren_m2"] for f in fonksiyonlar if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]))
-    
     if toplam_alan > 0 and toplam_fonksiyon_m2 > 0:
         if abs(toplam_alan - toplam_fonksiyon_m2) < 0.5 or (toplam_fonksiyon_m2 / toplam_alan) >= 0.995:
             return True
-        else:
-            return False
-            
     return False
 
-# --- HASSAS TABLO & BLOK TABANLI İMAR PDF AYRIŞTIRMA MOTORU (GÜNCELLENMİŞ) ---
+# --- KAPSAMLI VE TAM OTOMATİK İMAR PDF AYRIŞTIRMA MOTORU ---
 def parse_imar_pdf(uploaded_file):
     parcel_data = {
         "filename": uploaded_file.name,
@@ -218,15 +214,13 @@ def parse_imar_pdf(uploaded_file):
                 t = page.extract_text() or ""
                 full_text += "\n" + t
                 
-                # Tabloları hücre bazlı tara ve KAKS/TAKS sütunlarını esnek yakala
+                # 1. Tablo Hücrelerinden Veri Çekme
                 tables = page.extract_tables() or []
                 for table in tables:
-                    # Tablo sütun başlıklarını incele
-                    col_headers = []
                     for r_idx, row in enumerate(table):
                         cells = [str(c).strip().replace("\n", " ") if c is not None else "" for c in row]
                         
-                        # Başlık satırı yakalama
+                        # Künye bilgileri (Mahalle, Ada, Parsel, Alan)
                         if any("Mahalle" in c for c in cells) and any("Ada" in c for c in cells):
                             if r_idx + 1 < len(table):
                                 v_row = [str(c).strip().replace("\n", " ") if c is not None else "" for c in table[r_idx + 1]]
@@ -238,12 +232,13 @@ def parse_imar_pdf(uploaded_file):
                                         elif "Parsel" in head and val: parcel_data["parsel"] = str(val).strip()
                                         elif "Alan" in head and val: parcel_data["toplam_alan"] = parse_tr_float(val)
 
-                        # Fonksiyon veya değer içeren satırlar
+                        # Fonksiyon, TAKS, KAKS/Emsal ve Yençok Ayrıştırma
                         joined_row_str = " ".join(cells).upper()
-                        if any(kw in joined_row_str for kw in ["KONUT", "TİCARET", "TİCARİ", "PARK", "VİLLA", "GELİŞME", "EMSAL", "KAKS", "TAKS"]):
+                        if any(kw in joined_row_str for kw in ["KONUT", "TİCARET", "TİCARİ", "PARK", "VİLLA", "GELİŞME", "EMSAL", "KAKS", "TAKS", "YENÇOK"]):
                             f_name = ""
                             f_taks = 0.0
                             f_kaks = 0.0
+                            f_yencok = ""
                             f_m2 = 0.0
                             
                             for c in cells:
@@ -256,38 +251,28 @@ def parse_imar_pdf(uploaded_file):
                                     for num_str in nums:
                                         val = parse_tr_float(num_str)
                                         if 0 < val <= 1.0: f_taks = val
-                                elif any(k in c_up for k in ["KAKS", "EMSAL"]):
+                                elif any(k in c_up for k in ["KAKS", "EMSAL", "EMS", "KS"]):
                                     nums = re.findall(r'([\d\.,]+)', c)
                                     for num_str in nums:
                                         val = parse_tr_float(num_str)
                                         if 0.05 <= val <= 5.0: f_kaks = val
-                                elif "0." in c or re.search(r'\b\d+[\.,]\d+\b', c):
-                                    nums = re.findall(r'([\d\.,]+)', c)
-                                    for num_str in nums:
-                                        val = parse_tr_float(num_str)
-                                        if 0 < val <= 1.0 and f_taks == 0.0:
-                                            f_taks = val
-                                        elif 0.05 <= val <= 5.0 and f_kaks == 0.0:
-                                            f_kaks = val
-                                        elif val > 5.0 and f_m2 == 0.0:
-                                            f_m2 = val
+                                elif any(y in c_up for y in ["YENÇOK", "HMAX", "KAT"]):
+                                    f_yençok = c
 
-                            # Eğer satırda fonksiyon adı yok ama KAKS/TAKS varsa en son eklenen fonksiyona işle veya yeni oluştur
                             if f_kaks > 0 and not f_name and parcel_data["fonksiyonlar"]:
                                 parcel_data["fonksiyonlar"][-1]["kaks"] = f_kaks
                                 if f_taks > 0: parcel_data["fonksiyonlar"][-1]["taks"] = f_taks
                             elif f_name and not any(x in f_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
-                                if f_kaks <= 0: f_kaks = 0.30  # Varsayılan geçici
-                                if f_taks <= 0: f_taks = 0.30
                                 if not any(f["fonksiyon_adi"] == f_name for f in parcel_data["fonksiyonlar"]):
                                     parcel_data["fonksiyonlar"].append({
                                         "fonksiyon_adi": f_name,
                                         "taks": f_taks,
                                         "kaks": f_kaks,
+                                        "yencok": f_yencok,
                                         "giren_m2": f_m2
                                     })
 
-                # Metin tabanlı satır taraması (Gelişmiş KAKS / EMSAL arama)
+                # 2. Serbest Metin Satır Taraması
                 lines = t.split('\n')
                 for i, line in enumerate(lines):
                     line_up = line.upper().strip()
@@ -295,31 +280,35 @@ def parse_imar_pdf(uploaded_file):
                         clean_n = clean_fonksiyon_adi(line)
                         if clean_n:
                             curr_fonk = clean_n
-                            curr_taks = 0.30
+                            curr_taks = 0.0
                             curr_kaks = 0.0
+                            curr_yencok = ""
                             curr_m2 = 0.0
                             
-                            # Etrafındaki 6 satırı tara
-                            for sub_line in lines[max(0, i-4):min(len(lines), i+7)]:
+                            for sub_line in lines[max(0, i-5):min(len(lines), i+8)]:
                                 sub_up = sub_line.upper()
                                 if "TAKS" in sub_up:
                                     num_m = re.search(r'([\d\.,]+)', sub_line)
                                     if num_m:
                                         val = parse_tr_float(num_m.group(1))
                                         if 0 < val <= 1.0: curr_taks = val
-                                if "KAKS" in sub_up or "EMSAL" in sub_up:
+                                        
+                                if any(k in sub_up for k in ["KAKS", "EMSAL", "EMS"]):
                                     num_m = re.search(r'([\d\.,]+)', sub_line)
                                     if num_m:
                                         val = parse_tr_float(num_m.group(1))
                                         if 0.05 <= val <= 5.0: curr_kaks = val
+
+                                if any(y in sub_up for y in ["YENÇOK", "HMAX"]):
+                                    curr_yencok = sub_line.strip()
+                                        
                                 m2_m = re.search(r'([\d\.,]+)\s*m²', sub_line, re.IGNORECASE)
                                 if m2_m:
                                     val = parse_tr_float(m2_m.group(1))
                                     if val > 0: curr_m2 = val
 
-                            # Eğer blok içinde KAKS bulunamadıysa genel metinden satıra özel KAKS ara
                             if curr_kaks <= 0:
-                                kaks_match = re.search(r'(?:KAKS|EMSAL)\s*[:=]?\s*([\d\.,]+)', line_up)
+                                kaks_match = re.search(r'(?:KAKS|EMSAL|EMS)\s*[:=]?\s*([\d\.,]+)', line_up)
                                 if kaks_match:
                                     val = parse_tr_float(kaks_match.group(1))
                                     if 0.05 <= val <= 5.0: curr_kaks = val
@@ -329,26 +318,34 @@ def parse_imar_pdf(uploaded_file):
                                 if existing_f:
                                     if curr_kaks > 0: existing_f["kaks"] = curr_kaks
                                     if curr_taks > 0: existing_f["taks"] = curr_taks
+                                    if curr_yencok: existing_f["yencok"] = curr_yencok
                                 else:
-                                    if curr_kaks <= 0:
-                                        # Genel belgeden ilk geçen KAKS/EMSAL değerini al veya varsayılan ata
-                                        global_kaks_m = re.search(r'(?:KAKS|EMSAL)\s*[:=]?\s*([\d\.,]+)', full_text)
-                                        curr_kaks = parse_tr_float(global_kaks_m.group(1)) if global_kaks_m else 0.30
-                                        if curr_kaks <= 0 or curr_kaks > 5.0: curr_kaks = 0.30
-                                        
                                     parcel_data["fonksiyonlar"].append({
                                         "fonksiyon_adi": curr_fonk,
                                         "taks": curr_taks,
                                         "kaks": curr_kaks,
+                                        "yencok": curr_yencok,
                                         "giren_m2": curr_m2
                                     })
 
-        # Meta veriler eksikse metinden yakala
+        # 3. Fallback: Genel metin içinde etiket bağımsız Emsal/KAKS taraması
+        global_kaks_val = 0.0
+        general_kaks_match = re.search(r'(?:EMSAL|KAKS)\s*[:=\s]*([\d\.,]+)', full_text, re.IGNORECASE)
+        if general_kaks_match:
+            val = parse_tr_float(general_kaks_match.group(1))
+            if 0.05 <= val <= 5.0:
+                global_kaks_val = val
+
+        for f in parcel_data["fonksiyonlar"]:
+            if f["kaks"] <= 0 and global_kaks_val > 0:
+                f["kaks"] = global_kaks_val
+
+        # 4. Künye Bilgileri Fallback Taraması
         if parcel_data["mahalle"] == "BİLİNMİYOR" or parcel_data["ada"] == "0":
-            m_m = re.search(r'Mahalle\s*\|\s*([A-ZÇĞİÖŞÜa-zçğıöşü]+)', full_text)
-            a_m = re.search(r'Ada\s*\|\s*(\d+)', full_text)
-            p_m = re.search(r'Parsel\s*\|\s*(\d+)', full_text)
-            al_m = re.search(r'Alan\s*\*?\s*\|\s*([\d\.,]+)\s*m²', full_text)
+            m_m = re.search(r'Mahalle\s*[:\|]\s*([A-ZÇĞİÖŞÜa-zçğıöşü]+)', full_text)
+            a_m = re.search(r'Ada\s*[:\|]\s*(\d+)', full_text)
+            p_m = re.search(r'Parsel\s*[:\|]\s*(\d+)', full_text)
+            al_m = re.search(r'Alan\s*\*?\s*[:\|]\s*([\d\.,]+)\s*m²', full_text)
             
             if m_m: parcel_data["mahalle"] = m_m.group(1).upper()
             if a_m: parcel_data["ada"] = str(a_m.group(1)).strip()
@@ -356,28 +353,19 @@ def parse_imar_pdf(uploaded_file):
             if al_m and parcel_data["toplam_alan"] == 0.0:
                 parcel_data["toplam_alan"] = parse_tr_float(al_m.group(1))
 
-        # Fonksiyonlar için eksik alan veya kaks doldurma
-        for f in parcel_data["fonksiyonlar"]:
-            if f["kaks"] <= 0:
-                f["kaks"] = 0.30
-            if f["giren_m2"] <= 0:
-                pat = re.search(rf'{re.escape(f["fonksiyon_adi"])}.*?([\d\.,]+)\s*m²', full_text, re.IGNORECASE | re.DOTALL)
-                if pat:
-                    f["giren_m2"] = parse_tr_float(pat.group(1))
-                else:
-                    f["giren_m2"] = parcel_data["toplam_alan"]
-
+        # 5. Fonksiyon bulunamadıysa varsayılan ekle
         if not parcel_data["fonksiyonlar"]:
             parcel_data["fonksiyonlar"].append({
                 "fonksiyon_adi": "KONUT ALANI",
-                "taks": 0.30,
-                "kaks": 0.30,
+                "taks": 0.0,
+                "kaks": global_kaks_val,
+                "yencok": "",
                 "giren_m2": parcel_data["toplam_alan"]
             })
 
         parcel_data["terk_yapilmis_mi"] = detect_terk_status(full_text, parcel_data["toplam_alan"], parcel_data["fonksiyonlar"])
     except Exception as e:
-        st.error(f"PDF işlenirken hata oluştu: {e}")
+        print(f"PDF işlenirken hata oluştu: {e}")
         
     return parcel_data
 
@@ -432,14 +420,14 @@ else:
 
 if selected_keys:
     active_parcel_db = {k: st.session_state["parcel_db"][k] for k in selected_keys}
-    
     emsal_artis_orani = 1.30
     
-    combined_fonk_text = " ".join([f["fonksiyon_adi"] for p in active_parcel_db.values() for f in p["fonksiyonlar"]])
+    combined_fonk_text = " ".join([f["fonksiyon_adi"] for p in active_parcel_db.values() for f in p["fonksiyon_adi"]]) # safer check below
     
-    has_ticaret = any(x in combined_fonk_text for x in ["TICARET", "TICARI"])
-    has_konut = any(x in combined_fonk_text for x in ["KONUT", "MESKEN"])
-    has_villa = any(x in combined_fonk_text for x in ["VILLA", "AYRIK", "IKIZ"])
+    # Proje tipi belirleme
+    has_ticaret = any(any(x in f["fonksiyon_adi"] for x in ["TICARET", "TICARI"]) for p in active_parcel_db.values() for f in p["fonksiyonlar"])
+    has_konut = any(any(x in f["fonksiyon_adi"] for x in ["KONUT", "MESKEN"]) for p in active_parcel_db.values() for f in p["fonksiyonlar"])
+    has_villa = any(any(x in f["fonksiyon_adi"] for x in ["VILLA", "AYRIK", "IKIZ"]) for p in active_parcel_db.values() for f in p["fonksiyonlar"])
     
     if has_ticaret and has_konut:
         allowed_project_types = ["Karma Proje (Konut + Ticari)", "Ticari / Ofis Kompleksi"]
@@ -457,10 +445,10 @@ if selected_keys:
     st.markdown("""
     <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 18px 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
         <div style="display: flex; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
-            <span style="font-size: 18px; margin-right: 8px;">⚙️</span>
+            <span style="font-size: 18px; margin-right: 8px;">📊</span>
             <div>
                 <h3 style="color: #0f172a; margin: 0; font-size: 15px; font-weight: 700;">Gelişmiş Fizibilite ve Proje Parametreleri</h3>
-                <p style="color: #64748b; margin: 0; font-size: 11px;">Brüt arsa (x0.7) veya Net arsa (Terkli) bazlı yasal inşaat alanı hesaplama motoru.</p>
+                <p style="color: #64748b; margin: 0; font-size: 11px;">Veritabanından çekilen imar parametreleri ile yasal inşaat alanı hesaplama motoru.</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -470,7 +458,7 @@ if selected_keys:
         is_modeli = st.selectbox("İş Modeli / Rapor Türü", options=["Kat Karşılığı Proje Raporu", "Doğrudan Satılık / Arsa Yatırım Raporu"], key="global_is_modeli")
         
     with col_m2:
-        toplu_p_tipi = st.selectbox("Toplu Proje Tipi Seçimi (İmar Kısıtlı)", options=allowed_project_types, index=min(default_p_idx, len(allowed_project_types)-1), key="toplu_p_tipi_master")
+        toplu_p_tipi = st.selectbox("Toplu Proje Tipi Seçimi", options=allowed_project_types, index=min(default_p_idx, len(allowed_project_types)-1), key="toplu_p_tipi_master")
         
     if "Villa" in toplu_p_tipi:
         available_pool_options = ["Müstakil Özel Havuzlu Villa Projesi", "Ortak Havuzlu Villa Sitesi Konsepti", "Havuz İptal / Yapılmayacak"]
@@ -517,6 +505,10 @@ if selected_keys:
             if not fonk_name or any(x in fonk_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                 continue
                 
+            active_kaks = f["kaks"]
+            if active_kaks <= 0:
+                continue
+                
             fonk_giren_m2 = f.get("giren_m2", toplam_arsa_m2)
             if fonk_giren_m2 <= 0:
                 fonk_giren_m2 = toplam_arsa_m2 / max(1, len(fonks_list))
@@ -525,10 +517,10 @@ if selected_keys:
             
             if is_terkli:
                 net_arsa_payi = toplam_arsa_m2 * fonk_alan_orani
-                fonk_toplam_brut_m2 = net_arsa_payi * f["kaks"] * emsal_artis_orani
+                fonk_toplam_brut_m2 = net_arsa_payi * active_kaks * emsal_artis_orani
             else:
                 brut_arsa_payi = toplam_arsa_m2 * fonk_alan_orani
-                fonk_toplam_brut_m2 = brut_arsa_payi * 0.7 * f["kaks"] * emsal_artis_orani
+                fonk_toplam_brut_m2 = brut_arsa_payi * 0.7 * active_kaks * emsal_artis_orani
             
             if fonk_toplam_brut_m2 > 0:
                 if fonk_name not in valid_active_functions_with_area:
@@ -595,13 +587,17 @@ if selected_keys:
             if not fonk_name or any(x in fonk_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                 continue
                 
+            active_kaks = f["kaks"]
+            if active_kaks <= 0:
+                continue
+                
             fonk_giren_m2 = f.get("giren_m2", toplam_arsa_m2)
             fonk_alan_orani = fonk_giren_m2 / toplam_f_m2
             
             if is_terkli:
-                brut_insaat = (toplam_arsa_m2 * fonk_alan_orani) * f["kaks"] * emsal_artis_orani
+                brut_insaat = (toplam_arsa_m2 * fonk_alan_orani) * active_kaks * emsal_artis_orani
             else:
-                brut_insaat = (toplam_arsa_m2 * fonk_alan_orani) * 0.7 * f["kaks"] * emsal_artis_orani
+                brut_insaat = (toplam_arsa_m2 * fonk_alan_orani) * 0.7 * active_kaks * emsal_artis_orani
             
             if brut_insaat <= 0:
                 continue
@@ -642,19 +638,22 @@ if selected_keys:
             if not fonk_adi or any(x in fonk_adi for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                 continue
                 
+            active_kaks = f["kaks"]
+            if active_kaks <= 0:
+                continue
+                
             parsel_fonk_key = f"{key}_{fonk_adi}"
             conf = function_configs.get(parsel_fonk_key)
             if not conf:
                 continue
                 
-            kaks = f["kaks"]
             fonk_giren_m2 = f.get("giren_m2", toplam_arsa_m2)
             fonk_alan_orani = fonk_giren_m2 / toplam_f_m2
             
             if is_terkli:
-                brut_insaat = (toplam_arsa_m2 * fonk_alan_orani) * kaks * emsal_artis_orani
+                brut_insaat = (toplam_arsa_m2 * fonk_alan_orani) * active_kaks * emsal_artis_orani
             else:
-                brut_insaat = (toplam_arsa_m2 * fonk_alan_orani) * 0.7 * kaks * emsal_artis_orani
+                brut_insaat = (toplam_arsa_m2 * fonk_alan_orani) * 0.7 * active_kaks * emsal_artis_orani
 
             if brut_insaat <= 0:
                 continue
@@ -687,7 +686,7 @@ if selected_keys:
     ])
 
     with tab1:
-        st.subheader("📊 Seçilen Parseller & Dinamik Fonksiyon Bazlı İnşaat Alanı (Terkli / Brüt x 0.7 Kurallı)")
+        st.subheader("📊 Seçilen Parseller & Dinamik Fonksiyon Bazlı İnşaat Alanı")
         table_rows = []
         sum_alan = 0.0
         sum_hesaba_alinan = 0.0
@@ -709,14 +708,17 @@ if selected_keys:
                 fonk_name = clean_fonksiyon_adi(f["fonksiyon_adi"])
                 if not fonk_name or any(x in fonk_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                     continue
-                kaks = f["kaks"]
+                active_kaks = f["kaks"]
+                if active_kaks <= 0:
+                    continue
+                    
                 giren_m2 = f.get("giren_m2", toplam_arsa_m2)
                 fonk_alan_orani = giren_m2 / toplam_f_m2
                 
                 if is_terkli:
-                    brut_insaat_arsa = (toplam_arsa_m2 * fonk_alan_orani) * kaks * emsal_artis_orani
+                    brut_insaat_arsa = (toplam_arsa_m2 * fonk_alan_orani) * active_kaks * emsal_artis_orani
                 else:
-                    brut_insaat_arsa = (toplam_arsa_m2 * fonk_alan_orani) * 0.7 * kaks * emsal_artis_orani
+                    brut_insaat_arsa = (toplam_arsa_m2 * fonk_alan_orani) * 0.7 * active_kaks * emsal_artis_orani
 
                 if brut_insaat_arsa <= 0:
                     continue
@@ -729,12 +731,12 @@ if selected_keys:
                     "MAHALLE": mahalle,
                     "ADA": ada,
                     "PARSEL": parsel,
-                    "TERK DURUMU": "Yapılmış (Net Arsa x KAKS x 1.3)" if is_terkli else "Yapılmamış (Brüt Arsa x 0.7 x KAKS x 1.3)",
-                    "FONKSİYON / NİTELİK": fonk_name,
+                    "TERK DURUMU": "Yapılmış" if is_terkli else "Yapılmamış",
+                    "FONKSİYON": fonk_name,
+                    "TAKS / KAKS": f"{f.get('taks', 0.0):.2f} / {active_kaks:.2f}",
+                    "YENÇOK": f.get('yencok', '-'),
                     "BRÜT PARSEL (M²)": f"{toplam_arsa_m2:,.2f}",
-                    "FONKSİYONA GİREN NET (M²)": f"{giren_m2:,.2f}",
-                    "TAKS / KAKS": f"{f.get('taks', 0.3):.2f} / {kaks:.2f}",
-                    "İNŞAAT ALANI (BRÜT M²)": f"{brut_insaat_arsa:,.2f}"
+                    "İNŞAAT ALANI (M²)": f"{brut_insaat_arsa:,.2f}"
                 })
                 
         if table_rows:
@@ -742,12 +744,11 @@ if selected_keys:
             summary_df = pd.DataFrame([{
                 "SORGULANAN PARSEL": f"{len(active_parcel_db)} Adet",
                 "TOPLAM BRÜT ARSA (M²)": f"{sum_alan:,.2f}",
-                "FONKSİYONA GİREN TOPLAM NET (M²)": f"{sum_hesaba_alinan:,.2f}",
                 "TOPLAM İNŞAAT (BRÜT M²)": f"{sum_brut_insaat:,.2f}"
             }])
             st.dataframe(summary_df, use_container_width=True)
         else:
-            st.warning("Seçilen parseller için görüntülenecek geçerli imar fonksiyonu verisi bulunamadı.")
+            st.warning("Seçilen parseller için veritabanında KAKS değeri okunmuş geçerli fonksiyon bulunamadı.")
 
     with tab2:
         st.subheader("🏛️ Mimari Fizibilite & Senaryo Dağılım Matrisi")
@@ -773,19 +774,22 @@ if selected_keys:
                 if not fonk_name or any(x in fonk_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                     continue
                     
+                active_kaks = f["kaks"]
+                if active_kaks <= 0:
+                    continue
+                    
                 parsel_fonk_key = f"{key}_{fonk_name}"
                 conf = function_configs.get(parsel_fonk_key)
                 if not conf:
                     continue
                     
-                kaks = f["kaks"]
                 giren_m2 = f.get("giren_m2", toplam_arsa_m2)
                 fonk_alan_orani = giren_m2 / toplam_f_m2
                 
                 if is_terkli:
-                    brut_insaat = (toplam_arsa_m2 * fonk_alan_orani) * kaks * emsal_artis_orani
+                    brut_insaat = (toplam_arsa_m2 * fonk_alan_orani) * active_kaks * emsal_artis_orani
                 else:
-                    brut_insaat = (toplam_arsa_m2 * fonk_alan_orani) * 0.7 * kaks * emsal_artis_orani
+                    brut_insaat = (toplam_arsa_m2 * fonk_alan_orani) * 0.7 * active_kaks * emsal_artis_orani
 
                 if brut_insaat <= 0:
                     continue
@@ -802,8 +806,8 @@ if selected_keys:
                 mimari_rows.append({
                     "MAHALLE": mahalle,
                     "ADA/PARSEL": f"{ada}/{parsel}",
-                    "TERK": "Yapılmış" if is_terkli else "Yapılmamış",
                     "FONKSİYON": fonk_name,
+                    "YENÇOK": f.get('yencok', '-'),
                     "PROJE TİPİ": f"{conf['proje_tipi']} ({conf['havuz_mod']})",
                     "BRÜT İNŞAAT (M²)": f"{brut_insaat:,.2f}",
                     "ADET": konut_adeti,
@@ -813,28 +817,16 @@ if selected_keys:
                 
         if mimari_rows:
             st.dataframe(pd.DataFrame(mimari_rows), use_container_width=True)
-            
-            st.markdown("### 📋 Toplu Proje ve Mimari Özet Matrisi")
-            toplu_ortalama_birim = mimari_sum_brut / mimari_sum_adet if mimari_sum_adet > 0 else 0.0
-            toplu_ozet_df = pd.DataFrame([{
-                "İNCELENEN PARSEL SAYISI": f"{len(active_parcel_db)} Adet",
-                "TOPLAM BAĞIMSIZ BÖLÜM (ADET)": f"{mimari_sum_adet:,} Adet",
-                "TOPLAM YASAL BRÜT İNŞAAT (M²)": f"{mimari_sum_brut:,.2f} m²",
-                "TOPLAM SİMÜLE BODRUM (M²)": f"{mimari_sum_bodrum:,.2f} m²",
-                "GENEL ORTALAMA BİRİM ALAN (M²)": f"{toplu_ortalama_birim:,.2f} m²",
-                "SEÇİLEN KONSEPT / HAVUZ": f"{toplu_p_tipi} - {toplu_havuz}"
-            }])
-            st.dataframe(toplu_ozet_df, use_container_width=True)
 
     with tab3:
-        st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılım Matrisi")
+        st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılımı")
         f_col1, f_col2, f_col3 = st.columns(3)
         f_col1.metric("Toplam Tahmini Brüt Ciro", f"${total_ciro_usd:,.2f}")
         f_col2.metric("Toplam İnşaat Maliyeti", f"${total_maliyet_usd:,.2f}")
         f_col3.metric("Müteahhit Net Karı", f"${mutaahhit_net_kar_usd:,.2f}", f"%{yg_orani:.1f} YG")
 
     with tab4:
-        st.subheader("🖨️ Kurumsal Tek Sayfa Rapor Ön İzleme ve PDF İndirme Merkezi")
+        st.subheader("🖨️ Kurumsal Rapor Ön İzleme ve PDF İndirme Merkezi")
         
         pdf_logo1_html = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 32px;'>" if img1_base64 else "<b>İSTESTATE</b>"
         pdf_logo2_html = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 32px;'>" if img2_base64 else "<b>MERİÇ İNŞAAT</b>"
@@ -864,14 +856,13 @@ if selected_keys:
                     <td style="width: 25%; text-align: right;">{pdf_logo2_html}</td>
                 </tr>
             </table>
-            <div class="section-title">1. Proje ve Lokasyon Künyesi (Toplu Parsel)</div>
+            <div class="section-title">1. Proje ve Lokasyon Künyesi</div>
             <table class="data-table">
                 <tr><td>Lokasyon / Mahalle</td><td style="text-align: right; font-weight: bold;">{first_mahalle} ({len(active_parcel_db)} Parsel)</td></tr>
                 <tr><td>Seçilen Proje Tipi & Konsept</td><td style="text-align: right; font-weight: bold; color: #1e3a8a;">{toplu_p_tipi} - {toplu_havuz}</td></tr>
                 <tr><td>Toplam Brüt İnşaat Alanı</td><td style="text-align: right; font-weight: bold;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
-                <tr><td>Toplam Bahçe Alanı Terki / Payı</td><td style="text-align: right; font-weight: bold;">{total_bahce_alani_terki:,.2f} m²</td></tr>
             </table>
-            <div class="section-title">2. Fonksiyon Bazlı Finansal Fizibilite Özeti</div>
+            <div class="section-title">2. Finansal Fizibilite Özeti</div>
             <table class="data-table">
                 <tr><th>Finansal Kalem</th><th style="text-align: right;">Tutar (USD $)</th><th style="text-align: right;">Tutar (TL ₺)</th></tr>
                 <tr><td>Toplam Tahmini Brüt Ciro</td><td style="text-align: right;">${total_ciro_usd:,.2f}</td><td style="text-align: right;">₺{total_ciro_usd * rates['USD']:,.2f}</td></tr>
@@ -885,7 +876,7 @@ if selected_keys:
         
         pdf_bytes = HTML(string=report_html_template).write_pdf()
         st.download_button(
-            label="📥 Toplu Parsel Kurumsal Fizibilite Raporunu PDF Olarak İndir",
+            label="📥 Kurumsal Fizibilite Raporunu PDF Olarak İndir",
             data=pdf_bytes,
             file_name=f"Kurumsal_Toplu_Fizibilite_{first_mahalle}.pdf",
             mime="application/pdf",
@@ -918,7 +909,7 @@ if selected_keys:
                 st.json(db_items)
             with col_db2:
                 st.markdown("#### ⚙️ Veritabanı İşlemleri")
-                selected_del_key = st.selectbox("Select parcel record to delete:", options=list(db_items.keys()))
+                selected_del_key = st.selectbox("Arşivden kaldırılacak parseli seçin:", options=list(db_items.keys()))
                 if st.button("🗑️ Seçili Parseli Arşivden Kaldır", type="primary"):
                     if selected_del_key in st.session_state["parcel_db"]:
                         del st.session_state["parcel_db"][selected_del_key]
@@ -936,4 +927,4 @@ if selected_keys:
             st.info("Veritabanında (`imar_veritabani.json`) henüz kayıtlı parsel bulunmuyor.")
 
 else:
-    st.info("👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden istenilen parselleri çoklu şekilde seçin veya yeni bir imar belgesi (PDF) yükleyin.")
+    st.info("👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden istenilen parselleri seçin veya yeni bir imar belgesi (PDF) yükleyin.")
