@@ -222,7 +222,6 @@ def parse_kaks_val(val_str):
 def detect_terk_status(text, toplam_alan, fonksiyonlar):
     text_upper = text.upper()
     
-    # 1. Önce açık ve kesin terk yapılmış durumlarını arayalım
     kesin_terk_yapilmis = [
         "TERKİ YAPILMIŞTIR", "TERKİ YAPILMIŞ", "TERK YAPILMIŞTIR", "TERK YAPILMIŞ",
         "KAMUYA TERK EDİLMİŞTİR", "YOLA TERKİ YAPILMIŞTIR", "TERK EDİLMİŞTİR",
@@ -231,7 +230,6 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
         "TERKİ YAPILMIŞ OLAN", "DOP YAPILMIŞ"
     ]
     
-    # 2. Kesin terk yapılmamış / brüt / terk edilecek alan durumları
     kesin_terk_yapilmamis = [
         "TERK YAPILMAMIŞ", "TERKİ YAPILMAMIŞ", "TERK YAPILMADAN", "DOP TERKİ YAPILMAMIŞ",
         "YOLA TERK VAR", "KAMUYA TERK VAR", "TERK EDİLECEKTİR", "YOLA TERKİ VARDIR",
@@ -239,10 +237,8 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
         "TERK EDİLECEK", "YOLA TERK MİKTARI"
     ]
     
-    # Çelişkili durumları önlemek için önce net ibarelere bakıyoruz
     for kw in kesin_terk_yapilmis:
         if kw in text_upper:
-            # Yanıltıcı olabilecek "terk yapılmamıştır" gibi kalıpların içinde geçmediğinden emin olalım
             if not f"YAPILMAMIŞTIR" in text_upper and not f"YAPILMAMIŞ" in text_upper:
                 return True
 
@@ -250,8 +246,6 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
         if kw in text_upper:
             return False
             
-    # Eğer belgede özel bir terk ibaresi net geçmiyorsa, belediye imar durumlarının 
-    # genel varsayılan standart yapısına (tapu alanı brüt / terk yapılmamış) güvenli dönüş yapıyoruz.
     return False
 
 # --- KAPSAMLI VE TAM OTOMATİK İMAR PDF AYRIŞTIRMA MOTORU ---
@@ -902,7 +896,7 @@ if selected_keys:
                         "Ada / Parsel": f"{ada} / {parsel}",
                         "Toplam Arsa (m²)": f"{toplam_alan:,.2f}",
                         "Terk Durumu": terk_st,
-                        "Fonksiyonadar": "-",
+                        "Fonksiyonlar": "-",
                         "Fonks. Giren (m²)": "-",
                         "TAKS": "-",
                         "KAKS / Emsal": "-",
@@ -937,4 +931,4 @@ if selected_keys:
             st.info("Veritabanında (`imar_veritabani.json`) henüz kayıtlı parsel bulunmuyor.")
 
 else:
-│   st.info("👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden istenilen parselleri seçin veya yeni bir imar belgesi (PDF) yükleme yapın.")
+    st.info("👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden istenilen parselleri seçin veya yeni bir imar belgesi (PDF) yükleme yapın.")
