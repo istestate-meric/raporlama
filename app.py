@@ -59,7 +59,30 @@ def clean_fonksiyon_adi(name):
         return ""
     return n
 
-# --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ (GÜÇLENDİRİLMİŞ) ---
+# --- İMAR FONKSİYONUNA GÖRE UYGUN PROJE TİPLERİ FİLTRELEME MOTORU ---
+def get_allowed_project_types(fonk_adi):
+    f_upper = fonk_adi.upper()
+    if any(k in f_upper for k in ["TİCARET", "TICARI", "İŞ MERKEZİ", "MERKEZİ İŞ"]):
+        return ["Ticari / Ofis Kompleksi", "Karma Proje (Konut + Ticari)"]
+    elif any(k in f_upper for k in ["VİLLA", "VILLA"]):
+        return ["Lüks Villa / Müstakil Proje", "Standart Konut / Apartman"]
+    elif any(k in f_upper for k in ["KONUT", "MESKEN", "GELİŞME"]):
+        return [
+            "Standart Konut / Apartman", 
+            "Üst Segment Konut / Rezidans", 
+            "Lüks Villa / Müstakil Proje", 
+            "Karma Proje (Konut + Ticari)"
+        ]
+    else:
+        return [
+            "Standart Konut / Apartman", 
+            "Üst Segment Konut / Rezidans", 
+            "Lüks Villa / Müstakil Proje", 
+            "Ticari / Ofis Kompleksi", 
+            "Karma Proje (Konut + Ticari)"
+        ]
+
+# --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) if "__file__" in locals() else os.getcwd()
 DB_FILE = os.path.join(BASE_DIR, "imar_veritabani.json")
 
@@ -220,18 +243,6 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
         if kw in text_upper:
             return True
             
-    terk_var_match = re.search(r'(?:YOLA|KAMUYA)?\s*TERK\s*[:=-]\s*(VAR|YAPILACAK|VARDIR)', text_upper)
-    if terk_var_match:
-        return False
-
-    terk_yok_match = re.search(r'(?:YOLA|KAMUYA)?\s*TERK\s*[:=-]\s*(YOK|YAPILMIŞ|0)', text_upper)
-    if terk_yok_match:
-        return True
-
-    toplam_fonksiyon_m2 = sum(f.get("giren_m2", 0.0) for f in fonksiyonlar if not any(x in f.get("fonksiyon_adi", "") for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]))
-    if toplam_alan > 0 and toplam_fonksiyon_m2 > 0:
-        if abs(toplam_alan - toplam_fonksiyon_m2) < 0.5 or (toplam_fonksiyon_m2 / toplam_alan) >= 0.995:
-            return True
     return False
 
 # --- KAPSAMLI VE TAM OTOMATİK İMAR PDF AYRIŞTIRMA MOTORU ---
@@ -509,7 +520,7 @@ if selected_keys:
             <span style="font-size: 18px; margin-right: 8px;">📊</span>
             <div>
                 <h3 style="color: #0f172a; margin: 0; font-size: 15px; font-weight: 700;">Gelişmiş Fizibilite ve Fonksiyon Bazlı Proje Optimizasyonu</h3>
-                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına göre proje tiplerinin ve havuz konseptlerinin net kâr optimizasyonu ile belirlenmesi.</p>
+                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına özel olarak filtrelenmiş proje tipleri ve net kâr optimizasyonu.</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -535,44 +546,36 @@ if selected_keys:
     if not unique_active_functions:
         unique_active_functions = {"KONUT ALANI"}
 
-    st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonlarına Göre Proje Tipi & Havuz Seçimi (Net Kâr Bazlı Otomatik Öneri)</div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonuna Göre Sınırlandırılmış Proje Tipi & Havuz Seçimi</div>", unsafe_allow_html=True)
     
     function_configs = {}
     func_cols = st.columns(len(unique_active_functions) if len(unique_active_functions) > 0 else 1)
-    
-    all_project_types = [
-        "Standart Konut / Apartman", 
-        "Üst Segment Konut / Rezidans", 
-        "Lüks Villa / Müstakil Proje", 
-        "Ticari / Ofis Kompleksi", 
-        "Karma Proje (Konut + Ticari)"
-    ]
     
     for idx, fonk_adi in enumerate(unique_active_functions):
         with func_cols[idx % len(func_cols)]:
             st.markdown(f"**📌 Fonksiyon: {fonk_adi}**")
             
-            # Net kar üzerinden otomatik ön seçim simülasyonu
-            best_p_type = all_project_types[0]
+            # Fonksiyona özel izin verilen proje tiplerini al
+            allowed_p_types = get_allowed_project_types(fonk_adi)
+            
+            # En yüksek kâr getirecek olanı varsayılan seç
+            best_p_type = allowed_p_types[0]
             best_pool = "Standart Ortak Havuzlu Proje"
             max_sim_profit = -999999999.0
             
-            for p_t in all_project_types:
+            for p_t in allowed_p_types:
                 pools = ["Müstakil Özel Havuzlu Villa Projesi", "Ortak Havuzlu Villa Sitesi Konsepti", "Havuz İptal / Yapılmayacak"] if "Villa" in p_t else (["Havuz İptal / Yapılmayacak"] if "Ticari" in p_t else ["Standart Ortak Havuzlu Proje", "Havuz İptal / Yapılmayacak"])
                 for pool in pools:
-                    satis_f, mal_f, bod_or = get_realistic_market_pricing(first_mahalle, p_t, rates["USD"])
-                    # Örnek simülasyon hesabı
-                    sim_revenue = 1000.0 * satis_f
-                    sim_cost = 1000.0 * mal_f
-                    sim_profit = sim_revenue - sim_cost
+                    satis_f, mal_f, _ = get_realistic_market_pricing(first_mahalle, p_t, rates["USD"])
+                    sim_profit = (1000.0 * satis_f) - (1000.0 * mal_f)
                     if sim_profit > max_sim_profit:
                         max_sim_profit = sim_profit
                         best_p_type = p_t
                         best_pool = pools[0]
                         
-            default_p_idx = all_project_types.index(best_p_type) if best_p_type in all_project_types else 0
+            default_p_idx = allowed_p_types.index(best_p_type) if best_p_type in allowed_p_types else 0
             
-            selected_func_p_type = st.selectbox(f"Proje Tipi ({fonk_adi})", options=all_project_types, index=default_p_idx, key=f"func_p_type_{idx}_{fonk_adi}")
+            selected_func_p_type = st.selectbox(f"Proje Tipi ({fonk_adi})", options=allowed_p_types, index=default_p_idx, key=f"func_p_type_{idx}_{fonk_adi}")
             
             if "Villa" in selected_func_p_type:
                 pool_opts = ["Müstakil Özel Havuzlu Villa Projesi", "Ortak Havuzlu Villa Sitesi Konsepti", "Havuz İptal / Yapılmayacak"]
@@ -622,7 +625,6 @@ if selected_keys:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # Detaylı adet güncellemesi fonksiyon konfigürasyonlarına işlenir
     for key, p in active_parcel_db.items():
         breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
         for item in breakdown:
@@ -908,4 +910,3 @@ if selected_keys:
 
 else:
     st.info("👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden istenilen parselleri seçin veya yeni bir imar belgesi (PDF) yükleme yapın.")
-    
