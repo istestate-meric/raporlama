@@ -82,6 +82,20 @@ def get_allowed_project_types(fonk_adi):
             "Karma Proje (Konut + Ticari)"
         ]
 
+# --- PROJE TİPİNE GÖRE DİNAMİK ALAN ARALIKLARI (MIN, MAX, DEFAULT, STEP) ---
+def get_project_size_ranges(project_type):
+    p_up = project_type.upper()
+    if "VİLLA" in p_up or "VILLA" in p_up:
+        return 180, 600, 280, 10
+    elif "REZİDANS" in p_up or "REZIDANS" in p_up or "ÜST SEGMENT" in p_up:
+        return 90, 250, 130, 5
+    elif "TİCARİ" in p_up or "TICARI" in p_up or "OFİS" in p_up:
+        return 40, 500, 120, 10
+    elif "KARMA" in p_up:
+        return 75, 200, 110, 5
+    else:  # Standart Konut / Apartman
+        return 55, 150, 90, 5
+
 # --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) if "__file__" in locals() else os.getcwd()
 DB_FILE = os.path.join(BASE_DIR, "imar_veritabani.json")
@@ -218,7 +232,7 @@ def parse_kaks_val(val_str):
             parsed_vals.append(v)
     return max(parsed_vals) if parsed_vals else 0.0
 
-# --- DÜZELTİLMİŞ VE KARARLI TERK ALGILAMA MOTORU ---
+# --- TERK ALGILAMA MOTORU ---
 def detect_terk_status(text, toplam_alan, fonksiyonlar):
     text_upper = text.upper()
     
@@ -248,7 +262,7 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
             
     return False
 
-# --- KAPSAMLI VE TAM OTOMATİK İMAR PDF AYRIŞTIRMA MOTORU ---
+# --- KAPSAMLI İMAR PDF AYRIŞTIRMA MOTORU ---
 def parse_imar_pdf(uploaded_file):
     parcel_data = {
         "filename": uploaded_file.name,
@@ -410,7 +424,7 @@ def parse_imar_pdf(uploaded_file):
         
     return parcel_data
 
-# --- FONKSİYON ALANINA GİREN M² BAZLI NET ARSA VE BAHÇE DAĞITIM MOTORU ---
+# --- FONKSİYON ALANINA GİREN M² BAZLI DAĞITIM MOTORU ---
 def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
     toplam_arsa_m2 = p.get("toplam_alan", 0.0)
     is_terkli = p.get("terk_yapilmis_mi", False)
@@ -513,7 +527,6 @@ else:
     selected_keys = []
 
 if selected_keys:
-    # --- MANUEL TERK DURUMU OVERRIDE (DÜZELTME) PANELİ ---
     st.sidebar.divider()
     st.sidebar.subheader("⚙️ Parsel Terk Durumu Ayarı (Manuel Düzeltme)")
     current_db = st.session_state["parcel_db"]
@@ -631,17 +644,22 @@ if selected_keys:
     function_target_sizes = {}
     
     if valid_active_functions_with_area:
-        st.markdown("<div style='margin-top: 12px; font-weight: 700; color: #0f172a; font-size: 13px;'>📐 Fonksiyon Bazlı Hedef Ortalama Bağımsız Bölüm Alanları (m²)</div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top: 12px; font-weight: 700; color: #0f172a; font-size: 13px;'>📐 Seçilen Proje Tiplerine Göre Sınırlandırılmış Bağımsız Bölüm Alanları (m²)</div>", unsafe_allow_html=True)
         fn_cols = st.columns(len(valid_active_functions_with_area))
         
         for idx, fonk_adi in enumerate(valid_active_functions_with_area):
             with fn_cols[idx % len(fn_cols)]:
+                # Seçilen proje tipine göre dinamik aralık belirleme
+                p_type_key = f"func_p_type_{idx}_{fonk_adi}"
+                chosen_p_type = st.session_state.get(p_type_key, get_allowed_project_types(fonk_adi)[0])
+                min_v, max_v, def_v, step_v = get_project_size_ranges(chosen_p_type)
+                
                 function_target_sizes[fonk_adi] = st.slider(
                     f"{fonk_adi[:20]}...",
-                    min_value=55,
-                    max_value=400,
-                    value=100,
-                    step=5,
+                    min_value=min_v,
+                    max_value=max_v,
+                    value=def_v,
+                    step=step_v,
                     key=f"target_size_{idx}_{fonk_adi}"
                 )
 
