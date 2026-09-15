@@ -610,7 +610,6 @@ if selected_keys:
                         
             default_p_idx = allowed_p_types.index(best_p_type) if best_p_type in allowed_p_types else 0
             
-            # Proje Tipi ve Havuz Seçeneği Tek Satırda (İki Sütunlu Yapı)
             sub_col1, sub_col2 = st.columns(2)
             with sub_col1:
                 selected_func_p_type = st.selectbox(f"Proje Tipi", options=allowed_p_types, index=default_p_idx, key=f"func_p_type_{idx}_{fonk_adi}")
@@ -625,7 +624,6 @@ if selected_keys:
             with sub_col2:
                 selected_func_pool = st.selectbox(f"Havuz Seçeneği", options=pool_opts, key=f"func_pool_{idx}_{fonk_adi}")
             
-            # Eğer havuz seçildiyse dinamik Havuz m² alanı açılır
             custom_pool_m2 = 35.0
             if "İptal" not in selected_func_pool:
                 custom_pool_m2 = st.number_input(f"Havuz Alanı (m²) - {fonk_adi}", min_value=10.0, max_value=500.0, value=40.0, step=5.0, key=f"custom_pool_m2_{idx}_{fonk_adi}")
@@ -708,11 +706,20 @@ if selected_keys:
             total_yasal_brut_insaat += brut_insaat
             total_bahce_alani_terki += item["bahce_kullanim_alani"]
             
-            tekil_havuz_payi = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
-            sim_bodrum = (brut_insaat - (tekil_havuz_payi * conf["adet"])) * conf["bodrum_orani"]
+            # --- YENİLENEN HAVUZ DÜŞÜM MANTIĞI ---
+            if "İptal" not in conf["havuz_mod"]:
+                if "Müstakil" in conf["havuz_mod"]:
+                    havuz_dusum = conf["havuz_m2"] * conf["adet"]  # Müstakil: birim sayısı oranında
+                else:
+                    havuz_dusum = conf["havuz_m2"]                # Ortak: m²'si kadar
+            else:
+                havuz_dusum = 0.0
+
+            net_konut_insaat = max(0.0, brut_insaat - havuz_dusum)
+            sim_bodrum = net_konut_insaat * conf["bodrum_orani"]
             total_simulated_bodrum += sim_bodrum
             
-            normal_c = brut_insaat * conf["satis"]
+            normal_c = net_konut_insaat * conf["satis"]
             bodrum_c = sim_bodrum * conf["satis"] * conf["bodrum_orani"]
             total_ciro_usd += (normal_c + bodrum_c)
             total_maliyet_usd += (brut_insaat * conf["maliyet"])
@@ -801,9 +808,19 @@ if selected_keys:
                     continue
                     
                 konut_adeti = conf["adet"]
-                birim_m2 = brut_insaat / konut_adeti if konut_adeti > 0 else brut_insaat
-                tekil_havuz_payi = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
-                sim_bodrum = (brut_insaat - (tekil_havuz_payi * konut_adeti)) * conf["bodrum_orani"]
+                
+                # --- MİMARİ FİZİBİLİTEDE HAVUZ DÜŞÜMÜ ---
+                if "İptal" not in conf["havuz_mod"]:
+                    if "Müstakil" in conf["havuz_mod"]:
+                        havuz_dusum = conf["havuz_m2"] * konut_adeti
+                    else:
+                        havuz_dusum = conf["havuz_m2"]
+                else:
+                    havuz_dusum = 0.0
+
+                net_konut_insaat = max(0.0, brut_insaat - havuz_dusum)
+                birim_m2 = net_konut_insaat / konut_adeti if konut_adeti > 0 else net_konut_insaat
+                sim_bodrum = net_konut_insaat * conf["bodrum_orani"]
                 
                 mimari_rows.append({
                     "MAHALLE": mahalle,
