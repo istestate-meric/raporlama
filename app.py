@@ -218,35 +218,40 @@ def parse_kaks_val(val_str):
             parsed_vals.append(v)
     return max(parsed_vals) if parsed_vals else 0.0
 
-# --- GELİŞTİRİLMİŞ TERK ALGILAMA MOTORU ---
+# --- DÜZELTİLMİŞ VE KARARLI TERK ALGILAMA MOTORU ---
 def detect_terk_status(text, toplam_alan, fonksiyonlar):
     text_upper = text.upper()
     
-    # Kesin net parsel / terk yapılmış ifadeleri
-    terk_yapilmis_kw = [
+    # 1. Önce açık ve kesin terk yapılmış durumlarını arayalım
+    kesin_terk_yapilmis = [
         "TERKİ YAPILMIŞTIR", "TERKİ YAPILMIŞ", "TERK YAPILMIŞTIR", "TERK YAPILMIŞ",
         "KAMUYA TERK EDİLMİŞTİR", "YOLA TERKİ YAPILMIŞTIR", "TERK EDİLMİŞTİR",
         "TERK: YOK", "TERK YOK", "YOLA TERK: 0", "TERK MİKTARI: 0", "NET PARSEL",
-        "TERKSİZ", "TERK GEREKMEMEKTEDİR", "İFRAZ GÖRMÜŞ", "TAPU ALANI NET"
+        "TERKSİZ", "TERK GEREKMEMEKTEDİR", "İFRAZ GÖRMÜŞ", "TAPU ALANI NET",
+        "TERKİ YAPILMIŞ OLAN", "DOP YAPILMIŞ"
     ]
     
-    # Kesin terk yapılmamış / brüt alan ifadeleri
-    terk_yapilmamis_kw = [
+    # 2. Kesin terk yapılmamış / brüt / terk edilecek alan durumları
+    kesin_terk_yapilmamis = [
         "TERK YAPILMAMIŞ", "TERKİ YAPILMAMIŞ", "TERK YAPILMADAN", "DOP TERKİ YAPILMAMIŞ",
         "YOLA TERK VAR", "KAMUYA TERK VAR", "TERK EDİLECEKTİR", "YOLA TERKİ VARDIR",
-        "YOLA TERK VE KAMUYA AYRILAN KISIMLAR KAMU ELİNE GEÇMEDEN", "TERK EDİLMELİDİR",
-        "TERKİ YAPILMAMIŞTIR"
+        "TERK EDİLMELİDİR", "TERKİ YAPILMIŞTIR DEĞİLDİR", "TERKİ YAPILMAMIŞTIR",
+        "TERK EDİLECEK", "YOLA TERK MİKTARI"
     ]
     
-    # Önce açıkça yapılmış ifadelerini kontrol et
-    for kw in terk_yapilmis_kw:
+    # Çelişkili durumları önlemek için önce net ibarelere bakıyoruz
+    for kw in kesin_terk_yapilmis:
         if kw in text_upper:
-            return True
+            # Yanıltıcı olabilecek "terk yapılmamıştır" gibi kalıpların içinde geçmediğinden emin olalım
+            if not f"YAPILMAMIŞTIR" in text_upper and not f"YAPILMAMIŞ" in text_upper:
+                return True
 
-    for kw in terk_yapilmamis_kw:
+    for kw in kesin_terk_yapilmamis:
         if kw in text_upper:
             return False
             
+    # Eğer belgede özel bir terk ibaresi net geçmiyorsa, belediye imar durumlarının 
+    # genel varsayılan standart yapısına (tapu alanı brüt / terk yapılmamış) güvenli dönüş yapıyoruz.
     return False
 
 # --- KAPSAMLI VE TAM OTOMATİK İMAR PDF AYRIŞTIRMA MOTORU ---
@@ -897,7 +902,7 @@ if selected_keys:
                         "Ada / Parsel": f"{ada} / {parsel}",
                         "Toplam Arsa (m²)": f"{toplam_alan:,.2f}",
                         "Terk Durumu": terk_st,
-                        "Fonksiyon Adı": "-",
+                        "Fonksiyonadar": "-",
                         "Fonks. Giren (m²)": "-",
                         "TAKS": "-",
                         "KAKS / Emsal": "-",
@@ -932,4 +937,4 @@ if selected_keys:
             st.info("Veritabanında (`imar_veritabani.json`) henüz kayıtlı parsel bulunmuyor.")
 
 else:
-    st.info("👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden istenilen parselleri seçin veya yeni bir imar belgesi (PDF) yükleme yapın.")
+│   st.info("👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden istenilen parselleri seçin veya yeni bir imar belgesi (PDF) yükleme yapın.")
