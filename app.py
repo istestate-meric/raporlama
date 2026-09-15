@@ -232,20 +232,23 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
             return True
     return False
 
-# --- GELİŞTİRİLMİŞ YENÇOK VE KAT ADEDİ AYRIŞTIRICI ---
+# --- HASSAS YENÇOK VE KAT ADEDİ AYRIŞTIRICI ---
 def extract_yencok_and_kat(text_or_cell):
     s = str(text_or_cell).upper().strip()
+    if not s or set(s) <= set('.,-/_ '):
+        return "-", "-"
+        
     yencok_val = "-"
     kat_val = "-"
     
-    # 1. Kat Adedi Arama (Örn: "4 KAT", "KAT: 3", "Z+3", "A-4", "K: 5")
+    # Kat Adedi Arama (Örn: "4 KAT", "KAT: 3", "Z+3", "A-4", "K: 5")
     kat_m = re.search(r'(?:KAT\s*[:=]?\s*(\d+)|(\d+)\s*KAT|Z\s*\+\s*(\d+)|A\s*-\s*(\d+)|\bK\s*[:=]?\s*(\d+))', s)
     if kat_m:
         groups = [g for g in kat_m.groups() if g is not None]
         if groups:
             kat_val = f"{groups[0]} Kat"
             
-    # 2. Yençok (Yükseklik) Arama (Örn: "H: 12.50", "YENÇOK: 15.50M", "SERBEST", "HMAX: 9.50")
+    # Yençok (Yükseklik) Arama (Örn: "H: 12.50", "YENÇOK: 15.50M", "SERBEST", "HMAX: 9.50")
     if "SERBEST" in s:
         yencok_val = "Serbest"
     else:
@@ -328,6 +331,12 @@ def parse_imar_pdf(uploaded_file):
                                     val = parse_tr_float(m2_m.group(1))
                                     if val > 1.0: f_m2 = val
 
+                            # Eğer hücre bazlı ayrı ayrı dağıldıysa tüm satırı tarayarak eksik Yençok/Kat bilgilerini tamamla
+                            if f_name:
+                                row_yc, row_kt = extract_yencok_and_kat(joined_row_str)
+                                if f_yencok == "-" and row_yc != "-": f_yencok = row_yc
+                                if f_kat == "-" and row_kt != "-": f_kat = row_kt
+
                             if f_kaks > 0 and not f_name and parcel_data["fonksiyonlar"]:
                                 parcel_data["fonksiyonlar"][-1]["kaks"] = f_kaks
                                 if f_taks > 0: parcel_data["fonksiyonlar"][-1]["taks"] = f_taks
@@ -409,7 +418,7 @@ def parse_imar_pdf(uploaded_file):
                 global_kaks_val = val
                 break
 
-        # Genel metinden global Yençok ve Kat taraması
+        # Sadece fonksiyon bazında hiç bulunamamışsa global tarama uygulanır
         global_yc, global_kt = extract_yencok_and_kat(full_text)
 
         for f in parcel_data["fonksiyonlar"]:
