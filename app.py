@@ -218,30 +218,34 @@ def parse_kaks_val(val_str):
             parsed_vals.append(v)
     return max(parsed_vals) if parsed_vals else 0.0
 
-# --- TERK ALGILAMA MOTORU ---
+# --- GELİŞTİRİLMİŞ TERK ALGILAMA MOTORU ---
 def detect_terk_status(text, toplam_alan, fonksiyonlar):
     text_upper = text.upper()
     
-    terk_yapilmamis_kw = [
-        "TERK YAPILMAMIŞ", "TERKİ YAPILMAMIŞ", "TERK YAPILMADAN", "DOP TERKİ YAPILMAMIŞ",
-        "YOLA TERK VAR", "KAMUYA TERK VAR", "TERK EDİLECEKTİR", "YOLA TERKİ VARDIR",
-        "YOLA TERK VE KAMUYA AYRILAN KISIMLAR KAMU ELİNE GEÇMEDEN", "TERK EDİLMELİDİR"
-    ]
-    
+    # Kesin net parsel / terk yapılmış ifadeleri
     terk_yapilmis_kw = [
         "TERKİ YAPILMIŞTIR", "TERKİ YAPILMIŞ", "TERK YAPILMIŞTIR", "TERK YAPILMIŞ",
         "KAMUYA TERK EDİLMİŞTİR", "YOLA TERKİ YAPILMIŞTIR", "TERK EDİLMİŞTİR",
         "TERK: YOK", "TERK YOK", "YOLA TERK: 0", "TERK MİKTARI: 0", "NET PARSEL",
-        "TERKSİZ", "TERK GEREKMEMEKTEDİR"
+        "TERKSİZ", "TERK GEREKMEMEKTEDİR", "İFRAZ GÖRMÜŞ", "TAPU ALANI NET"
     ]
     
-    for kw in terk_yapilmamis_kw:
-        if kw in text_upper:
-            return False
-
+    # Kesin terk yapılmamış / brüt alan ifadeleri
+    terk_yapilmamis_kw = [
+        "TERK YAPILMAMIŞ", "TERKİ YAPILMAMIŞ", "TERK YAPILMADAN", "DOP TERKİ YAPILMAMIŞ",
+        "YOLA TERK VAR", "KAMUYA TERK VAR", "TERK EDİLECEKTİR", "YOLA TERKİ VARDIR",
+        "YOLA TERK VE KAMUYA AYRILAN KISIMLAR KAMU ELİNE GEÇMEDEN", "TERK EDİLMELİDİR",
+        "TERKİ YAPILMAMIŞTIR"
+    ]
+    
+    # Önce açıkça yapılmış ifadelerini kontrol et
     for kw in terk_yapilmis_kw:
         if kw in text_upper:
             return True
+
+    for kw in terk_yapilmamis_kw:
+        if kw in text_upper:
+            return False
             
     return False
 
@@ -510,6 +514,29 @@ else:
     selected_keys = []
 
 if selected_keys:
+    # --- MANUEL TERK DURUMU OVERRIDE (DÜZELTME) PANELİ ---
+    st.sidebar.divider()
+    st.sidebar.subheader("⚙️ Parsel Terk Durumu Ayarı (Manuel Düzeltme)")
+    current_db = st.session_state["parcel_db"]
+    any_terk_updated = False
+    
+    for s_key in selected_keys:
+        if s_key in current_db:
+            curr_val = current_db[s_key].get("terk_yapilmis_mi", False)
+            new_terk_choice = st.sidebar.radio(
+                f"Terk Durumu ({s_key}):",
+                options=["Terk Yapılmış (Net Alan)", "Terk Yapılmamış (Brüt Alan -> %70 Net)"],
+                index=0 if curr_val else 1,
+                key=f"terk_override_{s_key}"
+            )
+            desired_bool = True if "Terk Yapılmış" in new_terk_choice else False
+            if current_db[s_key]["terk_yapilmis_mi"] != desired_bool:
+                current_db[s_key]["terk_yapilmis_mi"] = desired_bool
+                any_terk_updated = True
+                
+    if any_terk_updated:
+        save_persistent_db(current_db)
+
     active_parcel_db = {k: st.session_state["parcel_db"][k] for k in selected_keys}
     emsal_artis_orani = 1.30
     first_mahalle = list(active_parcel_db.values())[0].get("mahalle", "VARSAYILAN")
@@ -535,7 +562,6 @@ if selected_keys:
         with col_m2:
             arsa_payi_orani = st.slider("Arsa Sahibi Payı / Kat Karşılığı Oranı (%)", 0, 70, 50)
             
-    # Aktif parsellerdeki benzersiz fonksiyonları tespit et
     unique_active_functions = set()
     for p in active_parcel_db.values():
         breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
@@ -555,10 +581,7 @@ if selected_keys:
         with func_cols[idx % len(func_cols)]:
             st.markdown(f"**📌 Fonksiyon: {fonk_adi}**")
             
-            # Fonksiyona özel izin verilen proje tiplerini al
             allowed_p_types = get_allowed_project_types(fonk_adi)
-            
-            # En yüksek kâr getirecek olanı varsayılan seç
             best_p_type = allowed_p_types[0]
             best_pool = "Standart Ortak Havuzlu Proje"
             max_sim_profit = -999999999.0
