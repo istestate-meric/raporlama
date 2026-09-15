@@ -682,7 +682,6 @@ if selected_keys:
                     function_configs[parsel_fonk_key]["adet"] = max(1, round(brut_insaat / t_size))
 
     total_yasal_brut_insaat = 0.0
-    total_simulated_bodrum = 0.0
     total_bahce_alani_terki = 0.0
     total_ciro_usd = 0.0
     total_maliyet_usd = 0.0
@@ -715,19 +714,8 @@ if selected_keys:
 
             net_konut_insaat = max(0.0, brut_insaat - havuz_dusum)
             
-            # --- YENİLENEN BODRUM M² HESABI (TABAN OTURUMU / İZ DÜŞÜMÜ ÜZERİNDEN YARIM İNŞAAT ALANI) ---
-            # Taban oturumu (iz düşümü) yaklaşık olarak brüt inşaatın kat sayısına bölünmesiyle veya arsa taban alanı (TAKS veya ortalama kat alanı) üzerinden elde edilir.
-            # Burada taban alanı iz düşümünün yarısı (0.5 katsayısı ile yarım inşaat alanı olarak) hesaplanmaktadır.
-            tahmini_kat_sayisi = max(2, round(brut_insaat / (conf['adet'] * 90))) # ortalama kat hesabı
-            taban_oturumu_iz_dusumu = brut_insaat / tahmini_kat_sayisi
-            sim_bodrum = taban_oturumu_iz_dusumu * 0.5  # Taban oturumunun iz düşümü üzerinden yarım inşaat alanı
-            
-            total_simulated_bodrum += sim_bodrum
-            
-            normal_c = net_konut_insaat * conf["satis"]
-            bodrum_c = sim_bodrum * conf["satis"] * 0.5  # Bodrum birim fiyat / değer katsayısı
-            total_ciro_usd += (normal_c + bodrum_c)
-            total_maliyet_usd += ((brut_insaat + sim_bodrum) * conf["maliyet"] * 0.45) # Bodrum inşaat maliyeti dahil edilerek
+            total_ciro_usd += (net_konut_insaat * conf["satis"])
+            total_maliyet_usd += (brut_insaat * conf["maliyet"] * 0.45)
 
     total_maliyet_usd += arsa_bonus_usd
     arsa_sahibi_payi_usd = total_ciro_usd * (arsa_payi_orani / 100) if "Kat Karşılığı" in is_modeli else 0.0
@@ -825,10 +813,6 @@ if selected_keys:
                 net_konut_insaat = max(0.0, brut_insaat - havuz_dusum)
                 birim_m2 = net_konut_insaat / konut_adeti if konut_adeti > 0 else net_konut_insaat
                 
-                tahmini_kat_sayisi = max(2, round(brut_insaat / (konut_adeti * 90)))
-                taban_oturumu_iz_dusumu = brut_insaat / tahmini_kat_sayisi
-                sim_bodrum = taban_oturumu_iz_dusumu * 0.5  # Yarım inşaat alanı olarak iz düşümü
-                
                 mimari_rows.append({
                     "MAHALLE": mahalle,
                     "ADA/PARSEL": f"{ada}/{parsel}",
@@ -837,8 +821,7 @@ if selected_keys:
                     "BAHÇE KULLANIM (M²)": f"{bahce_m2:,.2f}",
                     "BRÜT İNŞAAT (M²)": f"{brut_insaat:,.2f}",
                     "ADET": konut_adeti,
-                    "BİRİM BRÜT (M²)": f"{birim_m2:,.2f}",
-                    "BODRUM (İZ DÜŞÜMÜ YARIM M²)": f"{sim_bodrum:,.2f}"
+                    "BİRİM BRÜT (M²)": f"{birim_m2:,.2f}"
                 })
                 
         if mimari_rows:
@@ -886,7 +869,6 @@ if selected_keys:
             <table class="data-table">
                 <tr><td>Lokasyon / Mahalle</td><td style="text-align: right; font-weight: bold;">{first_mahalle} ({len(active_parcel_db)} Parsel)</td></tr>
                 <tr><td>Toplam Brüt İnşaat Alanı</td><td style="text-align: right; font-weight: bold;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
-                <tr><td>Toplam Bodrum Alanı (İz Düşümü Yarım m²)</td><td style="text-align: right; font-weight: bold;">{total_simulated_bodrum:,.2f} m²</td></tr>
                 <tr><td>Toplam Bahçe Kullanım Alanı</td><td style="text-align: right; font-weight: bold;">{total_bahce_alani_terki:,.2f} m²</td></tr>
             </table>
             <div class="section-title">2. Finansal Fizibilite Özeti</div>
