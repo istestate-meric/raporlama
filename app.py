@@ -584,7 +584,7 @@ if selected_keys:
     if not unique_active_functions:
         unique_active_functions = {"KONUT ALANI"}
 
-    st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonuna Göre Sınırlandırılmış Proje Tipi & Havuz Seçimi</div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonuna Göre Sınırlandırılmış Proje Tipi, Havuz Seçimi ve Havuz m² Ayarları</div>", unsafe_allow_html=True)
     
     function_configs = {}
     func_cols = st.columns(len(unique_active_functions) if len(unique_active_functions) > 0 else 1)
@@ -610,7 +610,10 @@ if selected_keys:
                         
             default_p_idx = allowed_p_types.index(best_p_type) if best_p_type in allowed_p_types else 0
             
-            selected_func_p_type = st.selectbox(f"Proje Tipi ({fonk_adi})", options=allowed_p_types, index=default_p_idx, key=f"func_p_type_{idx}_{fonk_adi}")
+            # Proje Tipi ve Havuz Seçeneği Tek Satırda (İki Sütunlu Yapı)
+            sub_col1, sub_col2 = st.columns(2)
+            with sub_col1:
+                selected_func_p_type = st.selectbox(f"Proje Tipi", options=allowed_p_types, index=default_p_idx, key=f"func_p_type_{idx}_{fonk_adi}")
             
             if "Villa" in selected_func_p_type:
                 pool_opts = ["Müstakil Özel Havuzlu Villa Projesi", "Ortak Havuzlu Villa Sitesi Konsepti", "Havuz İptal / Yapılmayacak"]
@@ -619,7 +622,13 @@ if selected_keys:
             else:
                 pool_opts = ["Standart Ortak Havuzlu Proje", "Havuz İptal / Yapılmayacak"]
                 
-            selected_func_pool = st.selectbox(f"Havuz Seçeneği ({fonk_adi})", options=pool_opts, key=f"func_pool_{idx}_{fonk_adi}")
+            with sub_col2:
+                selected_func_pool = st.selectbox(f"Havuz Seçeneği", options=pool_opts, key=f"func_pool_{idx}_{fonk_adi}")
+            
+            # Eğer havuz seçildiyse dinamik Havuz m² alanı açılır
+            custom_pool_m2 = 35.0
+            if "İptal" not in selected_func_pool:
+                custom_pool_m2 = st.number_input(f"Havuz Alanı (m²) - {fonk_adi}", min_value=10.0, max_value=500.0, value=40.0, step=5.0, key=f"custom_pool_m2_{idx}_{fonk_adi}")
             
             r_satis, r_maliyet, r_bodrum_orani = get_realistic_market_pricing(first_mahalle, selected_func_p_type, rates["USD"])
             
@@ -634,6 +643,7 @@ if selected_keys:
                             "proje_tipi": selected_func_p_type,
                             "adet": int(calc_adet),
                             "havuz_mod": selected_func_pool,
+                            "havuz_m2": custom_pool_m2,
                             "maliyet": r_maliyet,
                             "satis": r_satis,
                             "bodrum_orani": r_bodrum_orani,
@@ -649,7 +659,6 @@ if selected_keys:
         
         for idx, fonk_adi in enumerate(valid_active_functions_with_area):
             with fn_cols[idx % len(fn_cols)]:
-                # Seçilen proje tipine göre dinamik aralık belirleme
                 p_type_key = f"func_p_type_{idx}_{fonk_adi}"
                 chosen_p_type = st.session_state.get(p_type_key, get_allowed_project_types(fonk_adi)[0])
                 min_v, max_v, def_v, step_v = get_project_size_ranges(chosen_p_type)
@@ -699,7 +708,7 @@ if selected_keys:
             total_yasal_brut_insaat += brut_insaat
             total_bahce_alani_terki += item["bahce_kullanim_alani"]
             
-            tekil_havuz_payi = 35.0 if "Müstakil Özel Havuzlu" in conf["havuz_mod"] else 0.0
+            tekil_havuz_payi = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
             sim_bodrum = (brut_insaat - (tekil_havuz_payi * conf["adet"])) * conf["bodrum_orani"]
             total_simulated_bodrum += sim_bodrum
             
@@ -793,14 +802,14 @@ if selected_keys:
                     
                 konut_adeti = conf["adet"]
                 birim_m2 = brut_insaat / konut_adeti if konut_adeti > 0 else brut_insaat
-                tekil_havuz_payi = 35.0 if "Müstakil Özel Havuzlu" in conf["havuz_mod"] else 0.0
+                tekil_havuz_payi = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
                 sim_bodrum = (brut_insaat - (tekil_havuz_payi * konut_adeti)) * conf["bodrum_orani"]
                 
                 mimari_rows.append({
                     "MAHALLE": mahalle,
                     "ADA/PARSEL": f"{ada}/{parsel}",
                     "FONKSİYON": fonk_name,
-                    "PROJE TİPİ": f"{conf['proje_tipi']} ({conf['havuz_mod']})",
+                    "PROJE TİPİ": f"{conf['proje_tipi']} ({conf['havuz_mod']} - {conf['havuz_m2']} m²)",
                     "BAHÇE KULLANIM (M²)": f"{bahce_m2:,.2f}",
                     "BRÜT İNŞAAT (M²)": f"{brut_insaat:,.2f}",
                     "ADET": konut_adeti,
