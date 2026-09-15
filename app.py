@@ -59,7 +59,7 @@ def clean_fonksiyon_adi(name):
         return ""
     return n
 
-# --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ ---
+# --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ (GÜÇLENDİRİLMİŞ) ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) if "__file__" in locals() else os.getcwd()
 DB_FILE = os.path.join(BASE_DIR, "imar_veritabani.json")
 
@@ -82,6 +82,7 @@ def save_persistent_db(db_data):
     except Exception as e:
         st.error(f"Veritabanı kaydedilirken hata oluştu: {e}")
 
+# Oturum başlatılırken veritabanını diskten güvenli bir şekilde yükle
 if "parcel_db" not in st.session_state:
     st.session_state["parcel_db"] = load_persistent_db()
 
@@ -396,6 +397,7 @@ def parse_imar_pdf(uploaded_file):
         
     return parcel_data
 
+# --- FONKSİYON ALANINA GİREN M² BAZLI NET ARSA VE BAHÇE DAĞITIM MOTORU ---
 def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
     toplam_arsa_m2 = p.get("toplam_alan", 0.0)
     is_terkli = p.get("terk_yapilmis_mi", False)
@@ -468,6 +470,7 @@ uploaded_files = st.sidebar.file_uploader("İmar Durum Raporu (PDF) Seçin", typ
 
 just_uploaded_keys = []
 if uploaded_files:
+    # Mevcut veritabanını sözlük olarak al
     current_db = st.session_state["parcel_db"]
     for uploaded_file in uploaded_files:
         p_data = parse_imar_pdf(uploaded_file)
@@ -475,6 +478,7 @@ if uploaded_files:
         current_db[unique_key] = p_data
         just_uploaded_keys.append(unique_key)
         
+    # Güncellenmiş veritabanını hem diske hem session_state'e kalıcı olarak kaydet
     save_persistent_db(current_db)
     st.sidebar.success(f"{len(uploaded_files)} Adet Belge Arşive Eklendi!")
 
@@ -693,7 +697,7 @@ if selected_keys:
     ])
 
     with tab1:
-        st.subheader("📊 Seçilen Parseller & Bahçe/İnşaat Alanı Dağılımı")
+        st.subheader("📊 Seçilen Parseller & Dinamik Fonksiyon Bazlı İnşaat Alanı")
         table_rows = []
         sum_brut_insaat = 0.0
         sum_bahce_alani = 0.0
@@ -725,6 +729,7 @@ if selected_keys:
                     "TAKS": f"{item['taks']:.2f}" if item['taks'] > 0 else "-",
                     "KAKS / EMSAL": f"{item['kaks']:.2f}",
                     "BRÜT PARSEL (M²)": f"{toplam_arsa_m2:,.2f}",
+                    "FONKSİYON GİREN (M²)": f"{item['giren_m2']:,.2f}" if item['giren_m2'] > 0 else "-",
                     "BAHÇE KULLANIM ALANI (M²)": f"{bahce_m2:,.2f}",
                     "İNŞAAT ALANI (M²)": f"{brut_insaat_arsa:,.2f}"
                 })
@@ -773,7 +778,7 @@ if selected_keys:
                     "ADA/PARSEL": f"{ada}/{parsel}",
                     "FONKSİYON": fonk_name,
                     "PROJE TİPİ": f"{conf['proje_tipi']} ({conf['havuz_mod']})",
-                    "BAHÇE KULLANIM ALANI (M²)": f"{bahce_m2:,.2f}",
+                    "BAHÇE KULLANIM (M²)": f"{bahce_m2:,.2f}",
                     "BRÜT İNŞAAT (M²)": f"{brut_insaat:,.2f}",
                     "ADET": konut_adeti,
                     "BİRİM BRÜT (M²)": f"{birim_m2:,.2f}",
@@ -873,6 +878,7 @@ if selected_keys:
                             "Toplam Arsa (m²)": f"{toplam_alan:,.2f}",
                             "Terk Durumu": terk_st,
                             "Fonksiyon Adı": item["fonksiyon_adi"],
+                            "Fonks. Giren (m²)": f"{item['giren_m2']:,.2f}" if item['giren_m2'] > 0 else "-",
                             "TAKS": f"{item['taks']:.2f}" if item['taks'] > 0 else "-",
                             "KAKS / Emsal": f"{item['kaks']:.2f}",
                             "Bahçe Kullanım Alanı (m²)": f"{item['bahce_kullanim_alani']:,.2f}",
@@ -887,6 +893,7 @@ if selected_keys:
                         "Toplam Arsa (m²)": f"{toplam_alan:,.2f}",
                         "Terk Durumu": terk_st,
                         "Fonksiyon Adı": "-",
+                        "Fonks. Giren (m²)": "-",
                         "TAKS": "-",
                         "KAKS / Emsal": "-",
                         "Bahçe Kullanım Alanı (m²)": "-",
