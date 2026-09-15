@@ -695,8 +695,10 @@ if selected_keys:
     with tab1:
         st.subheader("📊 Seçilen Parseller & Dinamik Fonksiyon Bazlı İnşaat Alanı")
         table_rows = []
-        sum_alan = 0.0
         sum_brut_insaat = 0.0
+        
+        # DÜZELTME: Toplam arsa alanını mükerrer toplamamak için benzersiz parsellerin kendi toplam alanlarını tekil olarak topluyoruz
+        sum_alan = sum(p.get("toplam_alan", 0.0) for p in active_parcel_db.values())
         
         for key, p in active_parcel_db.items():
             mahalle = p.get("mahalle", "BİLİNMİYOR")
@@ -711,7 +713,6 @@ if selected_keys:
                 if brut_insaat_arsa <= 0:
                     continue
                     
-                sum_alan += toplam_arsa_m2
                 sum_brut_insaat += brut_insaat_arsa
                 
                 table_rows.append({
