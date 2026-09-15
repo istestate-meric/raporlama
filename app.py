@@ -178,20 +178,19 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, usd_rate):
     base_tl = mahalle_base_tl.get(clean_mahalle, mahalle_base_tl["VARSAYILAN"])
     
     proje_carpanlari = {
-        "Lüks Villa / Müstakil Proje": {"satis_mod": 1.55, "maliyet_mod": 1350, "bodrum_deger_orani": 0.60},
-        "Üst Segment Konut / Rezidans": {"satis_mod": 1.25, "maliyet_mod": 1100, "bodrum_deger_orani": 0.50},
-        "Standart Konut / Apartman": {"satis_mod": 1.00, "maliyet_mod": 900, "bodrum_deger_orani": 0.40},
-        "Ticari / Ofis Kompleksi": {"satis_mod": 1.35, "maliyet_mod": 1050, "bodrum_deger_orani": 0.70},
-        "Karma Proje (Konut + Ticari)": {"satis_mod": 1.20, "maliyet_mod": 1000, "bodrum_deger_orani": 0.50}
+        "Lüks Villa / Müstakil Proje": {"satis_mod": 1.55, "maliyet_mod": 1350},
+        "Üst Segment Konut / Rezidans": {"satis_mod": 1.25, "maliyet_mod": 1100},
+        "Standart Konut / Apartman": {"satis_mod": 1.00, "maliyet_mod": 900},
+        "Ticari / Ofis Kompleksi": {"satis_mod": 1.35, "maliyet_mod": 1050},
+        "Karma Proje (Konut + Ticari)": {"satis_mod": 1.20, "maliyet_mod": 1000}
     }
     
     p_conf = proje_carpanlari.get(proje_tipi, proje_carpanlari["Standart Konut / Apartman"])
     
     satis_fiyati_usd = round((base_tl * p_conf["satis_mod"]) / usd_rate, 2)
     maliyet_fiyati_usd = float(p_conf["maliyet_mod"])
-    bodrum_orani = float(p_conf["bodrum_deger_orani"])
     
-    return satis_fiyati_usd, maliyet_fiyati_usd, bodrum_orani
+    return satis_fiyati_usd, maliyet_fiyati_usd
 
 def parse_tr_float(val_str):
     if not val_str:
@@ -601,7 +600,7 @@ if selected_keys:
             for p_t in allowed_p_types:
                 pools = ["Müstakil Özel Havuzlu Villa Projesi", "Ortak Havuzlu Villa Sitesi Konsepti", "Havuz İptal / Yapılmayacak"] if "Villa" in p_t else (["Havuz İptal / Yapılmayacak"] if "Ticari" in p_t else ["Standart Ortak Havuzlu Proje", "Havuz İptal / Yapılmayacak"])
                 for pool in pools:
-                    satis_f, mal_f, _ = get_realistic_market_pricing(first_mahalle, p_t, rates["USD"])
+                    satis_f, mal_f = get_realistic_market_pricing(first_mahalle, p_t, rates["USD"])
                     sim_profit = (1000.0 * satis_f) - (1000.0 * mal_f)
                     if sim_profit > max_sim_profit:
                         max_sim_profit = sim_profit
@@ -628,7 +627,7 @@ if selected_keys:
             if "İptal" not in selected_func_pool:
                 custom_pool_m2 = st.number_input(f"Havuz Alanı (m²) - {fonk_adi}", min_value=10.0, max_value=500.0, value=40.0, step=5.0, key=f"custom_pool_m2_{idx}_{fonk_adi}")
             
-            r_satis, r_maliyet, r_bodrum_orani = get_realistic_market_pricing(first_mahalle, selected_func_p_type, rates["USD"])
+            r_satis, r_maliyet = get_realistic_market_pricing(first_mahalle, selected_func_p_type, rates["USD"])
             
             for key, p in active_parcel_db.items():
                 breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
@@ -644,7 +643,6 @@ if selected_keys:
                             "havuz_m2": custom_pool_m2,
                             "maliyet": r_maliyet,
                             "satis": r_satis,
-                            "bodrum_orani": r_bodrum_orani,
                             "fonk_hesaba_alinan_m2": item["giren_m2"]
                         }
 
@@ -706,23 +704,30 @@ if selected_keys:
             total_yasal_brut_insaat += brut_insaat
             total_bahce_alani_terki += item["bahce_kullanim_alani"]
             
-            # --- YENİLENEN HAVUZ DÜŞÜM MANTIĞI ---
+            # Havuz düşüm mantığı
             if "İptal" not in conf["havuz_mod"]:
                 if "Müstakil" in conf["havuz_mod"]:
-                    havuz_dusum = conf["havuz_m2"] * conf["adet"]  # Müstakil: birim sayısı oranında
+                    havuz_dusum = conf["havuz_m2"] * conf["adet"]
                 else:
-                    havuz_dusum = conf["havuz_m2"]                # Ortak: m²'si kadar
+                    havuz_dusum = conf["havuz_m2"]
             else:
                 havuz_dusum = 0.0
 
             net_konut_insaat = max(0.0, brut_insaat - havuz_dusum)
-            sim_bodrum = net_konut_insaat * conf["bodrum_orani"]
+            
+            # --- YENİLENEN BODRUM M² HESABI (TABAN OTURUMU / İZ DÜŞÜMÜ ÜZERİNDEN YARIM İNŞAAT ALANI) ---
+            # Taban oturumu (iz düşümü) yaklaşık olarak brüt inşaatın kat sayısına bölünmesiyle veya arsa taban alanı (TAKS veya ortalama kat alanı) üzerinden elde edilir.
+            # Burada taban alanı iz düşümünün yarısı (0.5 katsayısı ile yarım inşaat alanı olarak) hesaplanmaktadır.
+            tahmini_kat_sayisi = max(2, round(brut_insaat / (conf['adet'] * 90))) # ortalama kat hesabı
+            taban_oturumu_iz_dusumu = brut_insaat / tahmini_kat_sayisi
+            sim_bodrum = taban_oturumu_iz_dusumu * 0.5  # Taban oturumunun iz düşümü üzerinden yarım inşaat alanı
+            
             total_simulated_bodrum += sim_bodrum
             
             normal_c = net_konut_insaat * conf["satis"]
-            bodrum_c = sim_bodrum * conf["satis"] * conf["bodrum_orani"]
+            bodrum_c = sim_bodrum * conf["satis"] * 0.5  # Bodrum birim fiyat / değer katsayısı
             total_ciro_usd += (normal_c + bodrum_c)
-            total_maliyet_usd += (brut_insaat * conf["maliyet"])
+            total_maliyet_usd += ((brut_insaat + sim_bodrum) * conf["maliyet"] * 0.45) # Bodrum inşaat maliyeti dahil edilerek
 
     total_maliyet_usd += arsa_bonus_usd
     arsa_sahibi_payi_usd = total_ciro_usd * (arsa_payi_orani / 100) if "Kat Karşılığı" in is_modeli else 0.0
@@ -809,7 +814,6 @@ if selected_keys:
                     
                 konut_adeti = conf["adet"]
                 
-                # --- MİMARİ FİZİBİLİTEDE HAVUZ DÜŞÜMÜ ---
                 if "İptal" not in conf["havuz_mod"]:
                     if "Müstakil" in conf["havuz_mod"]:
                         havuz_dusum = conf["havuz_m2"] * konut_adeti
@@ -820,7 +824,10 @@ if selected_keys:
 
                 net_konut_insaat = max(0.0, brut_insaat - havuz_dusum)
                 birim_m2 = net_konut_insaat / konut_adeti if konut_adeti > 0 else net_konut_insaat
-                sim_bodrum = net_konut_insaat * conf["bodrum_orani"]
+                
+                tahmini_kat_sayisi = max(2, round(brut_insaat / (konut_adeti * 90)))
+                taban_oturumu_iz_dusumu = brut_insaat / tahmini_kat_sayisi
+                sim_bodrum = taban_oturumu_iz_dusumu * 0.5  # Yarım inşaat alanı olarak iz düşümü
                 
                 mimari_rows.append({
                     "MAHALLE": mahalle,
@@ -831,7 +838,7 @@ if selected_keys:
                     "BRÜT İNŞAAT (M²)": f"{brut_insaat:,.2f}",
                     "ADET": konut_adeti,
                     "BİRİM BRÜT (M²)": f"{birim_m2:,.2f}",
-                    "BODRUM (M²)": f"{sim_bodrum:,.2f}"
+                    "BODRUM (İZ DÜŞÜMÜ YARIM M²)": f"{sim_bodrum:,.2f}"
                 })
                 
         if mimari_rows:
@@ -879,6 +886,7 @@ if selected_keys:
             <table class="data-table">
                 <tr><td>Lokasyon / Mahalle</td><td style="text-align: right; font-weight: bold;">{first_mahalle} ({len(active_parcel_db)} Parsel)</td></tr>
                 <tr><td>Toplam Brüt İnşaat Alanı</td><td style="text-align: right; font-weight: bold;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
+                <tr><td>Toplam Bodrum Alanı (İz Düşümü Yarım m²)</td><td style="text-align: right; font-weight: bold;">{total_simulated_bodrum:,.2f} m²</td></tr>
                 <tr><td>Toplam Bahçe Kullanım Alanı</td><td style="text-align: right; font-weight: bold;">{total_bahce_alani_terki:,.2f} m²</td></tr>
             </table>
             <div class="section-title">2. Finansal Fizibilite Özeti</div>
