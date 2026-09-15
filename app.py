@@ -37,14 +37,22 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- DİNAMİK FONKSİYON ADI ÇÖZÜMLEME MOTORU ---
+# --- DİNAMİK FONKSİYON ADI ÇÖZÜMLEME VE FİLTRELEME MOTORU ---
 def clean_fonksiyon_adi(name):
     if not name:
         return ""
     n = str(name).upper().strip()
     n = n.replace("FONKSİYON ADI", "").replace("FONKSIYON ADI", "").strip()
     
-    if n in ["-", "--", ".", "0", "N/A", "İMAR DURUMU", "İMAR DURUMU BİLGİLERİ", ""]:
+    # Geçersiz/İşlevsiz İbaretler, Kamusal Alanlar ve Noktalama İşaretleri
+    gecersiz_ifadeler = [
+        "-", "--", ".", ",", "0", "N/A", "İMAR DURUMU", "İMAR DURUMU BİLGİLERİ",
+        "PARK", "PARK ALANI", "ÇOCUK PARKI", "YEŞİL ALAN", "TEKNİK ALTYAPI", 
+        "TRAFO", "CAMİ", "İBADET YERİ", "OKUL", "LİSE", "İLKÖĞRETİM", "ANAOKULU", 
+        "KÜLTÜREL", "SOSYAL TESİS", "BELEDİYE HİZMET ALANI", "YOL", "AÇIK OTOPARK", ""
+    ]
+    
+    if n in gecersiz_ifadeler or any(x in n for x in ["PARK", "YEŞİL", "TEKNİK", "İBADET", "OKUL", "YOL", "TESİS", "TRAFO"]):
         return ""
     if "%" in n or "M²" in n or "M2" in n:
         return ""
@@ -335,16 +343,18 @@ def parse_imar_pdf(uploaded_file):
                             if f_kaks > 0 and not f_name and parcel_data["fonksiyonlar"]:
                                 parcel_data["fonksiyonlar"][-1]["kaks"] = f_kaks
                                 if f_taks > 0: parcel_data["fonksiyonlar"][-1]["taks"] = f_taks
-                            elif f_name and not any(x in f_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
-                                if not any(f["fonksiyon_adi"] == f_name for f in parcel_data["fonksiyonlar"]):
-                                    parcel_data["fonksiyonlar"].append({
-                                        "fonksiyon_adi": f_name,
-                                        "taks": f_taks,
-                                        "kaks": f_kaks,
-                                        "yencok": f_yencok,
-                                        "kat_adedi": f_kat,
-                                        "giren_m2": f_m2
-                                    })
+                            elif f_name:
+                                cleaned_check = clean_fonksiyon_adi(f_name)
+                                if cleaned_check and not any(x in cleaned_check for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
+                                    if not any(f["fonksiyon_adi"] == cleaned_check for f in parcel_data["fonksiyonlar"]):
+                                        parcel_data["fonksiyonlar"].append({
+                                            "fonksiyon_adi": cleaned_check,
+                                            "taks": f_taks,
+                                            "kaks": f_kaks,
+                                            "yencok": f_yencok,
+                                            "kat_adedi": f_kat,
+                                            "giren_m2": f_m2
+                                        })
 
                 lines = t.split('\n')
                 for i, line in enumerate(lines):
@@ -386,23 +396,25 @@ def parse_imar_pdf(uploaded_file):
                                 if kaks_match:
                                     curr_kaks = parse_kaks_val(kaks_match.group(1))
 
-                            if curr_fonk and not any(x in curr_fonk for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
-                                existing_f = next((f for f in parcel_data["fonksiyonlar"] if f["fonksiyon_adi"] == curr_fonk), None)
-                                if existing_f:
-                                    if curr_kaks > 0: existing_f["kaks"] = curr_kaks
-                                    if curr_taks > 0: existing_f["taks"] = curr_taks
-                                    if curr_yencok != "-": existing_f["yencok"] = curr_yencok
-                                    if curr_kat != "-": existing_f["kat_adedi"] = curr_kat
-                                    if curr_m2 > 0: existing_f["giren_m2"] = curr_m2
-                                else:
-                                    parcel_data["fonksiyonlar"].append({
-                                        "fonksiyon_adi": curr_fonk,
-                                        "taks": curr_taks,
-                                        "kaks": curr_kaks,
-                                        "yencok": curr_yencok,
-                                        "kat_adedi": curr_kat,
-                                        "giren_m2": curr_m2
-                                    })
+                            if curr_fonk:
+                                cleaned_curr_fonk = clean_fonksiyon_adi(curr_fonk)
+                                if cleaned_curr_fonk and not any(x in cleaned_curr_fonk for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
+                                    existing_f = next((f for f in parcel_data["fonksiyonlar"] if f["fonksiyon_adi"] == cleaned_curr_fonk), None)
+                                    if existing_f:
+                                        if curr_kaks > 0: existing_f["kaks"] = curr_kaks
+                                        if curr_taks > 0: existing_f["taks"] = curr_taks
+                                        if curr_yencok != "-": existing_f["yencok"] = curr_yencok
+                                        if curr_kat != "-": existing_f["kat_adedi"] = curr_kat
+                                        if curr_m2 > 0: existing_f["giren_m2"] = curr_m2
+                                    else:
+                                        parcel_data["fonksiyonlar"].append({
+                                            "fonksiyon_adi": cleaned_curr_fonk,
+                                            "taks": curr_taks,
+                                            "kaks": curr_kaks,
+                                            "yencok": curr_yencok,
+                                            "kat_adedi": curr_kat,
+                                            "giren_m2": curr_m2
+                                        })
 
         global_kaks_val = 0.0
         general_kaks_matches = re.findall(r'(?:EMSAL|KAKS|EMS|E)\s*[:=\s]*([\d\.,\s/-]+)', full_text, re.IGNORECASE)
@@ -471,7 +483,6 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
         
     sum_giren = sum(f.get("giren_m2", 0.0) for f, _, _ in valid_fonks)
     
-    # Net arsa imar oranı (%70 netleşme) parsel genelinde TEK SEFER uygulanır, mükerrer düşülmez.
     net_arsa_toplam = toplam_arsa_m2 if is_terkli else (toplam_arsa_m2 * 0.7)
     
     results = []
@@ -482,7 +493,6 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
         else:
             oran = 1.0 / len(valid_fonks)
             
-        # Fonksiyonun büyüklük veya talep oranına göre ağırlıklandırılmış net arsa payı
         net_arsa_payi = net_arsa_toplam * oran
         brut_insaat = net_arsa_payi * active_kaks * emsal_artis_orani
         
