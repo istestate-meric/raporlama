@@ -401,7 +401,7 @@ def parse_imar_pdf(uploaded_file):
         
     return parcel_data
 
-# --- ÇOKLU FONKSİYON VE KAKS HESAPLAMALARI İÇİN AĞIRLIKLANDIRILMIŞ NET ARSA DAĞITIM MOTORU ---
+# --- ÇOKLU FONKSİYON VE KAKS HESAPLAMALARI İÇİN AĞIRLIKLANDIRILMIŞ NET ARSA VE BAHÇE DAĞITIM MOTORU ---
 def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
     toplam_arsa_m2 = p.get("toplam_alan", 0.0)
     is_terkli = p.get("terk_yapilmis_mi", False)
@@ -434,12 +434,20 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
         net_arsa_payi = net_arsa_toplam * oran
         brut_insaat = net_arsa_payi * active_kaks * emsal_artis_orani
         
+        # Bahçe/Kullanım Alanı Hesabı: İmar uygulaması sonrası fonksiyon alanına giren m² veya net pay üzerinden bahçe payı
+        # Eğer PDF'de fonksiyon alanına giren m2 tanımlıysa oransal dağıtılır, yoksa net arsa payı baz alınır.
+        if sum_giren > 0:
+            bahce_kullanim_alani = (giren_m2 if is_terkli else (giren_m2 * 0.7)) # Örn: Terk yapılmamışsa %30 kesinti varsayımıyla net bahçe alanı
+        else:
+            bahce_kullanim_alani = net_arsa_payi
+            
         results.append({
             "fonksiyon_adi": fonk_name,
             "taks": f.get("taks", 0.0),
             "kaks": active_kaks,
             "giren_m2": giren_m2,
             "net_arsa_payi": net_arsa_payi,
+            "bahce_kullanim_alani": bahce_kullanim_alani,
             "brut_insaat": brut_insaat
         })
     return results
@@ -696,8 +704,7 @@ if selected_keys:
         st.subheader("📊 Seçilen Parseller & Dinamik Fonksiyon Bazlı İnşaat Alanı")
         table_rows = []
         sum_brut_insaat = 0.0
-        
-        # DÜZELTME: Toplam arsa alanını mükerrer toplamamak için benzersiz parsellerin kendi toplam alanlarını tekil olarak topluyoruz
+        sum_bahce_alani = 0.0
         sum_alan = sum(p.get("toplam_alan", 0.0) for p in active_parcel_db.values())
         
         for key, p in active_parcel_db.items():
@@ -710,10 +717,12 @@ if selected_keys:
             
             for item in breakdown:
                 brut_insaat_arsa = item["brut_insaat"]
+                bahce_m2 = item["bahce_kullanim_alani"]
                 if brut_insaat_arsa <= 0:
                     continue
                     
                 sum_brut_insaat += brut_insaat_arsa
+                sum_bahce_alani += bahce_m2
                 
                 table_rows.append({
                     "MAHALLE": mahalle,
@@ -724,6 +733,7 @@ if selected_keys:
                     "TAKS": f"{item['taks']:.2f}" if item['taks'] > 0 else "-",
                     "KAKS / EMSAL": f"{item['kaks']:.2f}",
                     "BRÜT PARSEL (M²)": f"{toplam_arsa_m2:,.2f}",
+                    "BAHÇE KULLANIM ALANI (M²)": f"{bahce_m2:,.2f}",
                     "İNŞAAT ALANI (M²)": f"{brut_insaat_arsa:,.2f}"
                 })
                 
@@ -732,6 +742,7 @@ if selected_keys:
             summary_df = pd.DataFrame([{
                 "SORGULANAN PARSEL": f"{len(active_parcel_db)} Adet",
                 "TOPLAM BRÜT ARSA (M²)": f"{sum_alan:,.2f}",
+                "TOPLAM BAHÇE KULLANIM ALANI (M²)": f"{sum_bahce_alani:,.2f}",
                 "TOPLAM İNŞAAT (BRÜT M²)": f"{sum_brut_insaat:,.2f}"
             }])
             st.dataframe(summary_df, use_container_width=True)
@@ -751,6 +762,7 @@ if selected_keys:
             for item in breakdown:
                 fonk_name = item["fonksiyon_adi"]
                 brut_insaat = item["brut_insaat"]
+                bahce_m2 = item["bahce_kullanim_alani"]
                 if brut_insaat <= 0:
                     continue
                     
@@ -769,6 +781,7 @@ if selected_keys:
                     "ADA/PARSEL": f"{ada}/{parsel}",
                     "FONKSİYON": fonk_name,
                     "PROJE TİPİ": f"{conf['proje_tipi']} ({conf['havuz_mod']})",
+                    "BAHÇE KULLANIM (M²)": f"{bahce_m2:,.2f}",
                     "BRÜT İNŞAAT (M²)": f"{brut_insaat:,.2f}",
                     "ADET": konut_adeti,
                     "BİRİM BRÜT (M²)": f"{birim_m2:,.2f}",
@@ -869,6 +882,7 @@ if selected_keys:
                             "Fonksiyon Adı": item["fonksiyon_adi"],
                             "TAKS": f"{item['taks']:.2f}" if item['taks'] > 0 else "-",
                             "KAKS / Emsal": f"{item['kaks']:.2f}",
+                            "Bahçe Kullanım Alanı (m²)": f"{item['bahce_kullanim_alani']:,.2f}",
                             "Tahmini Brüt İnşaat (m²)": f"{item['brut_insaat']:,.2f}"
                         })
                 else:
@@ -882,6 +896,7 @@ if selected_keys:
                         "Fonksiyon Adı": "-",
                         "TAKS": "-",
                         "KAKS / Emsal": "-",
+                        "Bahçe Kullanım Alanı (m²)": "-",
                         "Tahmini Brüt İnşaat (m²)": "-"
                     })
             
