@@ -59,34 +59,30 @@ def clean_fonksiyon_adi(name):
         return ""
     return n
 
-# --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ ---
+# --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ (GÜÇLENDİRİLMİŞ) ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) if "__file__" in locals() else os.getcwd()
 DB_FILE = os.path.join(BASE_DIR, "imar_veritabani.json")
 
 def load_persistent_db():
-    raw_db = {}
     if os.path.exists(DB_FILE):
         try:
             with open(DB_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                if isinstance(data, dict) and len(data) > 0:
-                    raw_db = data
+                if isinstance(data, dict):
+                    return data
         except Exception as e:
             st.warning(f"Veritabanı okunurken uyarı: {e}")
-
-    if "parcel_db" in st.session_state and len(st.session_state["parcel_db"]) > 0:
-        return st.session_state["parcel_db"]
-
-    return raw_db
+    return {}
 
 def save_persistent_db(db_data):
     try:
-        st.session_state["parcel_db"] = db_data
         with open(DB_FILE, "w", encoding="utf-8") as f:
             json.dump(db_data, f, ensure_ascii=False, indent=4)
+        st.session_state["parcel_db"] = db_data
     except Exception as e:
         st.error(f"Veritabanı kaydedilirken hata oluştu: {e}")
 
+# Oturum başlatılırken veritabanını diskten güvenli bir şekilde yükle
 if "parcel_db" not in st.session_state:
     st.session_state["parcel_db"] = load_persistent_db()
 
@@ -427,16 +423,13 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
     for f, fonk_name, active_kaks in valid_fonks:
         giren_m2 = f.get("giren_m2", 0.0)
         
-        # Eğer PDF'den fonksiyon alanına giren m² okunduysa onu baz al, okunmadıysa toplam alandan orantıla
         if giren_m2 > 0:
             fonk_giren_payi = giren_m2
         else:
             fonk_giren_payi = toplam_arsa_m2 / len(valid_fonks) if len(valid_fonks) > 0 else toplam_arsa_m2
             
-        # Bahçe Kullanım Alanı: Terk durumundan bağımsız olarak doğrudan Fonksiyon Alanına Giren m²'dir.
         bahce_kullanim_alani = fonk_giren_payi
         
-        # Net arsa payı inşaat alanı hesabında kullanılır
         if sum_giren > 0:
             oran = giren_m2 / sum_giren
         else:
@@ -477,13 +470,16 @@ uploaded_files = st.sidebar.file_uploader("İmar Durum Raporu (PDF) Seçin", typ
 
 just_uploaded_keys = []
 if uploaded_files:
+    # Mevcut veritabanını sözlük olarak al
+    current_db = st.session_state["parcel_db"]
     for uploaded_file in uploaded_files:
         p_data = parse_imar_pdf(uploaded_file)
         unique_key = f"{p_data['mahalle']} | Ada: {p_data['ada']} - Parsel: {p_data['parsel']}"
-        st.session_state["parcel_db"][unique_key] = p_data
+        current_db[unique_key] = p_data
         just_uploaded_keys.append(unique_key)
         
-    save_persistent_db(st.session_state["parcel_db"])
+    # Güncellenmiş veritabanını hem diske hem session_state'e kalıcı olarak kaydet
+    save_persistent_db(current_db)
     st.sidebar.success(f"{len(uploaded_files)} Adet Belge Arşive Eklendi!")
 
 st.sidebar.divider()
@@ -916,14 +912,14 @@ if selected_keys:
                 selected_del_key = st.selectbox("Arşivden kaldırılacak parseli seçin:", options=list(db_items.keys()))
                 if st.button("🗑️ Seçili Parseli Arşivden Kaldır", type="primary"):
                     if selected_del_key in st.session_state["parcel_db"]:
-                        del st.session_state["parcel_db"][selected_del_key]
-                        save_persistent_db(st.session_state["parcel_db"])
+                        current_db = st.session_state["parcel_db"]
+                        del current_db[selected_del_key]
+                        save_persistent_db(current_db)
                         st.success(f"'{selected_del_key}' başarıyla silindi ve veritabanı güncellendi!")
                         st.rerun()
                 
                 st.markdown("<br>", unsafe_allow_html=True)
                 if st.button("⚠️ Tüm Veritabanını Temizle (Sıfırla)", type="secondary"):
-                    st.session_state["parcel_db"] = {}
                     save_persistent_db({})
                     st.success("Veritabanı tamamen sıfırlandı!")
                     st.rerun()
@@ -931,4 +927,4 @@ if selected_keys:
             st.info("Veritabanında (`imar_veritabani.json`) henüz kayıtlı parsel bulunmuyor.")
 
 else:
-    st.info("👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden istenilen parselleri seçin veya yeni bir imar belgesi (PDF) yükleyin.")
+    st.info("👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden istenilen parselleri seçin veya yeni bir imar belgesi (PDF) yükleme yapın.")
