@@ -225,9 +225,21 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
         if kw in text_upper:
             return True
             
+    terk_var_match = re.search(r'(?:YOLA|KAMUYA)?\s*TERK\s*[:=-]\s*(VAR|YAPILACAK|VARDIR)', text_upper)
+    if terk_var_match:
+        return False
+
+    terk_yok_match = re.search(r'(?:YOLA|KAMUYA)?\s*TERK\s*[:=-]\s*(YOK|YAPILMIŞ|0)', text_upper)
+    if terk_yok_match:
+        return True
+
+    toplam_fonksiyon_m2 = sum(f.get("giren_m2", 0.0) for f in fonksiyonlar if not any(x in f.get("fonksiyon_adi", "") for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]))
+    if toplam_alan > 0 and toplam_fonksiyon_m2 > 0:
+        if abs(toplam_alan - toplam_fonksiyon_m2) < 0.5 or (toplam_fonksiyon_m2 / toplam_alan) >= 0.995:
+            return True
     return False
 
-# --- DÜZELTİLMİŞ HASSAS YENÇOK VE KAT ADEDİ AYRIŞTIRICI ---
+# --- HASSAS YENÇOK VE KAT ADEDİ AYRIŞTIRICI ---
 def extract_yencok_and_kat(text_or_cell):
     s = str(text_or_cell).upper().strip()
     if not s or set(s) <= set('.,-/_ '):
@@ -236,7 +248,6 @@ def extract_yencok_and_kat(text_or_cell):
     yencok_val = "-"
     kat_val = "-"
     
-    # Kat adedini doğru yakalama (örn: "Kat Adedi 2" veya doğrudan "2")
     kat_m = re.search(r'(?:KAT\s*(?:ADEDİ)?\s*[:=]?\s*(\d+)|(\d+)\s*KAT|Z\s*\+\s*(\d+)|A\s*-\s*(\d+)|\bK\s*[:=]?\s*(\d+))', s)
     if kat_m:
         groups = [g for g in kat_m.groups() if g is not None]
@@ -248,20 +259,12 @@ def extract_yencok_and_kat(text_or_cell):
     else:
         h_m = re.search(r'(?:YENÇOK|HMAX|H)\s*[:=]?\s*([\d\.,]+\s*M?)', s)
         if h_m:
-            val_str = h_m.group(1).strip()
-            if val_str not in ["0", "0.0", "0M", "0 M"]:
-                yencok_val = val_str
+            yencok_val = h_m.group(1).strip()
         else:
-            m_m = re.search(r'(\d+[\.,]\d+\s*M\b)', s)
-            if m_m and not "M²" in s:
-                val_str = m_m.group(1).strip()
-                if val_str not in ["0", "0.0", "0M", "0 M"]:
-                    yencok_val = val_str
-                    
-    # Eğer yençok 0 veya belirtilmemişse ancak Kat Adedi varsa, plan notlarına göre "-" veya "Kat Nizamı" atanır
-    if yencok_val in ["-", "0", "0 M", "0.0"]:
-        yencok_val = "Bina Kat Nizamı"
-        
+            m_m = re.search(r'\b(\d+[\.,]\d+\s*M)\b', s)
+            if m_m and not "M²" in s and not "M2" in s:
+                yencok_val = m_m.group(1).strip()
+                
     return yencok_val, kat_val
 
 # --- KAPSAMLI VE TAM OTOMATİK İMAR PDF AYRIŞTIRMA MOTORU ---
@@ -352,6 +355,66 @@ def parse_imar_pdf(uploaded_file):
                                             "giren_m2": f_m2
                                         })
 
+                lines = t.split('\n')
+                for i, line in enumerate(lines):
+                    line_up = line.upper().strip()
+                    if any(kw in line_up for kw in ["KONUT ALANI", "TİCARET ALANI", "TİCARET VE KONUT", "GELİŞME KONUT", "VİLLA ALANI"]):
+                        clean_n = clean_fonksiyon_adi(line)
+                        if clean_n:
+                            curr_fonk = clean_n
+                            curr_taks = 0.0
+                            curr_kaks = 0.0
+                            curr_yencok = "-"
+                            curr_kat = "-"
+                            curr_m2 = 0.0
+                            
+                            for sub_line in lines[max(0, i-5):min(len(lines), i+8)]:
+                                sub_up = sub_line.upper()
+                                if "TAKS" in sub_up:
+                                    num_m = re.search(r'([\d\.,]+)', sub_line)
+                                    if num_m:
+                                        val = parse_tr_float(num_m.group(1))
+                                        if 0 < val <= 1.0: curr_taks = val
+                                        
+                                if any(k in sub_up for k in ["KAKS", "EMSAL", "EMS", "E:", "E="]):
+                                    val = parse_kaks_val(sub_line)
+                                    if val > 0: curr_kaks = val
+
+                                if any(y in sub_up for y in ["YENÇOK", "HMAX", "KAT", "M"]):
+                                    yc, kt = extract_yencok_and_kat(sub_line)
+                                    if yc != "-": curr_yencok = yc
+                                    if kt != "-": curr_kat = kt
+                                        
+                                m2_m = re.search(r'([\d\.,]+)\s*(?:m²|m2|%)', sub_line, re.IGNORECASE)
+                                if m2_m:
+                                    val = parse_tr_float(m2_m.group(1))
+                                    if val > 0: curr_m2 = val
+
+                            if curr_kaks <= 0:
+                                kaks_match = re.search(r'(?:EMSAL|KAKS|EMS|E)\s*[:=\s]*([\d\.,\s/-]+)', line_up)
+                                if kaks_match:
+                                    curr_kaks = parse_kaks_val(kaks_match.group(1))
+
+                            if curr_fonk:
+                                cleaned_curr_fonk = clean_fonksiyon_adi(curr_fonk)
+                                if cleaned_curr_fonk and not any(x in cleaned_curr_fonk for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
+                                    existing_f = next((f for f in parcel_data["fonksiyonlar"] if f["fonksiyon_adi"] == cleaned_curr_fonk), None)
+                                    if existing_f:
+                                        if curr_kaks > 0: existing_f["kaks"] = curr_kaks
+                                        if curr_taks > 0: existing_f["taks"] = curr_taks
+                                        if curr_yencok != "-": existing_f["yencok"] = curr_yencok
+                                        if curr_kat != "-": existing_f["kat_adedi"] = curr_kat
+                                        if curr_m2 > 0: existing_f["giren_m2"] = curr_m2
+                                    else:
+                                        parcel_data["fonksiyonlar"].append({
+                                            "fonksiyon_adi": cleaned_curr_fonk,
+                                            "taks": curr_taks,
+                                            "kaks": curr_kaks,
+                                            "yencok": curr_yencok,
+                                            "kat_adedi": curr_kat,
+                                            "giren_m2": curr_m2
+                                        })
+
         global_kaks_val = 0.0
         general_kaks_matches = re.findall(r'(?:EMSAL|KAKS|EMS|E)\s*[:=\s]*([\d\.,\s/-]+)', full_text, re.IGNORECASE)
         for gkm in general_kaks_matches:
@@ -360,15 +423,22 @@ def parse_imar_pdf(uploaded_file):
                 global_kaks_val = val
                 break
 
-        global_yc, global_kt = extract_yencok_and_kat(full_text)
+        global_yencok = "-"
+        global_kat = "-"
+        for line in full_text.split("\n"):
+            yc, kt = extract_yencok_and_kat(line)
+            if global_yencok == "-" and yc != "-":
+                global_yencok = yc
+            if global_kat == "-" and kt != "-":
+                global_kat = kt
 
         for f in parcel_data["fonksiyonlar"]:
             if f["kaks"] <= 0 and global_kaks_val > 0:
                 f["kaks"] = global_kaks_val
-            if f.get("yencok", "-") in ["-", "0", "0 M"] and global_yc not in ["-", "0", "0 M"]:
-                f["yencok"] = global_yc
-            if f.get("kat_adedi", "-") == "-" and global_kt != "-":
-                f["kat_adedi"] = global_kt
+            if f.get("yencok", "-") == "-" and global_yencok != "-":
+                f["yencok"] = global_yencok
+            if f.get("kat_adedi", "-") == "-" and global_kat != "-":
+                f["kat_adedi"] = global_kat
 
         if parcel_data["mahalle"] == "BİLİNMİYOR" or parcel_data["ada"] == "0":
             m_m = re.search(r'Mahalle\s*[:\|]\s*([A-ZÇĞİÖŞÜa-zçğıöşü]+)', full_text)
@@ -387,8 +457,8 @@ def parse_imar_pdf(uploaded_file):
                 "fonksiyon_adi": "KONUT ALANI",
                 "taks": 0.0,
                 "kaks": global_kaks_val,
-                "yencok": global_yc,
-                "kat_adedi": global_kt,
+                "yencok": global_yencok,
+                "kat_adedi": global_kat,
                 "giren_m2": parcel_data["toplam_alan"]
             })
 
