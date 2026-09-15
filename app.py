@@ -241,14 +241,12 @@ def extract_yencok_and_kat(text_or_cell):
     yencok_val = "-"
     kat_val = "-"
     
-    # Kat Adedi Arama (Örn: "4 KAT", "KAT: 3", "Z+3", "A-4", "K: 5")
     kat_m = re.search(r'(?:KAT\s*[:=]?\s*(\d+)|(\d+)\s*KAT|Z\s*\+\s*(\d+)|A\s*-\s*(\d+)|\bK\s*[:=]?\s*(\d+))', s)
     if kat_m:
         groups = [g for g in kat_m.groups() if g is not None]
         if groups:
             kat_val = f"{groups[0]} Kat"
             
-    # Yençok (Yükseklik) Arama (Örn: "H: 12.50", "YENÇOK: 15.50M", "SERBEST", "HMAX: 9.50")
     if "SERBEST" in s:
         yencok_val = "Serbest"
     else:
@@ -282,7 +280,6 @@ def parse_imar_pdf(uploaded_file):
                 t = page.extract_text() or ""
                 full_text += "\n" + t
                 
-                # 1. Tablo Hücrelerinden Veri Çekme
                 tables = page.extract_tables() or []
                 for table in tables:
                     for r_idx, row in enumerate(table):
@@ -325,13 +322,11 @@ def parse_imar_pdf(uploaded_file):
                                     if yc != "-": f_yencok = yc
                                     if kt != "-": f_kat = kt
                                 
-                                # Fonksiyon Alanına Giren m² veya % tespiti (Bahçe/Peyzaj ve Net Alan Ayrıştırması İçin)
                                 m2_m = re.search(r'([\d\.,]+)\s*(?:M²|M2|%)', c, re.IGNORECASE)
                                 if m2_m and not "ALAN" in c_up:
                                     val = parse_tr_float(m2_m.group(1))
                                     if val > 1.0: f_m2 = val
 
-                            # Eğer hücre bazlı ayrı ayrı dağıldıysa tüm satırı tarayarak eksik Yençok/Kat bilgilerini tamamla
                             if f_name:
                                 row_yc, row_kt = extract_yencok_and_kat(joined_row_str)
                                 if f_yencok == "-" and row_yc != "-": f_yencok = row_yc
@@ -351,7 +346,6 @@ def parse_imar_pdf(uploaded_file):
                                         "giren_m2": f_m2
                                     })
 
-                # 2. Serbest Metin Satır Taraması
                 lines = t.split('\n')
                 for i, line in enumerate(lines):
                     line_up = line.upper().strip()
@@ -418,7 +412,6 @@ def parse_imar_pdf(uploaded_file):
                 global_kaks_val = val
                 break
 
-        # Sadece fonksiyon bazında hiç bulunamamışsa global tarama uygulanır
         global_yc, global_kt = extract_yencok_and_kat(full_text)
 
         for f in parcel_data["fonksiyonlar"]:
