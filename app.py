@@ -232,20 +232,20 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
             return True
     return False
 
-# --- YENÇOK VE KAT ADEDİ AYRIŞTIRICI ---
+# --- GELİŞTİRİLMİŞ YENÇOK VE KAT ADEDİ AYRIŞTIRICI ---
 def extract_yencok_and_kat(text_or_cell):
     s = str(text_or_cell).upper().strip()
     yencok_val = "-"
     kat_val = "-"
     
-    # Kat Adedi Arama (Örn: "4 KAT", "KAT: 3", "Z+3", "A-4")
-    kat_m = re.search(r'(?:KAT\s*[:=]?\s*(\d+)|(\d+)\s*KAT|Z\s*\+\s*(\d+)|A\s*-\s*(\d+))', s)
+    # 1. Kat Adedi Arama (Örn: "4 KAT", "KAT: 3", "Z+3", "A-4", "K: 5")
+    kat_m = re.search(r'(?:KAT\s*[:=]?\s*(\d+)|(\d+)\s*KAT|Z\s*\+\s*(\d+)|A\s*-\s*(\d+)|\bK\s*[:=]?\s*(\d+))', s)
     if kat_m:
         groups = [g for g in kat_m.groups() if g is not None]
         if groups:
             kat_val = f"{groups[0]} Kat"
             
-    # Yençok (Yükseklik) Arama (Örn: "H: 12.50", "YENÇOK: 12.50", "12.50M", "SERBEST")
+    # 2. Yençok (Yükseklik) Arama (Örn: "H: 12.50", "YENÇOK: 15.50M", "SERBEST", "HMAX: 9.50")
     if "SERBEST" in s:
         yencok_val = "Serbest"
     else:
@@ -253,7 +253,7 @@ def extract_yencok_and_kat(text_or_cell):
         if h_m:
             yencok_val = h_m.group(1).strip()
         else:
-            m_m = re.search(r'([\d\.,]+\s*M\b)', s)
+            m_m = re.search(r'(\d+[\.,]\d+\s*M\b)', s)
             if m_m and not "M²" in s:
                 yencok_val = m_m.group(1).strip()
                 
@@ -321,6 +321,12 @@ def parse_imar_pdf(uploaded_file):
                                     yc, kt = extract_yencok_and_kat(c)
                                     if yc != "-": f_yencok = yc
                                     if kt != "-": f_kat = kt
+                                
+                                # Fonksiyon Alanına Giren m² veya % tespiti (Bahçe/Peyzaj ve Net Alan Ayrıştırması İçin)
+                                m2_m = re.search(r'([\d\.,]+)\s*(?:M²|M2|%)', c, re.IGNORECASE)
+                                if m2_m and not "ALAN" in c_up:
+                                    val = parse_tr_float(m2_m.group(1))
+                                    if val > 1.0: f_m2 = val
 
                             if f_kaks > 0 and not f_name and parcel_data["fonksiyonlar"]:
                                 parcel_data["fonksiyonlar"][-1]["kaks"] = f_kaks
@@ -367,7 +373,7 @@ def parse_imar_pdf(uploaded_file):
                                     if yc != "-": curr_yencok = yc
                                     if kt != "-": curr_kat = kt
                                         
-                                m2_m = re.search(r'([\d\.,]+)\s*m²', sub_line, re.IGNORECASE)
+                                m2_m = re.search(r'([\d\.,]+)\s*(?:m²|m2|%)', sub_line, re.IGNORECASE)
                                 if m2_m:
                                     val = parse_tr_float(m2_m.group(1))
                                     if val > 0: curr_m2 = val
@@ -384,6 +390,7 @@ def parse_imar_pdf(uploaded_file):
                                     if curr_taks > 0: existing_f["taks"] = curr_taks
                                     if curr_yencok != "-": existing_f["yencok"] = curr_yencok
                                     if curr_kat != "-": existing_f["kat_adedi"] = curr_kat
+                                    if curr_m2 > 0: existing_f["giren_m2"] = curr_m2
                                 else:
                                     parcel_data["fonksiyonlar"].append({
                                         "fonksiyon_adi": curr_fonk,
@@ -402,7 +409,7 @@ def parse_imar_pdf(uploaded_file):
                 global_kaks_val = val
                 break
 
-        # Genel metinden global Yençok ve Kat taraması (Eğer satırlarda bulunamadıysa)
+        # Genel metinden global Yençok ve Kat taraması
         global_yc, global_kt = extract_yencok_and_kat(full_text)
 
         for f in parcel_data["fonksiyonlar"]:
