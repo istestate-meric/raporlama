@@ -100,7 +100,7 @@ img2_base64 = get_image_base64("meric_insaat_emlak_logo.png")
 img1_tag = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 45px; width: auto; object-fit: contain;'>" if img1_base64 else "<h4 style='color:#1e3a8a; margin:0;'>İSTESTATE</h4>"
 img2_tag = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 45px; width: auto; object-fit: contain;'>" if img2_base64 else "<h4 style='color:#1e3a8a; margin:0;'>MERİÇ İNŞAAT</h4>"
 
-# --- 1. TCMB CANLI DÖVİZ KURU SERVİSİ ---
+# --- TCMB CANLI DÖVİZ KURU SERVİSİ ---
 @st.cache_data(ttl=300)
 def get_live_exchange_rates():
     try:
@@ -126,7 +126,7 @@ def get_live_exchange_rates():
     except Exception:
         return {"USD": 34.00, "EUR": 37.50}
 
-# --- 2. PİYASA VE PROJE TİPİ MATRİSİ ---
+# --- PİYASA VE PROJE TİPİ MATRİSİ ---
 def get_realistic_market_pricing(mahalle_adi, proje_tipi, usd_rate):
     mahalle_base_tl = {
         "ACARLAR": 140000, "ANADOLU HİSARI": 130000, "KANLICA": 125000, 
@@ -158,7 +158,7 @@ def parse_tr_float(val_str):
     if not val_str:
         return 0.0
     s = str(val_str).strip()
-    if "-" in s:
+    if "-" in s and not re.match(r'^\d+[\.,]\d+\s*-\s*\d+[\.,]\d+$', s):
         s = s.split("-")[-1]
     s = re.sub(r'[^\d\.,]', '', s).strip()
     if not s:
@@ -181,14 +181,52 @@ def parse_tr_float(val_str):
     except ValueError:
         return 0.0
 
+def parse_kaks_val(val_str):
+    if not val_str:
+        return 0.0
+    s_str = str(val_str).strip()
+    nums = re.findall(r'[\d\.,]+', s_str)
+    parsed_vals = []
+    for num_s in nums:
+        v = parse_tr_float(num_s)
+        if 0.05 <= v <= 10.0:
+            parsed_vals.append(v)
+    return max(parsed_vals) if parsed_vals else 0.0
+
+# --- GELİŞTİRİLMİŞ TERK ALGILAMA MOTORU ---
 def detect_terk_status(text, toplam_alan, fonksiyonlar):
     text_upper = text.upper()
-    if any(k in text_upper for k in ["TERKİ YAPILMIŞTIR", "TERKİ YAPILMIŞ", "TERK YAPILMIŞTIR", "KAMUYA TERK EDİLMİŞTİR", "YOLA TERKİ YAPILMIŞTIR"]):
-        return True
-    if any(k in text_upper for k in ["YOLA TERK VE KAMUYA AYRILAN KISIMLAR KAMU ELİNE GEÇMEDEN", "TERK YAPILMAMIŞ", "TERKİ YAPILAMIŞ", "TERK YAPILMADAN", "DOP TERKİ YAPILMAMIŞ"]):
+    
+    terk_yapilmamis_kw = [
+        "TERK YAPILMAMIŞ", "TERKİ YAPILMAMIŞ", "TERK YAPILMADAN", "DOP TERKİ YAPILMAMIŞ",
+        "YOLA TERK VAR", "KAMUYA TERK VAR", "TERK EDİLECEKTİR", "YOLA TERKİ VARDIR",
+        "YOLA TERK VE KAMUYA AYRILAN KISIMLAR KAMU ELİNE GEÇMEDEN", "TERK EDİLMELİDİR"
+    ]
+    
+    terk_yapilmis_kw = [
+        "TERKİ YAPILMIŞTIR", "TERKİ YAPILMIŞ", "TERK YAPILMIŞTIR", "TERK YAPILMIŞ",
+        "KAMUYA TERK EDİLMİŞTİR", "YOLA TERKİ YAPILMIŞTIR", "TERK EDİLMİŞTİR",
+        "TERK: YOK", "TERK YOK", "YOLA TERK: 0", "TERK MİKTARI: 0", "NET PARSEL",
+        "TERKSİZ", "TERK GEREKMEMEKTEDİR"
+    ]
+    
+    for kw in terk_yapilmamis_kw:
+        if kw in text_upper:
+            return False
+
+    for kw in terk_yapilmis_kw:
+        if kw in text_upper:
+            return True
+            
+    terk_var_match = re.search(r'(?:YOLA|KAMUYA)?\s*TERK\s*[:=-]\s*(VAR|YAPILACAK|VARDIR)', text_upper)
+    if terk_var_match:
         return False
-        
-    toplam_fonksiyon_m2 = sum(f["giren_m2"] for f in fonksiyonlar if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]))
+
+    terk_yok_match = re.search(r'(?:YOLA|KAMUYA)?\s*TERK\s*[:=-]\s*(YOK|YAPILMIŞ|0)', text_upper)
+    if terk_yok_match:
+        return True
+
+    toplam_fonksiyon_m2 = sum(f.get("giren_m2", 0.0) for f in fonksiyonlar if not any(x in f.get("fonksiyon_adi", "") for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]))
     if toplam_alan > 0 and toplam_fonksiyon_m2 > 0:
         if abs(toplam_alan - toplam_fonksiyon_m2) < 0.5 or (toplam_fonksiyon_m2 / toplam_alan) >= 0.995:
             return True
@@ -234,7 +272,7 @@ def parse_imar_pdf(uploaded_file):
 
                         # Fonksiyon, TAKS, KAKS/Emsal ve Yençok Ayrıştırma
                         joined_row_str = " ".join(cells).upper()
-                        if any(kw in joined_row_str for kw in ["KONUT", "TİCARET", "TİCARİ", "PARK", "VİLLA", "GELİŞME", "EMSAL", "KAKS", "TAKS", "YENÇOK"]):
+                        if any(kw in joined_row_str for kw in ["KONUT", "TİCARET", "TİCARİ", "PARK", "VİLLA", "GELİŞME", "EMSAL", "KAKS", "TAKS", "YENÇOK", "E:"]):
                             f_name = ""
                             f_taks = 0.0
                             f_kaks = 0.0
@@ -251,11 +289,8 @@ def parse_imar_pdf(uploaded_file):
                                     for num_str in nums:
                                         val = parse_tr_float(num_str)
                                         if 0 < val <= 1.0: f_taks = val
-                                elif any(k in c_up for k in ["KAKS", "EMSAL", "EMS", "KS"]):
-                                    nums = re.findall(r'([\d\.,]+)', c)
-                                    for num_str in nums:
-                                        val = parse_tr_float(num_str)
-                                        if 0.05 <= val <= 5.0: f_kaks = val
+                                elif any(k in c_up for k in ["KAKS", "EMSAL", "EMS", "E:", "E="]):
+                                    f_kaks = parse_kaks_val(c)
                                 elif any(y in c_up for y in ["YENÇOK", "HMAX", "KAT"]):
                                     f_yencok = c
 
@@ -293,11 +328,9 @@ def parse_imar_pdf(uploaded_file):
                                         val = parse_tr_float(num_m.group(1))
                                         if 0 < val <= 1.0: curr_taks = val
                                         
-                                if any(k in sub_up for k in ["KAKS", "EMSAL", "EMS"]):
-                                    num_m = re.search(r'([\d\.,]+)', sub_line)
-                                    if num_m:
-                                        val = parse_tr_float(num_m.group(1))
-                                        if 0.05 <= val <= 5.0: curr_kaks = val
+                                if any(k in sub_up for k in ["KAKS", "EMSAL", "EMS", "E:", "E="]):
+                                    val = parse_kaks_val(sub_line)
+                                    if val > 0: curr_kaks = val
 
                                 if any(y in sub_up for y in ["YENÇOK", "HMAX"]):
                                     curr_yencok = sub_line.strip()
@@ -308,10 +341,9 @@ def parse_imar_pdf(uploaded_file):
                                     if val > 0: curr_m2 = val
 
                             if curr_kaks <= 0:
-                                kaks_match = re.search(r'(?:KAKS|EMSAL|EMS)\s*[:=]?\s*([\d\.,]+)', line_up)
+                                kaks_match = re.search(r'(?:EMSAL|KAKS|EMS|E)\s*[:=\s]*([\d\.,\s/-]+)', line_up)
                                 if kaks_match:
-                                    val = parse_tr_float(kaks_match.group(1))
-                                    if 0.05 <= val <= 5.0: curr_kaks = val
+                                    curr_kaks = parse_kaks_val(kaks_match.group(1))
 
                             if curr_fonk and not any(x in curr_fonk for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
                                 existing_f = next((f for f in parcel_data["fonksiyonlar"] if f["fonksiyon_adi"] == curr_fonk), None)
@@ -330,11 +362,12 @@ def parse_imar_pdf(uploaded_file):
 
         # 3. Fallback: Genel metin içinde etiket bağımsız Emsal/KAKS taraması
         global_kaks_val = 0.0
-        general_kaks_match = re.search(r'(?:EMSAL|KAKS)\s*[:=\s]*([\d\.,]+)', full_text, re.IGNORECASE)
-        if general_kaks_match:
-            val = parse_tr_float(general_kaks_match.group(1))
-            if 0.05 <= val <= 5.0:
+        general_kaks_matches = re.findall(r'(?:EMSAL|KAKS|EMS|E)\s*[:=\s]*([\d\.,\s/-]+)', full_text, re.IGNORECASE)
+        for gkm in general_kaks_matches:
+            val = parse_kaks_val(gkm)
+            if val > 0:
                 global_kaks_val = val
+                break
 
         for f in parcel_data["fonksiyonlar"]:
             if f["kaks"] <= 0 and global_kaks_val > 0:
@@ -422,7 +455,6 @@ if selected_keys:
     active_parcel_db = {k: st.session_state["parcel_db"][k] for k in selected_keys}
     emsal_artis_orani = 1.30
     
-    # DÜZELTİLDİ: active_parcel_db içindeki fonksiyon listesinden güvenli veri birleştirme
     combined_fonk_text = " ".join([f["fonksiyon_adi"] for p in active_parcel_db.values() for f in p.get("fonksiyonlar", [])])
     
     # Proje tipi belirleme
@@ -732,7 +764,7 @@ if selected_keys:
                     "MAHALLE": mahalle,
                     "ADA": ada,
                     "PARSEL": parsel,
-                    "TERK DURUMU": "Yapılmış" if is_terkli else "Yapılmamış",
+                    "TERK DURUMU": "Yapılmış (Net)" if is_terkli else "Yapılmamış (Brüt)",
                     "FONKSİYON": fonk_name,
                     "TAKS / KAKS": f"{f.get('taks', 0.0):.2f} / {active_kaks:.2f}",
                     "YENÇOK": f.get('yencok', '-'),
@@ -885,28 +917,64 @@ if selected_keys:
         )
 
     with tab5:
-        st.subheader("🗄️ Veritabanı & Arşiv Yönetimi (`imar_veritabani.json`)")
+        st.subheader("🗄️ Veritabanı Detaylı Arşiv Tablosu (`imar_veritabani.json`)")
         db_items = st.session_state["parcel_db"]
         if db_items:
-            db_summary_list = []
+            db_detail_rows = []
             for k, p_val in db_items.items():
-                db_summary_list.append({
-                    "Kayıt Anahtarı": k,
-                    "Dosya Adı": p_val.get("filename", "-"),
-                    "Mahalle": p_val.get("mahalle", "-"),
-                    "Ada": p_val.get("ada", "-"),
-                    "Parsel": p_val.get("parsel", "-"),
-                    "Toplam Alan (m²)": f"{p_val.get('toplam_alan', 0.0):,.2f}",
-                    "Terk Durumu": "Yapılmış" if p_val.get("terk_yapilmis_mi") else "Yapılmamış",
-                    "Fonksiyon Sayısı": len(p_val.get("fonksiyonlar", []))
-                })
+                mahalle = p_val.get("mahalle", "-")
+                ada = p_val.get("ada", "-")
+                parsel = p_val.get("parsel", "-")
+                toplam_alan = p_val.get("toplam_alan", 0.0)
+                is_terk = p_val.get("terk_yapilmis_mi", False)
+                terk_st = "Terk Yapılmış (Net)" if is_terk else "Terk Yapılmamış (Brüt)"
+                fonks = p_val.get("fonksiyonlar", [])
+                
+                if fonks:
+                    for f in fonks:
+                        f_name = clean_fonksiyon_adi(f.get("fonksiyon_adi", "-"))
+                        if not f_name:
+                            continue
+                        f_taks = f.get("taks", 0.0)
+                        f_kaks = f.get("kaks", 0.0)
+                        f_yencok = f.get("yencok", "-")
+                        
+                        calc_insaat = (toplam_alan * f_kaks * 1.30) if is_terk else ((toplam_alan * 0.7) * f_kaks * 1.30)
+                        
+                        db_detail_rows.append({
+                            "Kayıt Anahtarı": k,
+                            "Dosya Adı": p_val.get("filename", "-"),
+                            "Mahalle": mahalle,
+                            "Ada / Parsel": f"{ada} / {parsel}",
+                            "Toplam Arsa (m²)": f"{toplam_alan:,.2f}",
+                            "Terk Durumu": terk_st,
+                            "Fonksiyon Adı": f_name,
+                            "TAKS": f"{f_taks:.2f}" if f_taks > 0 else "-",
+                            "KAKS / Emsal": f"{f_kaks:.2f}" if f_kaks > 0 else "Okunamadı",
+                            "Yençok / Hmax": f_yencok if f_yencok else "-",
+                            "Tahmini Brüt İnşaat (m²)": f"{calc_insaat:,.2f}" if calc_insaat > 0 else "-"
+                        })
+                else:
+                    db_detail_rows.append({
+                        "Kayıt Anahtarı": k,
+                        "Dosya Adı": p_val.get("filename", "-"),
+                        "Mahalle": mahalle,
+                        "Ada / Parsel": f"{ada} / {parsel}",
+                        "Toplam Arsa (m²)": f"{toplam_alan:,.2f}",
+                        "Terk Durumu": terk_st,
+                        "Fonksiyon Adı": "-",
+                        "TAKS": "-",
+                        "KAKS / Emsal": "-",
+                        "Yençok / Hmax": "-",
+                        "Tahmini Brüt İnşaat (m²)": "-"
+                    })
             
-            st.dataframe(pd.DataFrame(db_summary_list), use_container_width=True)
+            st.dataframe(pd.DataFrame(db_detail_rows), use_container_width=True)
             
             st.markdown("---")
             col_db1, col_db2 = st.columns(2)
             with col_db1:
-                st.markdown("#### 🔍 Ham JSON Veri Görünümü")
+                st.markdown("#### 🔍 Ham JSON Veri Yapısı")
                 st.json(db_items)
             with col_db2:
                 st.markdown("#### ⚙️ Veritabanı İşlemleri")
