@@ -82,7 +82,6 @@ def save_persistent_db(db_data):
     except Exception as e:
         st.error(f"Veritabanı kaydedilirken hata oluştu: {e}")
 
-# Oturum başlatılırken veritabanını diskten güvenli bir şekilde yükle
 if "parcel_db" not in st.session_state:
     st.session_state["parcel_db"] = load_persistent_db()
 
@@ -503,14 +502,14 @@ if selected_keys:
     active_parcel_db = {k: st.session_state["parcel_db"][k] for k in selected_keys}
     emsal_artis_orani = 1.30
     first_mahalle = list(active_parcel_db.values())[0].get("mahalle", "VARSAYILAN")
-
+    
     st.markdown("""
     <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 18px 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
         <div style="display: flex; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
             <span style="font-size: 18px; margin-right: 8px;">📊</span>
             <div>
-                <h3 style="color: #0f172a; margin: 0; font-size: 15px; font-weight: 700;">Gelişmiş Fizibilite ve Fonksiyon Bazlı Proje Tipi Yönetimi</h3>
-                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına göre proje tiplerini ve havuz konseptlerini manuel belirleyin veya sistemin net kâr bazlı otomatik optimize etmesini sağlayın.</p>
+                <h3 style="color: #0f172a; margin: 0; font-size: 15px; font-weight: 700;">Gelişmiş Fizibilite ve Fonksiyon Bazlı Proje Optimizasyonu</h3>
+                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına göre proje tiplerinin ve havuz konseptlerinin net kâr optimizasyonu ile belirlenmesi.</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -518,35 +517,29 @@ if selected_keys:
     col_m1, col_m2 = st.columns(2)
     with col_m1:
         is_modeli = st.selectbox("İş Modeli / Rapor Türü", options=["Kat Karşılığı Proje Raporu", "Doğrudan Satılık / Arsa Yatırım Raporu"], key="global_is_modeli")
-    with col_m2:
-        secim_modu = st.radio("Proje Tipi Seçim Modu", options=["Otomatik (Net Kâra Göre Maksimum Verimlilik)", "Manuel / Fonksiyon Bazlı Özelleştirme"], horizontal=True)
-
+        
     arsa_payi_orani = 0.0
     arsa_bonus_usd = 0.0
     if "Kat Karşılığı" in is_modeli:
-        st.markdown("<div style='margin-top: 10px; border-top: 1px dashed #cbd5e1; padding-top: 10px;'></div>", unsafe_allow_html=True)
-        col_gk1, col_gk2, col_gk3 = st.columns([2, 1, 2])
-        with col_gk1:
+        with col_m2:
             arsa_payi_orani = st.slider("Arsa Sahibi Payı / Kat Karşılığı Oranı (%)", 0, 70, 50)
-        with col_gk2:
-            bonus_curr = st.selectbox("Para Birimi", options=["USD ($)", "EUR (€)", "TL (₺)"])
-        with col_gk3:
-            raw_bonus_val = st.number_input("💵 Nakit Bonus / İmza Tutarı", min_value=0.0, value=0.0, step=10000.0, format="%.2f")
-            if "EUR" in bonus_curr:
-                arsa_bonus_usd = raw_bonus_val * (rates["EUR"] / rates["USD"])
-            elif "TL" in bonus_curr:
-                arsa_bonus_usd = raw_bonus_val / rates["USD"]
-            else:
-                arsa_bonus_usd = raw_bonus_val
-
-    # Tüm geçerli fonksiyonları topla
-    all_unique_functions = set()
-    for key, p in active_parcel_db.items():
+            
+    # Aktif parsellerdeki benzersiz fonksiyonları tespit et
+    unique_active_functions = set()
+    for p in active_parcel_db.values():
         breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
         for item in breakdown:
             if item["brut_insaat"] > 0:
-                all_unique_functions.add(item["fonksiyon_adi"])
+                unique_active_functions.add(item["fonksiyon_adi"])
+                
+    if not unique_active_functions:
+        unique_active_functions = {"KONUT ALANI"}
 
+    st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonlarına Göre Proje Tipi & Havuz Seçimi (Net Kâr Bazlı Otomatik Öneri)</div>", unsafe_allow_html=True)
+    
+    function_configs = {}
+    func_cols = st.columns(len(unique_active_functions) if len(unique_active_functions) > 0 else 1)
+    
     all_project_types = [
         "Standart Konut / Apartman", 
         "Üst Segment Konut / Rezidans", 
@@ -554,125 +547,102 @@ if selected_keys:
         "Ticari / Ofis Kompleksi", 
         "Karma Proje (Konut + Ticari)"
     ]
-
-    function_configurations = {}
-
-    if secim_modu.startswith("Otomatik"):
-        # Net kârı maksimize eden proje tipini otomatik seçme simülasyonu
-        for key, p in active_parcel_db.items():
-            breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
-            for item in breakdown:
-                fonk_name = item["fonksiyon_adi"]
-                brut_insaat = item["brut_insaat"]
-                if brut_insaat <= 0:
-                    continue
+    
+    for idx, fonk_adi in enumerate(unique_active_functions):
+        with func_cols[idx % len(func_cols)]:
+            st.markdown(f"**📌 Fonksiyon: {fonk_adi}**")
+            
+            # Net kar üzerinden otomatik ön seçim simülasyonu
+            best_p_type = all_project_types[0]
+            best_pool = "Standart Ortak Havuzlu Proje"
+            max_sim_profit = -999999999.0
+            
+            for p_t in all_project_types:
+                pools = ["Müstakil Özel Havuzlu Villa Projesi", "Ortak Havuzlu Villa Sitesi Konsepti", "Havuz İptal / Yapılmayacak"] if "Villa" in p_t else (["Havuz İptal / Yapılmayacak"] if "Ticari" in p_t else ["Standart Ortak Havuzlu Proje", "Havuz İptal / Yapılmayacak"])
+                for pool in pools:
+                    satis_f, mal_f, bod_or = get_realistic_market_pricing(first_mahalle, p_t, rates["USD"])
+                    # Örnek simülasyon hesabı
+                    sim_revenue = 1000.0 * satis_f
+                    sim_cost = 1000.0 * mal_f
+                    sim_profit = sim_revenue - sim_cost
+                    if sim_profit > max_sim_profit:
+                        max_sim_profit = sim_profit
+                        best_p_type = p_t
+                        best_pool = pools[0]
+                        
+            default_p_idx = all_project_types.index(best_p_type) if best_p_type in all_project_types else 0
+            
+            selected_func_p_type = st.selectbox(f"Proje Tipi ({fonk_adi})", options=all_project_types, index=default_p_idx, key=f"func_p_type_{idx}_{fonk_adi}")
+            
+            if "Villa" in selected_func_p_type:
+                pool_opts = ["Müstakil Özel Havuzlu Villa Projesi", "Ortak Havuzlu Villa Sitesi Konsepti", "Havuz İptal / Yapılmayacak"]
+            elif "Ticari" in selected_func_p_type:
+                pool_opts = ["Havuz İptal / Yapılmayacak"]
+            else:
+                pool_opts = ["Standart Ortak Havuzlu Proje", "Havuz İptal / Yapılmayacak"]
                 
-                best_net_kar = -float('inf')
-                best_p_type = "Standart Konut / Apartman"
-                best_pool = "Standart Ortak Havuzlu Proje"
-                best_satis, best_maliyet, best_bodrum = 0, 0, 0
-                best_adet = max(1, round(brut_insaat / 95.0))
+            selected_func_pool = st.selectbox(f"Havuz Seçeneği ({fonk_adi})", options=pool_opts, key=f"func_pool_{idx}_{fonk_adi}")
+            
+            r_satis, r_maliyet, r_bodrum_orani = get_realistic_market_pricing(first_mahalle, selected_func_p_type, rates["USD"])
+            
+            for key, p in active_parcel_db.items():
+                breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
+                for item in breakdown:
+                    if item["fonksiyon_adi"] == fonk_adi and item["brut_insaat"] > 0:
+                        parsel_fonk_key = f"{key}_{fonk_adi}"
+                        eff_sz = 95.0 if "Konut" in selected_func_p_type else 150.0
+                        calc_adet = max(1, round(item["brut_insaat"] / eff_sz))
+                        function_configs[parsel_fonk_key] = {
+                            "proje_tipi": selected_func_p_type,
+                            "adet": int(calc_adet),
+                            "havuz_mod": selected_func_pool,
+                            "maliyet": r_maliyet,
+                            "satis": r_satis,
+                            "bodrum_orani": r_bodrum_orani,
+                            "fonk_hesaba_alinan_m2": item["giren_m2"]
+                        }
 
-                pool_options_candidate = ["Standart Ortak Havuzlu Proje", "Havuz İptal / Yapılmayacak"]
-                if "VİLLA" in fonk_name:
-                    pool_options_candidate = ["Müstakil Özel Havuzlu Villa Projesi", "Ortak Havuzlu Villa Sitesi Konsepti", "Havuz İptal / Yapılmayacak"]
-                elif any(t in fonk_name for t in ["TİCARET", "TİCARİ"]):
-                    pool_options_candidate = ["Havuz İptal / Yapılmayacak"]
-
-                for pt in all_project_types:
-                    for pool in pool_options_candidate:
-                        r_satis, r_maliyet, r_bodrum = get_realistic_market_pricing(first_mahalle, pt, rates["USD"])
-                        tekil_havuz_payi = 35.0 if "Müstakil Özel Havuzlu" in pool else 0.0
-                        sim_bodrum = (brut_insaat - (tekil_havuz_payi * best_adet)) * r_bodrum
-                        
-                        ciro = (brut_insaat * r_satis) + (sim_bodrum * r_satis * r_bodrum)
-                        maliyet = (brut_insaat * r_maliyet) + arsa_bonus_usd
-                        arsa_pay = ciro * (arsa_payi_orani / 100) if "Kat Karşılığı" in is_modeli else 0.0
-                        net_kar = ciro - maliyet - arsa_pay
-                        
-                        if net_kar > best_net_kar:
-                            best_net_kar = net_kar
-                            best_p_type = pt
-                            best_pool = pool
-                            best_satis = r_satis
-                            best_maliyet = r_maliyet
-                            best_bodrum = r_bodrum
-
-                parsel_fonk_key = f"{key}_{fonk_name}"
-                function_configs[parsel_fonk_key] = {
-                    "proje_tipi": best_p_type,
-                    "adet": int(best_adet),
-                    "havuz_mod": best_pool,
-                    "maliyet": best_maliyet,
-                    "satis": best_satis,
-                    "bodrum_orani": best_bodrum,
-                    "fonk_hesaba_alinan_m2": item["giren_m2"]
-                }
-        st.markdown("<div style='font-size: 12px; color: #047857; background: #ecfdf5; padding: 8px 12px; border-radius: 6px; border: 1px solid #a7f3d0; margin-top: 10px;'>✨ Sistem, net kârı (müteahhit kârlılığını) en üst düzeye çıkaran en uygun proje tiplerini ve havuz konseptlerini otomatik olarak belirledi.</div>", unsafe_allow_html=True)
-
-    else:
-        st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonlarına Göre Proje Tipi ve Havuz Konsepti Yapılandırması</div>", unsafe_allow_html=True)
-        func_tabs = st.tabs(list(all_unique_functions))
+    valid_active_functions_with_area = list(unique_active_functions)
+    function_target_sizes = {}
+    
+    if valid_active_functions_with_area:
+        st.markdown("<div style='margin-top: 12px; font-weight: 700; color: #0f172a; font-size: 13px;'>📐 Fonksiyon Bazlı Hedef Ortalama Bağımsız Bölüm Alanları (m²)</div>", unsafe_allow_html=True)
+        fn_cols = st.columns(len(valid_active_functions_with_area))
         
-        func_user_choices = {}
-        for idx, fonk_adi in enumerate(all_unique_functions):
-            with func_tabs[idx]:
-                fc1, fc2, fc3 = st.columns(3)
-                with fc1:
-                    sel_pt = st.selectbox(f"Proje Tipi ({fonk_adi})", options=all_project_types, key=f"manual_pt_{idx}_{fonk_adi}")
-                with fc2:
-                    if "VİLLA" in fonk_adi:
-                        pool_opts = ["Müstakil Özel Havuzlu Villa Projesi", "Ortak Havuzlu Villa Sitesi Konsepti", "Havuz İptal / Yapılmayacak"]
-                    elif any(t in fonk_adi for t in ["TİCARET", "TİCARİ"]):
-                        pool_opts = ["Havuz İptal / Yapılmayacak"]
-                    else:
-                        pool_opts = ["Standart Ortak Havuzlu Proje", "Havuz İptal / Yapılmayacak"]
-                    sel_pool = st.selectbox(f"Havuz / Donatı Konsepti ({fonk_adi})", options=pool_opts, key=f"manual_pool_{idx}_{fonk_adi}")
-                with fc3:
-                    def_unit_sz = 250 if "VİLLA" in fonk_adi else (120 if "TİCARET" in fonk_adi else 95)
-                    sel_sz = st.number_input(f"Ortalama Bağımsız Bölüm Boyutu (m²)", min_value=40.0, max_value=800.0, value=float(def_unit_sz), step=5.0, key=f"manual_sz_{idx}_{fonk_adi}")
-                
-                func_user_choices[fonk_adi] = {
-                    "proje_tipi": sel_pt,
-                    "havuz_mod": sel_pool,
-                    "birim_boyut": sel_sz
-                }
-
-        for key, p in active_parcel_db.items():
-            breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
-            for item in breakdown:
-                fonk_name = item["fonksiyon_adi"]
-                brut_insaat = item["brut_insaat"]
-                if brut_insaat <= 0:
-                    continue
-                
-                uc = func_user_choices.get(fonk_name, {"proje_tipi": "Standart Konut / Apartman", "havuz_mod": "Standart Ortak Havuzlu Proje", "birim_boyut": 95.0})
-                r_satis, r_maliyet, r_bodrum = get_realistic_market_pricing(first_mahalle, uc["proje_tipi"], rates["USD"])
-                calc_adet = max(1, round(brut_insaat / uc["birim_boyut"]))
-
-                parsel_fonk_key = f"{key}_{fonk_name}"
-                function_configs[parsel_fonk_key] = {
-                    "proje_tipi": uc["proje_tipi"],
-                    "adet": int(calc_adet),
-                    "havuz_mod": uc["havuz_mod"],
-                    "maliyet": r_maliyet,
-                    "satis": r_satis,
-                    "bodrum_orani": r_bodrum,
-                    "fonk_hesaba_alinan_m2": item["giren_m2"]
-                }
+        for idx, fonk_adi in enumerate(valid_active_functions_with_area):
+            with fn_cols[idx % len(fn_cols)]:
+                function_target_sizes[fonk_adi] = st.slider(
+                    f"{fonk_adi[:20]}...",
+                    min_value=55,
+                    max_value=400,
+                    value=100,
+                    step=5,
+                    key=f"target_size_{idx}_{fonk_adi}"
+                )
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # Finansal metrikleri hesaplama
+    # Detaylı adet güncellemesi fonksiyon konfigürasyonlarına işlenir
+    for key, p in active_parcel_db.items():
+        breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
+        for item in breakdown:
+            fonk_name = item["fonksiyon_adi"]
+            brut_insaat = item["brut_insaat"]
+            parsel_fonk_key = f"{key}_{fonk_name}"
+            if parsel_fonk_key in function_configs and fonk_name in function_target_sizes:
+                t_size = function_target_sizes[fonk_name]
+                if t_size > 0:
+                    function_configs[parsel_fonk_key]["adet"] = max(1, round(brut_insaat / t_size))
+
     total_yasal_brut_insaat = 0.0
     total_simulated_bodrum = 0.0
     total_bahce_alani_terki = 0.0
     total_ciro_usd = 0.0
     total_maliyet_usd = 0.0
-    primary_project_type_display = "Karma / Çoklu Proje"
 
     for key, p in active_parcel_db.items():
         breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
+        
         for item in breakdown:
             fonk_name = item["fonksiyon_adi"]
             brut_insaat = item["brut_insaat"]
@@ -686,7 +656,6 @@ if selected_keys:
                 
             total_yasal_brut_insaat += brut_insaat
             total_bahce_alani_terki += item["bahce_kullanim_alani"]
-            primary_project_type_display = conf["proje_tipi"]
             
             tekil_havuz_payi = 35.0 if "Müstakil Özel Havuzlu" in conf["havuz_mod"] else 0.0
             sim_bodrum = (brut_insaat - (tekil_havuz_payi * conf["adet"])) * conf["bodrum_orani"]
@@ -757,8 +726,6 @@ if selected_keys:
                 "TOPLAM İNŞAAT (BRÜT M²)": f"{sum_brut_insaat:,.2f}"
             }])
             st.dataframe(summary_df, use_container_width=True)
-        else:
-            st.warning("Seçilen parseller için veritabanında KAKS değeri okunmuş geçerli fonksiyon bulunamadı.")
 
     with tab2:
         st.subheader("🏛️ Mimari Fizibilite & Senaryo Dağılım Matrisi")
@@ -843,7 +810,6 @@ if selected_keys:
             <div class="section-title">1. Proje ve Lokasyon Künyesi</div>
             <table class="data-table">
                 <tr><td>Lokasyon / Mahalle</td><td style="text-align: right; font-weight: bold;">{first_mahalle} ({len(active_parcel_db)} Parsel)</td></tr>
-                <tr><td>Seçilen Proje Tipi & Konsept</td><td style="text-align: right; font-weight: bold; color: #1e3a8a;">{primary_project_type_display}</td></tr>
                 <tr><td>Toplam Brüt İnşaat Alanı</td><td style="text-align: right; font-weight: bold;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
                 <tr><td>Toplam Bahçe Kullanım Alanı</td><td style="text-align: right; font-weight: bold;">{total_bahce_alani_terki:,.2f} m²</td></tr>
             </table>
@@ -942,3 +908,4 @@ if selected_keys:
 
 else:
     st.info("👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden istenilen parselleri seçin veya yeni bir imar belgesi (PDF) yükleme yapın.")
+    
