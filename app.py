@@ -276,7 +276,7 @@ def parse_imar_pdf(uploaded_file):
                                         elif "Alan" in head and val: parcel_data["toplam_alan"] = parse_tr_float(val)
 
                         joined_row_str = " ".join(cells).upper()
-                        if any(kw in joined_row_str for kw in ["KONUT", "TİCARET", "TİCARİ", "PARK", "VİLLA", "GELİŞME", "EMSAL", "KAKS", "TAKS", "E:"]):
+                        if any(kw in joined_row_str for kw in ["KONUT", "TİCARET", "TİCARİ", "PARK", "VİLLA", "GELİŞME", "EMSAL", "KAKS", "E:"]):
                             f_name = ""
                             f_taks = 0.0
                             f_kaks = 0.0
@@ -401,7 +401,7 @@ def parse_imar_pdf(uploaded_file):
         
     return parcel_data
 
-# --- ÇOKLU FONKSİYON VE KAKS HESAPLAMALARI İÇİN AĞIRLIKLANDIRILMIŞ NET ARSA VE BAHÇE DAĞITIM MOTORU ---
+# --- FONKSİYON ALANINA GİREN M² BAZLI NET ARSA VE BAHÇE DAĞITIM MOTORU ---
 def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
     toplam_arsa_m2 = p.get("toplam_alan", 0.0)
     is_terkli = p.get("terk_yapilmis_mi", False)
@@ -426,6 +426,18 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
     results = []
     for f, fonk_name, active_kaks in valid_fonks:
         giren_m2 = f.get("giren_m2", 0.0)
+        
+        # Eğer PDF'den fonksiyon alanına giren m² okunduysa onu baz al, okunmadıysa toplam alandan orantıla
+        if giren_m2 > 0:
+            fonk_giren_payi = giren_m2
+        else:
+            fonk_giren_payi = toplam_arsa_m2 / len(valid_fonks) if len(valid_fonks) > 0 else toplam_arsa_m2
+            
+        # Bahçe Kullanım Alanı: İmar durum raporundaki fonksiyon alanına giren m² üzerinden; 
+        # Terk yapılmışsa doğrudan giren m², terk yapılmamışsa uygulama kesintisi (örn. %30) düşülerek net bahçe alanı elde edilir.
+        bahce_kullanim_alani = fonk_giren_payi if is_terkli else (fonk_giren_payi * 0.7)
+        
+        # Net arsa payı inşaat alanı hesabında kullanılır
         if sum_giren > 0:
             oran = giren_m2 / sum_giren
         else:
@@ -433,13 +445,6 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
             
         net_arsa_payi = net_arsa_toplam * oran
         brut_insaat = net_arsa_payi * active_kaks * emsal_artis_orani
-        
-        # Bahçe/Kullanım Alanı Hesabı: İmar uygulaması sonrası fonksiyon alanına giren m² veya net pay üzerinden bahçe payı
-        # Eğer PDF'de fonksiyon alanına giren m2 tanımlıysa oransal dağıtılır, yoksa net arsa payı baz alınır.
-        if sum_giren > 0:
-            bahce_kullanim_alani = (giren_m2 if is_terkli else (giren_m2 * 0.7)) # Örn: Terk yapılmamışsa %30 kesinti varsayımıyla net bahçe alanı
-        else:
-            bahce_kullanim_alani = net_arsa_payi
             
         results.append({
             "fonksiyon_adi": fonk_name,
@@ -658,8 +663,6 @@ if selected_keys:
     total_maliyet_usd = 0.0
 
     for key, p in active_parcel_db.items():
-        toplam_arsa_m2 = p["toplam_alan"]
-        is_terkli = p.get("terk_yapilmis_mi", False)
         breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
         
         for item in breakdown:
@@ -674,9 +677,7 @@ if selected_keys:
                 continue
                 
             total_yasal_brut_insaat += brut_insaat
-            
-            bahce_terki = (toplam_arsa_m2 * 0.3) if not is_terkli else 0.0
-            total_bahce_alani_terki += bahce_terki
+            total_bahce_alani_terki += item["bahce_kullanim_alani"]
             
             tekil_havuz_payi = 35.0 if "Müstakil Özel Havuzlu" in conf["havuz_mod"] else 0.0
             sim_bodrum = (brut_insaat - (tekil_havuz_payi * conf["adet"])) * conf["bodrum_orani"]
@@ -733,6 +734,7 @@ if selected_keys:
                     "TAKS": f"{item['taks']:.2f}" if item['taks'] > 0 else "-",
                     "KAKS / EMSAL": f"{item['kaks']:.2f}",
                     "BRÜT PARSEL (M²)": f"{toplam_arsa_m2:,.2f}",
+                    "FONKSİYON GİREN (M²)": f"{item['giren_m2']:,.2f}" if item['giren_m2'] > 0 else "-",
                     "BAHÇE KULLANIM ALANI (M²)": f"{bahce_m2:,.2f}",
                     "İNŞAAT ALANI (M²)": f"{brut_insaat_arsa:,.2f}"
                 })
@@ -834,6 +836,7 @@ if selected_keys:
                 <tr><td>Lokasyon / Mahalle</td><td style="text-align: right; font-weight: bold;">{first_mahalle} ({len(active_parcel_db)} Parsel)</td></tr>
                 <tr><td>Seçilen Proje Tipi & Konsept</td><td style="text-align: right; font-weight: bold; color: #1e3a8a;">{toplu_p_tipi} - {toplu_havuz}</td></tr>
                 <tr><td>Toplam Brüt İnşaat Alanı</td><td style="text-align: right; font-weight: bold;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
+                <tr><td>Toplam Bahçe Kullanım Alanı</td><td style="text-align: right; font-weight: bold;">{total_bahce_alani_terki:,.2f} m²</td></tr>
             </table>
             <div class="section-title">2. Finansal Fizibilite Özeti</div>
             <table class="data-table">
@@ -880,6 +883,7 @@ if selected_keys:
                             "Toplam Arsa (m²)": f"{toplam_alan:,.2f}",
                             "Terk Durumu": terk_st,
                             "Fonksiyon Adı": item["fonksiyon_adi"],
+                            "Fonks. Giren (m²)": f"{item['giren_m2']:,.2f}" if item['giren_m2'] > 0 else "-",
                             "TAKS": f"{item['taks']:.2f}" if item['taks'] > 0 else "-",
                             "KAKS / Emsal": f"{item['kaks']:.2f}",
                             "Bahçe Kullanım Alanı (m²)": f"{item['bahce_kullanim_alani']:,.2f}",
@@ -894,6 +898,7 @@ if selected_keys:
                         "Toplam Arsa (m²)": f"{toplam_alan:,.2f}",
                         "Terk Durumu": terk_st,
                         "Fonksiyon Adı": "-",
+                        "Fonks. Giren (m²)": "-",
                         "TAKS": "-",
                         "KAKS / Emsal": "-",
                         "Bahçe Kullanım Alanı (m²)": "-",
