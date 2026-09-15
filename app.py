@@ -239,7 +239,7 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
             return True
     return False
 
-# --- HASSAS YENÇOK VE KAT ADEDİ AYRIŞTIRICI ---
+# --- GELİŞTİRİLMİŞ HASSAS YENÇOK VE KAT ADEDİ AYRIŞTIRICI ---
 def extract_yencok_and_kat(text_or_cell):
     s = str(text_or_cell).upper().strip()
     if not s or set(s) <= set('.,-/_ '):
@@ -248,12 +248,21 @@ def extract_yencok_and_kat(text_or_cell):
     yencok_val = "-"
     kat_val = "-"
     
+    # Kat Adedi tespiti (Örn: "Kat Adedi 3", "3 Kat", "A-2", "Z+2")
     kat_m = re.search(r'(?:KAT\s*(?:ADEDİ)?\s*[:=]?\s*(\d+)|(\d+)\s*KAT|Z\s*\+\s*(\d+)|A\s*-\s*(\d+)|\bK\s*[:=]?\s*(\d+))', s)
     if kat_m:
         groups = [g for g in kat_m.groups() if g is not None]
         if groups:
-            kat_val = f"{groups[0]} Kat"
-            
+            val_num = groups[0]
+            kat_val = f"{val_num} Kat" if not str(val_num).lower().endswith("kat") else val_num
+    
+    # Eğer doğrudan tek bir rakam/sayı geçiyorsa ve etrafında başka metin yoksa kat adedi olarak ele al
+    if kat_val == "-" and re.match(r'^\d{1,2}$', s):
+        val_int = int(s)
+        if 1 <= val_int <= 30: # Mantıklı kat sınırları
+            kat_val = f"{val_int} Kat"
+
+    # Yençok / Hmax tespiti (Örn: "Yençok (m) 12.50", "HMAX: 9.50", "Serbest")
     if "SERBEST" in s:
         yencok_val = "Serbest"
     else:
