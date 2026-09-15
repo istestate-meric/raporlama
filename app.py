@@ -424,8 +424,8 @@ def parse_imar_pdf(uploaded_file):
         
     return parcel_data
 
-# --- FONKSİYON ALANINA GİREN M² BAZLI DAĞITIM VE HAVUZ DAHİLİYET MOTORU ---
-def get_parcel_function_breakdown(p, emsal_artis_orani=1.30, pool_m2_to_add=0.0):
+# --- FONKSİYON ALANINA GİREN M² BAZLI DAĞITIM MOTORU ---
+def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
     toplam_arsa_m2 = p.get("toplam_alan", 0.0)
     is_terkli = p.get("terk_yapilmis_mi", False)
     fonks_list = p.get("fonksiyonlar", [])
@@ -463,8 +463,7 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30, pool_m2_to_add=0.0)
             oran = 1.0 / len(valid_fonks)
             
         net_arsa_payi = net_arsa_toplam * oran
-        # Havuz alanı emsale/inşaat alanına ekleniyor
-        brut_insaat = (net_arsa_payi * active_kaks * emsal_artis_orani) + pool_m2_to_add
+        brut_insaat = net_arsa_payi * active_kaks * emsal_artis_orani
             
         results.append({
             "fonksiyon_adi": fonk_name,
@@ -560,7 +559,7 @@ if selected_keys:
             <span style="font-size: 18px; margin-right: 8px;">📊</span>
             <div>
                 <h3 style="color: #0f172a; margin: 0; font-size: 15px; font-weight: 700;">Gelişmiş Fizibilite ve Fonksiyon Bazlı Proje Optimizasyonu</h3>
-                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına özel olarak filtrelenmiş proje tipleri ve havuz dahil net inşaat analizi.</p>
+                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına özel olarak filtrelenmiş proje tipleri ve net kâr optimizasyonu.</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -577,7 +576,7 @@ if selected_keys:
             
     unique_active_functions = set()
     for p in active_parcel_db.values():
-        breakdown = get_parcel_function_breakdown(p, emsal_artis_orani, 0.0)
+        breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
         for item in breakdown:
             if item["brut_insaat"] > 0:
                 unique_active_functions.add(item["fonksiyon_adi"])
@@ -611,6 +610,7 @@ if selected_keys:
                         
             default_p_idx = allowed_p_types.index(best_p_type) if best_p_type in allowed_p_types else 0
             
+            # Proje Tipi ve Havuz Seçeneği Tek Satırda (İki Sütunlu Yapı)
             sub_col1, sub_col2 = st.columns(2)
             with sub_col1:
                 selected_func_p_type = st.selectbox(f"Proje Tipi", options=allowed_p_types, index=default_p_idx, key=f"func_p_type_{idx}_{fonk_adi}")
@@ -625,14 +625,15 @@ if selected_keys:
             with sub_col2:
                 selected_func_pool = st.selectbox(f"Havuz Seçeneği", options=pool_opts, key=f"func_pool_{idx}_{fonk_adi}")
             
-            custom_pool_m2 = 0.0
+            # Eğer havuz seçildiyse dinamik Havuz m² alanı açılır
+            custom_pool_m2 = 35.0
             if "İptal" not in selected_func_pool:
                 custom_pool_m2 = st.number_input(f"Havuz Alanı (m²) - {fonk_adi}", min_value=10.0, max_value=500.0, value=40.0, step=5.0, key=f"custom_pool_m2_{idx}_{fonk_adi}")
             
             r_satis, r_maliyet, r_bodrum_orani = get_realistic_market_pricing(first_mahalle, selected_func_p_type, rates["USD"])
             
             for key, p in active_parcel_db.items():
-                breakdown = get_parcel_function_breakdown(p, emsal_artis_orani, custom_pool_m2)
+                breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
                 for item in breakdown:
                     if item["fonksiyon_adi"] == fonk_adi and item["brut_insaat"] > 0:
                         parsel_fonk_key = f"{key}_{fonk_adi}"
@@ -674,19 +675,15 @@ if selected_keys:
     st.markdown("</div>", unsafe_allow_html=True)
 
     for key, p in active_parcel_db.items():
-        breakdown = get_parcel_function_breakdown(p, emsal_artis_orani, 0.0)
+        breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
         for item in breakdown:
             fonk_name = item["fonksiyon_adi"]
             brut_insaat = item["brut_insaat"]
             parsel_fonk_key = f"{key}_{fonk_name}"
             if parsel_fonk_key in function_configs and fonk_name in function_target_sizes:
-                conf = function_configs[parsel_fonk_key]
-                pool_add = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
-                # Dinamik güncellenen havuz m²'sini de dahil ederek toplam brüt alanı hesapla
-                adj_brut = item["net_arsa_payi"] * item["kaks"] * emsal_artis_orani + pool_add
                 t_size = function_target_sizes[fonk_name]
                 if t_size > 0:
-                    function_configs[parsel_fonk_key]["adet"] = max(1, round(adj_brut / t_size))
+                    function_configs[parsel_fonk_key]["adet"] = max(1, round(brut_insaat / t_size))
 
     total_yasal_brut_insaat = 0.0
     total_simulated_bodrum = 0.0
@@ -695,29 +692,30 @@ if selected_keys:
     total_maliyet_usd = 0.0
 
     for key, p in active_parcel_db.items():
-        parsel_fonks = p.get("fonksiyonlar", [])
-        for item in get_parcel_function_breakdown(p, emsal_artis_orani, 0.0):
+        breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
+        
+        for item in breakdown:
             fonk_name = item["fonksiyon_adi"]
+            brut_insaat = item["brut_insaat"]
+            if brut_insaat <= 0:
+                continue
+                
             parsel_fonk_key = f"{key}_{fonk_name}"
             conf = function_configs.get(parsel_fonk_key)
             if not conf:
                 continue
                 
-            pool_add = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
-            actual_brut_insaat = (item["net_arsa_payi"] * item["kaks"] * emsal_artis_orani) + pool_add
-            if actual_brut_insaat <= 0:
-                continue
-                
-            total_yasal_brut_insaat += actual_brut_insaat
+            total_yasal_brut_insaat += brut_insaat
             total_bahce_alani_terki += item["bahce_kullanim_alani"]
             
-            sim_bodrum = (actual_brut_insaat - pool_add) * conf["bodrum_orani"]
+            tekil_havuz_payi = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
+            sim_bodrum = (brut_insaat - (tekil_havuz_payi * conf["adet"])) * conf["bodrum_orani"]
             total_simulated_bodrum += sim_bodrum
             
-            normal_c = actual_brut_insaat * conf["satis"]
+            normal_c = brut_insaat * conf["satis"]
             bodrum_c = sim_bodrum * conf["satis"] * conf["bodrum_orani"]
             total_ciro_usd += (normal_c + bodrum_c)
-            total_maliyet_usd += (actual_brut_insaat * conf["maliyet"])
+            total_maliyet_usd += (brut_insaat * conf["maliyet"])
 
     total_maliyet_usd += arsa_bonus_usd
     arsa_sahibi_payi_usd = total_ciro_usd * (arsa_payi_orani / 100) if "Kat Karşılığı" in is_modeli else 0.0
@@ -745,14 +743,10 @@ if selected_keys:
             parsel = p.get("parsel", "0")
             toplam_arsa_m2 = p.get("toplam_alan", 0.0)
             is_terkli = p.get("terk_yapilmis_mi", False)
+            breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
             
-            for item in get_parcel_function_breakdown(p, emsal_artis_orani, 0.0):
-                fonk_name = item["fonksiyon_adi"]
-                parsel_fonk_key = f"{key}_{fonk_name}"
-                conf = function_configs.get(parsel_fonk_key, {})
-                pool_add = conf.get("havuz_m2", 0.0) if "İptal" not in conf.get("havuz_mod", "İptal") else 0.0
-                
-                brut_insaat_arsa = item["net_arsa_payi"] * item["kaks"] * emsal_artis_orani + pool_add
+            for item in breakdown:
+                brut_insaat_arsa = item["brut_insaat"]
                 bahce_m2 = item["bahce_kullanim_alani"]
                 if brut_insaat_arsa <= 0:
                     continue
@@ -765,7 +759,7 @@ if selected_keys:
                     "ADA": ada,
                     "PARSEL": parsel,
                     "TERK DURUMU": "Yapılmış (Net)" if is_terkli else "Yapılmamış (Brüt)",
-                    "FONKSİYON": fonk_name,
+                    "FONKSİYON": item["fonksiyon_adi"],
                     "TAKS": f"{item['taks']:.2f}" if item['taks'] > 0 else "-",
                     "KAKS / EMSAL": f"{item['kaks']:.2f}",
                     "BRÜT PARSEL (M²)": f"{toplam_arsa_m2:,.2f}",
@@ -792,24 +786,24 @@ if selected_keys:
             mahalle = p.get("mahalle", "BİLİNMİYOR")
             ada = p.get("ada", "0")
             parsel = p.get("parsel", "0")
+            breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
             
-            for item in get_parcel_function_breakdown(p, emsal_artis_orani, 0.0):
+            for item in breakdown:
                 fonk_name = item["fonksiyon_adi"]
+                brut_insaat = item["brut_insaat"]
                 bahce_m2 = item["bahce_kullanim_alani"]
-                
+                if brut_insaat <= 0:
+                    continue
+                    
                 parsel_fonk_key = f"{key}_{fonk_name}"
                 conf = function_configs.get(parsel_fonk_key)
                 if not conf:
                     continue
                     
-                pool_add = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
-                brut_insaat = (item["net_arsa_payi"] * item["kaks"] * emsal_artis_orani) + pool_add
-                if brut_insaat <= 0:
-                    continue
-                    
                 konut_adeti = conf["adet"]
                 birim_m2 = brut_insaat / konut_adeti if konut_adeti > 0 else brut_insaat
-                sim_bodrum = (brut_insaat - pool_add) * conf["bodrum_orani"]
+                tekil_havuz_payi = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
+                sim_bodrum = (brut_insaat - (tekil_havuz_payi * konut_adeti)) * conf["bodrum_orani"]
                 
                 mimari_rows.append({
                     "MAHALLE": mahalle,
@@ -867,7 +861,7 @@ if selected_keys:
             <div class="section-title">1. Proje ve Lokasyon Künyesi</div>
             <table class="data-table">
                 <tr><td>Lokasyon / Mahalle</td><td style="text-align: right; font-weight: bold;">{first_mahalle} ({len(active_parcel_db)} Parsel)</td></tr>
-                <tr><td>Toplam Brüt İnşaat Alanı (Havuz Dahil)</td><td style="text-align: right; font-weight: bold;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
+                <tr><td>Toplam Brüt İnşaat Alanı</td><td style="text-align: right; font-weight: bold;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
                 <tr><td>Toplam Bahçe Kullanım Alanı</td><td style="text-align: right; font-weight: bold;">{total_bahce_alani_terki:,.2f} m²</td></tr>
             </table>
             <div class="section-title">2. Finansal Fizibilite Özeti</div>
@@ -904,7 +898,7 @@ if selected_keys:
                 is_terk = p_val.get("terk_yapilmis_mi", False)
                 terk_st = "Terk Yapılmış (Net)" if is_terk else "Terk Yapılmamış (Brüt)"
                 
-                breakdown = get_parcel_function_breakdown(p_val, 1.30, 0.0)
+                breakdown = get_parcel_function_breakdown(p_val, 1.30)
                 if breakdown:
                     for item in breakdown:
                         db_detail_rows.append({
