@@ -257,7 +257,7 @@ def parse_imar_pdf(uploaded_file):
                                         val = parse_tr_float(num_str)
                                         if 0.05 <= val <= 5.0: f_kaks = val
                                 elif any(y in c_up for y in ["YENÇOK", "HMAX", "KAT"]):
-                                    f_yençok = c
+                                    f_yencok = c
 
                             if f_kaks > 0 and not f_name and parcel_data["fonksiyonlar"]:
                                 parcel_data["fonksiyonlar"][-1]["kaks"] = f_kaks
@@ -422,12 +422,13 @@ if selected_keys:
     active_parcel_db = {k: st.session_state["parcel_db"][k] for k in selected_keys}
     emsal_artis_orani = 1.30
     
-    combined_fonk_text = " ".join([f["fonksiyon_adi"] for p in active_parcel_db.values() for f in p["fonksiyon_adi"]]) # safer check below
+    # DÜZELTİLDİ: active_parcel_db içindeki fonksiyon listesinden güvenli veri birleştirme
+    combined_fonk_text = " ".join([f["fonksiyon_adi"] for p in active_parcel_db.values() for f in p.get("fonksiyonlar", [])])
     
     # Proje tipi belirleme
-    has_ticaret = any(any(x in f["fonksiyon_adi"] for x in ["TICARET", "TICARI"]) for p in active_parcel_db.values() for f in p["fonksiyonlar"])
-    has_konut = any(any(x in f["fonksiyon_adi"] for x in ["KONUT", "MESKEN"]) for p in active_parcel_db.values() for f in p["fonksiyonlar"])
-    has_villa = any(any(x in f["fonksiyon_adi"] for x in ["VILLA", "AYRIK", "IKIZ"]) for p in active_parcel_db.values() for f in p["fonksiyonlar"])
+    has_ticaret = any(any(x in f["fonksiyon_adi"] for x in ["TICARET", "TICARI"]) for p in active_parcel_db.values() for f in p.get("fonksiyonlar", []))
+    has_konut = any(any(x in f["fonksiyon_adi"] for x in ["KONUT", "MESKEN"]) for p in active_parcel_db.values() for f in p.get("fonksiyonlar", []))
+    has_villa = any(any(x in f["fonksiyon_adi"] for x in ["VILLA", "AYRIK", "IKIZ"]) for p in active_parcel_db.values() for f in p.get("fonksiyonlar", []))
     
     if has_ticaret and has_konut:
         allowed_project_types = ["Karma Proje (Konut + Ticari)", "Ticari / Ofis Kompleksi"]
@@ -493,7 +494,7 @@ if selected_keys:
     
     for key, p in active_parcel_db.items():
         toplam_arsa_m2 = p["toplam_alan"]
-        fonks_list = p["fonksiyonlar"]
+        fonks_list = p.get("fonksiyonlar", [])
         is_terkli = p.get("terk_yapilmis_mi", False)
         
         toplam_f_m2 = sum(f["giren_m2"] for f in fonks_list if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]))
@@ -575,7 +576,7 @@ if selected_keys:
     function_configs = {}
     for key, p in active_parcel_db.items():
         toplam_arsa_m2 = p["toplam_alan"]
-        fonks_list = p["fonksiyonlar"]
+        fonks_list = p.get("fonksiyonlar", [])
         is_terkli = p.get("terk_yapilmis_mi", False)
         
         toplam_f_m2 = sum(f["giren_m2"] for f in fonks_list if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI"]))
@@ -626,7 +627,7 @@ if selected_keys:
 
     for key, p in active_parcel_db.items():
         toplam_arsa_m2 = p["toplam_alan"]
-        fonks_list = p["fonksiyonlar"]
+        fonks_list = p.get("fonksiyonlar", [])
         is_terkli = p.get("terk_yapilmis_mi", False)
         
         toplam_f_m2 = sum(f["giren_m2"] for f in fonks_list if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI"]))
@@ -698,7 +699,7 @@ if selected_keys:
             parsel = p.get("parsel", "0")
             toplam_arsa_m2 = p.get("toplam_alan", 0.0)
             is_terkli = p.get("terk_yapilmis_mi", False)
-            fonks_list = p["fonksiyonlar"]
+            fonks_list = p.get("fonksiyonlar", [])
             
             toplam_f_m2 = sum(f["giren_m2"] for f in fonks_list if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI"]))
             if toplam_f_m2 <= 0:
@@ -763,7 +764,7 @@ if selected_keys:
             parsel = p.get("parsel", "0")
             toplam_arsa_m2 = p.get("toplam_alan", 0.0)
             is_terkli = p.get("terk_yapilmis_mi", False)
-            fonks_list = p["fonksiyonlar"]
+            fonks_list = p.get("fonksiyonlar", [])
             
             toplam_f_m2 = sum(f["giren_m2"] for f in fonks_list if not any(x in f["fonksiyon_adi"] for x in ["PARK", "TEKNİK ALTYAPI"]))
             if toplam_f_m2 <= 0:
