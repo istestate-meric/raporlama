@@ -723,17 +723,19 @@ if selected_keys:
             else:
                 havuz_dusum = 0.0
 
-            # DÜZELTME: Ciro sadece satılabilir üst kat inşaat alanı (havuz düşüldükten sonra) üzerinden hesaplanır.
-            # Bodrum katları ciroya yanlışlıkla eklenmez (yalnızca maliyet hesaplarında yer alır).
+            # Ciro: Satılabilir net üst kat alanı (havuz düşüldükten sonra) üzerinden hesaplanır.
             net_satilabilir_toplam_alan = max(0.0, brut_insaat - havuz_dusum)
             total_ciro_usd += (net_satilabilir_toplam_alan * conf["satis"])
             
-            # FİNANSAL MALİYET BİLEŞENLERİ:
-            ust_kat_maliyeti = brut_insaat * conf["maliyet"]
+            # MALİYET DÜZELTMESİ:
+            # Havuz alanı brüt inşaat alanından (veya satılabilir alandan) düşürüldüğü için,
+            # havuz m²'si kadar alan inşaat maliyetinden de (üst kat maliyetinden) arındırılır/düşülür.
+            net_maliyete_esas_ust_kat = max(0.0, brut_insaat - havuz_dusum)
+            ust_kat_maliyeti = net_maliyete_esas_ust_kat * conf["maliyet"]
             bodrum_maliyeti = bodrum_m2_parsel * (conf["maliyet"] * 0.60)
-            havuz_maliyeti = havuz_dusum * conf["maliyet"] if havuz_dusum > 0 else 0.0
             
-            toplam_parsel_maliyeti = ust_kat_maliyeti + bodrum_maliyeti + havuz_maliyeti
+            # Not: Havuz alanı düşüldüğü için artık havuz inşaat maliyeti maliyet tablosundan tamamen çıkarılmıştır.
+            toplam_parsel_maliyeti = ust_kat_maliyeti + bodrum_maliyeti
             total_maliyet_usd += toplam_parsel_maliyeti
 
     if "Doğrudan Satılık" in is_modeli:
