@@ -96,7 +96,7 @@ def get_project_size_ranges(project_type):
     else:  # Standart Konut / Apartman
         return 55, 150, 90, 5
 
-# --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ (GÜÇLENDİRİLMİŞ) ---
+# --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ ---
 BASE_DIR = os.path.abspath(os.getcwd())
 DB_FILE = os.path.join(BASE_DIR, "imar_veritabani.json")
 
@@ -723,11 +723,9 @@ if selected_keys:
             else:
                 havuz_dusum = 0.0
 
-            # TOPLAM İNŞAAT ALANI (Üst Katlar + Bodrum Katları)
-            toplam_parsel_insaat_alani = brut_insaat + bodrum_m2_parsel
-            
-            # Brüt Ciro Hesaplaması (Toplam İnşaat Alanı Üzerinden Havuz Düşülerek)
-            net_satilabilir_toplam_alan = max(0.0, toplam_parsel_insaat_alani - havuz_dusum)
+            # DÜZELTME: Ciro sadece satılabilir üst kat inşaat alanı (havuz düşüldükten sonra) üzerinden hesaplanır.
+            # Bodrum katları ciroya yanlışlıkla eklenmez (yalnızca maliyet hesaplarında yer alır).
+            net_satilabilir_toplam_alan = max(0.0, brut_insaat - havuz_dusum)
             total_ciro_usd += (net_satilabilir_toplam_alan * conf["satis"])
             
             # FİNANSAL MALİYET BİLEŞENLERİ:
@@ -741,12 +739,12 @@ if selected_keys:
     if "Doğrudan Satılık" in is_modeli:
         total_maliyet_usd += arsa_maliyeti_usd
         arsa_sahibi_payi_usd = 0.0
-        mutaahhit_net_kar_usd = total_ciro_usd - total_maliyet_usd
+        toplam_net_kar_usd = total_ciro_usd - total_maliyet_usd
     else:
         arsa_sahibi_payi_usd = total_ciro_usd * (arsa_payi_orani / 100)
-        mutaahhit_net_kar_usd = total_ciro_usd - total_maliyet_usd - arsa_sahibi_payi_usd
+        toplam_net_kar_usd = total_ciro_usd - total_maliyet_usd - arsa_sahibi_payi_usd
 
-    yg_orani = (mutaahhit_net_kar_usd / total_maliyet_usd * 100) if total_maliyet_usd > 0 else 0
+    yg_orani = (toplam_net_kar_usd / total_maliyet_usd * 100) if total_maliyet_usd > 0 else 0
 
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "📊 Seçilen Parseller & İnşaat Alanı", 
@@ -896,7 +894,7 @@ if selected_keys:
                 m_col4.metric("Müteahhit Payı", f"{float(total_units_sum):,.2f} Adet (%100)")
 
     with tab3:
-        st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılımı (3 Para Birimi Sunumu - Toplam İnşaat Bazlı)")
+        st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılımı (3 Para Birimi Sunumu)")
         
         rate_usd = rates["USD"]
         rate_eur = rates["EUR"]
@@ -907,8 +905,8 @@ if selected_keys:
         total_maliyet_tl = total_maliyet_usd * rate_usd
         total_maliyet_eur = total_maliyet_tl / rate_eur
         
-        mutaahhit_net_kar_tl = mutaahhit_net_kar_usd * rate_usd
-        mutaahhit_net_kar_eur = mutaahhit_net_kar_tl / rate_eur
+        toplam_net_kar_tl = toplam_net_kar_usd * rate_usd
+        toplam_net_kar_eur = toplam_net_kar_tl / rate_eur
 
         curr_tab1, curr_tab2, curr_tab3 = st.tabs(["💵 USD ($) Sunumu", "₺ TL (₺) Sunumu", "💶 EUR (€) Sunumu"])
         
@@ -916,19 +914,19 @@ if selected_keys:
             c1, c2, c3 = st.columns(3)
             c1.metric("Toplam Tahmini Brüt Ciro", f"${total_ciro_usd:,.2f}")
             c2.metric("Toplam İnşaat & Yatırım Maliyeti", f"${total_maliyet_usd:,.2f}")
-            c3.metric("Toplam Net Kar", f"${mutaahhit_net_kar_usd:,.2f}", f"%{yg_orani:.1f} YG")
+            c3.metric("Toplam Net Kar", f"${toplam_net_kar_usd:,.2f}", f"%{yg_orani:.1f} YG")
             
         with curr_tab2:
             t1, t2, t3 = st.columns(3)
             t1.metric("Toplam Tahmini Brüt Ciro", f"₺{total_ciro_tl:,.2f}")
             t2.metric("Toplam İnşaat & Yatırım Maliyeti", f"₺{total_maliyet_tl:,.2f}")
-            t3.metric("Toplam Net Kar", f"₺{mutaahhit_net_kar_tl:,.2f}", f"%{yg_orani:.1f} YG")
+            t3.metric("Toplam Net Kar", f"₺{toplam_net_kar_tl:,.2f}", f"%{yg_orani:.1f} YG")
             
         with curr_tab3:
             e1, e2, e3 = st.columns(3)
             e1.metric("Toplam Tahmini Brüt Ciro", f"€{total_ciro_eur:,.2f}")
             e2.metric("Toplam İnşaat & Yatırım Maliyeti", f"€{total_maliyet_eur:,.2f}")
-            e3.metric("Toplam Net Kar", f"€{mutaahhit_net_kar_eur:,.2f}", f"%{yg_orani:.1f} YG")
+            e3.metric("Toplam Net Kar", f"€{toplam_net_kar_eur:,.2f}", f"%{yg_orani:.1f} YG")
 
     with tab4:
         st.subheader("🖨️ Kurumsal Rapor Ön İzleme ve PDF İndirme Merkezi")
@@ -973,7 +971,7 @@ if selected_keys:
                 <tr><th>Finansal Kalem</th><th style="text-align: right;">Tutar (USD $)</th><th style="text-align: right;">Tutar (TL ₺)</th><th style="text-align: right;">Tutar (EUR €)</th></tr>
                 <tr><td>Toplam Tahmini Brüt Ciro</td><td style="text-align: right;">${total_ciro_usd:,.2f}</td><td style="text-align: right;">₺{total_ciro_tl:,.2f}</td><td style="text-align: right;">€{total_ciro_eur:,.2f}</td></tr>
                 <tr><td>Toplam Yatırım & İnşaat Maliyeti</td><td style="text-align: right;">${total_maliyet_usd:,.2f}</td><td style="text-align: right;">₺{total_maliyet_tl:,.2f}</td><td style="text-align: right;">€{total_maliyet_eur:,.2f}</td></tr>
-                <tr style="font-weight: bold;"><td>Toplam Net Kar</td><td style="text-align: right; color:#1e3a8a;">${mutaahhit_net_kar_usd:,.2f}</td><td style="text-align: right; color:#1e3a8a;">₺{mutaahhit_net_kar_tl:,.2f}</td><td style="text-align: right; color:#1e3a8a;">€{mutaahhit_net_kar_eur:,.2f} (%{yg_orani:.1f} YG)</td></tr>
+                <tr style="font-weight: bold;"><td>Toplam Net Kar</td><td style="text-align: right; color:#1e3a8a;">${toplam_net_kar_usd:,.2f}</td><td style="text-align: right; color:#1e3a8a;">₺{toplam_net_kar_tl:,.2f}</td><td style="text-align: right; color:#1e3a8a;">€{toplam_net_kar_eur:,.2f} (%{yg_orani:.1f} YG)</td></tr>
             </table>
             <div class="footer">Bu rapor İstestate Gayrimenkul & Meriç İnşaat Emlak Akıllı Fizibilite Portalı tarafından üretilmiştir.</div>
         </body>
