@@ -799,6 +799,7 @@ if selected_keys:
         mimari_rows = []
         total_units_sum = 0
         total_net_insaat_sum = 0.0
+        total_genel_insaat_sum = 0.0
         
         for key, p in active_parcel_db.items():
             mahalle = p.get("mahalle", "BİLİNMİYOR")
@@ -833,6 +834,9 @@ if selected_keys:
                 net_konut_insaat = max(0.0, brut_insaat - havuz_dusum)
                 total_net_insaat_sum += net_konut_insaat
                 
+                genel_parsel_toplam_insaat = brut_insaat + bodrum_m2
+                total_genel_insaat_sum += genel_parsel_toplam_insaat
+                
                 mimari_rows.append({
                     "MAHALLE": mahalle,
                     "ADA/PARSEL": f"{ada}/{parsel}",
@@ -841,14 +845,14 @@ if selected_keys:
                     "BAHÇE ALANI (M²)": f"{bahce_m2:,.2f}",
                     "BODRUM KAT (M²)": f"{bodrum_m2:,.2f}",
                     "ÜST KATLAR (M²)": f"{brut_insaat:,.2f}",
-                    "TOPLAM İNŞAAT (M²)": f"{(brut_insaat + bodrum_m2):,.2f}",
+                    "TOPLAM İNŞAAT (M²)": f"{genel_parsel_toplam_insaat:,.2f}",
                     "BAĞIMSIZ BÖLÜM": f"{konut_adeti} Adet"
                 })
                 
         if mimari_rows:
             st.dataframe(pd.DataFrame(mimari_rows), use_container_width=True)
             
-            avg_unit_m2 = total_net_insaat_sum / total_units_sum if total_units_sum > 0 else 0.0
+            avg_unit_m2 = total_genel_insaat_sum / total_units_sum if total_units_sum > 0 else 0.0
             
             st.markdown("---")
             st.markdown("#### 📋 Mimari ve Proje Özet Dağılımı")
