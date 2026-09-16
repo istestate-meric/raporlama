@@ -936,8 +936,9 @@ if selected_keys:
     with tab4:
         st.subheader("🖨️ Kurumsal Rapor Ön İzleme ve PDF İndirme Merkezi")
         
-        pdf_logo1_html = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 36px; width: auto;'>" if img1_base64 else "<b style='color:#ffffff; font-size:14px;'>İSTESTATE GAYRİMENKUL</b>"
-        pdf_logo2_html = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 36px; width: auto;'>" if img2_base64 else "<b style='color:#ffffff; font-size:14px;'>MERİÇ İNŞAAT EMLAK</b>"
+        # LOGOLARIN ARKA PLANINI BEYAZ YAPAN HTML TASARIMI
+        pdf_logo1_html = f"<div style='background-color: #ffffff; padding: 6px 10px; border-radius: 6px; display: inline-block;'><img src='data:image/png;base64,{img1_base64}' style='max-height: 38px; width: auto; vertical-align: middle;'></div>" if img1_base64 else "<b style='color:#ffffff; font-size:14px;'>İSTESTATE GAYRİMENKUL</b>"
+        pdf_logo2_html = f"<div style='background-color: #ffffff; padding: 6px 10px; border-radius: 6px; display: inline-block;'><img src='data:image/png;base64,{img2_base64}' style='max-height: 38px; width: auto; vertical-align: middle;'></div>" if img2_base64 else "<b style='color:#ffffff; font-size:14px;'>MERİÇ İNŞAAT EMLAK</b>"
         
         # --- TABLOLANMIŞ PDF İÇERİK ŞABLONU ---
         parcel_rows_html = ""
@@ -1024,7 +1025,7 @@ if selected_keys:
         <body>
             <table class="report-banner">
                 <tr>
-                    <td style="width: 30%;">{pdf_logo1_html}</td>
+                    <td style="width: 30%; text-align: left;">{pdf_logo1_html}</td>
                     <td style="width: 40%; text-align: center;">
                         <h2 style="font-size: 11px; margin: 0; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">AKILLI GAYRİMENKUL GELİŞTİRME VE FİZİBİLİTE RAPORU</h2>
                         <span style="font-size: 7.5px; color: #94a3b8;">İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT ORTAK PORTALI</span>
@@ -1123,16 +1124,37 @@ if selected_keys:
         pdf_bytes = HTML(string=report_html_template).write_pdf()
         pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
         
-        # --- ÖN İZLEME VE İNDİRME EKRANI ---
+        # --- PDF.JS DESTEKLİ GÜVENLİ ÖN İZLEME EKRANI ---
         st.markdown("#### 👁️ Canlı PDF Rapor Ön İzleme")
         st.markdown("<p style='color: #64748b; font-size: 12px;'>Belgeyi indirmeden önce aşağıdaki canlı ön izleme ekranından içerik kontrolü yapabilirsiniz.</p>", unsafe_allow_html=True)
         
-        pdf_display_html = f"""
-        <iframe src="data:application/pdf;base64,{pdf_base64}" width="100%" height="520px" type="application/pdf" style="border: 1px solid #cbd5e1; border-radius: 8px;">
-            <p>Tarayıcınız PDF ön izlemeyi desteklemiyor. Raporu indirmek için aşağıdaki butonu kullanabilirsiniz.</p>
-        </iframe>
+        pdf_viewer_html = f"""
+        <div id="pdf-container" style="width:100%; height:550px; background-color:#525659; overflow:auto; display:flex; justify-content:center; padding:10px 0; border-radius:8px;">
+            <canvas id="pdf-canvas" style="box-shadow: 0 4px 8px rgba(0,0,0,0.3); background-color: white;"></canvas>
+        </div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+        <script>
+            const pdfData = atob("{pdf_base64}");
+            const loadingTask = pdfjsLib.getDocument({{ data: pdfData }});
+            loadingTask.promise.then(function(pdf) {{
+                pdf.getPage(1).then(function(page) {{
+                    const scale = 1.3;
+                    const viewport = page.getViewport({{ scale: scale }});
+                    const canvas = document.getElementById('pdf-canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    const renderContext = {{
+                        canvasContext: context,
+                        viewport: viewport
+                    }};
+                    page.render(renderContext);
+                }});
+            }});
+        </script>
         """
-        components.html(pdf_display_html, height=530)
+        components.html(pdf_viewer_html, height=570)
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.download_button(
