@@ -723,17 +723,19 @@ if selected_keys:
             else:
                 havuz_dusum = 0.0
 
-            net_konut_insaat = max(0.0, brut_insaat - havuz_dusum)
+            # TOPLAM İNŞAAT ALANI (Üst Katlar + Bodrum Katları)
+            toplam_parsel_insaat_alani = brut_insaat + bodrum_m2_parsel
             
-            # Brüt Ciro Hesaplaması (Net Satılabilir Alan Üzerinden)
-            total_ciro_usd += (net_konut_insaat * conf["satis"])
+            # Brüt Ciro Hesaplaması (Toplam İnşaat Alanı Üzerinden Havuz Düşülerek)
+            net_satilabilir_toplam_alan = max(0.0, toplam_parsel_insaat_alani - havuz_dusum)
+            total_ciro_usd += (net_satilabilir_toplam_alan * conf["satis"])
             
-            # FİNANSAL MALİYET BİLEŞENLERİ (GÜNCELLENDİ):
+            # FİNANSAL MALİYET BİLEŞENLERİ:
             # 1. Üst katlar normal birim maliyet
             ust_kat_maliyeti = brut_insaat * conf["maliyet"]
             # 2. Bodrum katlar düşük maliyet katsayısı (%60)
             bodrum_maliyeti = bodrum_m2_parsel * (conf["maliyet"] * 0.60)
-            # 3. Havuz inşaat maliyeti (Havuz alanı * m² maliyeti)
+            # 3. Havuz inşaat maliyeti
             havuz_maliyeti = havuz_dusum * conf["maliyet"] if havuz_dusum > 0 else 0.0
             
             toplam_parsel_maliyeti = ust_kat_maliyeti + bodrum_maliyeti + havuz_maliyeti
@@ -898,7 +900,7 @@ if selected_keys:
                 m_col4.metric("Müteahhit Payı", f"{float(total_units_sum):,.2f} Adet (%100)")
 
     with tab3:
-        st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılımı (3 Para Birimi Sunumu)")
+        st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılımı (3 Para Birimi Sunumu - Toplam İnşaat Bazlı)")
         
         rate_usd = rates["USD"]
         rate_eur = rates["EUR"]
