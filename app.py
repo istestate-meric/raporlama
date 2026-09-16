@@ -795,7 +795,9 @@ if selected_keys:
             st.dataframe(summary_df, use_container_width=True)
 
     with tab2:
-        st.subheader("🏛️ Mimari Fizibilite & Senaryo Dağılım Matrisi (Bodrum + Normal Katlar)")
+        st.subheader("🏛️ Mimari Fizibilite & Senaryo Dağılım Matrisi (Birim Başına Düşen Alanlar)")
+        st.markdown("<p style='color: #64748b; font-size: 13px; margin-top: -10px;'>Aşağıdaki tablo, seçilen bağımsız bölüm adetleri baz alınarak <strong>her bir birime (daire/villaya)</strong> düşen net ve brüt alan dağılımlarını göstermektedir.</p>", unsafe_allow_html=True)
+        
         mimari_rows = []
         total_units_sum = 0
         total_net_insaat_sum = 0.0
@@ -837,19 +839,22 @@ if selected_keys:
                 genel_parsel_toplam_insaat = brut_insaat + bodrum_m2
                 total_genel_insaat_sum += genel_parsel_toplam_insaat
                 
-                birim_ortalama_alan = genel_parsel_toplam_insaat / konut_adeti if konut_adeti > 0 else 0.0
+                # --- BİRİM BAŞINA DÜŞEN DEĞERLERİN HESAPLANMASI ---
+                birim_bahce = bahce_m2 / konut_adeti if konut_adeti > 0 else 0.0
+                birim_bodrum = bodrum_m2 / konut_adeti if konut_adeti > 0 else 0.0
+                birim_ust_kat = brut_insaat / konut_adeti if konut_adeti > 0 else 0.0
+                birim_toplam_insaat = genel_parsel_toplam_insaat / konut_adeti if konut_adeti > 0 else 0.0
                 
                 mimari_rows.append({
                     "MAHALLE": mahalle,
                     "ADA/PARSEL": f"{ada}/{parsel}",
                     "FONKSİYON": fonk_name,
                     "PROJE TİPİ": f"{conf['proje_tipi']} ({conf['havuz_mod']})",
-                    "BAHÇE ALANI (M²)": f"{bahce_m2:,.2f}",
-                    "BODRUM KAT (M²)": f"{bodrum_m2:,.2f}",
-                    "ÜST KATLAR (M²)": f"{brut_insaat:,.2f}",
-                    "TOPLAM İNŞAAT (M²)": f"{genel_parsel_toplam_insaat:,.2f}",
                     "BAĞIMSIZ BÖLÜM": f"{konut_adeti} Adet",
-                    "BİRİM BAŞINA ORTALAMA ALAN (M²)": f"{birim_ortalama_alan:,.1f} m²"
+                    "BİRİM BAHÇE (M²)": f"{birim_bahce:,.1f} m²",
+                    "BİRİM BODRUM (M²)": f"{birim_bodrum:,.1f} m²",
+                    "BİRİM ÜST KATLAR (M²)": f"{birim_ust_kat:,.1f} m²",
+                    "BİRİM TOPLAM İNŞAAT (M²)": f"{birim_toplam_insaat:,.1f} m²"
                 })
                 
         if mimari_rows:
@@ -858,7 +863,7 @@ if selected_keys:
             avg_unit_m2 = total_genel_insaat_sum / total_units_sum if total_units_sum > 0 else 0.0
             
             st.markdown("---")
-            st.markdown("#### 📋 Mimari ve Proje Özet Dağılımı")
+            st.markdown("#### 📋 Mimari ve Proje Özet Dağılımı (Birim Ortalamaları)")
             
             m_col1, m_col2, m_col3, m_col4 = st.columns(4)
             m_col1.metric("Toplam Bağımsız Bölüm", f"{total_units_sum} Adet")
