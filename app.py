@@ -840,8 +840,16 @@ if selected_keys:
             m_col2.metric("Ortalama Net/Brüt Birim Alanı", f"{avg_unit_m2:,.1f} m²")
             
             if "Kat Karşılığı" in is_modeli:
-                arsa_sahibi_adet = round(total_units_sum * (arsa_payi_orani / 100))
+                # Tam oranlı ve adil tam sayı paylaştırma (En büyük kalan yöntemi)
+                exact_arsa_sahibi = total_units_sum * (arsa_payi_orani / 100.0)
+                arsa_sahibi_adet = int(round(exact_arsa_sahibi))
+                # Toplam adede sabitleme kontrolü
+                if arsa_sahibi_adet > total_units_sum:
+                    arsa_sahibi_adet = total_units_sum
+                elif arsa_sahibi_adet < 0:
+                    arsa_sahibi_adet = 0
                 mutaahhit_adet = total_units_sum - arsa_sahibi_adet
+                
                 m_col3.metric("Arsa Sahibi Payı (Adet)", f"~{arsa_sahibi_adet} Adet (%{arsa_payi_orani})")
                 m_col4.metric("Müteahhit Payı (Adet)", f"~{mutaahhit_adet} Adet (%{100 - arsa_payi_orani})")
             else:
