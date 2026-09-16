@@ -187,16 +187,16 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_ra
     
     p_conf = proje_carpanlari.get(proje_tipi, proje_carpanlari["Standart Konut / Apartman"])
     
-    # Havuz Seçeneğine Göre Otomatik Fiyat ve Maliyet Primleri (Ekstralar)
+    # Havuz Seçeneğine Göre Otomatik Fiyat ve Maliyet Primleri (Kar Marjını Artıran Doğru Entegrasyon)
     pool_cost_addon = 0.0
     pool_price_addon = 0.0
     if "İptal" not in havuz_secenegi:
         if "Müstakil" in havuz_secenegi:
-            pool_cost_addon = 85.0   # Müstakil havuzun m² maliyetine otomatik etkisi
-            pool_price_addon = 150.0 # Müstakil havuzun m² satış fiyatına otomatik prim etkisi
+            pool_cost_addon = 45.0   # Maliyete küçük birim ekleme
+            pool_price_addon = 220.0 # Satış fiyatına yüksek lüks primi ekleme (Kar marjını artırır)
         else:
-            pool_cost_addon = 40.0   # Ortak havuzun m² maliyetine otomatik etkisi
-            pool_price_addon = 75.0  # Ortak havuzun m² satış fiyatına otomatik prim etkisi
+            pool_cost_addon = 25.0   
+            pool_price_addon = 110.0 
 
     satis_fiyati_usd = round(((base_tl * p_conf["satis_mod"]) / usd_rate) + pool_price_addon, 2)
     maliyet_fiyati_usd = float(p_conf["maliyet_mod"]) + pool_cost_addon
@@ -627,7 +627,7 @@ if selected_keys:
             if "İptal" not in selected_func_pool:
                 custom_pool_m2 = st.number_input(f"Havuz Alanı (m²) - {fonk_adi}", min_value=10.0, max_value=500.0, value=40.0, step=5.0, key=f"custom_pool_m2_{idx}_{fonk_adi}")
             
-            # --- OTOMATİK FİYAT VE MALİYET HESABI (HAVUZ DAHİL) ---
+            # --- OTOMATİK FİYAT VE MALİYET HESABI (HAVUZ DAHİL & KAR MARJINI ARTIRAN MİMARİ) ---
             auto_satis, auto_maliyet = get_realistic_market_pricing(first_mahalle, selected_func_p_type, selected_func_pool, rates["USD"])
 
             prc_col1, prc_col2 = st.columns(2)
@@ -713,15 +713,8 @@ if selected_keys:
             total_bodrum_alani += bodrum_m2_parsel
             total_bahce_alani_terki += item["bahce_kullanim_alani"]
             
-            if "İptal" not in conf["havuz_mod"]:
-                if "Müstakil" in conf["havuz_mod"]:
-                    havuz_dusum = conf["havuz_m2"] * conf["adet"]
-                else:
-                    havuz_dusum = conf["havuz_m2"]
-            else:
-                havuz_dusum = 0.0
-
-            net_satilabilir_ust_kat = max(0.0, brut_insaat - havuz_dusum)
+            # --- DÜZELTME: Havuz alanı brüt inşaat alanından düşülmez; havuzlu projede tüm brüt alan yüksek fiyatla satılır ---
+            net_satilabilir_ust_kat = brut_insaat 
             bodrum_satis_fiyati = conf["satis"] * 0.50  
             
             parsel_ust_kat_ciro = net_satilabilir_ust_kat * conf["satis"]
@@ -729,7 +722,7 @@ if selected_keys:
             
             total_ciro_usd += (parsel_ust_kat_ciro + parsel_bodrum_ciro)
             
-            net_maliyete_esas_ust_kat = max(0.0, brut_insaat - havuz_dusum)
+            net_maliyete_esas_ust_kat = brut_insaat
             ust_kat_maliyeti = net_maliyete_esas_ust_kat * conf["maliyet"]
             bodrum_maliyeti = bodrum_m2_parsel * (conf["maliyet"] * 0.60)
             
@@ -840,15 +833,7 @@ if selected_keys:
                 konut_adeti = conf["adet"]
                 total_units_sum += konut_adeti
                 
-                if "İptal" not in conf["havuz_mod"]:
-                    if "Müstakil" in conf["havuz_mod"]:
-                        havuz_dusum = conf["havuz_m2"] * konut_adeti
-                    else:
-                        havuz_dusum = conf["havuz_m2"]
-                else:
-                    havuz_dusum = 0.0
-
-                net_konut_insaat = max(0.0, brut_insaat - havuz_dusum)
+                net_konut_insaat = brut_insaat
                 total_net_insaat_sum += net_konut_insaat
                 
                 genel_parsel_toplam_insaat = brut_insaat + bodrum_m2
