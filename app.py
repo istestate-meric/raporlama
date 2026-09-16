@@ -96,8 +96,8 @@ def get_project_size_ranges(project_type):
     else:  # Standart Konut / Apartman
         return 55, 150, 90, 5
 
-# --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ ---
-BASE_DIR = os.path.dirname(os.path.abspath(__file__)) if "__file__" in locals() else os.getcwd()
+# --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ (GÜÇLENDİRİLMİŞ) ---
+BASE_DIR = os.path.abspath(os.getcwd())
 DB_FILE = os.path.join(BASE_DIR, "imar_veritabani.json")
 
 def load_persistent_db():
@@ -117,7 +117,7 @@ def save_persistent_db(db_data):
             json.dump(db_data, f, ensure_ascii=False, indent=4)
         st.session_state["parcel_db"] = db_data
     except Exception as e:
-        st.error(f"Veritabanı kaydedilirken hata oluştu: {e}")
+        st.error(f"Veritabanı kaydedilirken kritik hata oluştu: {e}")
 
 if "parcel_db" not in st.session_state:
     st.session_state["parcel_db"] = load_persistent_db()
@@ -504,7 +504,7 @@ if uploaded_files:
         just_uploaded_keys.append(unique_key)
         
     save_persistent_db(current_db)
-    st.sidebar.success(f"{len(uploaded_files)} Adet Belge Arşive Eklendi!")
+    st.sidebar.success(f"{len(uploaded_files)} Adet Belge Arşive Eklendi ve Diske Kaydedildi!")
 
 st.sidebar.divider()
 st.sidebar.subheader("🎯 Rapor İçin Parsel Seçimi & Arama")
@@ -731,17 +731,13 @@ if selected_keys:
             total_ciro_usd += (net_satilabilir_toplam_alan * conf["satis"])
             
             # FİNANSAL MALİYET BİLEŞENLERİ:
-            # 1. Üst katlar normal birim maliyet
             ust_kat_maliyeti = brut_insaat * conf["maliyet"]
-            # 2. Bodrum katlar düşük maliyet katsayısı (%60)
             bodrum_maliyeti = bodrum_m2_parsel * (conf["maliyet"] * 0.60)
-            # 3. Havuz inşaat maliyeti
             havuz_maliyeti = havuz_dusum * conf["maliyet"] if havuz_dusum > 0 else 0.0
             
             toplam_parsel_maliyeti = ust_kat_maliyeti + bodrum_maliyeti + havuz_maliyeti
             total_maliyet_usd += toplam_parsel_maliyeti
 
-    # Modele Göre Arsa / Pay Maliyeti ve Net Kâr Dağılımı
     if "Doğrudan Satılık" in is_modeli:
         total_maliyet_usd += arsa_maliyeti_usd
         arsa_sahibi_payi_usd = 0.0
