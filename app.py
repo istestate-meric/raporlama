@@ -7,7 +7,6 @@ import xml.etree.ElementTree as ET
 import pandas as pd
 import pdfplumber
 import streamlit as st
-import streamlit.components.v1 as components
 from weasyprint import CSS, HTML
 
 # --- SAYFA YAPILANDIRMASI ---
@@ -697,7 +696,7 @@ if selected_keys:
                 if t_size > 0:
                     function_configs[parsel_fonk_key]["adet"] = max(1, round(brut_insaat / t_size))
 
-    # --- CIRO, MALIYET VE NET KAR HESAPLAMA MOTORU ---
+    # --- DÜZELTİLMİŞ CIRO, MALIYET VE NET KAR HESAPLAMA MOTORU ---
     total_yasal_brut_insaat = 0.0
     total_bodrum_alani = 0.0
     total_bahce_alani_terki = 0.0
@@ -899,6 +898,7 @@ if selected_keys:
         rate_usd = rates["USD"]
         rate_eur = rates["EUR"]
         
+        # Ciro hesaplaması müteahhit payına göre ayarlandı
         display_ciro_usd = müteahhit_hissesi_ciro if "Kat Karşılığı" in is_modeli else total_ciro_usd
         
         total_ciro_tl = display_ciro_usd * rate_usd
@@ -936,205 +936,64 @@ if selected_keys:
     with tab4:
         st.subheader("🖨️ Kurumsal Rapor Ön İzleme ve PDF İndirme Merkezi")
         
-        pdf_logo1_html = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 36px; width: auto;'>" if img1_base64 else "<b style='color:#ffffff; font-size:14px;'>İSTESTATE GAYRİMENKUL</b>"
-        pdf_logo2_html = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 36px; width: auto;'>" if img2_base64 else "<b style='color:#ffffff; font-size:14px;'>MERİÇ İNŞAAT EMLAK</b>"
+        # PDF Banner içindeki logoların etrafına beyaz arka plan ve pad eklendi
+        pdf_logo1_html = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 38px; background-color: #ffffff; padding: 4px; border-radius: 4px; display: inline-block;'>" if img1_base64 else "<b style='color:#fff;'>İSTESTATE</b>"
+        pdf_logo2_html = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 38px; background-color: #ffffff; padding: 4px; border-radius: 4px; display: inline-block;'>" if img2_base64 else "<b style='color:#fff;'>MERİÇ İNŞAAT</b>"
         
-        # --- TABLOLANMIŞ PDF İÇERİK ŞABLONU ---
-        parcel_rows_html = ""
-        for key, p in active_parcel_db.items():
-            mahalle = p.get("mahalle", "BİLİNMİYOR")
-            ada = p.get("ada", "0")
-            parsel = p.get("parsel", "0")
-            toplam_arsa_m2 = p.get("toplam_alan", 0.0)
-            is_terkli = p.get("terk_yapilmis_mi", False)
-            breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
-            
-            for item in breakdown:
-                brut_insaat_arsa = item["brut_insaat"]
-                bodrum_arsa = brut_insaat_arsa * 0.50
-                if brut_insaat_arsa <= 0:
-                    continue
-                parcel_rows_html += f"""
-                <tr>
-                    <td>{mahalle}</td>
-                    <td style="text-align: center;">{ada} / {parsel}</td>
-                    <td style="text-align: right;">{toplam_arsa_m2:,.2f} m²</td>
-                    <td style="text-align: center;">{'Yapılmış (Net)' if is_terkli else 'Yapılmamış (Brüt)'}</td>
-                    <td>{item['fonksiyon_adi']}</td>
-                    <td style="text-align: center;">{item['kaks']:.2f}</td>
-                    <td style="text-align: right;">{brut_insaat_arsa:,.2f} m²</td>
-                    <td style="text-align: right;">{bodrum_arsa:,.2f} m²</td>
-                    <td style="text-align: right; font-weight: bold;">{(brut_insaat_arsa + bodrum_arsa):,.2f} m²</td>
-                </tr>
-                """
-
-        arch_rows_html = ""
-        for key, p in active_parcel_db.items():
-            breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
-            for item in breakdown:
-                fonk_name = item["fonksiyon_adi"]
-                brut_insaat = item["brut_insaat"]
-                bodrum_m2 = brut_insaat * 0.50
-                bahce_m2 = item["bahce_kullanim_alani"]
-                if brut_insaat <= 0: continue
-                
-                parsel_fonk_key = f"{key}_{fonk_name}"
-                conf = function_configs.get(parsel_fonk_key)
-                if not conf: continue
-                
-                konut_adeti = conf["adet"]
-                pool_m2 = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
-                net_konut_insaat = max(0.0, brut_insaat - pool_m2)
-                
-                birim_bahce = bahce_m2 / konut_adeti if konut_adeti > 0 else 0.0
-                birim_bodrum = bodrum_m2 / konut_adeti if konut_adeti > 0 else 0.0
-                birim_ust_kat = net_konut_insaat / konut_adeti if konut_adeti > 0 else 0.0
-                birim_toplam = (net_konut_insaat + bodrum_m2) / konut_adeti if konut_adeti > 0 else 0.0
-                
-                arch_rows_html += f"""
-                <tr>
-                    <td>{fonk_name}</td>
-                    <td>{conf['proje_tipi']} ({conf['havuz_mod']})</td>
-                    <td style="text-align: center; font-weight: bold;">{konut_adeti} Adet</td>
-                    <td style="text-align: right;">{birim_bahce:,.1f} m²</td>
-                    <td style="text-align: right;">{birim_bodrum:,.1f} m²</td>
-                    <td style="text-align: right;">{birim_ust_kat:,.1f} m²</td>
-                    <td style="text-align: right; font-weight: bold;">{birim_toplam:,.1f} m²</td>
-                </tr>
-                """
-
         report_html_template = f"""
         <!DOCTYPE html>
         <html>
         <head>
         <meta charset="utf-8">
         <style>
-            @page {{ size: A4 landscape; margin: 8mm 10mm; }}
-            body {{ font-family: 'Helvetica', 'Arial', sans-serif; color: #0f172a; font-size: 8.5px; line-height: 1.2; background-color: #ffffff; }}
-            .report-banner {{ background-color: #0b1d3a; color: #ffffff; width: 100%; border-collapse: collapse; margin-bottom: 8px; border-radius: 4px; overflow: hidden; }}
-            .report-banner td {{ border: none; padding: 8px 12px; vertical-align: middle; }}
-            .section-title {{ font-size: 9.5px; font-weight: bold; color: #0b1d3a; border-left: 4px solid #0b1d3a; padding-left: 6px; background-color: #f1f5f9; margin-top: 8px; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }}
-            .data-table {{ width: 100%; border-collapse: collapse; margin-top: 2px; margin-bottom: 6px; font-size: 8px; }}
-            .data-table th, .data-table td {{ border: 1px solid #cbd5e1; padding: 4px 6px; }}
-            .data-table th {{ background-color: #f8fafc; color: #1e293b; font-weight: 700; text-align: left; }}
-            .footer {{ font-size: 7.5px; color: #64748b; text-align: center; margin-top: 10px; border-top: 1px dashed #cbd5e1; padding-top: 4px; }}
-            .highlight {{ background-color: #eff6ff; font-weight: bold; }}
+            @page {{ size: A4 landscape; margin: 6mm 8mm; }}
+            body {{ font-family: 'Helvetica', 'Arial', sans-serif; color: #1e293b; font-size: 8.5px; line-height: 1.12; }}
+            .report-banner {{ background-color: #0b1d3a; color: #ffffff; width: 100%; border-collapse: collapse; margin-bottom: 6px; }}
+            .report-banner td {{ border: none; padding: 6px 8px; vertical-align: middle; }}
+            .section-title {{ font-size: 9px; font-weight: bold; color: #0b1d3a; border-left: 3px solid #0b1d3a; padding-left: 5px; background-color: #f1f5f9; margin-top: 5px; margin-bottom: 2px; text-transform: uppercase; }}
+            .data-table {{ width: 100%; border-collapse: collapse; margin-top: 1px; font-size: 8.5px; }}
+            .data-table th, .data-table td {{ border: 1px solid #cbd5e1; padding: 3px 5px; }}
+            .data-table th {{ background-color: #f8fafc; font-weight: 700; }}
+            .footer {{ font-size: 7.5px; color: #64748b; text-align: center; margin-top: 6px; border-top: 1px dashed #cbd5e1; padding-top: 2px; }}
         </style>
         </head>
         <body>
             <table class="report-banner">
                 <tr>
-                    <td style="width: 30%;">{pdf_logo1_html}</td>
-                    <td style="width: 40%; text-align: center;">
-                        <h2 style="font-size: 11px; margin: 0; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">AKILLI GAYRİMENKUL GELİŞTİRME VE FİZİBİLİTE RAPORU</h2>
-                        <span style="font-size: 7.5px; color: #94a3b8;">İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT ORTAK PORTALI</span>
-                    </td>
-                    <td style="width: 30%; text-align: right;">{pdf_logo2_html}</td>
+                    <td style="width: 25%;">{pdf_logo1_html}</td>
+                    <td style="width: 50%; text-align: center;"><h2 style="font-size:10.5px; margin:0; color:#fff;">AKILLI GAYRİMENKUL GELİŞTİRME VE FİZİBİLİTE RAPORU</h2></td>
+                    <td style="width: 25%; text-align: right;">{pdf_logo2_html}</td>
                 </tr>
             </table>
-
-            <div class="section-title">1. PARSEL VE İMAR METRAJ KÜNYESİ</div>
+            <div class="section-title">1. Proje ve Lokasyon Künyesi (Bodrum Dahil)</div>
             <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Mahalle</th>
-                        <th style="text-align: center;">Ada / Parsel</th>
-                        <th style="text-align: right;">Toplam Arsa</th>
-                        <th style="text-align: center;">Terk Durumu</th>
-                        <th>İmar Fonksiyonu</th>
-                        <th style="text-align: center;">Emsal (KAKS)</th>
-                        <th style="text-align: right;">Emsal İnşaat (m²)</th>
-                        <th style="text-align: right;">Bodrum (%50) (m²)</th>
-                        <th style="text-align: right;">Toplam İnşaat (m²)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {parcel_rows_html}
-                </tbody>
+                <tr><td>Lokasyon / Mahalle</td><td style="text-align: right; font-weight: bold;">{first_mahalle} ({len(active_parcel_db)} Parsel)</td></tr>
+                <tr><td>İş Modeli</td><td style="text-align: right; font-weight: bold;">{is_modeli} {"(%"+str(arsa_payi_orani)+" Arsa Payı)" if "Kat Karşılığı" in is_modeli else ""}</td></tr>
+                <tr><td>Emsal İnşaat Alanı (Bodrum Hariç)</td><td style="text-align: right; font-weight: bold;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
+                <tr><td>Bodrum Kat Alanı (%50)</td><td style="text-align: right; font-weight: bold;">{total_bodrum_alani:,.2f} m²</td></tr>
+                <tr><td>Genel Toplam İnşaat Alanı</td><td style="text-align: right; font-weight: bold;">{(total_yasal_brut_insaat + total_bodrum_alani):,.2f} m²</td></tr>
             </table>
-
-            <div class="section-title">2. MİMARİ VE BAĞIMSIZ BÖLÜM DAĞILIM FİZİBİLİTESİ</div>
+            <div class="section-title">2. Finansal Fizibilite Özeti (USD / TL / EUR - Bodrum Dahil)</div>
             <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>İmar Fonksiyonu</th>
-                        <th>Seçilen Proje Tipi ve Konsept</th>
-                        <th style="text-align: center;">Toplam Bağımsız Bölüm</th>
-                        <th style="text-align: right;">Birim Bahçe</th>
-                        <th style="text-align: right;">Birim Bodrum</th>
-                        <th style="text-align: right;">Birim Üst Kat Net</th>
-                        <th style="text-align: right;">Birim Toplam Brüt</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {arch_rows_html}
-                </tbody>
+                <tr><th>Finansal Kalem</th><th style="text-align: right;">Tutar (USD $)</th><th style="text-align: right;">Tutar (TL ₺)</th><th style="text-align: right;">Tutar (EUR €)</th></tr>
+                <tr><td>Müteahhit Payı Tahmini Ciro</td><td style="text-align: right;">${display_ciro_usd:,.2f}</td><td style="text-align: right;">₺{total_ciro_tl:,.2f}</td><td style="text-align: right;">€{total_ciro_eur:,.2f}</td></tr>
+                <tr><td>Toplam Yatırım & İnşaat Maliyeti</td><td style="text-align: right;">${total_maliyet_usd:,.2f}</td><td style="text-align: right;">₺{total_maliyet_tl:,.2f}</td><td style="text-align: right;">€{total_maliyet_eur:,.2f}</td></tr>
+                <tr style="font-weight: bold;"><td>Müteahhit Net Karı</td><td style="text-align: right; color:#1e3a8a;">${toplam_net_kar_usd:,.2f}</td><td style="text-align: right; color:#1e3a8a;">₺{toplam_net_kar_tl:,.2f}</td><td style="text-align: right; color:#1e3a8a;">€{toplam_net_kar_eur:,.2f} (%{yg_orani:.1f} YG)</td></tr>
             </table>
-
-            <div class="section-title">3. FİNANSAL FİZİBİLİTE VE GELİR/GİDER TABLOSU</div>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Finansal Parametre / Metrik</th>
-                        <th style="text-align: right;">Tutar (USD $)</th>
-                        <th style="text-align: right;">Tutar (TL ₺)</th>
-                        <th style="text-align: right;">Tutar (EUR €)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Proje İş Modeli / Yapısı</td>
-                        <td colspan="3" style="text-align: center; font-weight: bold;">{is_modeli} {"(%"+str(arsa_payi_orani)+" Arsa Payı)" if "Kat Karşılığı" in is_modeli else ""}</td>
-                    </tr>
-                    <tr>
-                        <td>Toplam Proje Cirosu (Brüt Satış Geliri)</td>
-                        <td style="text-align: right;">${total_ciro_usd:,.2f}</td>
-                        <td style="text-align: right;">₺{(total_ciro_usd * rate_usd):,.2f}</td>
-                        <td style="text-align: right;">€{((total_ciro_usd * rate_usd) / rate_eur):,.2f}</td>
-                    </tr>
-                    <tr>
-                        <td>Müteahhit Hissesi / Payına Düşen Ciro</td>
-                        <td style="text-align: right; font-weight: bold;">${display_ciro_usd:,.2f}</td>
-                        <td style="text-align: right; font-weight: bold;">₺{total_ciro_tl:,.2f}</td>
-                        <td style="text-align: right; font-weight: bold;">€{total_ciro_eur:,.2f}</td>
-                    </tr>
-                    <tr>
-                        <td>Toplam İnşaat ve Yatırım Maliyeti</td>
-                        <td style="text-align: right; color: #c2410c;">${total_maliyet_usd:,.2f}</td>
-                        <td style="text-align: right; color: #c2410c;">₺{total_maliyet_tl:,.2f}</td>
-                        <td style="text-align: right; color: #c2410c;">€{total_maliyet_eur:,.2f}</td>
-                    </tr>
-                    <tr class="highlight">
-                        <td style="font-weight: bold;">Müteahhit Net Proje Karı (YG: %{yg_orani:.1f})</td>
-                        <td style="text-align: right; color: #1e3a8a; font-size: 9px;">${toplam_net_kar_usd:,.2f}</td>
-                        <td style="text-align: right; color: #1e3a8a; font-size: 9px;">₺{toplam_net_kar_tl:,.2f}</td>
-                        <td style="text-align: right; color: #1e3a8a; font-size: 9px;">€{toplam_net_kar_eur:,.2f}</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <div class="footer">
-                Bu rapor İstestate Gayrimenkul & Meriç İnşaat Emlak Akıllı Fizibilite Portalı tarafından otomatize edilerek oluşturulmuştur.
-            </div>
+            <div class="footer">Bu rapor İstestate Gayrimenkul & Meriç İnşaat Emlak Akıllı Fizibilite Portalı tarafından üretilmiştir.</div>
         </body>
         </html>
         """
         
         pdf_bytes = HTML(string=report_html_template).write_pdf()
-        pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
         
-        # --- ÖN İZLEME VE İNDİRME EKRANI ---
+        # --- CANLI PDF ÖN İZLEME İFRAME ALANI ---
         st.markdown("#### 👁️ Canlı PDF Rapor Ön İzleme")
-        st.markdown("<p style='color: #64748b; font-size: 12px;'>Belgeyi indirmeden önce aşağıdaki canlı ön izleme ekranından içerik kontrolü yapabilirsiniz.</p>", unsafe_allow_html=True)
-        
-        pdf_display_html = f"""
-        <iframe src="data:application/pdf;base64,{pdf_base64}" width="100%" height="520px" type="application/pdf" style="border: 1px solid #cbd5e1; border-radius: 8px;">
-            <p>Tarayıcınız PDF ön izlemeyi desteklemiyor. Raporu indirmek için aşağıdaki butonu kullanabilirsiniz.</p>
-        </iframe>
-        """
-        components.html(pdf_display_html, height=530)
-
+        pdf_base64_str = base64.b64encode(pdf_bytes).decode("utf-8")
+        pdf_display = f'<iframe src="data:application/pdf;base64,{pdf_base64_str}" width="100%" height="550" type="application/pdf" style="border: 1px solid #cbd5e1; border-radius: 8px;"></iframe>'
+        st.markdown(pdf_display, unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
+
         st.download_button(
             label="📥 Kurumsal Fizibilite Raporunu PDF Olarak İndir",
             data=pdf_bytes,
