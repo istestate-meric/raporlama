@@ -916,19 +916,19 @@ if selected_keys:
             c1, c2, c3 = st.columns(3)
             c1.metric("Toplam Tahmini Brüt Ciro", f"${total_ciro_usd:,.2f}")
             c2.metric("Toplam İnşaat & Yatırım Maliyeti", f"${total_maliyet_usd:,.2f}")
-            c3.metric("Müteahhit Net Karı", f"${mutaahhit_net_kar_usd:,.2f}", f"%{yg_orani:.1f} YG")
+            c3.metric("Toplam Net Kar", f"${mutaahhit_net_kar_usd:,.2f}", f"%{yg_orani:.1f} YG")
             
         with curr_tab2:
             t1, t2, t3 = st.columns(3)
             t1.metric("Toplam Tahmini Brüt Ciro", f"₺{total_ciro_tl:,.2f}")
             t2.metric("Toplam İnşaat & Yatırım Maliyeti", f"₺{total_maliyet_tl:,.2f}")
-            t3.metric("Müteahhit Net Karı", f"₺{mutaahhit_net_kar_tl:,.2f}", f"%{yg_orani:.1f} YG")
+            t3.metric("Toplam Net Kar", f"₺{mutaahhit_net_kar_tl:,.2f}", f"%{yg_orani:.1f} YG")
             
         with curr_tab3:
             e1, e2, e3 = st.columns(3)
             e1.metric("Toplam Tahmini Brüt Ciro", f"€{total_ciro_eur:,.2f}")
             e2.metric("Toplam İnşaat & Yatırım Maliyeti", f"€{total_maliyet_eur:,.2f}")
-            e3.metric("Müteahhit Net Karı", f"€{mutaahhit_net_kar_eur:,.2f}", f"%{yg_orani:.1f} YG")
+            e3.metric("Toplam Net Kar", f"€{mutaahhit_net_kar_eur:,.2f}", f"%{yg_orani:.1f} YG")
 
     with tab4:
         st.subheader("🖨️ Kurumsal Rapor Ön İzleme ve PDF İndirme Merkezi")
@@ -973,7 +973,7 @@ if selected_keys:
                 <tr><th>Finansal Kalem</th><th style="text-align: right;">Tutar (USD $)</th><th style="text-align: right;">Tutar (TL ₺)</th><th style="text-align: right;">Tutar (EUR €)</th></tr>
                 <tr><td>Toplam Tahmini Brüt Ciro</td><td style="text-align: right;">${total_ciro_usd:,.2f}</td><td style="text-align: right;">₺{total_ciro_tl:,.2f}</td><td style="text-align: right;">€{total_ciro_eur:,.2f}</td></tr>
                 <tr><td>Toplam Yatırım & İnşaat Maliyeti</td><td style="text-align: right;">${total_maliyet_usd:,.2f}</td><td style="text-align: right;">₺{total_maliyet_tl:,.2f}</td><td style="text-align: right;">€{total_maliyet_eur:,.2f}</td></tr>
-                <tr style="font-weight: bold;"><td>Müteahhit Net Kârı</td><td style="text-align: right; color:#1e3a8a;">${mutaahhit_net_kar_usd:,.2f}</td><td style="text-align: right; color:#1e3a8a;">₺{mutaahhit_net_kar_tl:,.2f}</td><td style="text-align: right; color:#1e3a8a;">€{mutaahhit_net_kar_eur:,.2f} (%{yg_orani:.1f} YG)</td></tr>
+                <tr style="font-weight: bold;"><td>Toplam Net Kar</td><td style="text-align: right; color:#1e3a8a;">${mutaahhit_net_kar_usd:,.2f}</td><td style="text-align: right; color:#1e3a8a;">₺{mutaahhit_net_kar_tl:,.2f}</td><td style="text-align: right; color:#1e3a8a;">€{mutaahhit_net_kar_eur:,.2f} (%{yg_orani:.1f} YG)</td></tr>
             </table>
             <div class="footer">Bu rapor İstestate Gayrimenkul & Meriç İnşaat Emlak Akıllı Fizibilite Portalı tarafından üretilmiştir.</div>
         </body>
