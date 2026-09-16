@@ -625,7 +625,7 @@ if selected_keys:
             if "İptal" not in selected_func_pool:
                 custom_pool_m2 = st.number_input(f"Havuz Alanı (m²) - {fonk_adi}", min_value=10.0, max_value=500.0, value=40.0, step=5.0, key=f"custom_pool_m2_{idx}_{fonk_adi}")
             
-            # --- ANLIK PİYASA FİYAT HESAPLAMA MOTORU ---
+            # --- ANLIK PİYASA FİYAT HESAPLAMA MOTORU & STATE SENKRONİZASYONU ---
             auto_satis, auto_maliyet = get_realistic_market_pricing(first_mahalle, selected_func_p_type, selected_func_pool, rates["USD"])
 
             cost_key = f"cost_{idx}_{fonk_adi}"
@@ -633,7 +633,6 @@ if selected_keys:
             last_pt_key = f"last_pt_{idx}_{fonk_adi}"
             last_pool_key = f"last_pool_{idx}_{fonk_adi}"
 
-            # Eğer Proje Tipi veya Havuz Seçeneği değiştiyse input alanlarının state değerini anlık güncelle
             if st.session_state.get(last_pt_key) != selected_func_p_type or st.session_state.get(last_pool_key) != selected_func_pool:
                 st.session_state[cost_key] = float(auto_maliyet)
                 st.session_state[price_key] = float(auto_satis)
@@ -698,6 +697,7 @@ if selected_keys:
                 if t_size > 0:
                     function_configs[parsel_fonk_key]["adet"] = max(1, round(brut_insaat / t_size))
 
+    # --- CIRO, MALIYET VE KAR HESAPLAMALARININ ENTEGRE EDİLMİŞ MOTORU ---
     total_yasal_brut_insaat = 0.0
     total_bodrum_alani = 0.0
     total_bahce_alani_terki = 0.0
