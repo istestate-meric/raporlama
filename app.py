@@ -708,7 +708,7 @@ if selected_keys:
                 continue
                 
             total_yasal_brut_insaat += brut_insaat
-            bodrum_m2_parsel = brut_insaat * 0.50  # Toplam inşaat alanının yarısı kadar bodrum
+            bodrum_m2_parsel = brut_insaat * 0.50  
             total_bodrum_alani += bodrum_m2_parsel
             total_bahce_alani_terki += item["bahce_kullanim_alani"]
             
@@ -759,7 +759,7 @@ if selected_keys:
             for item in breakdown:
                 brut_insaat_arsa = item["brut_insaat"]
                 bodrum_arsa = brut_insaat_arsa * 0.50
-                emsal_arsa = brut_insaat_arsa  # Emsal inşaat alanı bodrum harici toplam inşaat alanıdır
+                emsal_arsa = brut_insaat_arsa  
                 bahce_m2 = item["bahce_kullanim_alani"]
                 if brut_insaat_arsa <= 0:
                     continue
@@ -777,6 +777,7 @@ if selected_keys:
                     "Terk Durumu": "Yapılmış (Net)" if is_terkli else "Yapılmamış (Brüt)",
                     "Fonksiyon": item["fonksiyon_adi"],
                     "Kaks/Emsal": f"{item['kaks']:.2f}",
+                    "Bahçe Alanı (m²)": f"{bahce_m2:,.2f}",
                     "Emsal İnşaat Alanı (m²)": f"{emsal_arsa:,.2f}",
                     "Toplam İnşaat Alanı (m²)": f"{(brut_insaat_arsa + bodrum_arsa):,.2f}"
                 })
@@ -786,6 +787,7 @@ if selected_keys:
             summary_df = pd.DataFrame([{
                 "SORGULANAN PARSEL": f"{len(active_parcel_db)} Adet",
                 "TOPLAM ARSA (M²)": f"{sum_alan:,.2f}",
+                "TOPLAM BAHÇE ALANI (M²)": f"{sum_bahce_alani:,.2f}",
                 "TOPLAM EMSAL İNŞAAT (M²)": f"{sum_emsal_insaat:,.2f}",
                 "TOPLAM BODRUM İNŞAAT (M²)": f"{sum_bodrum_insaat:,.2f}",
                 "GENEL TOPLAM İNŞAAT (M²)": f"{(sum_brut_insaat + sum_bodrum_insaat):,.2f}"
@@ -830,13 +832,13 @@ if selected_keys:
 
                 net_konut_insaat = max(0.0, brut_insaat - havuz_dusum)
                 total_net_insaat_sum += net_konut_insaat
-                birim_m2 = net_konut_insaat / konut_adeti if konut_adeti > 0 else net_konut_insaat
                 
                 mimari_rows.append({
                     "MAHALLE": mahalle,
                     "ADA/PARSEL": f"{ada}/{parsel}",
                     "FONKSİYON": fonk_name,
                     "PROJE TİPİ": f"{conf['proje_tipi']} ({conf['havuz_mod']})",
+                    "BAHÇE ALANI (M²)": f"{bahce_m2:,.2f}",
                     "BODRUM KAT (M²)": f"{bodrum_m2:,.2f}",
                     "ÜST KATLAR (M²)": f"{brut_insaat:,.2f}",
                     "TOPLAM İNŞAAT (M²)": f"{(brut_insaat + bodrum_m2):,.2f}",
@@ -982,6 +984,7 @@ if selected_keys:
                     for item in breakdown:
                         brut = item['brut_insaat']
                         bod = brut * 0.50
+                        bahce_m2 = item['bahce_kullanim_alani']
                         db_detail_rows.append({
                             "Kayıt Anahtarı": k,
                             "Dosya Adı": p_val.get("filename", "-"),
@@ -990,6 +993,7 @@ if selected_keys:
                             "Toplam Arsa (m²)": f"{toplam_alan:,.2f}",
                             "Terk Durumu": terk_st,
                             "Fonksiyon": item["fonksiyon_adi"],
+                            "Bahçe Alanı (m²)": f"{bahce_m2:,.2f}",
                             "Emsal İnşaat Alanı (m²)": f"{brut:,.2f}",
                             "Bodrum (m²)": f"{bod:,.2f}",
                             "Toplam İnşaat (m²)": f"{(brut + bod):,.2f}"
