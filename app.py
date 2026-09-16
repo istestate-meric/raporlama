@@ -82,7 +82,7 @@ def get_allowed_project_types(fonk_adi):
             "Karma Proje (Konut + Ticari)"
         ]
 
-# --- PROJE TİPİNE GÖRE DİNAMİK ALAN ARALIKLARI ---
+# --- PROJE TİPİNE GÖRE DİNAMİK ALAN ARALIKLARI (MIN, MAX, DEFAULT, STEP) ---
 def get_project_size_ranges(project_type):
     p_up = project_type.upper()
     if "VİLLA" in p_up or "VILLA" in p_up:
@@ -93,7 +93,7 @@ def get_project_size_ranges(project_type):
         return 40, 500, 120, 10
     elif "KARMA" in p_up:
         return 75, 200, 110, 5
-    else:  
+    else:  # Standart Konut / Apartman
         return 55, 150, 90, 5
 
 # --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ ---
@@ -165,7 +165,7 @@ def get_live_exchange_rates():
     except Exception:
         return {"USD": 34.00, "EUR": 37.50}
 
-# --- KESİN AYRIŞTIRILMIŞ PİYASA VE HAVUZ FİYATLANDIRMA MOTORU ---
+# --- OTOMATİK PİYASA VE HAVUZ ENTEGRELİ FİYATLANDIRMA MOTORU ---
 def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_rate):
     mahalle_base_tl = {
         "ACARLAR": 140000, "ANADOLU HİSARI": 130000, "KANLICA": 125000, 
@@ -187,16 +187,16 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_ra
     
     p_conf = proje_carpanlari.get(proje_tipi, proje_carpanlari["Standart Konut / Apartman"])
     
-    # Havuz Durumuna Göre Kesin Fiyat ve Maliyet Farkı (Havuzlu/Havuzsuz Ayrımı)
+    # Havuz Seçeneğine Göre Dinamik Fiyat ve Maliyet Farkı (Havuzlu/Havuzsuz Ayrımı Net)
     pool_cost_addon = 0.0
     pool_price_addon = 0.0
-    if "İptal" not in str(havuz_secenegi):
-        if "Müstakil" in str(havuz_secenegi) or "Villa" in str(havuz_secenegi):
-            pool_cost_addon = 55.0   
-            pool_price_addon = 320.0 
+    if "İptal" not in havuz_secenegi:
+        if "Müstakil" in havuz_secenegi:
+            pool_cost_addon = 45.0   # Maliyete küçük ekleme
+            pool_price_addon = 250.0 # Satış fiyatına yüksek lüks primi ekleme
         else:
-            pool_cost_addon = 30.0   
-            pool_price_addon = 180.0 
+            pool_cost_addon = 25.0   
+            pool_price_addon = 130.0 
 
     satis_fiyati_usd = round(((base_tl * p_conf["satis_mod"]) / usd_rate) + pool_price_addon, 2)
     maliyet_fiyati_usd = float(p_conf["maliyet_mod"]) + pool_cost_addon
@@ -242,26 +242,37 @@ def parse_kaks_val(val_str):
             parsed_vals.append(v)
     return max(parsed_vals) if parsed_vals else 0.0
 
+# --- TERK ALGILAMA MOTORU ---
 def detect_terk_status(text, toplam_alan, fonksiyonlar):
     text_upper = text.upper()
+    
     kesin_terk_yapilmis = [
         "TERKİ YAPILMIŞTIR", "TERKİ YAPILMIŞ", "TERK YAPILMIŞTIR", "TERK YAPILMIŞ",
         "KAMUYA TERK EDİLMİŞTİR", "YOLA TERKİ YAPILMIŞTIR", "TERK EDİLMİŞTİR",
         "TERK: YOK", "TERK YOK", "YOLA TERK: 0", "TERK MİKTARI: 0", "NET PARSEL",
-        "TERKSİZ", "TERK GEREKMEMEKTEDİR", "İFRAZ GÖRMÜŞ", "TAPU ALANI NET"
+        "TERKSİZ", "TERK GEREKMEMEKTEDİR", "İFRAZ GÖRMÜŞ", "TAPU ALANI NET",
+        "TERKİ YAPILMIŞ OLAN", "DOP YAPILMIŞ"
     ]
+    
     kesin_terk_yapilmamis = [
         "TERK YAPILMAMIŞ", "TERKİ YAPILMAMIŞ", "TERK YAPILMADAN", "DOP TERKİ YAPILMAMIŞ",
-        "YOLA TERK VAR", "KAMUYA TERK VAR", "TERK EDİLECEKTİR", "YOLA TERKİ VARDIR"
+        "YOLA TERK VAR", "KAMUYA TERK VAR", "TERK EDİLECEKTİR", "YOLA TERKİ VARDIR",
+        "TERK EDİLMELİDİR", "TERKİ YAPILMIŞTIR DEĞİLDİR", "TERKİ YAPILMAMIŞTIR",
+        "TERK EDİLECEK", "YOLA TERK MİKTARI"
     ]
+    
     for kw in kesin_terk_yapilmis:
-        if kw in text_upper and not "YAPILMAMIŞTIR" in text_upper:
-            return True
+        if kw in text_upper:
+            if not f"YAPILMAMIŞTIR" in text_upper and not f"YAPILMAMIŞ" in text_upper:
+                return True
+
     for kw in kesin_terk_yapilmamis:
         if kw in text_upper:
             return False
+            
     return False
 
+# --- KAPSAMLI İMAR PDF AYRIŞTIRMA MOTORU ---
 def parse_imar_pdf(uploaded_file):
     parcel_data = {
         "filename": uploaded_file.name,
@@ -276,6 +287,7 @@ def parse_imar_pdf(uploaded_file):
     try:
         with pdfplumber.open(uploaded_file) as pdf:
             full_text = ""
+            
             for page in pdf.pages:
                 t = page.extract_text() or ""
                 full_text += "\n" + t
@@ -284,6 +296,7 @@ def parse_imar_pdf(uploaded_file):
                 for table in tables:
                     for r_idx, row in enumerate(table):
                         cells = [str(c).strip().replace("\n", " ") if c is not None else "" for c in row]
+                        
                         if any("Mahalle" in c for c in cells) and any("Ada" in c for c in cells):
                             if r_idx + 1 < len(table):
                                 v_row = [str(c).strip().replace("\n", " ") if c is not None else "" for c in table[r_idx + 1]]
@@ -301,6 +314,7 @@ def parse_imar_pdf(uploaded_file):
                             f_taks = 0.0
                             f_kaks = 0.0
                             f_m2 = 0.0
+                            
                             for c in cells:
                                 c_up = c.upper()
                                 if any(x in c_up for x in ["KONUT", "TİCARET", "TİCARİ", "PARK", "VİLLA", "GELİŞME"]):
@@ -313,6 +327,7 @@ def parse_imar_pdf(uploaded_file):
                                         if 0 < val <= 1.0: f_taks = val
                                 elif any(k in c_up for k in ["KAKS", "EMSAL", "EMS", "E:", "E="]):
                                     f_kaks = parse_kaks_val(c)
+                                
                                 m2_m = re.search(r'([\d\.,]+)\s*(?:M²|M2|%)', c, re.IGNORECASE)
                                 if m2_m and not "ALAN" in c_up:
                                     val = parse_tr_float(m2_m.group(1))
@@ -320,6 +335,7 @@ def parse_imar_pdf(uploaded_file):
 
                             if f_kaks > 0 and not f_name and parcel_data["fonksiyonlar"]:
                                 parcel_data["fonksiyonlar"][-1]["kaks"] = f_kaks
+                                if f_taks > 0: parcel_data["fonksiyonlar"][-1]["taks"] = f_taks
                             elif f_name:
                                 cleaned_check = clean_fonksiyon_adi(f_name)
                                 if cleaned_check and not any(x in cleaned_check for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
@@ -329,6 +345,55 @@ def parse_imar_pdf(uploaded_file):
                                             "taks": f_taks,
                                             "kaks": f_kaks,
                                             "giren_m2": f_m2
+                                        })
+
+                lines = t.split('\n')
+                for i, line in enumerate(lines):
+                    line_up = line.upper().strip()
+                    if any(kw in line_up for kw in ["KONUT ALANI", "TİCARET ALANI", "TİCARET VE KONUT", "GELİŞME KONUT", "VİLLA ALANI"]):
+                        clean_n = clean_fonksiyon_adi(line)
+                        if clean_n:
+                            curr_fonk = clean_n
+                            curr_taks = 0.0
+                            curr_kaks = 0.0
+                            curr_m2 = 0.0
+                            
+                            for sub_line in lines[max(0, i-5):min(len(lines), i+8)]:
+                                sub_up = sub_line.upper()
+                                if "TAKS" in sub_up:
+                                    num_m = re.search(r'([\d\.,]+)', sub_line)
+                                    if num_m:
+                                        val = parse_tr_float(num_m.group(1))
+                                        if 0 < val <= 1.0: curr_taks = val
+                                        
+                                if any(k in sub_up for k in ["KAKS", "EMSAL", "EMS", "E:", "E="]):
+                                    val = parse_kaks_val(sub_line)
+                                    if val > 0: curr_kaks = val
+                                        
+                                m2_m = re.search(r'([\d\.,]+)\s*(?:m²|m2|%)', sub_line, re.IGNORECASE)
+                                if m2_m:
+                                    val = parse_tr_float(m2_m.group(1))
+                                    if val > 0: curr_m2 = val
+
+                            if curr_kaks <= 0:
+                                kaks_match = re.search(r'(?:EMSAL|KAKS|EMS|E)\s*[:=\s]*([\d\.,\s/-]+)', line_up)
+                                if kaks_match:
+                                    curr_kaks = parse_kaks_val(kaks_match.group(1))
+
+                            if curr_fonk:
+                                cleaned_curr_fonk = clean_fonksiyon_adi(curr_fonk)
+                                if cleaned_curr_fonk and not any(x in cleaned_curr_fonk for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
+                                    existing_f = next((f for f in parcel_data["fonksiyonlar"] if f["fonksiyon_adi"] == cleaned_curr_fonk), None)
+                                    if existing_f:
+                                        if curr_kaks > 0: existing_f["kaks"] = curr_kaks
+                                        if curr_taks > 0: existing_f["taks"] = curr_taks
+                                        if curr_m2 > 0: existing_f["giren_m2"] = curr_m2
+                                    else:
+                                        parcel_data["fonksiyonlar"].append({
+                                            "fonksiyon_adi": cleaned_curr_fonk,
+                                            "taks": curr_taks,
+                                            "kaks": curr_kaks,
+                                            "giren_m2": curr_m2
                                         })
 
         global_kaks_val = 0.0
@@ -348,6 +413,7 @@ def parse_imar_pdf(uploaded_file):
             a_m = re.search(r'Ada\s*[:\|]\s*(\d+)', full_text)
             p_m = re.search(r'Parsel\s*[:\|]\s*(\d+)', full_text)
             al_m = re.search(r'Alan\s*\*?\s*[:\|]\s*([\d\.,]+)\s*m²', full_text)
+            
             if m_m: parcel_data["mahalle"] = m_m.group(1).upper()
             if a_m: parcel_data["ada"] = str(a_m.group(1)).strip()
             if p_m: parcel_data["parsel"] = str(p_m.group(1)).strip()
@@ -358,16 +424,17 @@ def parse_imar_pdf(uploaded_file):
             parcel_data["fonksiyonlar"].append({
                 "fonksiyon_adi": "KONUT ALANI",
                 "taks": 0.0,
-                "kaks": global_kaks_val if global_kaks_val > 0 else 1.0,
+                "kaks": global_kaks_val,
                 "giren_m2": parcel_data["toplam_alan"]
             })
 
         parcel_data["terk_yapilmis_mi"] = detect_terk_status(full_text, parcel_data["toplam_alan"], parcel_data["fonksiyonlar"])
     except Exception as e:
-        print(f"PDF işlenirken hata: {e}")
+        print(f"PDF işlenirken hata oluştu: {e}")
         
     return parcel_data
 
+# --- FONKSİYON ALANINA GİREN M² BAZLI DAĞITIM MOTORU ---
 def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
     toplam_arsa_m2 = p.get("toplam_alan", 0.0)
     is_terkli = p.get("terk_yapilmis_mi", False)
@@ -380,7 +447,7 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
             continue
         active_kaks = f.get("kaks", 0.0)
         if active_kaks <= 0:
-            active_kaks = 1.0
+            continue
         valid_fonks.append((f, fonk_name, active_kaks))
         
     if not valid_fonks:
@@ -392,6 +459,7 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
     results = []
     for f, fonk_name, active_kaks in valid_fonks:
         giren_m2 = f.get("giren_m2", 0.0)
+        
         if giren_m2 > 0:
             fonk_giren_payi = giren_m2
         else:
@@ -445,8 +513,9 @@ if uploaded_files:
         unique_key = f"{p_data['mahalle']} | Ada: {p_data['ada']} - Parsel: {p_data['parsel']}"
         current_db[unique_key] = p_data
         just_uploaded_keys.append(unique_key)
+        
     save_persistent_db(current_db)
-    st.sidebar.success(f"{len(uploaded_files)} Adet Belge Arşive Eklendi!")
+    st.sidebar.success(f"{len(uploaded_files)} Adet Belge Arşive Eklendi ve Diske Kaydedildi!")
 
 st.sidebar.divider()
 st.sidebar.subheader("🎯 Rapor İçin Parsel Seçimi & Arama")
@@ -469,7 +538,7 @@ else:
 
 if selected_keys:
     st.sidebar.divider()
-    st.sidebar.subheader("⚙️ Parsel Terk Durumu Ayarı")
+    st.sidebar.subheader("⚙️ Parsel Terk Durumu Ayarı (Manuel Düzeltme)")
     current_db = st.session_state["parcel_db"]
     any_terk_updated = False
     
@@ -486,6 +555,7 @@ if selected_keys:
             if current_db[s_key]["terk_yapilmis_mi"] != desired_bool:
                 current_db[s_key]["terk_yapilmis_mi"] = desired_bool
                 any_terk_updated = True
+                
     if any_terk_updated:
         save_persistent_db(current_db)
 
@@ -499,7 +569,7 @@ if selected_keys:
             <span style="font-size: 18px; margin-right: 8px;">📊</span>
             <div>
                 <h3 style="color: #0f172a; margin: 0; font-size: 15px; font-weight: 700;">Gelişmiş Fizibilite ve Fonksiyon Bazlı Proje Optimizasyonu</h3>
-                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına özel proje tipleri, bağımsız havuz ve fiyat optimizasyon motoru.</p>
+                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına özel olarak filtrelenmiş proje tipleri, havuz seçenekleri ve otomatik m² maliyet/satış ayarları.</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -527,7 +597,7 @@ if selected_keys:
     if not unique_active_functions:
         unique_active_functions = {"KONUT ALANI"}
 
-    st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonuna Göre Proje Tipi, Havuz Seçeneği ve Dinamik Fiyatlandırma</div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonuna Göre Proje Tipi, Havuz Seçeneği ve Otomatik m² Maliyet/Satış Fiyatları</div>", unsafe_allow_html=True)
     
     function_configs = {}
     func_cols = st.columns(len(unique_active_functions) if len(unique_active_functions) > 0 else 1)
@@ -556,14 +626,14 @@ if selected_keys:
             if "İptal" not in selected_func_pool:
                 custom_pool_m2 = st.number_input(f"Havuz Alanı (m²) - {fonk_adi}", min_value=10.0, max_value=500.0, value=40.0, step=5.0, key=f"custom_pool_m2_{idx}_{fonk_adi}")
             
-            # --- TAM DİNAMİK FİYAT VE MALİYET GÜNCELLEMESİ (HAVUZ SEÇENEĞİNE DUYARLI) ---
+            # --- OTOMATİK FİYAT VE MALİYET HESABI (HAVUZLU VS HAVUZSUZ FARK ÖZELLİKLİ) ---
             auto_satis, auto_maliyet = get_realistic_market_pricing(first_mahalle, selected_func_p_type, selected_func_pool, rates["USD"])
 
             prc_col1, prc_col2 = st.columns(2)
             with prc_col1:
-                custom_maliyet = st.number_input(f"m² Maliyet ($)", min_value=300.0, max_value=6000.0, value=float(auto_maliyet), step=50.0, key=f"cost_{idx}_{fonk_adi}")
+                custom_maliyet = st.number_input(f"Otomatik m² Maliyet ($)", min_value=300.0, max_value=6000.0, value=float(auto_maliyet), step=50.0, key=f"cost_{idx}_{fonk_adi}")
             with prc_col2:
-                custom_satis = st.number_input(f"m² Satış ($)", min_value=500.0, max_value=18000.0, value=float(auto_satis), step=100.0, key=f"price_{idx}_{fonk_adi}")
+                custom_satis = st.number_input(f"Otomatik m² Satış ($)", min_value=500.0, max_value=18000.0, value=float(auto_satis), step=100.0, key=f"price_{idx}_{fonk_adi}")
             
             for key, p in active_parcel_db.items():
                 breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
@@ -586,7 +656,7 @@ if selected_keys:
     function_target_sizes = {}
     
     if valid_active_functions_with_area:
-        st.markdown("<div style='margin-top: 12px; font-weight: 700; color: #0f172a; font-size: 13px;'>📐 Bağımsız Bölüm Alanları (m²)</div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top: 12px; font-weight: 700; color: #0f172a; font-size: 13px;'>📐 Seçilen Proje Tiplerine Göre Sınırlandırılmış Bağımsız Bölüm Alanları (m²)</div>", unsafe_allow_html=True)
         fn_cols = st.columns(len(valid_active_functions_with_area))
         
         for idx, fonk_adi in enumerate(valid_active_functions_with_area):
@@ -625,6 +695,7 @@ if selected_keys:
 
     for key, p in active_parcel_db.items():
         breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
+        
         for item in breakdown:
             fonk_name = item["fonksiyon_adi"]
             brut_insaat = item["brut_insaat"]
@@ -641,10 +712,9 @@ if selected_keys:
             total_bodrum_alani += bodrum_m2_parsel
             total_bahce_alani_terki += item["bahce_kullanim_alani"]
             
-            # --- HAVUZ MİMARİ & FİNANSAL ENTEGRASYONU ---
+            # --- MİMARİ MANTIK DÜZELTMESİ: Havuz emsal alanından düşülür, satış/maliyet brüt üzerinden hesaplanır ---
             pool_m2 = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
             
-            # Havuz emsal alanından düşülür, birimler küçülür
             net_satilabilir_ust_kat = max(0.0, brut_insaat - pool_m2) 
             bodrum_satis_fiyati = conf["satis"] * 0.50  
             
@@ -653,8 +723,8 @@ if selected_keys:
             
             total_ciro_usd += (parsel_ust_kat_ciro + parsel_bodrum_ciro)
             
-            # Maliyetler brüt inşaat üzerinden hesaplanır, havuz maliyeti birim maliyete dahildir
-            ust_kat_maliyeti = brut_insaat * conf["maliyet"]
+            net_maliyete_esas_ust_kat = brut_insaat # Maliyet hesaplarında m² düşülmez, sadece havuzun maliyet primi birim fiyata yansır
+            ust_kat_maliyeti = net_maliyete_esas_ust_kat * conf["maliyet"]
             bodrum_maliyeti = bodrum_m2_parsel * (conf["maliyet"] * 0.60)
             
             toplam_parsel_maliyeti = ust_kat_maliyeti + bodrum_maliyeti
@@ -720,13 +790,26 @@ if selected_keys:
                     "Emsal İnşaat Alanı (m²)": f"{emsal_arsa:,.2f}",
                     "Toplam İnşaat Alanı (m²)": f"{(brut_insaat_arsa + bodrum_arsa):,.2f}"
                 })
+                
         if table_rows:
             st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
+            summary_df = pd.DataFrame([{
+                "SORGULANAN PARSEL": f"{len(active_parcel_db)} Adet",
+                "TOPLAM ARSA (M²)": f"{sum_alan:,.2f}",
+                "TOPLAM BAHÇE ALANI (M²)": f"{sum_bahce_alani:,.2f}",
+                "TOPLAM EMSAL İNŞAAT (M²)": f"{sum_emsal_insaat:,.2f}",
+                "TOPLAM BODRUM İNŞAAT (M²)": f"{sum_bodrum_insaat:,.2f}",
+                "GENEL TOPLAM İNŞAAT (M²)": f"{(sum_brut_insaat + sum_bodrum_insaat):,.2f}"
+            }])
+            st.dataframe(summary_df, use_container_width=True)
 
     with tab2:
-        st.subheader("🏛️ Mimari Fizibilite & Senaryo Dağılım Matrisi")
+        st.subheader("🏛️ Mimari Fizibilite & Senaryo Dağılım Matrisi (Birim Başına Düşen Alanlar)")
+        st.markdown("<p style='color: #64748b; font-size: 13px; margin-top: -10px;'>Aşağıdaki tablo, havuz m² düşüldükten sonra <strong>her bir birime (daire/villaya)</strong> kalan net ve brüt alan dağılımlarını göstermektedir.</p>", unsafe_allow_html=True)
+        
         mimari_rows = []
         total_units_sum = 0
+        total_net_insaat_sum = 0.0
         total_genel_insaat_sum = 0.0
         
         for key, p in active_parcel_db.items():
@@ -750,8 +833,11 @@ if selected_keys:
                     
                 konut_adeti = conf["adet"]
                 total_units_sum += konut_adeti
+                
                 pool_m2 = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
                 net_konut_insaat = max(0.0, brut_insaat - pool_m2)
+                total_net_insaat_sum += net_konut_insaat
+                
                 genel_parsel_toplam_insaat = brut_insaat + bodrum_m2
                 total_genel_insaat_sum += genel_parsel_toplam_insaat
                 
@@ -771,32 +857,58 @@ if selected_keys:
                     "BİRİM ÜST KAT (Havuz Düşülmüş)": f"{birim_ust_kat:,.1f} m²",
                     "BİRİM TOPLAM İNŞAAT (M²)": f"{birim_toplam_insaat:,.1f} m²"
                 })
+                
         if mimari_rows:
             st.dataframe(pd.DataFrame(mimari_rows), use_container_width=True)
+            
+            avg_unit_m2 = total_genel_insaat_sum / total_units_sum if total_units_sum > 0 else 0.0
+            
+            st.markdown("---")
+            st.markdown("#### 📋 Mimari ve Proje Özet Dağılımı")
+            
+            m_col1, m_col2, m_col3, m_col4 = st.columns(4)
+            m_col1.metric("Toplam Bağımsız Bölüm", f"{total_units_sum} Adet")
+            m_col2.metric("Ortalama Net/Brüt Birim Alanı", f"{avg_unit_m2:,.1f} m²")
+            
+            if "Kat Karşılığı" in is_modeli:
+                exact_arsa_sahibi = total_units_sum * (arsa_payi_orani / 100.0)
+                exact_mutaahhit = total_units_sum * ((100 - arsa_payi_orani) / 100.0)
+                
+                m_col3.metric("Arsa Sahibi Payı (Adet)", f"{exact_arsa_sahibi:,.2f} Adet (%{arsa_payi_orani})")
+                m_col4.metric("Müteahhit Payı (Adet)", f"{exact_mutaahhit:,.2f} Adet (%{100 - arsa_payi_orani})")
+            else:
+                m_col3.metric("İş Modeli", "Doğrudan Satılık")
+                m_col4.metric("Müteahhit Payı", f"{float(total_units_sum):,.2f} Adet (%100)")
 
     with tab3:
-        st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılımı")
+        st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılımı (3 Para Birimi Sunumu)")
+        
         rate_usd = rates["USD"]
         rate_eur = rates["EUR"]
         
         total_ciro_tl = total_ciro_usd * rate_usd
         total_ciro_eur = total_ciro_tl / rate_eur
+        
         total_maliyet_tl = total_maliyet_usd * rate_usd
         total_maliyet_eur = total_maliyet_tl / rate_eur
+        
         toplam_net_kar_tl = toplam_net_kar_usd * rate_usd
         toplam_net_kar_eur = toplam_net_kar_tl / rate_eur
 
         curr_tab1, curr_tab2, curr_tab3 = st.tabs(["💵 USD ($) Sunumu", "₺ TL (₺) Sunumu", "💶 EUR (€) Sunumu"])
+        
         with curr_tab1:
             c1, c2, c3 = st.columns(3)
             c1.metric("Toplam Tahmini Brüt Ciro", f"${total_ciro_usd:,.2f}")
             c2.metric("Toplam İnşaat & Yatırım Maliyeti", f"${total_maliyet_usd:,.2f}")
             c3.metric("Toplam Net Kar", f"${toplam_net_kar_usd:,.2f}", f"%{yg_orani:.1f} YG")
+            
         with curr_tab2:
             t1, t2, t3 = st.columns(3)
             t1.metric("Toplam Tahmini Brüt Ciro", f"₺{total_ciro_tl:,.2f}")
             t2.metric("Toplam İnşaat & Yatırım Maliyeti", f"₺{total_maliyet_tl:,.2f}")
             t3.metric("Toplam Net Kar", f"₺{toplam_net_kar_tl:,.2f}", f"%{yg_orani:.1f} YG")
+            
         with curr_tab3:
             e1, e2, e3 = st.columns(3)
             e1.metric("Toplam Tahmini Brüt Ciro", f"€{total_ciro_eur:,.2f}")
@@ -805,6 +917,7 @@ if selected_keys:
 
     with tab4:
         st.subheader("🖨️ Kurumsal Rapor Ön İzleme ve PDF İndirme Merkezi")
+        
         pdf_logo1_html = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 32px;'>" if img1_base64 else "<b>İSTESTATE</b>"
         pdf_logo2_html = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 32px;'>" if img2_base64 else "<b>MERİÇ İNŞAAT</b>"
         
@@ -833,14 +946,14 @@ if selected_keys:
                     <td style="width: 25%; text-align: right;">{pdf_logo2_html}</td>
                 </tr>
             </table>
-            <div class="section-title">1. Proje ve Lokasyon Künyesi</div>
+            <div class="section-title">1. Proje ve Lokasyon Künyesi (Bodrum Dahil)</div>
             <table class="data-table">
                 <tr><td>Lokasyon / Mahalle</td><td style="text-align: right; font-weight: bold;">{first_mahalle} ({len(active_parcel_db)} Parsel)</td></tr>
                 <tr><td>Emsal İnşaat Alanı (Bodrum Hariç)</td><td style="text-align: right; font-weight: bold;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
                 <tr><td>Bodrum Kat Alanı (%50)</td><td style="text-align: right; font-weight: bold;">{total_bodrum_alani:,.2f} m²</td></tr>
                 <tr><td>Genel Toplam İnşaat Alanı</td><td style="text-align: right; font-weight: bold;">{(total_yasal_brut_insaat + total_bodrum_alani):,.2f} m²</td></tr>
             </table>
-            <div class="section-title">2. Finansal Fizibilite Özeti (USD / TL / EUR)</div>
+            <div class="section-title">2. Finansal Fizibilite Özeti (USD / TL / EUR - Bodrum Dahil)</div>
             <table class="data-table">
                 <tr><th>Finansal Kalem</th><th style="text-align: right;">Tutar (USD $)</th><th style="text-align: right;">Tutar (TL ₺)</th><th style="text-align: right;">Tutar (EUR €)</th></tr>
                 <tr><td>Toplam Tahmini Brüt Ciro</td><td style="text-align: right;">${total_ciro_usd:,.2f}</td><td style="text-align: right;">₺{total_ciro_tl:,.2f}</td><td style="text-align: right;">€{total_ciro_eur:,.2f}</td></tr>
@@ -851,6 +964,7 @@ if selected_keys:
         </body>
         </html>
         """
+        
         pdf_bytes = HTML(string=report_html_template).write_pdf()
         st.download_button(
             label="📥 Kurumsal Fizibilite Raporunu PDF Olarak İndir",
@@ -892,6 +1006,7 @@ if selected_keys:
                             "Bodrum (m²)": f"{bod:,.2f}",
                             "Toplam İnşaat (m²)": f"{(brut + bod):,.2f}"
                         })
+            
             st.dataframe(pd.DataFrame(db_detail_rows), use_container_width=True)
             
             st.markdown("---")
@@ -907,14 +1022,16 @@ if selected_keys:
                         current_db = st.session_state["parcel_db"]
                         del current_db[selected_del_key]
                         save_persistent_db(current_db)
-                        st.success(f"'{selected_del_key}' başarıyla silindi!")
+                        st.success(f"'{selected_del_key}' başarıyla silindi ve veritabanı güncellendi!")
                         st.rerun()
+                
+                st.markdown("<br>", unsafe_allow_html=True)
                 if st.button("⚠️ Tüm Veritabanını Temizle (Sıfırla)", type="secondary"):
                     save_persistent_db({})
                     st.success("Veritabanı tamamen sıfırlandı!")
                     st.rerun()
         else:
-            st.info("Veritabanında kayıtlı parsel bulunmuyor.")
+            st.info("Veritabanında (`imar_veritabani.json`) henüz kayıtlı parsel bulunmuyor.")
 
 else:
-    st.info("👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden istenilen parselleri seçin veya yeni imar belgesi yükleyin.")
+    st.info("👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden istenilen parselleri seçin veya yeni bir imar belgesi (PDF) yükleme yapın.")
