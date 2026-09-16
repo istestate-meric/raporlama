@@ -187,13 +187,12 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_ra
     
     p_conf = proje_carpanlari.get(proje_tipi, proje_carpanlari["Standart Konut / Apartman"])
     
-    # Havuz Seçeneğine Göre Dinamik Fiyat ve Maliyet Farkı (Havuzlu/Havuzsuz Ayrımı Net)
     pool_cost_addon = 0.0
     pool_price_addon = 0.0
     if "İptal" not in havuz_secenegi:
         if "Müstakil" in havuz_secenegi:
-            pool_cost_addon = 45.0   # Maliyete küçük ekleme
-            pool_price_addon = 250.0 # Satış fiyatına yüksek lüks primi ekleme
+            pool_cost_addon = 45.0   
+            pool_price_addon = 250.0 
         else:
             pool_cost_addon = 25.0   
             pool_price_addon = 130.0 
@@ -610,7 +609,7 @@ if selected_keys:
             
             sub_col1, sub_col2 = st.columns(2)
             with sub_col1:
-                selected_func_p_type = st.selectbox(f"Proje Tipi", options=allowed_p_types, index=0, key=f"func_p_type_{idx}_{fonk_adi}")
+                selected_func_p_type = st.selectbox(f"Proje Tipi", options=allowed_p_types, key=f"func_p_type_{idx}_{fonk_adi}")
             
             if "Villa" in selected_func_p_type:
                 pool_opts = ["Müstakil Özel Havuzlu Villa Projesi", "Ortak Havuzlu Villa Sitesi Konsepti", "Havuz İptal / Yapılmayacak"]
@@ -626,14 +625,26 @@ if selected_keys:
             if "İptal" not in selected_func_pool:
                 custom_pool_m2 = st.number_input(f"Havuz Alanı (m²) - {fonk_adi}", min_value=10.0, max_value=500.0, value=40.0, step=5.0, key=f"custom_pool_m2_{idx}_{fonk_adi}")
             
-            # --- OTOMATİK FİYAT VE MALİYET HESABI (MAHALLE, PROJE TİPİ VE HAVUZ ENTEGRE) ---
+            # --- ANLIK PİYASA FİYAT HESAPLAMA MOTORU ---
             auto_satis, auto_maliyet = get_realistic_market_pricing(first_mahalle, selected_func_p_type, selected_func_pool, rates["USD"])
+
+            cost_key = f"cost_{idx}_{fonk_adi}"
+            price_key = f"price_{idx}_{fonk_adi}"
+            last_pt_key = f"last_pt_{idx}_{fonk_adi}"
+            last_pool_key = f"last_pool_{idx}_{fonk_adi}"
+
+            # Eğer Proje Tipi veya Havuz Seçeneği değiştiyse input alanlarının state değerini anlık güncelle
+            if st.session_state.get(last_pt_key) != selected_func_p_type or st.session_state.get(last_pool_key) != selected_func_pool:
+                st.session_state[cost_key] = float(auto_maliyet)
+                st.session_state[price_key] = float(auto_satis)
+                st.session_state[last_pt_key] = selected_func_p_type
+                st.session_state[last_pool_key] = selected_func_pool
 
             prc_col1, prc_col2 = st.columns(2)
             with prc_col1:
-                custom_maliyet = st.number_input(f"Otomatik m² Maliyet ($)", min_value=300.0, max_value=6000.0, value=float(auto_maliyet), step=50.0, key=f"cost_{idx}_{fonk_adi}")
+                custom_maliyet = st.number_input(f"Otomatik m² Maliyet ($)", min_value=300.0, max_value=6000.0, step=50.0, key=cost_key)
             with prc_col2:
-                custom_satis = st.number_input(f"Otomatik m² Satış ($)", min_value=500.0, max_value=18000.0, value=float(auto_satis), step=100.0, key=f"price_{idx}_{fonk_adi}")
+                custom_satis = st.number_input(f"Otomatik m² Satış ($)", min_value=500.0, max_value=18000.0, step=100.0, key=price_key)
             
             for key, p in active_parcel_db.items():
                 breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
@@ -863,7 +874,7 @@ if selected_keys:
             avg_unit_m2 = total_genel_insaat_sum / total_units_sum if total_units_sum > 0 else 0.0
             
             st.markdown("---")
-            st.markdown("#### 📋 Mimari ve Proje Özet Dağılımı")
+            st.markdown("#### 📋 Mimari and Proje Özet Dağılımı")
             
             m_col1, m_col2, m_col3, m_col4 = st.columns(4)
             m_col1.metric("Toplam Bağımsız Bölüm", f"{total_units_sum} Adet")
