@@ -725,10 +725,10 @@ if selected_keys:
 
             net_konut_insaat = max(0.0, brut_insaat - havuz_dusum)
             
-            # Brüt Ciro Hesaplaması
+            # Brüt Ciro Hesaplaması (Net Satılabilir Alan Üzerinden)
             total_ciro_usd += (net_konut_insaat * conf["satis"])
             
-            # MALİYET BİLEŞENLERİ:
+            # FİNANSAL MALİYET BİLEŞENLERİ (GÜNCELLENDİ):
             # 1. Üst katlar normal birim maliyet
             ust_kat_maliyeti = brut_insaat * conf["maliyet"]
             # 2. Bodrum katlar düşük maliyet katsayısı (%60)
