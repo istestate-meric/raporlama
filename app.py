@@ -722,8 +722,15 @@ if selected_keys:
 
             net_konut_insaat = max(0.0, brut_insaat - havuz_dusum)
             
+            # Brüt Ciro Hesaplaması
             total_ciro_usd += (net_konut_insaat * conf["satis"])
-            toplam_parsel_maliyeti = (brut_insaat * conf["maliyet"] * 0.45) + (bodrum_m2_parsel * (conf["maliyet"] * 0.25))
+            
+            # DOĞRU MALİYET HESAPLAMASI:
+            # Üst katlar tam birim maliyetle, bodrum katlar ise daha düşük maliyet katsayısı (%60) ile hesaplanır.
+            ust_kat_maliyeti = brut_insaat * conf["maliyet"]
+            bodrum_maliyeti = bodrum_m2_parsel * (conf["maliyet"] * 0.60)
+            
+            toplam_parsel_maliyeti = ust_kat_maliyeti + bodrum_maliyeti
             total_maliyet_usd += toplam_parsel_maliyeti
 
     total_maliyet_usd += arsa_bonus_usd
@@ -867,7 +874,7 @@ if selected_keys:
             
             m_col1, m_col2, m_col3, m_col4 = st.columns(4)
             m_col1.metric("Toplam Bağımsız Bölüm", f"{total_units_sum} Adet")
-            m_col2.metric("Ortalama Brüt Birim Alanı", f"{avg_unit_m2:,.1f} m²")
+            m_col2.metric("Ortalama Net/Brüt Birim Alanı", f"{avg_unit_m2:,.1f} m²")
             
             if "Kat Karşılığı" in is_modeli:
                 exact_arsa_sahibi = total_units_sum * (arsa_payi_orani / 100.0)
