@@ -739,13 +739,13 @@ if selected_keys:
             toplam_parsel_maliyeti = ust_kat_maliyeti + bodrum_maliyeti
             total_maliyet_usd += toplam_parsel_maliyeti
 
-    # DOĞRU MÜTEAHHİT NET KAR HESAPLAMASI (KAT KARŞILIĞI VE DOĞRUDAN SATILIK İÇİN AYRIŞTIRILDI)
+    # KÂR VE CİRO PAYLAŞIM AYRIMI
     if "Doğrudan Satılık" in is_modeli:
         total_maliyet_usd += arsa_maliyeti_usd
         arsa_sahibi_payi_usd = 0.0
+        müteahhit_hissesi_ciro = total_ciro_usd
         toplam_net_kar_usd = total_ciro_usd - total_maliyet_usd
     else:
-        # Kat karşılığı modelinde müteahhit cirodan arsa sahibi payını verir, inşaat maliyetini öder. Net kâr = Müteahhit Hissesi Ciro - Toplam İnşaat Maliyeti
         arsa_sahibi_payi_usd = total_ciro_usd * (arsa_payi_orani / 100.0)
         müteahhit_hissesi_ciro = total_ciro_usd * ((100.0 - arsa_payi_orani) / 100.0)
         toplam_net_kar_usd = müteahhit_hissesi_ciro - total_maliyet_usd
@@ -876,7 +876,7 @@ if selected_keys:
             avg_unit_m2 = total_genel_insaat_sum / total_units_sum if total_units_sum > 0 else 0.0
             
             st.markdown("---")
-            st.markdown("#### 📋 Mimari and Proje Özet Dağılımı")
+            st.markdown("#### 📋 Mimari ve Proje Özet Dağılımı")
             
             m_col1, m_col2, m_col3, m_col4 = st.columns(4)
             m_col1.metric("Toplam Bağımsız Bölüm", f"{total_units_sum} Adet")
@@ -898,7 +898,10 @@ if selected_keys:
         rate_usd = rates["USD"]
         rate_eur = rates["EUR"]
         
-        total_ciro_tl = total_ciro_usd * rate_usd
+        # Ciro hesaplaması müteahhit payına göre ayarlandı
+        display_ciro_usd = müteahhit_hissesi_ciro if "Kat Karşılığı" in is_modeli else total_ciro_usd
+        
+        total_ciro_tl = display_ciro_usd * rate_usd
         total_ciro_eur = total_ciro_tl / rate_eur
         
         total_maliyet_tl = total_maliyet_usd * rate_usd
@@ -907,23 +910,26 @@ if selected_keys:
         toplam_net_kar_tl = toplam_net_kar_usd * rate_usd
         toplam_net_kar_eur = toplam_net_kar_tl / rate_eur
 
+        if "Kat Karşılığı" in is_modeli:
+            st.info(f"💡 **Kat Karşılığı Dağılımı (%{arsa_payi_orani} Arsa Sahibi / %{100 - arsa_payi_orani} Müteahhit):** Toplam Proje Brüt Cirosu **${total_ciro_usd:,.2f}** olup, Müteahhit Payına Düşen Ciro **${müteahhit_hissesi_ciro:,.2f}** olarak hesaplanmıştır.")
+
         curr_tab1, curr_tab2, curr_tab3 = st.tabs(["💵 USD ($) Sunumu", "₺ TL (₺) Sunumu", "💶 EUR (€) Sunumu"])
         
         with curr_tab1:
             c1, c2, c3 = st.columns(3)
-            c1.metric("Toplam Tahmini Brüt Ciro", f"${total_ciro_usd:,.2f}")
+            c1.metric("Müteahhit Payı Tahmini Ciro", f"${display_ciro_usd:,.2f}")
             c2.metric("Toplam İnşaat & Yatırım Maliyeti", f"${total_maliyet_usd:,.2f}")
             c3.metric("Müteahhit Net Karı", f"${toplam_net_kar_usd:,.2f}", f"%{yg_orani:.1f} YG")
             
         with curr_tab2:
             t1, t2, t3 = st.columns(3)
-            t1.metric("Toplam Tahmini Brüt Ciro", f"₺{total_ciro_tl:,.2f}")
+            t1.metric("Müteahhit Payı Tahmini Ciro", f"₺{total_ciro_tl:,.2f}")
             t2.metric("Toplam İnşaat & Yatırım Maliyeti", f"₺{total_maliyet_tl:,.2f}")
             t3.metric("Müteahhit Net Karı", f"₺{toplam_net_kar_tl:,.2f}", f"%{yg_orani:.1f} YG")
             
         with curr_tab3:
             e1, e2, e3 = st.columns(3)
-            e1.metric("Toplam Tahmini Brüt Ciro", f"€{total_ciro_eur:,.2f}")
+            e1.metric("Müteahhit Payı Tahmini Ciro", f"€{total_ciro_eur:,.2f}")
             e2.metric("Toplam İnşaat & Yatırım Maliyeti", f"€{total_maliyet_eur:,.2f}")
             e3.metric("Müteahhit Net Karı", f"€{toplam_net_kar_eur:,.2f}", f"%{yg_orani:.1f} YG")
 
@@ -961,6 +967,7 @@ if selected_keys:
             <div class="section-title">1. Proje ve Lokasyon Künyesi (Bodrum Dahil)</div>
             <table class="data-table">
                 <tr><td>Lokasyon / Mahalle</td><td style="text-align: right; font-weight: bold;">{first_mahalle} ({len(active_parcel_db)} Parsel)</td></tr>
+                <tr><td>İş Modeli</td><td style="text-align: right; font-weight: bold;">{is_modeli} {"(%"+str(arsa_payi_orani)+" Arsa Payı)" if "Kat Karşılığı" in is_modeli else ""}</td></tr>
                 <tr><td>Emsal İnşaat Alanı (Bodrum Hariç)</td><td style="text-align: right; font-weight: bold;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
                 <tr><td>Bodrum Kat Alanı (%50)</td><td style="text-align: right; font-weight: bold;">{total_bodrum_alani:,.2f} m²</td></tr>
                 <tr><td>Genel Toplam İnşaat Alanı</td><td style="text-align: right; font-weight: bold;">{(total_yasal_brut_insaat + total_bodrum_alani):,.2f} m²</td></tr>
@@ -968,7 +975,7 @@ if selected_keys:
             <div class="section-title">2. Finansal Fizibilite Özeti (USD / TL / EUR - Bodrum Dahil)</div>
             <table class="data-table">
                 <tr><th>Finansal Kalem</th><th style="text-align: right;">Tutar (USD $)</th><th style="text-align: right;">Tutar (TL ₺)</th><th style="text-align: right;">Tutar (EUR €)</th></tr>
-                <tr><td>Toplam Tahmini Brüt Ciro</td><td style="text-align: right;">${total_ciro_usd:,.2f}</td><td style="text-align: right;">₺{total_ciro_tl:,.2f}</td><td style="text-align: right;">€{total_ciro_eur:,.2f}</td></tr>
+                <tr><td>Müteahhit Payı Tahmini Ciro</td><td style="text-align: right;">${display_ciro_usd:,.2f}</td><td style="text-align: right;">₺{total_ciro_tl:,.2f}</td><td style="text-align: right;">€{total_ciro_eur:,.2f}</td></tr>
                 <tr><td>Toplam Yatırım & İnşaat Maliyeti</td><td style="text-align: right;">${total_maliyet_usd:,.2f}</td><td style="text-align: right;">₺{total_maliyet_tl:,.2f}</td><td style="text-align: right;">€{total_maliyet_eur:,.2f}</td></tr>
                 <tr style="font-weight: bold;"><td>Müteahhit Net Karı</td><td style="text-align: right; color:#1e3a8a;">${toplam_net_kar_usd:,.2f}</td><td style="text-align: right; color:#1e3a8a;">₺{toplam_net_kar_tl:,.2f}</td><td style="text-align: right; color:#1e3a8a;">€{toplam_net_kar_eur:,.2f} (%{yg_orani:.1f} YG)</td></tr>
             </table>
