@@ -558,7 +558,7 @@ if selected_keys:
             <span style="font-size: 18px; margin-right: 8px;">📊</span>
             <div>
                 <h3 style="color: #0f172a; margin: 0; font-size: 15px; font-weight: 700;">Gelişmiş Fizibilite ve Fonksiyon Bazlı Proje Optimizasyonu</h3>
-                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına özel olarak filtrelenmiş proje tipleri ve net kâr optimizasyonu.</p>
+                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına özel olarak filtrelenmiş proje tipleri, havuz seçenekleri ve m² maliyet/satış ayarları.</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -583,7 +583,7 @@ if selected_keys:
     if not unique_active_functions:
         unique_active_functions = {"KONUT ALANI"}
 
-    st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonuna Göre Sınırlandırılmış Proje Tipi, Havuz Seçimi ve Havuz m² Ayarları</div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonuna Göre Proje Tipi, Havuz Seçimi ve m² Maliyet/Satış Fiyatları</div>", unsafe_allow_html=True)
     
     function_configs = {}
     func_cols = st.columns(len(unique_active_functions) if len(unique_active_functions) > 0 else 1)
@@ -629,6 +629,13 @@ if selected_keys:
             
             r_satis, r_maliyet = get_realistic_market_pricing(first_mahalle, selected_func_p_type, rates["USD"])
             
+            # m2 Birim Maliyet ve Satış Fiyatları Düzenleme Alanı
+            prc_col1, prc_col2 = st.columns(2)
+            with prc_col1:
+                custom_maliyet = st.number_input(f"m² Maliyet ($)", min_value=300.0, max_value=5000.0, value=float(r_maliyet), step=50.0, key=f"cost_{idx}_{fonk_adi}")
+            with prc_col2:
+                custom_satis = st.number_input(f"m² Satış ($)", min_value=500.0, max_value=15000.0, value=float(r_satis), step=100.0, key=f"price_{idx}_{fonk_adi}")
+            
             for key, p in active_parcel_db.items():
                 breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
                 for item in breakdown:
@@ -641,8 +648,8 @@ if selected_keys:
                             "adet": int(calc_adet),
                             "havuz_mod": selected_func_pool,
                             "havuz_m2": custom_pool_m2,
-                            "maliyet": r_maliyet,
-                            "satis": r_satis,
+                            "maliyet": custom_maliyet,
+                            "satis": custom_satis,
                             "fonk_hesaba_alinan_m2": item["giren_m2"]
                         }
 
@@ -840,10 +847,8 @@ if selected_keys:
             m_col2.metric("Ortalama Net/Brüt Birim Alanı", f"{avg_unit_m2:,.1f} m²")
             
             if "Kat Karşılığı" in is_modeli:
-                # Tam oranlı ve adil tam sayı paylaştırma (En büyük kalan yöntemi)
                 exact_arsa_sahibi = total_units_sum * (arsa_payi_orani / 100.0)
                 arsa_sahibi_adet = int(round(exact_arsa_sahibi))
-                # Toplam adede sabitleme kontrolü
                 if arsa_sahibi_adet > total_units_sum:
                     arsa_sahibi_adet = total_units_sum
                 elif arsa_sahibi_adet < 0:
@@ -857,11 +862,40 @@ if selected_keys:
                 m_col4.metric("Müteahhit Payı", f"{total_units_sum} Adet (%100)")
 
     with tab3:
-        st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılımı")
-        f_col1, f_col2, f_col3 = st.columns(3)
-        f_col1.metric("Toplam Tahmini Brüt Ciro", f"${total_ciro_usd:,.2f}")
-        f_col2.metric("Toplam İnşaat Maliyeti", f"${total_maliyet_usd:,.2f}")
-        f_col3.metric("Müteahhit Net Karı", f"${mutaahhit_net_kar_usd:,.2f}", f"%{yg_orani:.1f} YG")
+        st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılımı (3 Para Birimi Sunumu)")
+        
+        # Döviz kuru dönüşümleri
+        rate_usd = rates["USD"]
+        rate_eur = rates["EUR"]
+        
+        total_ciro_tl = total_ciro_usd * rate_usd
+        total_ciro_eur = total_ciro_tl / rate_eur
+        
+        total_maliyet_tl = total_maliyet_usd * rate_usd
+        total_maliyet_eur = total_maliyet_tl / rate_eur
+        
+        mutaahhit_net_kar_tl = mutaahhit_net_kar_usd * rate_usd
+        mutaahhit_net_kar_eur = mutaahhit_net_kar_tl / rate_eur
+
+        curr_tab1, curr_tab2, curr_tab3 = st.tabs(["💵 USD ($) Sunumu", "₺ TL (₺) Sunumu", "💶 EUR (€) Sunumu"])
+        
+        with curr_tab1:
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Toplam Tahmini Brüt Ciro", f"${total_ciro_usd:,.2f}")
+            c2.metric("Toplam İnşaat Maliyeti", f"${total_maliyet_usd:,.2f}")
+            c3.metric("Müteahhit Net Karı", f"${mutaahhit_net_kar_usd:,.2f}", f"%{yg_orani:.1f} YG")
+            
+        with curr_tab2:
+            t1, t2, t3 = st.columns(3)
+            t1.metric("Toplam Tahmini Brüt Ciro", f"₺{total_ciro_tl:,.2f}")
+            t2.metric("Toplam İnşaat Maliyeti", f"₺{total_maliyet_tl:,.2f}")
+            t3.metric("Müteahhit Net Karı", f"₺{mutaahhit_net_kar_tl:,.2f}", f"%{yg_orani:.1f} YG")
+            
+        with curr_tab3:
+            e1, e2, e3 = st.columns(3)
+            e1.metric("Toplam Tahmini Brüt Ciro", f"€{total_ciro_eur:,.2f}")
+            e2.metric("Toplam İnşaat Maliyeti", f"€{total_maliyet_eur:,.2f}")
+            e3.metric("Müteahhit Net Karı", f"€{mutaahhit_net_kar_eur:,.2f}", f"%{yg_orani:.1f} YG")
 
     with tab4:
         st.subheader("🖨️ Kurumsal Rapor Ön İzleme ve PDF İndirme Merkezi")
@@ -900,12 +934,12 @@ if selected_keys:
                 <tr><td>Toplam Brüt İnşaat Alanı</td><td style="text-align: right; font-weight: bold;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
                 <tr><td>Toplam Bahçe Kullanım Alanı</td><td style="text-align: right; font-weight: bold;">{total_bahce_alani_terki:,.2f} m²</td></tr>
             </table>
-            <div class="section-title">2. Finansal Fizibilite Özeti</div>
+            <div class="section-title">2. Finansal Fizibilite Özeti (USD / TL / EUR)</div>
             <table class="data-table">
-                <tr><th>Finansal Kalem</th><th style="text-align: right;">Tutar (USD $)</th><th style="text-align: right;">Tutar (TL ₺)</th></tr>
-                <tr><td>Toplam Tahmini Brüt Ciro</td><td style="text-align: right;">${total_ciro_usd:,.2f}</td><td style="text-align: right;">₺{total_ciro_usd * rates['USD']:,.2f}</td></tr>
-                <tr><td>Toplam İnşaat Maliyeti</td><td style="text-align: right;">${total_maliyet_usd:,.2f}</td><td style="text-align: right;">₺{total_maliyet_usd * rates['USD']:,.2f}</td></tr>
-                <tr style="font-weight: bold;"><td>Müteahhit Net Kârı</td><td style="text-align: right; color:#1e3a8a;">${mutaahhit_net_kar_usd:,.2f}</td><td style="text-align: right; color:#1e3a8a;">₺{mutaahhit_net_kar_usd * rates['USD']:,.2f} (%{yg_orani:.1f} YG)</td></tr>
+                <tr><th>Finansal Kalem</th><th style="text-align: right;">Tutar (USD $)</th><th style="text-align: right;">Tutar (TL ₺)</th><th style="text-align: right;">Tutar (EUR €)</th></tr>
+                <tr><td>Toplam Tahmini Brüt Ciro</td><td style="text-align: right;">${total_ciro_usd:,.2f}</td><td style="text-align: right;">₺{total_ciro_tl:,.2f}</td><td style="text-align: right;">€{total_ciro_eur:,.2f}</td></tr>
+                <tr><td>Toplam İnşaat Maliyeti</td><td style="text-align: right;">${total_maliyet_usd:,.2f}</td><td style="text-align: right;">₺{total_maliyet_tl:,.2f}</td><td style="text-align: right;">€{total_maliyet_eur:,.2f}</td></tr>
+                <tr style="font-weight: bold;"><td>Müteahhit Net Kârı</td><td style="text-align: right; color:#1e3a8a;">${mutaahhit_net_kar_usd:,.2f}</td><td style="text-align: right; color:#1e3a8a;">₺{mutaahhit_net_kar_tl:,.2f}</td><td style="text-align: right; color:#1e3a8a;">€{mutaahhit_net_kar_eur:,.2f} (%{yg_orani:.1f} YG)</td></tr>
             </table>
             <div class="footer">Bu rapor İstestate Gayrimenkul & Meriç İnşaat Emlak Akıllı Fizibilite Portalı tarafından üretilmiştir.</div>
         </body>
