@@ -863,7 +863,7 @@ if selected_keys:
             avg_unit_m2 = total_genel_insaat_sum / total_units_sum if total_units_sum > 0 else 0.0
             
             st.markdown("---")
-            st.markdown("#### 📋 Mimari ve Proje Özet Dağılımı (Birim Ortalamaları)")
+            st.markdown("#### 📋 Mimari ve Proje Özet Dağılımı")
             
             m_col1, m_col2, m_col3, m_col4 = st.columns(4)
             m_col1.metric("Toplam Bağımsız Bölüm", f"{total_units_sum} Adet")
@@ -871,18 +871,13 @@ if selected_keys:
             
             if "Kat Karşılığı" in is_modeli:
                 exact_arsa_sahibi = total_units_sum * (arsa_payi_orani / 100.0)
-                arsa_sahibi_adet = int(round(exact_arsa_sahibi))
-                if arsa_sahibi_adet > total_units_sum:
-                    arsa_sahibi_adet = total_units_sum
-                elif arsa_sahibi_adet < 0:
-                    arsa_sahibi_adet = 0
-                mutaahhit_adet = total_units_sum - arsa_sahibi_adet
+                exact_mutaahhit = total_units_sum * ((100 - arsa_payi_orani) / 100.0)
                 
-                m_col3.metric("Arsa Sahibi Payı (Adet)", f"~{arsa_sahibi_adet} Adet (%{arsa_payi_orani})")
-                m_col4.metric("Müteahhit Payı (Adet)", f"~{mutaahhit_adet} Adet (%{100 - arsa_payi_orani})")
+                m_col3.metric("Arsa Sahibi Payı (Adet)", f"{exact_arsa_sahibi:,.2f} Adet (%{arsa_payi_orani})")
+                m_col4.metric("Müteahhit Payı (Adet)", f"{exact_mutaahhit:,.2f} Adet (%{100 - arsa_payi_orani})")
             else:
                 m_col3.metric("İş Modeli", "Doğrudan Satılık")
-                m_col4.metric("Müteahhit Payı", f"{total_units_sum} Adet (%100)")
+                m_col4.metric("Müteahhit Payı", f"{float(total_units_sum):,.2f} Adet (%100)")
 
     with tab3:
         st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılımı (3 Para Birimi Sunumu)")
