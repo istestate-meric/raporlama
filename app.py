@@ -122,7 +122,7 @@ def save_persistent_db(db_data):
 if "parcel_db" not in st.session_state:
     st.session_state["parcel_db"] = load_persistent_db()
 
-# --- GÖRSELİ BASE64'E ÇEVİRME YARDIMCISI ---
+# --- GÖRSELİ BASE64'e ÇEVİRME YARDIMCISI ---
 def get_image_base64(path):
     full_path = os.path.join(BASE_DIR, path)
     if os.path.exists(full_path):
@@ -247,7 +247,7 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
     
     kesin_terk_yapilmis = [
         "TERKİ YAPILMIŞTIR", "TERKİ YAPILMIŞ", "TERK YAPILMIŞTIR", "TERK YAPILMIŞ",
-        "KAMUYA TERK EDİLMİŞTİR", "YOLA TERKİ YAPILMIŞTİR", "TERK EDİLMİŞTİR",
+        "KAMUYA TERK EDİLMİŞTİR", "YOLA TERKİ YAPILMIŞTIR", "TERK EDİLMİŞTİR",
         "TERK: YOK", "TERK YOK", "YOLA TERK: 0", "TERK MİKTARI: 0", "NET PARSEL",
         "TERKSİZ", "TERK GEREKMEMEKTEDİR", "İFRAZ GÖRMÜŞ", "TAPU ALANI NET",
         "TERKİ YAPILMIŞ OLAN", "DOP YAPILMIŞ"
@@ -625,7 +625,6 @@ if selected_keys:
             if "İptal" not in selected_func_pool:
                 custom_pool_m2 = st.number_input(f"Havuz Alanı (m²) - {fonk_adi}", min_value=10.0, max_value=500.0, value=40.0, step=5.0, key=f"custom_pool_m2_{idx}_{fonk_adi}")
             
-            # --- ANLIK PİYASA FİYAT HESAPLAMA MOTORU & STATE SENKRONİZASYONU ---
             auto_satis, auto_maliyet = get_realistic_market_pricing(first_mahalle, selected_func_p_type, selected_func_pool, rates["USD"])
 
             cost_key = f"cost_{idx}_{fonk_adi}"
@@ -740,21 +739,18 @@ if selected_keys:
             toplam_parsel_maliyeti = ust_kat_maliyeti + bodrum_maliyeti
             total_maliyet_usd += toplam_parsel_maliyeti
 
-    # DÜZELTME: Net kâr hesabında ciro ve maliyetlerin doğru mahsuplaşması
+    # DÜZELTİLMİŞ NET KAR VE PAYLAŞIM MANTIĞI
     if "Doğrudan Satılık" in is_modeli:
+        total_maliyet_usd += arsa_maliyeti_usd
         arsa_sahibi_payi_usd = 0.0
-        # Doğrudan satılıkta toplam maliyete arsa satın alma maliyeti eklenir
-        gercek_toplam_maliyet = total_maliyet_usd + arsa_maliyeti_usd
-        toplam_net_kar_usd = total_ciro_usd - gercek_toplam_maliyet
+        toplam_net_kar_usd = total_ciro_usd - total_maliyet_usd
     else:
-        # Kat karşılığı modelinde müteahhit inşaat maliyetini üstlenir, ciro arsa payı oranına göre paylaşılır
-        # Müteahhitin kalan ciro payı üzerinden net kârı veya doğrudan toplam ciro üzerinden arsa payı düşümü
+        # Kat karşılığı modelinde müteahhit, toplam cirodan arsa sahibi payını düşer ve inşaat maliyetini öder.
         arsa_sahibi_payi_usd = total_ciro_usd * (arsa_payi_orani / 100.0)
-        gercek_toplam_maliyet = total_maliyet_usd
-        # Net kâr = Toplam Ciro - (İnşaat Maliyeti + Arsa Sahibine Verilen Ciro Karşılığı Pay)
-        toplam_net_kar_usd = total_ciro_usd - total_maliyet_usd - arsa_sahibi_payi_usd
+        müteahhit_hissesi_ciro = total_ciro_usd - arsa_sahibi_payi_usd
+        toplam_net_kar_usd = müteahhit_hissesi_ciro - total_maliyet_usd
 
-    yg_orani = (toplam_net_kar_usd / gercek_toplam_maliyet * 100) if gercek_toplam_maliyet > 0 else 0
+    yg_orani = (toplam_net_kar_usd / total_maliyet_usd * 100) if total_maliyet_usd > 0 else 0
 
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "📊 Seçilen Parseller & İnşaat Alanı", 
@@ -905,7 +901,7 @@ if selected_keys:
         total_ciro_tl = total_ciro_usd * rate_usd
         total_ciro_eur = total_ciro_tl / rate_eur
         
-        total_maliyet_tl = gercek_toplam_maliyet * rate_usd
+        total_maliyet_tl = total_maliyet_usd * rate_usd
         total_maliyet_eur = total_maliyet_tl / rate_eur
         
         toplam_net_kar_tl = toplam_net_kar_usd * rate_usd
@@ -916,20 +912,20 @@ if selected_keys:
         with curr_tab1:
             c1, c2, c3 = st.columns(3)
             c1.metric("Toplam Tahmini Brüt Ciro", f"${total_ciro_usd:,.2f}")
-            c2.metric("Toplam İnşaat & Yatırım Maliyeti", f"${gercek_toplam_maliyet:,.2f}")
-            c3.metric("Toplam Net Kar", f"${toplam_net_kar_usd:,.2f}", f"%{yg_orani:.1f} YG")
+            c2.metric("Toplam İnşaat & Yatırım Maliyeti", f"${total_maliyet_usd:,.2f}")
+            c3.metric("Müteahhit Net Karı", f"${toplam_net_kar_usd:,.2f}", f"%{yg_orani:.1f} YG")
             
         with curr_tab2:
             t1, t2, t3 = st.columns(3)
             t1.metric("Toplam Tahmini Brüt Ciro", f"₺{total_ciro_tl:,.2f}")
             t2.metric("Toplam İnşaat & Yatırım Maliyeti", f"₺{total_maliyet_tl:,.2f}")
-            t3.metric("Toplam Net Kar", f"₺{toplam_net_kar_tl:,.2f}", f"%{yg_orani:.1f} YG")
+            t3.metric("Müteahhit Net Karı", f"₺{toplam_net_kar_tl:,.2f}", f"%{yg_orani:.1f} YG")
             
         with curr_tab3:
             e1, e2, e3 = st.columns(3)
             e1.metric("Toplam Tahmini Brüt Ciro", f"€{total_ciro_eur:,.2f}")
             e2.metric("Toplam İnşaat & Yatırım Maliyeti", f"€{total_maliyet_eur:,.2f}")
-            e3.metric("Toplam Net Kar", f"€{toplam_net_kar_eur:,.2f}", f"%{yg_orani:.1f} YG")
+            e3.metric("Müteahhit Net Karı", f"€{toplam_net_kar_eur:,.2f}", f"%{yg_orani:.1f} YG")
 
     with tab4:
         st.subheader("🖨️ Kurumsal Rapor Ön İzleme ve PDF İndirme Merkezi")
@@ -973,8 +969,8 @@ if selected_keys:
             <table class="data-table">
                 <tr><th>Finansal Kalem</th><th style="text-align: right;">Tutar (USD $)</th><th style="text-align: right;">Tutar (TL ₺)</th><th style="text-align: right;">Tutar (EUR €)</th></tr>
                 <tr><td>Toplam Tahmini Brüt Ciro</td><td style="text-align: right;">${total_ciro_usd:,.2f}</td><td style="text-align: right;">₺{total_ciro_tl:,.2f}</td><td style="text-align: right;">€{total_ciro_eur:,.2f}</td></tr>
-                <tr><td>Toplam Yatırım & İnşaat Maliyeti</td><td style="text-align: right;">${gercek_toplam_maliyet:,.2f}</td><td style="text-align: right;">₺{total_maliyet_tl:,.2f}</td><td style="text-align: right;">€{total_maliyet_eur:,.2f}</td></tr>
-                <tr style="font-weight: bold;"><td>Toplam Net Kar</td><td style="text-align: right; color:#1e3a8a;">${toplam_net_kar_usd:,.2f}</td><td style="text-align: right; color:#1e3a8a;">₺{toplam_net_kar_tl:,.2f}</td><td style="text-align: right; color:#1e3a8a;">€{toplam_net_kar_eur:,.2f} (%{yg_orani:.1f} YG)</td></tr>
+                <tr><td>Toplam Yatırım & İnşaat Maliyeti</td><td style="text-align: right;">${total_maliyet_usd:,.2f}</td><td style="text-align: right;">₺{total_maliyet_tl:,.2f}</td><td style="text-align: right;">€{total_maliyet_eur:,.2f}</td></tr>
+                <tr style="font-weight: bold;"><td>Müteahhit Net Karı</td><td style="text-align: right; color:#1e3a8a;">${toplam_net_kar_usd:,.2f}</td><td style="text-align: right; color:#1e3a8a;">₺{toplam_net_kar_tl:,.2f}</td><td style="text-align: right; color:#1e3a8a;">€{toplam_net_kar_eur:,.2f} (%{yg_orani:.1f} YG)</td></tr>
             </table>
             <div class="footer">Bu rapor İstestate Gayrimenkul & Meriç İnşaat Emlak Akıllı Fizibilite Portalı tarafından üretilmiştir.</div>
         </body>
