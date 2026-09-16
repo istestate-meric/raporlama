@@ -165,8 +165,8 @@ def get_live_exchange_rates():
     except Exception:
         return {"USD": 34.00, "EUR": 37.50}
 
-# --- PİYASA VE PROJE TİPİ MATRİSİ ---
-def get_realistic_market_pricing(mahalle_adi, proje_tipi, usd_rate):
+# --- OTOMATİK PİYASA VE HAVUZ ENTEGRELİ FİYATLANDIRMA MOTORU ---
+def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_rate):
     mahalle_base_tl = {
         "ACARLAR": 140000, "ANADOLU HİSARI": 130000, "KANLICA": 125000, 
         "GÖKSU": 110000, "GÖRELE": 115000, "RİVA": 120000, "ÇİFTLİK": 115000, 
@@ -187,8 +187,19 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, usd_rate):
     
     p_conf = proje_carpanlari.get(proje_tipi, proje_carpanlari["Standart Konut / Apartman"])
     
-    satis_fiyati_usd = round((base_tl * p_conf["satis_mod"]) / usd_rate, 2)
-    maliyet_fiyati_usd = float(p_conf["maliyet_mod"])
+    # Havuz Seçeneğine Göre Otomatik Fiyat ve Maliyet Primleri (Ekstralar)
+    pool_cost_addon = 0.0
+    pool_price_addon = 0.0
+    if "İptal" not in havuz_secenegi:
+        if "Müstakil" in havuz_secenegi:
+            pool_cost_addon = 85.0   # Müstakil havuzun m² maliyetine otomatik etkisi
+            pool_price_addon = 150.0 # Müstakil havuzun m² satış fiyatına otomatik prim etkisi
+        else:
+            pool_cost_addon = 40.0   # Ortak havuzun m² maliyetine otomatik etkisi
+            pool_price_addon = 75.0  # Ortak havuzun m² satış fiyatına otomatik prim etkisi
+
+    satis_fiyati_usd = round(((base_tl * p_conf["satis_mod"]) / usd_rate) + pool_price_addon, 2)
+    maliyet_fiyati_usd = float(p_conf["maliyet_mod"]) + pool_cost_addon
     
     return satis_fiyati_usd, maliyet_fiyati_usd
 
@@ -558,7 +569,7 @@ if selected_keys:
             <span style="font-size: 18px; margin-right: 8px;">📊</span>
             <div>
                 <h3 style="color: #0f172a; margin: 0; font-size: 15px; font-weight: 700;">Gelişmiş Fizibilite ve Fonksiyon Bazlı Proje Optimizasyonu</h3>
-                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına özel olarak filtrelenmiş proje tipleri, havuz seçenekleri ve m² maliyet/satış ayarları.</p>
+                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına özel olarak filtrelenmiş proje tipleri, havuz seçenekleri ve otomatik m² maliyet/satış ayarları.</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -586,7 +597,7 @@ if selected_keys:
     if not unique_active_functions:
         unique_active_functions = {"KONUT ALANI"}
 
-    st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonuna Göre Proje Tipi, Havuz Seçeneği ve m² Maliyet/Satış Fiyatları (Havuz Entegrasyonlu)</div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonuna Göre Proje Tipi, Havuz Seçeneği ve Otomatik m² Maliyet/Satış Fiyatları</div>", unsafe_allow_html=True)
     
     function_configs = {}
     func_cols = st.columns(len(unique_active_functions) if len(unique_active_functions) > 0 else 1)
@@ -597,24 +608,10 @@ if selected_keys:
             
             allowed_p_types = get_allowed_project_types(fonk_adi)
             best_p_type = allowed_p_types[0]
-            best_pool = "Standart Ortak Havuzlu Proje"
-            max_sim_profit = -999999999.0
-            
-            for p_t in allowed_p_types:
-                pools = ["Müstakil Özel Havuzlu Villa Projesi", "Ortak Havuzlu Villa Sitesi Konsepti", "Havuz İptal / Yapılmayacak"] if "Villa" in p_t else (["Havuz İptal / Yapılmayacak"] if "Ticari" in p_t else ["Standart Ortak Havuzlu Proje", "Havuz İptal / Yapılmayacak"])
-                for pool in pools:
-                    satis_f, mal_f = get_realistic_market_pricing(first_mahalle, p_t, rates["USD"])
-                    sim_profit = (1000.0 * satis_f) - (1000.0 * mal_f)
-                    if sim_profit > max_sim_profit:
-                        max_sim_profit = sim_profit
-                        best_p_type = p_t
-                        best_pool = pools[0]
-                        
-            default_p_idx = allowed_p_types.index(best_p_type) if best_p_type in allowed_p_types else 0
             
             sub_col1, sub_col2 = st.columns(2)
             with sub_col1:
-                selected_func_p_type = st.selectbox(f"Proje Tipi", options=allowed_p_types, index=default_p_idx, key=f"func_p_type_{idx}_{fonk_adi}")
+                selected_func_p_type = st.selectbox(f"Proje Tipi", options=allowed_p_types, index=0, key=f"func_p_type_{idx}_{fonk_adi}")
             
             if "Villa" in selected_func_p_type:
                 pool_opts = ["Müstakil Özel Havuzlu Villa Projesi", "Ortak Havuzlu Villa Sitesi Konsepti", "Havuz İptal / Yapılmayacak"]
@@ -630,27 +627,14 @@ if selected_keys:
             if "İptal" not in selected_func_pool:
                 custom_pool_m2 = st.number_input(f"Havuz Alanı (m²) - {fonk_adi}", min_value=10.0, max_value=500.0, value=40.0, step=5.0, key=f"custom_pool_m2_{idx}_{fonk_adi}")
             
-            r_satis, r_maliyet = get_realistic_market_pricing(first_mahalle, selected_func_p_type, rates["USD"])
-            
-            # --- HAVUZ SEÇENEĞİNE GÖRE FİYAT VE MALİYET EKSTRAMIZ ---
-            pool_cost_addon = 0.0
-            pool_price_addon = 0.0
-            if "İptal" not in selected_func_pool:
-                if "Müstakil" in selected_func_pool:
-                    pool_cost_addon = 85.0   # Müstakil havuzun m² maliyetine etkisi
-                    pool_price_addon = 150.0 # Müstakil havuzun m² satış fiyatına prim etkisi
-                else:
-                    pool_cost_addon = 40.0   # Ortak havuzun m² maliyetine etkisi
-                    pool_price_addon = 75.0  # Ortak havuzun m² satış fiyatına prim etkisi
-
-            final_default_maliyet = float(r_maliyet) + pool_cost_addon
-            final_default_satis = float(r_satis) + pool_price_addon
+            # --- OTOMATİK FİYAT VE MALİYET HESABI (HAVUZ DAHİL) ---
+            auto_satis, auto_maliyet = get_realistic_market_pricing(first_mahalle, selected_func_p_type, selected_func_pool, rates["USD"])
 
             prc_col1, prc_col2 = st.columns(2)
             with prc_col1:
-                custom_maliyet = st.number_input(f"m² Maliyet ($)", min_value=300.0, max_value=6000.0, value=final_default_maliyet, step=50.0, key=f"cost_{idx}_{fonk_adi}")
+                custom_maliyet = st.number_input(f"Otomatik m² Maliyet ($)", min_value=300.0, max_value=6000.0, value=float(auto_maliyet), step=50.0, key=f"cost_{idx}_{fonk_adi}")
             with prc_col2:
-                custom_satis = st.number_input(f"m² Satış ($)", min_value=500.0, max_value=18000.0, value=final_default_satis, step=100.0, key=f"price_{idx}_{fonk_adi}")
+                custom_satis = st.number_input(f"Otomatik m² Satış ($)", min_value=500.0, max_value=18000.0, value=float(auto_satis), step=100.0, key=f"price_{idx}_{fonk_adi}")
             
             for key, p in active_parcel_db.items():
                 breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
@@ -737,16 +721,14 @@ if selected_keys:
             else:
                 havuz_dusum = 0.0
 
-            # CİRO HESABI (Üst Katlar + Bodrum Katlar Dahil Edilmiştir):
             net_satilabilir_ust_kat = max(0.0, brut_insaat - havuz_dusum)
-            bodrum_satis_fiyati = conf["satis"] * 0.50  # Bodrum kat birim satış katsayısı (%50)
+            bodrum_satis_fiyati = conf["satis"] * 0.50  
             
             parsel_ust_kat_ciro = net_satilabilir_ust_kat * conf["satis"]
             parsel_bodrum_ciro = bodrum_m2_parsel * bodrum_satis_fiyati
             
             total_ciro_usd += (parsel_ust_kat_ciro + parsel_bodrum_ciro)
             
-            # MALİYET HESABI (Üst Katlar + Bodrum Katlar Dahil Edilmiştir, Havuz Maliyetten Arındırılmıştır):
             net_maliyete_esas_ust_kat = max(0.0, brut_insaat - havuz_dusum)
             ust_kat_maliyeti = net_maliyete_esas_ust_kat * conf["maliyet"]
             bodrum_maliyeti = bodrum_m2_parsel * (conf["maliyet"] * 0.60)
@@ -895,7 +877,7 @@ if selected_keys:
             avg_unit_m2 = total_genel_insaat_sum / total_units_sum if total_units_sum > 0 else 0.0
             
             st.markdown("---")
-            st.markdown("#### 📋 Mimari and Proje Özet Dağılımı")
+            st.markdown("#### 📋 Mimari ve Proje Özet Dağılımı")
             
             m_col1, m_col2, m_col3, m_col4 = st.columns(4)
             m_col1.metric("Toplam Bağımsız Bölüm", f"{total_units_sum} Adet")
