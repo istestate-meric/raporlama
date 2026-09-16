@@ -187,16 +187,16 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_ra
     
     p_conf = proje_carpanlari.get(proje_tipi, proje_carpanlari["Standart Konut / Apartman"])
     
-    # Havuz Seçeneğine Göre Otomatik Fiyat ve Maliyet Primleri (Kar Marjını Artıran Doğru Entegrasyon)
+    # Havuz Seçeneğine Göre Dinamik Fiyat ve Maliyet Farkı (Havuzlu/Havuzsuz Ayrımı Net)
     pool_cost_addon = 0.0
     pool_price_addon = 0.0
     if "İptal" not in havuz_secenegi:
         if "Müstakil" in havuz_secenegi:
-            pool_cost_addon = 45.0   # Maliyete küçük birim ekleme
-            pool_price_addon = 220.0 # Satış fiyatına yüksek lüks primi ekleme (Kar marjını artırır)
+            pool_cost_addon = 45.0   # Maliyete küçük ekleme
+            pool_price_addon = 250.0 # Satış fiyatına yüksek lüks primi ekleme
         else:
             pool_cost_addon = 25.0   
-            pool_price_addon = 110.0 
+            pool_price_addon = 130.0 
 
     satis_fiyati_usd = round(((base_tl * p_conf["satis_mod"]) / usd_rate) + pool_price_addon, 2)
     maliyet_fiyati_usd = float(p_conf["maliyet_mod"]) + pool_cost_addon
@@ -607,7 +607,6 @@ if selected_keys:
             st.markdown(f"**📌 Fonksiyon: {fonk_adi}**")
             
             allowed_p_types = get_allowed_project_types(fonk_adi)
-            best_p_type = allowed_p_types[0]
             
             sub_col1, sub_col2 = st.columns(2)
             with sub_col1:
@@ -623,11 +622,11 @@ if selected_keys:
             with sub_col2:
                 selected_func_pool = st.selectbox(f"Havuz Seçeneği", options=pool_opts, key=f"func_pool_{idx}_{fonk_adi}")
             
-            custom_pool_m2 = 35.0
+            custom_pool_m2 = 0.0
             if "İptal" not in selected_func_pool:
                 custom_pool_m2 = st.number_input(f"Havuz Alanı (m²) - {fonk_adi}", min_value=10.0, max_value=500.0, value=40.0, step=5.0, key=f"custom_pool_m2_{idx}_{fonk_adi}")
             
-            # --- OTOMATİK FİYAT VE MALİYET HESABI (HAVUZ DAHİL & KAR MARJINI ARTIRAN MİMARİ) ---
+            # --- OTOMATİK FİYAT VE MALİYET HESABI (HAVUZLU VS HAVUZSUZ FARK ÖZELLİKLİ) ---
             auto_satis, auto_maliyet = get_realistic_market_pricing(first_mahalle, selected_func_p_type, selected_func_pool, rates["USD"])
 
             prc_col1, prc_col2 = st.columns(2)
@@ -713,8 +712,10 @@ if selected_keys:
             total_bodrum_alani += bodrum_m2_parsel
             total_bahce_alani_terki += item["bahce_kullanim_alani"]
             
-            # --- DÜZELTME: Havuz alanı brüt inşaat alanından düşülmez; havuzlu projede tüm brüt alan yüksek fiyatla satılır ---
-            net_satilabilir_ust_kat = brut_insaat 
+            # --- MİMARİ MANTIK DÜZELTMESİ: Havuz emsal alanından düşülür, satış/maliyet brüt üzerinden hesaplanır ---
+            pool_m2 = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
+            
+            net_satilabilir_ust_kat = max(0.0, brut_insaat - pool_m2) 
             bodrum_satis_fiyati = conf["satis"] * 0.50  
             
             parsel_ust_kat_ciro = net_satilabilir_ust_kat * conf["satis"]
@@ -722,7 +723,7 @@ if selected_keys:
             
             total_ciro_usd += (parsel_ust_kat_ciro + parsel_bodrum_ciro)
             
-            net_maliyete_esas_ust_kat = brut_insaat
+            net_maliyete_esas_ust_kat = brut_insaat # Maliyet hesaplarında m² düşülmez, sadece havuzun maliyet primi birim fiyata yansır
             ust_kat_maliyeti = net_maliyete_esas_ust_kat * conf["maliyet"]
             bodrum_maliyeti = bodrum_m2_parsel * (conf["maliyet"] * 0.60)
             
@@ -804,7 +805,7 @@ if selected_keys:
 
     with tab2:
         st.subheader("🏛️ Mimari Fizibilite & Senaryo Dağılım Matrisi (Birim Başına Düşen Alanlar)")
-        st.markdown("<p style='color: #64748b; font-size: 13px; margin-top: -10px;'>Aşağıdaki tablo, seçilen bağımsız bölüm adetleri baz alınarak <strong>her bir birime (daire/villaya)</strong> düşen net ve brüt alan dağılımlarını göstermektedir.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #64748b; font-size: 13px; margin-top: -10px;'>Aşağıdaki tablo, havuz m² düşüldükten sonra <strong>her bir birime (daire/villaya)</strong> kalan net ve brüt alan dağılımlarını göstermektedir.</p>", unsafe_allow_html=True)
         
         mimari_rows = []
         total_units_sum = 0
@@ -833,7 +834,8 @@ if selected_keys:
                 konut_adeti = conf["adet"]
                 total_units_sum += konut_adeti
                 
-                net_konut_insaat = brut_insaat
+                pool_m2 = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
+                net_konut_insaat = max(0.0, brut_insaat - pool_m2)
                 total_net_insaat_sum += net_konut_insaat
                 
                 genel_parsel_toplam_insaat = brut_insaat + bodrum_m2
@@ -841,8 +843,8 @@ if selected_keys:
                 
                 birim_bahce = bahce_m2 / konut_adeti if konut_adeti > 0 else 0.0
                 birim_bodrum = bodrum_m2 / konut_adeti if konut_adeti > 0 else 0.0
-                birim_ust_kat = brut_insaat / konut_adeti if konut_adeti > 0 else 0.0
-                birim_toplam_insaat = genel_parsel_toplam_insaat / konut_adeti if konut_adeti > 0 else 0.0
+                birim_ust_kat = net_konut_insaat / konut_adeti if konut_adeti > 0 else 0.0
+                birim_toplam_insaat = (net_konut_insaat + bodrum_m2) / konut_adeti if konut_adeti > 0 else 0.0
                 
                 mimari_rows.append({
                     "MAHALLE": mahalle,
@@ -852,7 +854,7 @@ if selected_keys:
                     "BAĞIMSIZ BÖLÜM": f"{konut_adeti} Adet",
                     "BİRİM BAHÇE (M²)": f"{birim_bahce:,.1f} m²",
                     "BİRİM BODRUM (M²)": f"{birim_bodrum:,.1f} m²",
-                    "BİRİM ÜST KATLAR (M²)": f"{birim_ust_kat:,.1f} m²",
+                    "BİRİM ÜST KAT (Havuz Düşülmüş)": f"{birim_ust_kat:,.1f} m²",
                     "BİRİM TOPLAM İNŞAAT (M²)": f"{birim_toplam_insaat:,.1f} m²"
                 })
                 
