@@ -739,15 +739,15 @@ if selected_keys:
             toplam_parsel_maliyeti = ust_kat_maliyeti + bodrum_maliyeti
             total_maliyet_usd += toplam_parsel_maliyeti
 
-    # DÜZELTİLMİŞ NET KAR VE PAYLAŞIM MANTIĞI
+    # DOĞRU MÜTEAHHİT NET KAR HESAPLAMASI (KAT KARŞILIĞI VE DOĞRUDAN SATILIK İÇİN AYRIŞTIRILDI)
     if "Doğrudan Satılık" in is_modeli:
         total_maliyet_usd += arsa_maliyeti_usd
         arsa_sahibi_payi_usd = 0.0
         toplam_net_kar_usd = total_ciro_usd - total_maliyet_usd
     else:
-        # Kat karşılığı modelinde müteahhit, toplam cirodan arsa sahibi payını düşer ve inşaat maliyetini öder.
+        # Kat karşılığı modelinde müteahhit cirodan arsa sahibi payını verir, inşaat maliyetini öder. Net kâr = Müteahhit Hissesi Ciro - Toplam İnşaat Maliyeti
         arsa_sahibi_payi_usd = total_ciro_usd * (arsa_payi_orani / 100.0)
-        müteahhit_hissesi_ciro = total_ciro_usd - arsa_sahibi_payi_usd
+        müteahhit_hissesi_ciro = total_ciro_usd * ((100.0 - arsa_payi_orani) / 100.0)
         toplam_net_kar_usd = müteahhit_hissesi_ciro - total_maliyet_usd
 
     yg_orani = (toplam_net_kar_usd / total_maliyet_usd * 100) if total_maliyet_usd > 0 else 0
