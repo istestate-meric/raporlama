@@ -187,12 +187,13 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_ra
     
     p_conf = proje_carpanlari.get(proje_tipi, proje_carpanlari["Standart Konut / Apartman"])
     
+    # Havuz Seçeneğine Göre Dinamik Fiyat ve Maliyet Farkı (Havuzlu/Havuzsuz Ayrımı Net)
     pool_cost_addon = 0.0
     pool_price_addon = 0.0
     if "İptal" not in havuz_secenegi:
         if "Müstakil" in havuz_secenegi:
-            pool_cost_addon = 45.0   
-            pool_price_addon = 250.0 
+            pool_cost_addon = 45.0   # Maliyete küçük ekleme
+            pool_price_addon = 250.0 # Satış fiyatına yüksek lüks primi ekleme
         else:
             pool_cost_addon = 25.0   
             pool_price_addon = 130.0 
@@ -625,6 +626,7 @@ if selected_keys:
             if "İptal" not in selected_func_pool:
                 custom_pool_m2 = st.number_input(f"Havuz Alanı (m²) - {fonk_adi}", min_value=10.0, max_value=500.0, value=40.0, step=5.0, key=f"custom_pool_m2_{idx}_{fonk_adi}")
             
+            # --- OTOMATİK FİYAT VE MALİYET HESABI (HAVUZLU VS HAVUZSUZ FARK ÖZELLİKLİ) ---
             auto_satis, auto_maliyet = get_realistic_market_pricing(first_mahalle, selected_func_p_type, selected_func_pool, rates["USD"])
 
             prc_col1, prc_col2 = st.columns(2)
@@ -710,6 +712,7 @@ if selected_keys:
             total_bodrum_alani += bodrum_m2_parsel
             total_bahce_alani_terki += item["bahce_kullanim_alani"]
             
+            # --- MİMARİ MANTIK DÜZELTMESİ: Havuz emsal alanından düşülür, satış/maliyet brüt üzerinden hesaplanır ---
             pool_m2 = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
             
             net_satilabilir_ust_kat = max(0.0, brut_insaat - pool_m2) 
@@ -720,7 +723,7 @@ if selected_keys:
             
             total_ciro_usd += (parsel_ust_kat_ciro + parsel_bodrum_ciro)
             
-            net_maliyete_esas_ust_kat = brut_insaat 
+            net_maliyete_esas_ust_kat = brut_insaat # Maliyet hesaplarında m² düşülmez, sadece havuzun maliyet primi birim fiyata yansır
             ust_kat_maliyeti = net_maliyete_esas_ust_kat * conf["maliyet"]
             bodrum_maliyeti = bodrum_m2_parsel * (conf["maliyet"] * 0.60)
             
@@ -861,7 +864,7 @@ if selected_keys:
             avg_unit_m2 = total_genel_insaat_sum / total_units_sum if total_units_sum > 0 else 0.0
             
             st.markdown("---")
-            st.markdown("#### 📋 Mimari and Proje Özet Dağılımı")
+            st.markdown("#### 📋 Mimari ve Proje Özet Dağılımı")
             
             m_col1, m_col2, m_col3, m_col4 = st.columns(4)
             m_col1.metric("Toplam Bağımsız Bölüm", f"{total_units_sum} Adet")
