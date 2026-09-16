@@ -837,6 +837,8 @@ if selected_keys:
                 genel_parsel_toplam_insaat = brut_insaat + bodrum_m2
                 total_genel_insaat_sum += genel_parsel_toplam_insaat
                 
+                birim_ortalama_alan = genel_parsel_toplam_insaat / konut_adeti if konut_adeti > 0 else 0.0
+                
                 mimari_rows.append({
                     "MAHALLE": mahalle,
                     "ADA/PARSEL": f"{ada}/{parsel}",
@@ -846,7 +848,8 @@ if selected_keys:
                     "BODRUM KAT (M²)": f"{bodrum_m2:,.2f}",
                     "ÜST KATLAR (M²)": f"{brut_insaat:,.2f}",
                     "TOPLAM İNŞAAT (M²)": f"{genel_parsel_toplam_insaat:,.2f}",
-                    "BAĞIMSIZ BÖLÜM": f"{konut_adeti} Adet"
+                    "BAĞIMSIZ BÖLÜM": f"{konut_adeti} Adet",
+                    "BİRİM BAŞINA ORTALAMA ALAN (M²)": f"{birim_ortalama_alan:,.1f} m²"
                 })
                 
         if mimari_rows:
