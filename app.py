@@ -830,7 +830,6 @@ if selected_keys:
         if mimari_rows:
             st.dataframe(pd.DataFrame(mimari_rows), use_container_width=True)
             
-            # --- TOPLU ÖZET METRİKLERİ VE PAYLAŞIM DAĞILIMI ---
             avg_unit_m2 = total_net_insaat_sum / total_units_sum if total_units_sum > 0 else 0.0
             
             st.markdown("---")
