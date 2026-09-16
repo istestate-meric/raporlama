@@ -723,18 +723,20 @@ if selected_keys:
             else:
                 havuz_dusum = 0.0
 
-            # Ciro: Satılabilir net üst kat alanı (havuz düşüldükten sonra) üzerinden hesaplanır.
-            net_satilabilir_toplam_alan = max(0.0, brut_insaat - havuz_dusum)
-            total_ciro_usd += (net_satilabilir_toplam_alan * conf["satis"])
+            # CİRO HESABI (Üst Katlar + Bodrum Katlar Dahil Edilmiştir):
+            net_satilabilir_ust_kat = max(0.0, brut_insaat - havuz_dusum)
+            bodrum_satis_fiyati = conf["satis"] * 0.50  # Bodrum kat birim satış katsayısı (%50)
             
-            # MALİYET DÜZELTMESİ:
-            # Havuz alanı brüt inşaat alanından (veya satılabilir alandan) düşürüldüğü için,
-            # havuz m²'si kadar alan inşaat maliyetinden de (üst kat maliyetinden) arındırılır/düşülür.
+            parsel_ust_kat_ciro = net_satilabilir_ust_kat * conf["satis"]
+            parsel_bodrum_ciro = bodrum_m2_parsel * bodrum_satis_fiyati
+            
+            total_ciro_usd += (parsel_ust_kat_ciro + parsel_bodrum_ciro)
+            
+            # MALİYET HESABI (Üst Katlar + Bodrum Katlar Dahil Edilmiştir, Havuz Maliyetten Arındırılmıştır):
             net_maliyete_esas_ust_kat = max(0.0, brut_insaat - havuz_dusum)
             ust_kat_maliyeti = net_maliyete_esas_ust_kat * conf["maliyet"]
             bodrum_maliyeti = bodrum_m2_parsel * (conf["maliyet"] * 0.60)
             
-            # Not: Havuz alanı düşüldüğü için artık havuz inşaat maliyeti maliyet tablosundan tamamen çıkarılmıştır.
             toplam_parsel_maliyeti = ust_kat_maliyeti + bodrum_maliyeti
             total_maliyet_usd += toplam_parsel_maliyeti
 
@@ -968,7 +970,7 @@ if selected_keys:
                 <tr><td>Bodrum Kat Alanı (%50)</td><td style="text-align: right; font-weight: bold;">{total_bodrum_alani:,.2f} m²</td></tr>
                 <tr><td>Genel Toplam İnşaat Alanı</td><td style="text-align: right; font-weight: bold;">{(total_yasal_brut_insaat + total_bodrum_alani):,.2f} m²</td></tr>
             </table>
-            <div class="section-title">2. Finansal Fizibilite Özeti (USD / TL / EUR)</div>
+            <div class="section-title">2. Finansal Fizibilite Özeti (USD / TL / EUR - Bodrum Dahil)</div>
             <table class="data-table">
                 <tr><th>Finansal Kalem</th><th style="text-align: right;">Tutar (USD $)</th><th style="text-align: right;">Tutar (TL ₺)</th><th style="text-align: right;">Tutar (EUR €)</th></tr>
                 <tr><td>Toplam Tahmini Brüt Ciro</td><td style="text-align: right;">${total_ciro_usd:,.2f}</td><td style="text-align: right;">₺{total_ciro_tl:,.2f}</td><td style="text-align: right;">€{total_ciro_eur:,.2f}</td></tr>
