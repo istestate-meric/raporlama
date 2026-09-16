@@ -586,7 +586,7 @@ if selected_keys:
     if not unique_active_functions:
         unique_active_functions = {"KONUT ALANI"}
 
-    st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonuna Göre Proje Tipi, Havuz Seçimi ve m² Maliyet/Satış Fiyatları</div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonuna Göre Proje Tipi, Havuz Seçeneği ve m² Maliyet/Satış Fiyatları (Havuz Entegrasyonlu)</div>", unsafe_allow_html=True)
     
     function_configs = {}
     func_cols = st.columns(len(unique_active_functions) if len(unique_active_functions) > 0 else 1)
@@ -632,11 +632,25 @@ if selected_keys:
             
             r_satis, r_maliyet = get_realistic_market_pricing(first_mahalle, selected_func_p_type, rates["USD"])
             
+            # --- HAVUZ SEÇENEĞİNE GÖRE FİYAT VE MALİYET EKSTRAMIZ ---
+            pool_cost_addon = 0.0
+            pool_price_addon = 0.0
+            if "İptal" not in selected_func_pool:
+                if "Müstakil" in selected_func_pool:
+                    pool_cost_addon = 85.0   # Müstakil havuzun m² maliyetine etkisi
+                    pool_price_addon = 150.0 # Müstakil havuzun m² satış fiyatına prim etkisi
+                else:
+                    pool_cost_addon = 40.0   # Ortak havuzun m² maliyetine etkisi
+                    pool_price_addon = 75.0  # Ortak havuzun m² satış fiyatına prim etkisi
+
+            final_default_maliyet = float(r_maliyet) + pool_cost_addon
+            final_default_satis = float(r_satis) + pool_price_addon
+
             prc_col1, prc_col2 = st.columns(2)
             with prc_col1:
-                custom_maliyet = st.number_input(f"m² Maliyet ($)", min_value=300.0, max_value=5000.0, value=float(r_maliyet), step=50.0, key=f"cost_{idx}_{fonk_adi}")
+                custom_maliyet = st.number_input(f"m² Maliyet ($)", min_value=300.0, max_value=6000.0, value=final_default_maliyet, step=50.0, key=f"cost_{idx}_{fonk_adi}")
             with prc_col2:
-                custom_satis = st.number_input(f"m² Satış ($)", min_value=500.0, max_value=15000.0, value=float(r_satis), step=100.0, key=f"price_{idx}_{fonk_adi}")
+                custom_satis = st.number_input(f"m² Satış ($)", min_value=500.0, max_value=18000.0, value=final_default_satis, step=100.0, key=f"price_{idx}_{fonk_adi}")
             
             for key, p in active_parcel_db.items():
                 breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
