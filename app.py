@@ -203,6 +203,32 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_ra
     
     return satis_fiyati_usd, maliyet_fiyati_usd
 
+# --- EN YÜKSEK KÂR MARJLI PROJE TİPİNİ DİNAMİK OPTİMİZE EDEN MOTOR ---
+def get_best_profitable_project_type(fonk_adi, mahalle_adi, usd_rate):
+    allowed_types = get_allowed_project_types(fonk_adi)
+    best_p_type = allowed_types[0]
+    best_pool_opt = "Havuz İptal / Yapılmayacak"
+    max_margin = -999.0
+
+    for p_type in allowed_types:
+        if "Villa" in p_type:
+            pool_options = ["Müstakil Özel Havuzlu Villa Projesi", "Ortak Havuzlu Villa Sitesi Konsepti", "Havuz İptal / Yapılmayacak"]
+        elif "Ticari" in p_type:
+            pool_options = ["Havuz İptal / Yapılmayacak"]
+        else:
+            pool_options = ["Standart Ortak Havuzlu Proje", "Havuz İptal / Yapılmayacak"]
+
+        for pool_opt in pool_options:
+            s_usd, m_usd = get_realistic_market_pricing(mahalle_adi, p_type, pool_opt, usd_rate)
+            if m_usd > 0:
+                margin = ((s_usd - m_usd) / m_usd) * 100.0
+                if margin > max_margin:
+                    max_margin = margin
+                    best_p_type = p_type
+                    best_pool_opt = pool_opt
+
+    return best_p_type, best_pool_opt
+
 def parse_tr_float(val_str):
     if not val_str:
         return 0.0
@@ -569,7 +595,7 @@ if selected_keys:
             <span style="font-size: 18px; margin-right: 8px;">📊</span>
             <div>
                 <h3 style="color: #0f172a; margin: 0; font-size: 15px; font-weight: 700;">Gelişmiş Fizibilite ve Fonksiyon Bazlı Proje Optimizasyonu</h3>
-                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına özel olarak filtrelenmiş proje tipleri, havuz seçenekleri ve otomatik m² maliyet/satış ayarları.</p>
+                <p style="color: #64748b; margin: 0; font-size: 11px;">Parsel seçiminize göre en yüksek kâr marjına sahip proje tipi sistem tarafından otomatik optimize edilmiştir.</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -597,7 +623,7 @@ if selected_keys:
     if not unique_active_functions:
         unique_active_functions = {"KONUT ALANI"}
 
-    st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonuna Göre Proje Tipi, Havuz Seçeneği ve Otomatik m² Maliyet/Satış Fiyatları</div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonuna Göre Otomatik Seçilen Kârlı Proje Tipi ve Havuz Seçenekleri</div>", unsafe_allow_html=True)
     
     function_configs = {}
     func_cols = st.columns(len(unique_active_functions) if len(unique_active_functions) > 0 else 1)
@@ -608,9 +634,19 @@ if selected_keys:
             
             allowed_p_types = get_allowed_project_types(fonk_adi)
             
+            # --- KÂR OPTİMİZASYONU MOTORU İLE VARSAYILAN DEĞERLERİ BELİRLEME ---
+            best_type, best_pool = get_best_profitable_project_type(fonk_adi, first_mahalle, rates["USD"])
+            
+            default_type_idx = allowed_types.index(best_type) if best_type in allowed_types else 0
+            
             sub_col1, sub_col2 = st.columns(2)
             with sub_col1:
-                selected_func_p_type = st.selectbox(f"Proje Tipi", options=allowed_p_types, key=f"func_p_type_{idx}_{fonk_adi}")
+                selected_func_p_type = st.selectbox(
+                    f"Proje Tipi (En Kârlı Seçildi)", 
+                    options=allowed_types, 
+                    index=default_type_idx,
+                    key=f"func_p_type_{idx}_{fonk_adi}"
+                )
             
             if "Villa" in selected_func_p_type:
                 pool_opts = ["Müstakil Özel Havuzlu Villa Projesi", "Ortak Havuzlu Villa Sitesi Konsepti", "Havuz İptal / Yapılmayacak"]
@@ -619,8 +655,15 @@ if selected_keys:
             else:
                 pool_opts = ["Standart Ortak Havuzlu Proje", "Havuz İptal / Yapılmayacak"]
                 
+            default_pool_idx = pool_opts.index(best_pool) if best_pool in pool_opts else 0
+            
             with sub_col2:
-                selected_func_pool = st.selectbox(f"Havuz Seçeneği", options=pool_opts, key=f"func_pool_{idx}_{fonk_adi}")
+                selected_func_pool = st.selectbox(
+                    f"Havuz Seçeneği", 
+                    options=pool_opts, 
+                    index=default_pool_idx,
+                    key=f"func_pool_{idx}_{fonk_adi}"
+                )
             
             custom_pool_m2 = 0.0
             if "İptal" not in selected_func_pool:
@@ -936,11 +979,9 @@ if selected_keys:
     with tab4:
         st.subheader("🖨️ Kurumsal Rapor Ön İzleme ve PDF İndirme Merkezi")
         
-        # LOGOLARIN ARKA PLANINI BEYAZ YAPAN HTML TASARIMI
         pdf_logo1_html = f"<div style='background-color: #ffffff; padding: 6px 10px; border-radius: 6px; display: inline-block;'><img src='data:image/png;base64,{img1_base64}' style='max-height: 38px; width: auto; vertical-align: middle;'></div>" if img1_base64 else "<b style='color:#ffffff; font-size:14px;'>İSTESTATE GAYRİMENKUL</b>"
         pdf_logo2_html = f"<div style='background-color: #ffffff; padding: 6px 10px; border-radius: 6px; display: inline-block;'><img src='data:image/png;base64,{img2_base64}' style='max-height: 38px; width: auto; vertical-align: middle;'></div>" if img2_base64 else "<b style='color:#ffffff; font-size:14px;'>MERİÇ İNŞAAT EMLAK</b>"
         
-        # --- TABLOLANMIŞ PDF İÇERİK ŞABLONU ---
         parcel_rows_html = ""
         for key, p in active_parcel_db.items():
             mahalle = p.get("mahalle", "BİLİNMİYOR")
@@ -1124,7 +1165,6 @@ if selected_keys:
         pdf_bytes = HTML(string=report_html_template).write_pdf()
         pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
         
-        # --- PDF.JS DESTEKLİ GÜVENLİ ÖN İZLEME EKRANI ---
         st.markdown("#### 👁️ Canlı PDF Rapor Ön İzleme")
         st.markdown("<p style='color: #64748b; font-size: 12px;'>Belgeyi indirmeden önce aşağıdaki canlı ön izleme ekranından içerik kontrolü yapabilirsiniz.</p>", unsafe_allow_html=True)
         
