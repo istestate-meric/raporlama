@@ -629,7 +629,6 @@ if selected_keys:
             
             r_satis, r_maliyet = get_realistic_market_pricing(first_mahalle, selected_func_p_type, rates["USD"])
             
-            # m2 Birim Maliyet ve Satış Fiyatları Düzenleme Alanı
             prc_col1, prc_col2 = st.columns(2)
             with prc_col1:
                 custom_maliyet = st.number_input(f"m² Maliyet ($)", min_value=300.0, max_value=5000.0, value=float(r_maliyet), step=50.0, key=f"cost_{idx}_{fonk_adi}")
@@ -689,6 +688,7 @@ if selected_keys:
                     function_configs[parsel_fonk_key]["adet"] = max(1, round(brut_insaat / t_size))
 
     total_yasal_brut_insaat = 0.0
+    total_bodrum_alani = 0.0
     total_bahce_alani_terki = 0.0
     total_ciro_usd = 0.0
     total_maliyet_usd = 0.0
@@ -708,6 +708,8 @@ if selected_keys:
                 continue
                 
             total_yasal_brut_insaat += brut_insaat
+            bodrum_m2_parsel = brut_insaat * 0.50  # Toplam inşaat alanının yarısı kadar bodrum
+            total_bodrum_alani += bodrum_m2_parsel
             total_bahce_alani_terki += item["bahce_kullanim_alani"]
             
             if "İptal" not in conf["havuz_mod"]:
@@ -721,7 +723,9 @@ if selected_keys:
             net_konut_insaat = max(0.0, brut_insaat - havuz_dusum)
             
             total_ciro_usd += (net_konut_insaat * conf["satis"])
-            total_maliyet_usd += (brut_insaat * conf["maliyet"] * 0.45)
+            # Bodrum maliyeti taban maliyetin yarısı oranında hesaba katılır
+            toplam_parsel_maliyeti = (brut_insaat * conf["maliyet"] * 0.45) + (bodrum_m2_parsel * (conf["maliyet"] * 0.25))
+            total_maliyet_usd += toplam_parsel_maliyeti
 
     total_maliyet_usd += arsa_bonus_usd
     arsa_sahibi_payi_usd = total_ciro_usd * (arsa_payi_orani / 100) if "Kat Karşılığı" in is_modeli else 0.0
@@ -730,7 +734,7 @@ if selected_keys:
 
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "📊 Seçilen Parseller & İnşaat Alanı", 
-        "🏛️ Mimari Fizibilite", 
+        "🏛️ Mimari Fizibilite (Bodrum + Zemin/Normal)", 
         "📑 Proje Raporu & Fizibilite", 
         "🖨️ Rapor Ön İzleme & PDF",
         "🗄️ Veritabanı & Arşiv Yönetimi"
@@ -740,6 +744,7 @@ if selected_keys:
         st.subheader("📊 Seçilen Parseller & Dinamik Fonksiyon Bazlı İnşaat Alanı")
         table_rows = []
         sum_brut_insaat = 0.0
+        sum_bodrum_insaat = 0.0
         sum_bahce_alani = 0.0
         sum_alan = sum(p.get("toplam_alan", 0.0) for p in active_parcel_db.values())
         
@@ -753,11 +758,13 @@ if selected_keys:
             
             for item in breakdown:
                 brut_insaat_arsa = item["brut_insaat"]
+                bodrum_arsa = brut_insaat_arsa * 0.50
                 bahce_m2 = item["bahce_kullanim_alani"]
                 if brut_insaat_arsa <= 0:
                     continue
                     
                 sum_brut_insaat += brut_insaat_arsa
+                sum_bodrum_insaat += bodrum_arsa
                 sum_bahce_alani += bahce_m2
                 
                 table_rows.append({
@@ -766,26 +773,25 @@ if selected_keys:
                     "PARSEL": parsel,
                     "TERK DURUMU": "Yapılmış (Net)" if is_terkli else "Yapılmamış (Brüt)",
                     "FONKSİYON": item["fonksiyon_adi"],
-                    "TAKS": f"{item['taks']:.2f}" if item['taks'] > 0 else "-",
                     "KAKS / EMSAL": f"{item['kaks']:.2f}",
-                    "BRÜT PARSEL (M²)": f"{toplam_arsa_m2:,.2f}",
-                    "FONKSİYON GİREN (M²)": f"{item['giren_m2']:,.2f}" if item['giren_m2'] > 0 else "-",
-                    "BAHÇE KULLANIM ALANI (M²)": f"{bahce_m2:,.2f}",
-                    "İNŞAAT ALANI (M²)": f"{brut_insaat_arsa:,.2f}"
+                    "BODRUM KAT (M²)": f"{bodrum_arsa:,.2f}",
+                    "ÜST KATLAR (M²)": f"{brut_insaat_arsa:,.2f}",
+                    "TOPLAM İNŞAAT (M²)": f"{(brut_insaat_arsa + bodrum_arsa):,.2f}"
                 })
                 
         if table_rows:
             st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
             summary_df = pd.DataFrame([{
                 "SORGULANAN PARSEL": f"{len(active_parcel_db)} Adet",
-                "TOPLAM BRÜT ARSA (M²)": f"{sum_alan:,.2f}",
-                "TOPLAM BAHÇE KULLANIM ALANI (M²)": f"{sum_bahce_alani:,.2f}",
-                "TOPLAM İNŞAAT (BRÜT M²)": f"{sum_brut_insaat:,.2f}"
+                "TOPLAM ARSA (M²)": f"{sum_alan:,.2f}",
+                "TOPLAM BODRUM KAT (M²)": f"{sum_bodrum_insaat:,.2f}",
+                "TOPLAM ÜST KATLAR (M²)": f"{sum_brut_insaat:,.2f}",
+                "GENEL TOPLAM İNŞAAT (M²)": f"{(sum_brut_insaat + sum_bodrum_insaat):,.2f}"
             }])
             st.dataframe(summary_df, use_container_width=True)
 
     with tab2:
-        st.subheader("🏛️ Mimari Fizibilite & Senaryo Dağılım Matrisi")
+        st.subheader("🏛️ Mimari Fizibilite & Senaryo Dağılım Matrisi (Bodrum + Normal Katlar)")
         mimari_rows = []
         total_units_sum = 0
         total_net_insaat_sum = 0.0
@@ -799,6 +805,7 @@ if selected_keys:
             for item in breakdown:
                 fonk_name = item["fonksiyon_adi"]
                 brut_insaat = item["brut_insaat"]
+                bodrum_m2 = brut_insaat * 0.50
                 bahce_m2 = item["bahce_kullanim_alani"]
                 if brut_insaat <= 0:
                     continue
@@ -827,11 +834,11 @@ if selected_keys:
                     "MAHALLE": mahalle,
                     "ADA/PARSEL": f"{ada}/{parsel}",
                     "FONKSİYON": fonk_name,
-                    "PROJE TİPİ": f"{conf['proje_tipi']} ({conf['havuz_mod']} - {conf['havuz_m2']} m²)",
-                    "BAHÇE KULLANIM (M²)": f"{bahce_m2:,.2f}",
-                    "BRÜT İNŞAAT (M²)": f"{brut_insaat:,.2f}",
-                    "ADET": konut_adeti,
-                    "BİRİM BRÜT (M²)": f"{birim_m2:,.2f}"
+                    "PROJE TİPİ": f"{conf['proje_tipi']} ({conf['havuz_mod']})",
+                    "BODRUM KAT (M²)": f"{bodrum_m2:,.2f}",
+                    "ÜST KATLAR (M²)": f"{brut_insaat:,.2f}",
+                    "TOPLAM İNŞAAT (M²)": f"{(brut_insaat + bodrum_m2):,.2f}",
+                    "BAĞIMSIZ BÖLÜM": f"{konut_adeti} Adet"
                 })
                 
         if mimari_rows:
@@ -864,7 +871,6 @@ if selected_keys:
     with tab3:
         st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılımı (3 Para Birimi Sunumu)")
         
-        # Döviz kuru dönüşümleri
         rate_usd = rates["USD"]
         rate_eur = rates["EUR"]
         
@@ -882,19 +888,19 @@ if selected_keys:
         with curr_tab1:
             c1, c2, c3 = st.columns(3)
             c1.metric("Toplam Tahmini Brüt Ciro", f"${total_ciro_usd:,.2f}")
-            c2.metric("Toplam İnşaat Maliyeti", f"${total_maliyet_usd:,.2f}")
+            c2.metric("Toplam İnşaat Maliyeti (Bodrum Dahil)", f"${total_maliyet_usd:,.2f}")
             c3.metric("Müteahhit Net Karı", f"${mutaahhit_net_kar_usd:,.2f}", f"%{yg_orani:.1f} YG")
             
         with curr_tab2:
             t1, t2, t3 = st.columns(3)
             t1.metric("Toplam Tahmini Brüt Ciro", f"₺{total_ciro_tl:,.2f}")
-            t2.metric("Toplam İnşaat Maliyeti", f"₺{total_maliyet_tl:,.2f}")
+            t2.metric("Toplam İnşaat Maliyeti (Bodrum Dahil)", f"₺{total_maliyet_tl:,.2f}")
             t3.metric("Müteahhit Net Karı", f"₺{mutaahhit_net_kar_tl:,.2f}", f"%{yg_orani:.1f} YG")
             
         with curr_tab3:
             e1, e2, e3 = st.columns(3)
             e1.metric("Toplam Tahmini Brüt Ciro", f"€{total_ciro_eur:,.2f}")
-            e2.metric("Toplam İnşaat Maliyeti", f"€{total_maliyet_eur:,.2f}")
+            e2.metric("Toplam İnşaat Maliyeti (Bodrum Dahil)", f"€{total_maliyet_eur:,.2f}")
             e3.metric("Müteahhit Net Karı", f"€{mutaahhit_net_kar_eur:,.2f}", f"%{yg_orani:.1f} YG")
 
     with tab4:
@@ -928,17 +934,18 @@ if selected_keys:
                     <td style="width: 25%; text-align: right;">{pdf_logo2_html}</td>
                 </tr>
             </table>
-            <div class="section-title">1. Proje ve Lokasyon Künyesi</div>
+            <div class="section-title">1. Proje ve Lokasyon Künyesi (Bodrum Dahil)</div>
             <table class="data-table">
                 <tr><td>Lokasyon / Mahalle</td><td style="text-align: right; font-weight: bold;">{first_mahalle} ({len(active_parcel_db)} Parsel)</td></tr>
-                <tr><td>Toplam Brüt İnşaat Alanı</td><td style="text-align: right; font-weight: bold;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
-                <tr><td>Toplam Bahçe Kullanım Alanı</td><td style="text-align: right; font-weight: bold;">{total_bahce_alani_terki:,.2f} m²</td></tr>
+                <tr><td>Üst Katlar Brüt İnşaat Alanı</td><td style="text-align: right; font-weight: bold;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
+                <tr><td>Bodrum Kat Alanı (%50)</td><td style="text-align: right; font-weight: bold;">{total_bodrum_alani:,.2f} m²</td></tr>
+                <tr><td>Genel Toplam İnşaat Alanı</td><td style="text-align: right; font-weight: bold;">{(total_yasal_brut_insaat + total_bodrum_alani):,.2f} m²</td></tr>
             </table>
             <div class="section-title">2. Finansal Fizibilite Özeti (USD / TL / EUR)</div>
             <table class="data-table">
                 <tr><th>Finansal Kalem</th><th style="text-align: right;">Tutar (USD $)</th><th style="text-align: right;">Tutar (TL ₺)</th><th style="text-align: right;">Tutar (EUR €)</th></tr>
                 <tr><td>Toplam Tahmini Brüt Ciro</td><td style="text-align: right;">${total_ciro_usd:,.2f}</td><td style="text-align: right;">₺{total_ciro_tl:,.2f}</td><td style="text-align: right;">€{total_ciro_eur:,.2f}</td></tr>
-                <tr><td>Toplam İnşaat Maliyeti</td><td style="text-align: right;">${total_maliyet_usd:,.2f}</td><td style="text-align: right;">₺{total_maliyet_tl:,.2f}</td><td style="text-align: right;">€{total_maliyet_eur:,.2f}</td></tr>
+                <tr><td>Toplam İnşaat Maliyeti (Bodrum Dahil)</td><td style="text-align: right;">${total_maliyet_usd:,.2f}</td><td style="text-align: right;">₺{total_maliyet_tl:,.2f}</td><td style="text-align: right;">€{total_maliyet_eur:,.2f}</td></tr>
                 <tr style="font-weight: bold;"><td>Müteahhit Net Kârı</td><td style="text-align: right; color:#1e3a8a;">${mutaahhit_net_kar_usd:,.2f}</td><td style="text-align: right; color:#1e3a8a;">₺{mutaahhit_net_kar_tl:,.2f}</td><td style="text-align: right; color:#1e3a8a;">€{mutaahhit_net_kar_eur:,.2f} (%{yg_orani:.1f} YG)</td></tr>
             </table>
             <div class="footer">Bu rapor İstestate Gayrimenkul & Meriç İnşaat Emlak Akıllı Fizibilite Portalı tarafından üretilmiştir.</div>
@@ -971,6 +978,8 @@ if selected_keys:
                 breakdown = get_parcel_function_breakdown(p_val, 1.30)
                 if breakdown:
                     for item in breakdown:
+                        brut = item['brut_insaat']
+                        bod = brut * 0.50
                         db_detail_rows.append({
                             "Kayıt Anahtarı": k,
                             "Dosya Adı": p_val.get("filename", "-"),
@@ -978,28 +987,11 @@ if selected_keys:
                             "Ada / Parsel": f"{ada} / {parsel}",
                             "Toplam Arsa (m²)": f"{toplam_alan:,.2f}",
                             "Terk Durumu": terk_st,
-                            "Fonksiyon Adı": item["fonksiyon_adi"],
-                            "Fonks. Giren (m²)": f"{item['giren_m2']:,.2f}" if item['giren_m2'] > 0 else "-",
-                            "TAKS": f"{item['taks']:.2f}" if item['taks'] > 0 else "-",
-                            "KAKS / Emsal": f"{item['kaks']:.2f}",
-                            "Bahçe Kullanım Alanı (m²)": f"{item['bahce_kullanim_alani']:,.2f}",
-                            "Tahmini Brüt İnşaat (m²)": f"{item['brut_insaat']:,.2f}"
+                            "Fonksiyon": item["fonksiyon_adi"],
+                            "Bodrum (m²)": f"{bod:,.2f}",
+                            "Üst Katlar (m²)": f"{brut:,.2f}",
+                            "Toplam İnşaat (m²)": f"{(brut + bod):,.2f}"
                         })
-                else:
-                    db_detail_rows.append({
-                        "Kayıt Anahtarı": k,
-                        "Dosya Adı": p_val.get("filename", "-"),
-                        "Mahalle": mahalle,
-                        "Ada / Parsel": f"{ada} / {parsel}",
-                        "Toplam Arsa (m²)": f"{toplam_alan:,.2f}",
-                        "Terk Durumu": terk_st,
-                        "Fonksiyonlar": "-",
-                        "Fonks. Giren (m²)": "-",
-                        "TAKS": "-",
-                        "KAKS / Emsal": "-",
-                        "Bahçe Kullanım Alanı (m²)": "-",
-                        "Tahmini Brüt İnşaat (m²)": "-"
-                    })
             
             st.dataframe(pd.DataFrame(db_detail_rows), use_container_width=True)
             
