@@ -723,7 +723,6 @@ if selected_keys:
             net_konut_insaat = max(0.0, brut_insaat - havuz_dusum)
             
             total_ciro_usd += (net_konut_insaat * conf["satis"])
-            # Bodrum maliyeti taban maliyetin yarısı oranında hesaba katılır
             toplam_parsel_maliyeti = (brut_insaat * conf["maliyet"] * 0.45) + (bodrum_m2_parsel * (conf["maliyet"] * 0.25))
             total_maliyet_usd += toplam_parsel_maliyeti
 
@@ -745,6 +744,7 @@ if selected_keys:
         table_rows = []
         sum_brut_insaat = 0.0
         sum_bodrum_insaat = 0.0
+        sum_emsal_insaat = 0.0
         sum_bahce_alani = 0.0
         sum_alan = sum(p.get("toplam_alan", 0.0) for p in active_parcel_db.values())
         
@@ -759,24 +759,26 @@ if selected_keys:
             for item in breakdown:
                 brut_insaat_arsa = item["brut_insaat"]
                 bodrum_arsa = brut_insaat_arsa * 0.50
+                emsal_arsa = brut_insaat_arsa  # Emsal inşaat alanı bodrum harici toplam inşaat alanıdır
                 bahce_m2 = item["bahce_kullanim_alani"]
                 if brut_insaat_arsa <= 0:
                     continue
                     
                 sum_brut_insaat += brut_insaat_arsa
                 sum_bodrum_insaat += bodrum_arsa
+                sum_emsal_insaat += emsal_arsa
                 sum_bahce_alani += bahce_m2
                 
                 table_rows.append({
-                    "MAHALLE": mahalle,
-                    "ADA": ada,
-                    "PARSEL": parsel,
-                    "TERK DURUMU": "Yapılmış (Net)" if is_terkli else "Yapılmamış (Brüt)",
-                    "FONKSİYON": item["fonksiyon_adi"],
-                    "KAKS / EMSAL": f"{item['kaks']:.2f}",
-                    "BODRUM KAT (M²)": f"{bodrum_arsa:,.2f}",
-                    "ÜST KATLAR (M²)": f"{brut_insaat_arsa:,.2f}",
-                    "TOPLAM İNŞAAT (M²)": f"{(brut_insaat_arsa + bodrum_arsa):,.2f}"
+                    "Mahalle": mahalle,
+                    "Ada": ada,
+                    "Parsel": parsel,
+                    "Toplam Arsa m²": f"{toplam_arsa_m2:,.2f}",
+                    "Terk Durumu": "Yapılmış (Net)" if is_terkli else "Yapılmamış (Brüt)",
+                    "Fonksiyon": item["fonksiyon_adi"],
+                    "Kaks/Emsal": f"{item['kaks']:.2f}",
+                    "Emsal İnşaat Alanı (m²)": f"{emsal_arsa:,.2f}",
+                    "Toplam İnşaat Alanı (m²)": f"{(brut_insaat_arsa + bodrum_arsa):,.2f}"
                 })
                 
         if table_rows:
@@ -784,8 +786,8 @@ if selected_keys:
             summary_df = pd.DataFrame([{
                 "SORGULANAN PARSEL": f"{len(active_parcel_db)} Adet",
                 "TOPLAM ARSA (M²)": f"{sum_alan:,.2f}",
-                "TOPLAM BODRUM KAT (M²)": f"{sum_bodrum_insaat:,.2f}",
-                "TOPLAM ÜST KATLAR (M²)": f"{sum_brut_insaat:,.2f}",
+                "TOPLAM EMSAL İNŞAAT (M²)": f"{sum_emsal_insaat:,.2f}",
+                "TOPLAM BODRUM İNŞAAT (M²)": f"{sum_bodrum_insaat:,.2f}",
                 "GENEL TOPLAM İNŞAAT (M²)": f"{(sum_brut_insaat + sum_bodrum_insaat):,.2f}"
             }])
             st.dataframe(summary_df, use_container_width=True)
@@ -937,7 +939,7 @@ if selected_keys:
             <div class="section-title">1. Proje ve Lokasyon Künyesi (Bodrum Dahil)</div>
             <table class="data-table">
                 <tr><td>Lokasyon / Mahalle</td><td style="text-align: right; font-weight: bold;">{first_mahalle} ({len(active_parcel_db)} Parsel)</td></tr>
-                <tr><td>Üst Katlar Brüt İnşaat Alanı</td><td style="text-align: right; font-weight: bold;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
+                <tr><td>Emsal İnşaat Alanı (Bodrum Hariç)</td><td style="text-align: right; font-weight: bold;">{total_yasal_brut_insaat:,.2f} m²</td></tr>
                 <tr><td>Bodrum Kat Alanı (%50)</td><td style="text-align: right; font-weight: bold;">{total_bodrum_alani:,.2f} m²</td></tr>
                 <tr><td>Genel Toplam İnşaat Alanı</td><td style="text-align: right; font-weight: bold;">{(total_yasal_brut_insaat + total_bodrum_alani):,.2f} m²</td></tr>
             </table>
@@ -988,8 +990,8 @@ if selected_keys:
                             "Toplam Arsa (m²)": f"{toplam_alan:,.2f}",
                             "Terk Durumu": terk_st,
                             "Fonksiyon": item["fonksiyon_adi"],
+                            "Emsal İnşaat Alanı (m²)": f"{brut:,.2f}",
                             "Bodrum (m²)": f"{bod:,.2f}",
-                            "Üst Katlar (m²)": f"{brut:,.2f}",
                             "Toplam İnşaat (m²)": f"{(brut + bod):,.2f}"
                         })
             
