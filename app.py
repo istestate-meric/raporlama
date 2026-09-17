@@ -45,7 +45,7 @@ def get_live_exchange_rates():
 
 rates = get_live_exchange_rates()
 
-# --- ÖZEL KURUMSAL STİL & SAĞ ÜST SABİT DÖVİZ KURU WİDGET ENJEKSİYONU ---
+# --- ÖZEL KURUMSAL STİL & SAĞ ÜST SABİT DÖVİZ KURU WİDGET ENJEKSİYONU (ALT ALTA SIRALI) ---
 st.markdown(
     f"""
 <style>
@@ -62,7 +62,7 @@ st.markdown(
         padding-bottom: 2rem;
     }}
     
-    /* SAYFA İLE BİRLİKTE KAYAN SAĞ ÜST SABİT DÖVİZ BARI */
+    /* SAYFA İLE BİRLİKTE KAYAN SAĞ ÜST SABİT DÖVİZ BARI (DİKEY / ALT ALTA) */
     .currency-float-bar {{
         position: fixed;
         top: 15px;
@@ -72,11 +72,11 @@ st.markdown(
         backdrop-filter: blur(8px);
         border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: 10px;
-        padding: 8px 14px;
+        padding: 10px 14px;
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         display: flex;
-        align-items: center;
-        gap: 12px;
+        flex-direction: column;
+        gap: 6px;
         color: #ffffff;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         pointer-events: auto;
@@ -84,7 +84,8 @@ st.markdown(
     .currency-item {{
         display: flex;
         align-items: center;
-        gap: 6px;
+        justify-content: space-between;
+        gap: 12px;
         font-size: 12px;
         font-weight: 600;
     }}
@@ -99,9 +100,10 @@ st.markdown(
         font-weight: 700;
     }}
     .currency-divider {{
-        width: 1px;
-        height: 16px;
-        background-color: rgba(255, 255, 255, 0.2);
+        width: 100%;
+        height: 1px;
+        background-color: rgba(255, 255, 255, 0.15);
+        margin: 1px 0;
     }}
 </style>
 
@@ -232,8 +234,8 @@ def get_image_base64(path):
 img1_base64 = get_image_base64("istestate_logo.png")
 img2_base64 = get_image_base64("meric_insaat_emlak_logo.png")
 
-img1_tag = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 55px; width: auto; object-fit: contain;'>" if img1_base64 else "<h4 style='color:#1e3a8a; margin:0;'>İSTESTATE</h4>"
-img2_tag = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 55px; width: auto; object-fit: contain;'>" if img2_base64 else "<h4 style='color:#1e3a8a; margin:0;'>MERİÇ İNŞAAT</h4>"
+img1_tag = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 50px; width: auto; object-fit: contain;'>" if img1_base64 else "<h4 style='color:#1e3a8a; margin:0;'>İSTESTATE</h4>"
+img2_tag = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 50px; width: auto; object-fit: contain;'>" if img2_base64 else "<h4 style='color:#1e3a8a; margin:0;'>MERİÇ İNŞAAT</h4>"
 
 def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_rate):
     mahalle_base_tl = {
@@ -599,17 +601,15 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
 
     return final_results
 
-# --- KOMPAKT & KURUMSAL BANNER / HEADER (YAZI LOGOLARIN ALTINA ALINDI VE BÜYÜTÜLDÜ) ---
+# --- KOMPAKT & KURUMSAL HEADER ---
 st.markdown(f"""
-<div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 18px 25px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); margin-bottom: 20px;">
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; width: 100%;">
-        <div style="display: flex; align-items: center; justify-content: center; gap: 35px; width: 100%;">
-            <div>{img1_tag}</div>
-            <div>{img2_tag}</div>
+<div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 15px 25px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); margin-bottom: 20px;">
+    <div style="display: flex; align-items: center; justify-content: center; gap: 25px; width: 100%;">
+        <div>{img1_tag}</div>
+        <div style="text-align: center;">
+            <p style='color: #475569; font-size: 13px; font-weight: 600; margin: 0;'>Akıllı Gayrimenkul Geliştirme ve Fizibilite Portalı</p>
         </div>
-        <div style="text-align: center; margin-top: 4px;">
-            <p style='color: #0f172a; font-size: 18px; font-weight: 800; margin: 0; letter-spacing: 0.5px;'>Akıllı Gayrimenkul Geliştirme ve Fizibilite Portalı</p>
-        </div>
+        <div>{img2_tag}</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -1079,10 +1079,17 @@ if selected_keys:
         pdf_logo2_html = f"<div style='background-color: #ffffff; padding: 6px 10px; border-radius: 6px; display: inline-block;'><img src='data:image/png;base64,{img2_base64}' style='max-height: 38px; width: auto; vertical-align: middle;'></div>" if img2_base64 else "<b style='color:#ffffff; font-size:14px;'>MERİÇ İNŞAAT EMLAK</b>"
         
         parcel_rows_html = ""
+        all_adas_str = []
+        all_parsels_str = []
+        
         for key, p in active_parcel_db.items():
             mahalle = p.get("mahalle", "BİLİNMİYOR")
             ada = p.get("ada", "0")
             parsel = p.get("parsel", "0")
+            
+            if ada not in all_adas_str: all_adas_str.append(ada)
+            if parsel not in all_parsels_str: all_parsels_str.append(parsel)
+            
             toplam_arsa_m2 = p.get("toplam_alan", 0.0)
             is_terkli = p.get("terk_yapilmis_mi", False)
             breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
@@ -1105,6 +1112,12 @@ if selected_keys:
                     <td style="text-align: right; font-weight: bold;">{(brut_insaat_arsa + bodrum_arsa):,.2f} m²</td>
                 </tr>
                 """
+
+        # DİNAMİK KURUMSAL VE PARSEL BİLGİLİ PDF DOSYA ADI OLUŞTURMA
+        formatted_mahalle = first_mahalle.strip().replace(" ", "_")
+        formatted_ada = "_".join(all_adas_str)
+        formatted_parsel = "_".join(all_parsels_str)
+        dynamic_pdf_filename = f"Istestate_Meric_Fizibilite_Raporu_{formatted_mahalle}_Ada_{formatted_ada}_Parsel_{formatted_parsel}.pdf"
 
         arch_rows_html = ""
         for key, p in active_parcel_db.items():
@@ -1299,7 +1312,7 @@ if selected_keys:
         st.download_button(
             label="📥 Kurumsal Fizibilite Raporunu PDF Olarak İndir",
             data=pdf_bytes,
-            file_name=f"Kurumsal_Konsolide_Fizibilite_{first_mahalle}.pdf",
+            file_name=dynamic_pdf_filename,
             mime="application/pdf",
             use_container_width=True
         )
