@@ -640,7 +640,6 @@ if selected_keys:
             
             allowed_p_types = get_allowed_project_types(fonk_adi)
             
-            # Otomatik Kar Marjı Seçimi Mantığı
             if auto_select_best_margin:
                 opt_pt, opt_pool = get_best_project_type_by_margin(fonk_adi, first_mahalle, rates["USD"])
                 selected_func_p_type = opt_pt
@@ -755,13 +754,14 @@ if selected_keys:
                 continue
                 
             total_yasal_brut_insaat += brut_insaat
-            bodrum_m2_parsel = brut_insaat * 0.50  
+            
+            pool_m2 = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
+            net_satilabilir_ust_kat = max(0.0, brut_insaat - pool_m2) 
+            bodrum_m2_parsel = net_satilabilir_ust_kat * 0.50  
+            
             total_bodrum_alani += bodrum_m2_parsel
             total_bahce_alani_terki += item["bahce_kullanim_alani"]
             
-            pool_m2 = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
-            
-            net_satilabilir_ust_kat = max(0.0, brut_insaat - pool_m2) 
             bodrum_satis_fiyati = conf["satis"] * 0.50  
             
             parsel_ust_kat_ciro = net_satilabilir_ust_kat * conf["satis"]
@@ -854,7 +854,7 @@ if selected_keys:
 
     with tab2:
         st.subheader("🏛️ Mimari Fizibilite & Senaryo Dağılım Matrisi (Birim Başına Düşen Alanlar)")
-        st.markdown("<p style='color: #64748b; font-size: 13px; margin-top: -10px;'>Aşağıdaki tablo, havuz m² düşüldükten sonra <strong>her bir birime (daire/villaya)</strong> kalan net ve brüt alan dağılımlarını göstermektedir.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #64748b; font-size: 13px; margin-top: -10px;'>Aşağıdaki tablo, havuz m² bilgileri dahil edilerek <strong>her bir birime (daire/villaya)</strong> düşen net, bodrum ve toplam alan dağılımlarını göstermektedir.</p>", unsafe_allow_html=True)
         
         mimari_rows = []
         total_units_sum = 0
@@ -870,7 +870,6 @@ if selected_keys:
             for item in breakdown:
                 fonk_name = item["fonksiyon_adi"]
                 brut_insaat = item["brut_insaat"]
-                bodrum_m2 = brut_insaat * 0.50
                 bahce_m2 = item["bahce_kullanim_alani"]
                 if brut_insaat <= 0:
                     continue
@@ -884,16 +883,24 @@ if selected_keys:
                 total_units_sum += konut_adeti
                 
                 pool_m2 = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
+                
+                # Emsal inşaattan havuz düşürülüyor
                 net_konut_insaat = max(0.0, brut_insaat - pool_m2)
                 total_net_insaat_sum += net_konut_insaat
                 
-                genel_parsel_toplam_insaat = brut_insaat + bodrum_m2
-                total_genel_insaat_sum += genel_parsel_toplam_insaat
+                # Bodrum kat net inşaata endekslendi (%50)
+                bodrum_m2 = net_konut_insaat * 0.50
                 
                 birim_bahce = bahce_m2 / konut_adeti if konut_adeti > 0 else 0.0
+                birim_havuz = pool_m2 / konut_adeti if konut_adeti > 0 else 0.0
                 birim_bodrum = bodrum_m2 / konut_adeti if konut_adeti > 0 else 0.0
                 birim_ust_kat = net_konut_insaat / konut_adeti if konut_adeti > 0 else 0.0
-                birim_toplam_insaat = (net_konut_insaat + bodrum_m2) / konut_adeti if konut_adeti > 0 else 0.0
+                
+                # Birim toplam inşaata havuz dahil edildi
+                birim_toplam_insaat = birim_ust_kat + birim_bodrum + birim_havuz
+                
+                genel_parsel_toplam_insaat = (net_konut_insaat + bodrum_m2 + pool_m2)
+                total_genel_insaat_sum += genel_parsel_toplam_insaat
                 
                 mimari_rows.append({
                     "MAHALLE": mahalle,
@@ -902,8 +909,9 @@ if selected_keys:
                     "PROJE TİPİ": f"{conf['proje_tipi']} ({conf['havuz_mod']})",
                     "BAĞIMSIZ BÖLÜM": f"{konut_adeti} Adet",
                     "BİRİM BAHÇE (M²)": f"{birim_bahce:,.1f} m²",
+                    "BİRİM HAVUZ (M²)": f"{birim_havuz:,.1f} m²",
                     "BİRİM BODRUM (M²)": f"{birim_bodrum:,.1f} m²",
-                    "BİRİM ÜST KAT (Havuz Düşülmüş)": f"{birim_ust_kat:,.1f} m²",
+                    "BİRİM ÜST KAT (Net)": f"{birim_ust_kat:,.1f} m²",
                     "BİRİM TOPLAM İNŞAAT (M²)": f"{birim_toplam_insaat:,.1f} m²"
                 })
                 
@@ -972,11 +980,9 @@ if selected_keys:
     with tab4:
         st.subheader("🖨️ Kurumsal Rapor Ön İzleme ve PDF İndirme Merkezi")
         
-        # LOGOLARIN ARKA PLANINI BEYAZ YAPAN HTML TASARIMI
         pdf_logo1_html = f"<div style='background-color: #ffffff; padding: 6px 10px; border-radius: 6px; display: inline-block;'><img src='data:image/png;base64,{img1_base64}' style='max-height: 38px; width: auto; vertical-align: middle;'></div>" if img1_base64 else "<b style='color:#ffffff; font-size:14px;'>İSTESTATE GAYRİMENKUL</b>"
         pdf_logo2_html = f"<div style='background-color: #ffffff; padding: 6px 10px; border-radius: 6px; display: inline-block;'><img src='data:image/png;base64,{img2_base64}' style='max-height: 38px; width: auto; vertical-align: middle;'></div>" if img2_base64 else "<b style='color:#ffffff; font-size:14px;'>MERİÇ İNŞAAT EMLAK</b>"
         
-        # --- TABLOLANMIŞ PDF İÇERİK ŞABLONU ---
         parcel_rows_html = ""
         for key, p in active_parcel_db.items():
             mahalle = p.get("mahalle", "BİLİNMİYOR")
@@ -1011,7 +1017,6 @@ if selected_keys:
             for item in breakdown:
                 fonk_name = item["fonksiyon_adi"]
                 brut_insaat = item["brut_insaat"]
-                bodrum_m2 = brut_insaat * 0.50
                 bahce_m2 = item["bahce_kullanim_alani"]
                 if brut_insaat <= 0: continue
                 
@@ -1022,11 +1027,13 @@ if selected_keys:
                 konut_adeti = conf["adet"]
                 pool_m2 = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
                 net_konut_insaat = max(0.0, brut_insaat - pool_m2)
+                bodrum_m2 = net_konut_insaat * 0.50
                 
                 birim_bahce = bahce_m2 / konut_adeti if konut_adeti > 0 else 0.0
+                birim_havuz = pool_m2 / konut_adeti if konut_adeti > 0 else 0.0
                 birim_bodrum = bodrum_m2 / konut_adeti if konut_adeti > 0 else 0.0
                 birim_ust_kat = net_konut_insaat / konut_adeti if konut_adeti > 0 else 0.0
-                birim_toplam = (net_konut_insaat + bodrum_m2) / konut_adeti if konut_adeti > 0 else 0.0
+                birim_toplam = birim_ust_kat + birim_bodrum + birim_havuz
                 
                 arch_rows_html += f"""
                 <tr>
@@ -1034,6 +1041,7 @@ if selected_keys:
                     <td>{conf['proje_tipi']} ({conf['havuz_mod']})</td>
                     <td style="text-align: center; font-weight: bold;">{konut_adeti} Adet</td>
                     <td style="text-align: right;">{birim_bahce:,.1f} m²</td>
+                    <td style="text-align: right;">{birim_havuz:,.1f} m²</td>
                     <td style="text-align: right;">{birim_bodrum:,.1f} m²</td>
                     <td style="text-align: right;">{birim_ust_kat:,.1f} m²</td>
                     <td style="text-align: right; font-weight: bold;">{birim_toplam:,.1f} m²</td>
@@ -1081,7 +1089,7 @@ if selected_keys:
                         <th>İmar Fonksiyonu</th>
                         <th style="text-align: center;">Emsal (KAKS)</th>
                         <th style="text-align: right;">Emsal İnşaat (m²)</th>
-                        <th style="text-align: right;">Bodrum (%50) (m²)</th>
+                        <th style="text-align: right;">Bodrum (m²)</th>
                         <th style="text-align: right;">Toplam İnşaat (m²)</th>
                     </tr>
                 </thead>
@@ -1098,6 +1106,7 @@ if selected_keys:
                         <th>Seçilen Proje Tipi ve Konsept</th>
                         <th style="text-align: center;">Toplam Bağımsız Bölüm</th>
                         <th style="text-align: right;">Birim Bahçe</th>
+                        <th style="text-align: right;">Birim Havuz</th>
                         <th style="text-align: right;">Birim Bodrum</th>
                         <th style="text-align: right;">Birim Üst Kat Net</th>
                         <th style="text-align: right;">Birim Toplam Brüt</th>
@@ -1160,7 +1169,6 @@ if selected_keys:
         pdf_bytes = HTML(string=report_html_template).write_pdf()
         pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
         
-        # --- PDF.JS DESTEKLİ GÜVENLİ ÖN İZLEME EKRANI ---
         st.markdown("#### 👁️ Canlı PDF Rapor Ön İzleme")
         st.markdown("<p style='color: #64748b; font-size: 12px;'>Belgeyi indirmeden önce aşağıdaki canlı ön izleme ekranından içerik kontrolü yapabilirsiniz.</p>", unsafe_allow_html=True)
         
