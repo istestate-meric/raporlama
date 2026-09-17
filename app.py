@@ -174,42 +174,58 @@ def get_live_exchange_rates():
     except Exception:
         return {"USD": 34.00, "EUR": 37.50}
 
-# --- OTOMATİK PİYASA VE HAVUZ ENTEGRELİ FİYATLANDIRMA MOTORU ---
-def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_rate):
-    mahalle_base_tl = {
-        "ACARLAR": 140000, "ANADOLU HİSARI": 130000, "KANLICA": 125000, 
-        "GÖKSU": 110000, "GÖRELE": 115000, "RİVA": 120000, "ÇİFTLİK": 115000, 
-        "BAKLACI": 95000, "KAVACIK": 90000, "ÇENGELDERE": 105000, 
-        "YAVUZ SELİM": 80000, "FATİH": 75000, "SOĞUKSU": 95000, "PAŞABAHÇE": 90000, "VARSAYILAN": 95000
+# --- REVİZE EDİLMİŞ USD TABANLI OTOMATİK PİYASA VE HAVUZ FİYATLANDIRMA MOTORU ---
+def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_rate=None):
+    """
+    Piyasa gerçekleriyle tam uyumlu USD ($) tabanlı dinamik matris.
+    """
+    # 1. Mahalle Bazlı Taban Fiyat Matrisi (USD/m²) -> [Taban Maliyet $, Taban Satış $]
+    mahalle_usd_matrix = {
+        "ACARLAR": [1300.0, 4200.0],
+        "ANADOLU HİSARI": [1250.0, 3900.0],
+        "KANLICA": [1400.0, 4500.0],
+        "GÖKSU": [1150.0, 3400.0],
+        "GÖRELE": [1050.0, 3200.0],
+        "RİVA": [1100.0, 3500.0],
+        "ÇİFTLİK": [1000.0, 3000.0],
+        "BAKLACI": [950.0, 2800.0],
+        "KAVACIK": [1000.0, 2900.0],
+        "ÇENGELDERE": [900.0, 2600.0],
+        "YAVUZ SELİM": [850.0, 2400.0],
+        "YAVUZSELİM": [850.0, 2400.0],
+        "FATİH": [850.0, 2350.0],
+        "SOĞUKSU": [950.0, 2700.0],
+        "PAŞABAHÇE": [950.0, 2800.0],
+        "VARSAYILAN": [900.0, 2600.0]
     }
     
     clean_mahalle = mahalle_adi.upper().replace("İ", "I").replace("Ç", "C").replace("Ş", "S").replace("Ğ", "G").replace("Ü", "U").replace("Ö", "O").strip()
-    base_tl = mahalle_base_tl.get(clean_mahalle, mahalle_base_tl["VARSAYILAN"])
+    base_maliyet, base_satis = mahalle_usd_matrix.get(clean_mahalle, mahalle_usd_matrix["VARSAYILAN"])
     
+    # 2. Proje Tipi Çarpanları
     proje_carpanlari = {
-        "Lüks Villa / Müstakil Proje": {"satis_mod": 1.55, "maliyet_mod": 1350},
-        "Üst Segment Konut / Rezidans": {"satis_mod": 1.25, "maliyet_mod": 1100},
-        "Standart Konut / Apartman": {"satis_mod": 1.00, "maliyet_mod": 900},
-        "Ticari / Ofis Kompleksi": {"satis_mod": 1.35, "maliyet_mod": 1050},
-        "Karma Proje (Konut + Ticari)": {"satis_mod": 1.20, "maliyet_mod": 1000}
+        "Lüks Villa / Müstakil Proje": {"satis_mod": 1.45, "maliyet_mod": 1.35},
+        "Üst Segment Konut / Rezidans": {"satis_mod": 1.25, "maliyet_mod": 1.20},
+        "Standart Konut / Apartman": {"satis_mod": 1.00, "maliyet_mod": 1.00},
+        "Ticari / Ofis Kompleksi": {"satis_mod": 1.30, "maliyet_mod": 1.15},
+        "Karma Proje (Konut + Ticari)": {"satis_mod": 1.20, "maliyet_mod": 1.10}
     }
     
     p_conf = proje_carpanlari.get(proje_tipi, proje_carpanlari["Standart Konut / Apartman"])
     
-    pool_cost_addon = 0.0
-    pool_price_addon = 0.0
+    hesaplanan_maliyet = base_maliyet * p_conf["maliyet_mod"]
+    hesaplanan_satis = base_satis * p_conf["satis_mod"]
+    
+    # 3. Havuz Eklentisi (USD/m² Ek Prim ve İmalat Farkı)
     if "İptal" not in havuz_secenegi:
         if "Müstakil" in havuz_secenegi:
-            pool_cost_addon = 45.0   
-            pool_price_addon = 250.0 
+            hesaplanan_maliyet += 150.0
+            hesaplanan_satis += 350.0
         else:
-            pool_cost_addon = 25.0   
-            pool_price_addon = 130.0 
+            hesaplanan_maliyet += 80.0
+            hesaplanan_satis += 200.0
 
-    satis_fiyati_usd = round(((base_tl * p_conf["satis_mod"]) / usd_rate) + pool_price_addon, 2)
-    maliyet_fiyati_usd = float(p_conf["maliyet_mod"]) + pool_cost_addon
-    
-    return satis_fiyati_usd, maliyet_fiyati_usd
+    return round(hesaplanan_satis, 2), round(hesaplanan_maliyet, 2)
 
 # --- KAR MARJINA GÖRE EN YÜKSEK VERİMLİ PROJE TİPİ VE HAVUZ SEÇİM MOTORU ---
 def get_best_project_type_by_margin(fonk_adi, mahalle_adi, usd_rate):
@@ -514,9 +530,9 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
         })
     return results
 
-# --- KOMPAKT & KURUMSAL HEADER ---
+# --- KOMPAKT & KURUMSAL HEADER BANNER ---
 st.markdown(f"""
-<div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 15px 25px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); margin-bottom: 20px;">
+<div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 15px 25px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); margin-bottom: 12px;">
     <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
         <div style="flex: 1; text-align: left;">{img1_tag}</div>
         <div style="flex: 2; text-align: center;">
@@ -528,7 +544,18 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
+# --- BANNER ALTI CANLI DÖVİZ KURU BİLGİ KARTI ---
 rates = get_live_exchange_rates()
+
+col_usd_m, col_eur_m, col_info_m = st.columns([1, 1, 2])
+with col_usd_m:
+    st.metric(label="🇺🇸 TCMB USD / TRY", value=f"₺{rates['USD']:.2f}")
+with col_eur_m:
+    st.metric(label="🇪🇺 TCMB EUR / TRY", value=f"₺{rates['EUR']:.2f}")
+with col_info_m:
+    st.caption("ℹ️ **Canlı Kur & USD Tabanlı Motor:** Döviz kurları TCMB servisinden anlık alınmaktadır. Otomatik m² maliyet ve satış hesaplamaları bölge gerçeklerine uygun USD ($) bazlı güncellenmiştir.")
+
+st.divider()
 
 st.sidebar.header("📁 İmar Belgesi Yükleme")
 uploaded_files = st.sidebar.file_uploader("İmar Durum Raporu (PDF) Seçin", type=["pdf"], accept_multiple_files=True)
