@@ -91,7 +91,7 @@ def get_allowed_pool_options(project_type):
     else:
         return ["Standart Ortak Havuzlu Proje", "Havuz İptal / Yapılmayacak"]
 
-# --- PROJE TİPİNE GÖRE DİNAMİK ALAN ARALIKLARI (MIN, MAX, DEFAULT, STEP) ---
+# --- PROJE TİPİNE GÖRE DİNAMİK ALAN ARALIKLARI ---
 def get_project_size_ranges(project_type):
     p_up = project_type.upper()
     if "VİLLA" in p_up or "VILLA" in p_up:
@@ -102,7 +102,7 @@ def get_project_size_ranges(project_type):
         return 40, 500, 120, 10
     elif "KARMA" in p_up:
         return 75, 200, 110, 5
-    else:  # Standart Konut / Apartman
+    else:
         return 55, 150, 90, 5
 
 # --- KALICI DOSYA TABANLI VERİTABANI YÖNETİMİ ---
@@ -627,7 +627,7 @@ if selected_keys:
 
     col_opt1, col_opt2 = st.columns([3, 1])
     with col_opt1:
-        st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonuna Göre Proje Tipi, Havuz Seçeneği ve Otomatik m² Maliyet/Satış Fiyatları</div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonuna Göre Proje Tipi, Birim Havuz Seçeneği ve Otomatik m² Fiyatları</div>", unsafe_allow_html=True)
     with col_opt2:
         auto_select_best_margin = st.toggle("Kar Marjına Göre Otomatik Seç (En Yüksek Verim)", value=True, key="auto_select_margin_toggle")
     
@@ -655,7 +655,7 @@ if selected_keys:
             
             custom_pool_m2 = 0.0
             if "İptal" not in selected_func_pool:
-                custom_pool_m2 = st.number_input(f"Havuz Alanı (m²) - {fonk_adi}", min_value=10.0, max_value=500.0, value=40.0, step=5.0, key=f"custom_pool_m2_{idx}_{fonk_adi}")
+                custom_pool_m2 = st.number_input(f"Birim Başı Havuz (m²) - {fonk_adi}", min_value=5.0, max_value=200.0, value=30.0, step=5.0, key=f"custom_pool_m2_{idx}_{fonk_adi}")
             
             auto_satis, auto_maliyet = get_realistic_market_pricing(first_mahalle, selected_func_p_type, selected_func_pool, rates["USD"])
 
@@ -687,7 +687,7 @@ if selected_keys:
                             "proje_tipi": selected_func_p_type,
                             "adet": int(calc_adet),
                             "havuz_mod": selected_func_pool,
-                            "havuz_m2": custom_pool_m2,
+                            "havuz_m2": custom_pool_m2, # Birim havuz alanı
                             "maliyet": custom_maliyet,
                             "satis": custom_satis,
                             "fonk_hesaba_alinan_m2": item["giren_m2"]
@@ -753,10 +753,13 @@ if selected_keys:
             if not conf:
                 continue
                 
+            konut_adeti = conf["adet"]
             total_yasal_brut_insaat += brut_insaat
             
-            pool_m2 = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
-            net_satilabilir_ust_kat = max(0.0, brut_insaat - pool_m2) 
+            birim_havuz_m2 = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
+            toplam_parsel_havuz_m2 = birim_havuz_m2 * konut_adeti
+            
+            net_satilabilir_ust_kat = max(0.0, brut_insaat - toplam_parsel_havuz_m2) 
             bodrum_m2_parsel = net_satilabilir_ust_kat * 0.50  
             
             total_bodrum_alani += bodrum_m2_parsel
@@ -821,7 +824,7 @@ if selected_keys:
                 bahce_m2 = item["bahce_kullanim_alani"]
                 if brut_insaat_arsa <= 0:
                     continue
-                    
+                
                 sum_brut_insaat += brut_insaat_arsa
                 sum_bodrum_insaat += bodrum_arsa
                 sum_emsal_insaat += emsal_arsa
@@ -854,7 +857,7 @@ if selected_keys:
 
     with tab2:
         st.subheader("🏛️ Mimari Fizibilite & Senaryo Dağılım Matrisi (Birim Başına Düşen Alanlar)")
-        st.markdown("<p style='color: #64748b; font-size: 13px; margin-top: -10px;'>Aşağıdaki tablo, havuz m² bilgileri dahil edilerek <strong>her bir birime (daire/villaya)</strong> düşen net, bodrum ve toplam alan dağılımlarını göstermektedir.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #64748b; font-size: 13px; margin-top: -10px;'>Aşağıdaki tablo, girilen havuz alanının <strong>birim başına m²</strong> kabul edilerek hesaplandığı net, bodrum ve toplam alan dağılımlarını göstermektedir.</p>", unsafe_allow_html=True)
         
         mimari_rows = []
         total_units_sum = 0
@@ -882,24 +885,21 @@ if selected_keys:
                 konut_adeti = conf["adet"]
                 total_units_sum += konut_adeti
                 
-                pool_m2 = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
+                birim_havuz = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
+                toplam_parsel_havuz_m2 = birim_havuz * konut_adeti
                 
-                # Emsal inşaattan havuz düşürülüyor
-                net_konut_insaat = max(0.0, brut_insaat - pool_m2)
+                net_konut_insaat = max(0.0, brut_insaat - toplam_parsel_havuz_m2)
                 total_net_insaat_sum += net_konut_insaat
                 
-                # Bodrum kat net inşaata endekslendi (%50)
                 bodrum_m2 = net_konut_insaat * 0.50
                 
                 birim_bahce = bahce_m2 / konut_adeti if konut_adeti > 0 else 0.0
-                birim_havuz = pool_m2 / konut_adeti if konut_adeti > 0 else 0.0
                 birim_bodrum = bodrum_m2 / konut_adeti if konut_adeti > 0 else 0.0
                 birim_ust_kat = net_konut_insaat / konut_adeti if konut_adeti > 0 else 0.0
                 
-                # Birim toplam inşaata havuz dahil edildi
                 birim_toplam_insaat = birim_ust_kat + birim_bodrum + birim_havuz
                 
-                genel_parsel_toplam_insaat = (net_konut_insaat + bodrum_m2 + pool_m2)
+                genel_parsel_toplam_insaat = (net_konut_insaat + bodrum_m2 + toplam_parsel_havuz_m2)
                 total_genel_insaat_sum += genel_parsel_toplam_insaat
                 
                 mimari_rows.append({
@@ -1025,12 +1025,13 @@ if selected_keys:
                 if not conf: continue
                 
                 konut_adeti = conf["adet"]
-                pool_m2 = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
-                net_konut_insaat = max(0.0, brut_insaat - pool_m2)
+                birim_havuz = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
+                toplam_parsel_havuz_m2 = birim_havuz * konut_adeti
+                
+                net_konut_insaat = max(0.0, brut_insaat - toplam_parsel_havuz_m2)
                 bodrum_m2 = net_konut_insaat * 0.50
                 
                 birim_bahce = bahce_m2 / konut_adeti if konut_adeti > 0 else 0.0
-                birim_havuz = pool_m2 / konut_adeti if konut_adeti > 0 else 0.0
                 birim_bodrum = bodrum_m2 / konut_adeti if konut_adeti > 0 else 0.0
                 birim_ust_kat = net_konut_insaat / konut_adeti if konut_adeti > 0 else 0.0
                 birim_toplam = birim_ust_kat + birim_bodrum + birim_havuz
