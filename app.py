@@ -68,7 +68,7 @@ st.markdown(
         top: 15px;
         right: 25px;
         z-index: 999999;
-        background: rgba(15, 23, 42, 0.65);
+        background: rgba(15, 23, 42, 0.92);
         backdrop-filter: blur(8px);
         border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: 10px;
@@ -109,12 +109,12 @@ st.markdown(
 
 <div class="currency-float-bar">
     <div class="currency-item">
-        <span class="currency-label">USD</span>
+        <span class="currency-label">USD/TRY:</span>
         <span class="currency-val">₺{rates['USD']:.2f}</span>
     </div>
     <div class="currency-divider"></div>
     <div class="currency-item">
-        <span class="currency-label">EUR</span>
+        <span class="currency-label">EUR/TRY:</span>
         <span class="currency-val">₺{rates['EUR']:.2f}</span>
     </div>
 </div>
@@ -234,8 +234,8 @@ def get_image_base64(path):
 img1_base64 = get_image_base64("istestate_logo.png")
 img2_base64 = get_image_base64("meric_insaat_emlak_logo.png")
 
-img1_tag = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 50px; width: auto; object-fit: contain;'>" if img1_base64 else "<h4 style='color:#1e3a8a; margin:0;'>İSTESTATE</h4>"
-img2_tag = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 50px; width: auto; object-fit: contain;'>" if img2_base64 else "<h4 style='color:#1e3a8a; margin:0;'>MERİÇ İNŞAAT</h4>"
+img1_tag = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 55px; width: auto; object-fit: contain;'>" if img1_base64 else "<h4 style='color:#1e3a8a; margin:0;'>İSTESTATE</h4>"
+img2_tag = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 55px; width: auto; object-fit: contain;'>" if img2_base64 else "<h4 style='color:#1e3a8a; margin:0;'>MERİÇ İNŞAAT</h4>"
 
 def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_rate):
     mahalle_base_tl = {
@@ -353,7 +353,7 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
         if kw in text_upper:
             if not f"YAPILMAMIŞTIR" in text_upper and not f"YAPILMAMIŞ" in text_upper:
                 return True
-    for kw in kesin_terk_yapilnamis if 'kesin_terk_yapilnamis' in locals() else kesin_terk_yapilmamis:
+    for kw in kesin_terk_yapilmamis:
         if kw in text_upper:
             return False
     return False
@@ -601,15 +601,17 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
 
     return final_results
 
-# --- KOMPAKT & KURUMSAL HEADER ---
+# --- KOMPAKT & KURUMSAL HEADER (YENİLENMİŞ BANNER YERLEŞİMİ) ---
 st.markdown(f"""
-<div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 15px 25px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); margin-bottom: 20px;">
-    <div style="display: flex; align-items: center; justify-content: center; gap: 25px; width: 100%;">
-        <div>{img1_tag}</div>
-        <div style="text-align: center;">
-            <p style='color: #475569; font-size: 13px; font-weight: 600; margin: 0;'>Akıllı Gayrimenkul Geliştirme ve Fizibilite Portalı</p>
+<div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px 25px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); margin-bottom: 20px;">
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; width: 100%;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 40px; width: 100%;">
+            <div>{img1_tag}</div>
+            <div>{img2_tag}</div>
         </div>
-        <div>{img2_tag}</div>
+        <div style="text-align: center; border-top: 1px solid #f1f5f9; padding-top: 12px; width: 100%;">
+            <p style='color: #0f172a; font-size: 20px; font-weight: 800; margin: 0; letter-spacing: 0.5px;'>Akıllı Gayrimenkul Geliştirme ve Fizibilite Portalı</p>
+        </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
