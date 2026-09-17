@@ -83,6 +83,14 @@ def get_allowed_project_types(fonk_adi):
             "Karma Proje (Konut + Ticari)"
         ]
 
+def get_allowed_pool_options(project_type):
+    if "Villa" in project_type:
+        return ["Müstakil Özel Havuzlu Villa Projesi", "Ortak Havuzlu Villa Sitesi Konsepti", "Havuz İptal / Yapılmayacak"]
+    elif "Ticari" in project_type:
+        return ["Havuz İptal / Yapılmayacak"]
+    else:
+        return ["Standart Ortak Havuzlu Proje", "Havuz İptal / Yapılmayacak"]
+
 # --- PROJE TİPİNE GÖRE DİNAMİK ALAN ARALIKLARI (MIN, MAX, DEFAULT, STEP) ---
 def get_project_size_ranges(project_type):
     p_up = project_type.upper()
@@ -202,6 +210,26 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_ra
     maliyet_fiyati_usd = float(p_conf["maliyet_mod"]) + pool_cost_addon
     
     return satis_fiyati_usd, maliyet_fiyati_usd
+
+# --- KAR MARJINA GÖRE EN YÜKSEK VERİMLİ PROJE TİPİ VE HAVUZ SEÇİM MOTORU ---
+def get_best_project_type_by_margin(fonk_adi, mahalle_adi, usd_rate):
+    allowed_types = get_allowed_project_types(fonk_adi)
+    best_pt = allowed_types[0]
+    best_pool = get_allowed_pool_options(best_pt)[0]
+    max_margin = -9999.0
+
+    for pt in allowed_types:
+        pool_options = get_allowed_pool_options(pt)
+        for pool in pool_options:
+            s_price, c_cost = get_realistic_market_pricing(mahalle_adi, pt, pool, usd_rate)
+            if c_cost > 0:
+                margin = (s_price - c_cost) / c_cost
+                if margin > max_margin:
+                    max_margin = margin
+                    best_pt = pt
+                    best_pool = pool
+
+    return best_pt, best_pool
 
 def parse_tr_float(val_str):
     if not val_str:
@@ -597,7 +625,11 @@ if selected_keys:
     if not unique_active_functions:
         unique_active_functions = {"KONUT ALANI"}
 
-    st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonuna Göre Proje Tipi, Havuz Seçeneği ve Otomatik m² Maliyet/Satış Fiyatları</div>", unsafe_allow_html=True)
+    col_opt1, col_opt2 = st.columns([3, 1])
+    with col_opt1:
+        st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonuna Göre Proje Tipi, Havuz Seçeneği ve Otomatik m² Maliyet/Satış Fiyatları</div>", unsafe_allow_html=True)
+    with col_opt2:
+        auto_select_best_margin = st.toggle("Kar Marjına Göre Otomatik Seç (En Yüksek Verim)", value=True, key="auto_select_margin_toggle")
     
     function_configs = {}
     func_cols = st.columns(len(unique_active_functions) if len(unique_active_functions) > 0 else 1)
@@ -608,19 +640,19 @@ if selected_keys:
             
             allowed_p_types = get_allowed_project_types(fonk_adi)
             
-            sub_col1, sub_col2 = st.columns(2)
-            with sub_col1:
-                selected_func_p_type = st.selectbox(f"Proje Tipi", options=allowed_p_types, key=f"func_p_type_{idx}_{fonk_adi}")
-            
-            if "Villa" in selected_func_p_type:
-                pool_opts = ["Müstakil Özel Havuzlu Villa Projesi", "Ortak Havuzlu Villa Sitesi Konsepti", "Havuz İptal / Yapılmayacak"]
-            elif "Ticari" in selected_func_p_type:
-                pool_opts = ["Havuz İptal / Yapılmayacak"]
+            # Otomatik Kar Marjı Seçimi Mantığı
+            if auto_select_best_margin:
+                opt_pt, opt_pool = get_best_project_type_by_margin(fonk_adi, first_mahalle, rates["USD"])
+                selected_func_p_type = opt_pt
+                selected_func_pool = opt_pool
+                st.info(f"💡 **Optimum Seçim:** {selected_func_p_type} ({selected_func_pool})")
             else:
-                pool_opts = ["Standart Ortak Havuzlu Proje", "Havuz İptal / Yapılmayacak"]
+                p_type_key = f"func_p_type_{idx}_{fonk_adi}"
+                selected_func_p_type = st.selectbox(f"Proje Tipi", options=allowed_p_types, key=p_type_key)
                 
-            with sub_col2:
-                selected_func_pool = st.selectbox(f"Havuz Seçeneği", options=pool_opts, key=f"func_pool_{idx}_{fonk_adi}")
+                pool_opts = get_allowed_pool_options(selected_func_p_type)
+                pool_key = f"func_pool_{idx}_{fonk_adi}"
+                selected_func_pool = st.selectbox(f"Havuz Seçeneği", options=pool_opts, key=pool_key)
             
             custom_pool_m2 = 0.0
             if "İptal" not in selected_func_pool:
@@ -671,8 +703,12 @@ if selected_keys:
         
         for idx, fonk_adi in enumerate(valid_active_functions_with_area):
             with fn_cols[idx % len(fn_cols)]:
-                p_type_key = f"func_p_type_{idx}_{fonk_adi}"
-                chosen_p_type = st.session_state.get(p_type_key, get_allowed_project_types(fonk_adi)[0])
+                parsel_fonk_sample_key = next((k for k in function_configs if fonk_adi in k), None)
+                if parsel_fonk_sample_key and parsel_fonk_sample_key in function_configs:
+                    chosen_p_type = function_configs[parsel_fonk_sample_key]["proje_tipi"]
+                else:
+                    chosen_p_type = get_allowed_project_types(fonk_adi)[0]
+                    
                 min_v, max_v, def_v, step_v = get_project_size_ranges(chosen_p_type)
                 
                 function_target_sizes[fonk_adi] = st.slider(
