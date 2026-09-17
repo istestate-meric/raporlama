@@ -168,32 +168,32 @@ def get_live_exchange_rates():
                 eur_rate = float(currency.find('ForexSelling').text)
                 
         return {
-            "USD": usd_rate if usd_rate > 0 else 40.00,
-            "EUR": eur_rate if eur_rate > 0 else 43.50
+            "USD": usd_rate if usd_rate > 0 else 34.00,
+            "EUR": eur_rate if eur_rate > 0 else 37.50
         }
     except Exception:
-        return {"USD": 40.00, "EUR": 43.50}
+        return {"USD": 34.00, "EUR": 37.50}
 
-# --- OTOMATİK PİYASA VE HAVUZ ENTEGRELİ FİYATLANDIRMA MOTORU (GÜNCELLENDİ) ---
+# --- OTOMATİK PİYASA VE HAVUZ ENTEGRELİ GÜNCEL FİYATLANDIRMA MOTORU ---
 def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_rate):
-    # Mahalle bazlı doğrudan CANLI USD taban metrekare satış değerleri ($/m²)
-    mahalle_base_usd = {
-        "ACARLAR": 4800, "ANADOLU HİSARI": 4500, "KANLICA": 4300, 
-        "GÖKSU": 3800, "GÖRELE": 4000, "RİVA": 3500, "ÇİFTLİK": 3800, 
-        "BAKLACI": 3200, "KAVACIK": 3100, "ÇENGELDERE": 3400, 
-        "YAVUZ SELİM": 2700, "FATİH": 2600, "SOĞUKSU": 3200, "PAŞABAHÇE": 3100, "VARSAYILAN": 3200
+    # Güncellenmiş Bölge/Mahalle Tabanlı m² Satış Fiyatları (TL)
+    mahalle_base_tl = {
+        "ACARLAR": 165000, "ANADOLU HİSARI": 150000, "KANLICA": 145000, 
+        "GÖKSU": 130000, "GÖRELE": 135000, "RİVA": 140000, "ÇİFTLİK": 130000, 
+        "BAKLACI": 115000, "KAVACIK": 110000, "ÇENGELDERE": 120000, 
+        "YAVUZ SELİM": 95000, "FATİH": 90000, "SOĞUKSU": 110000, "PAŞABAHÇE": 105000, "VARSAYILAN": 115000
     }
     
     clean_mahalle = mahalle_adi.upper().replace("İ", "I").replace("Ç", "C").replace("Ş", "S").replace("Ğ", "G").replace("Ü", "U").replace("Ö", "O").strip()
-    base_usd = mahalle_base_usd.get(clean_mahalle, mahalle_base_usd["VARSAYILAN"])
+    base_tl = mahalle_base_tl.get(clean_mahalle, mahalle_base_tl["VARSAYILAN"])
     
-    # Proje tipine göre güncel maliyet ($/m²) ve satış çarpanları
+    # Güncel Piyasa Şartlarına Göre Proje Çarpanları ve İnşaat m² Maliyetleri ($)
     proje_carpanlari = {
-        "Lüks Villa / Müstakil Proje": {"satis_mod": 1.40, "maliyet_mod": 1850},
-        "Üst Segment Konut / Rezidans": {"satis_mod": 1.20, "maliyet_mod": 1450},
-        "Standart Konut / Apartman": {"satis_mod": 1.00, "maliyet_mod": 1100},
-        "Ticari / Ofis Kompleksi": {"satis_mod": 1.25, "maliyet_mod": 1350},
-        "Karma Proje (Konut + Ticari)": {"satis_mod": 1.15, "maliyet_mod": 1250}
+        "Lüks Villa / Müstakil Proje": {"satis_mod": 1.65, "maliyet_mod": 1450},
+        "Üst Segment Konut / Rezidans": {"satis_mod": 1.30, "maliyet_mod": 1200},
+        "Standart Konut / Apartman": {"satis_mod": 1.00, "maliyet_mod": 950},
+        "Ticari / Ofis Kompleksi": {"satis_mod": 1.40, "maliyet_mod": 1150},
+        "Karma Proje (Konut + Ticari)": {"satis_mod": 1.25, "maliyet_mod": 1100}
     }
     
     p_conf = proje_carpanlari.get(proje_tipi, proje_carpanlari["Standart Konut / Apartman"])
@@ -202,13 +202,13 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_ra
     pool_price_addon = 0.0
     if "İptal" not in havuz_secenegi:
         if "Müstakil" in havuz_secenegi:
-            pool_cost_addon = 80.0   
-            pool_price_addon = 350.0 
+            pool_cost_addon = 60.0   
+            pool_price_addon = 300.0 
         else:
-            pool_cost_addon = 45.0   
-            pool_price_addon = 200.0 
+            pool_cost_addon = 35.0   
+            pool_price_addon = 180.0 
 
-    satis_fiyati_usd = round((base_usd * p_conf["satis_mod"]) + pool_price_addon, 2)
+    satis_fiyati_usd = round(((base_tl * p_conf["satis_mod"]) / usd_rate) + pool_price_addon, 2)
     maliyet_fiyati_usd = float(p_conf["maliyet_mod"]) + pool_cost_addon
     
     return satis_fiyati_usd, maliyet_fiyati_usd
@@ -659,24 +659,25 @@ if selected_keys:
             if "İptal" not in selected_func_pool:
                 custom_pool_m2 = st.number_input(f"Birim Başı Havuz (m²) - {fonk_adi}", min_value=5.0, max_value=200.0, value=30.0, step=5.0, key=f"custom_pool_m2_{idx}_{fonk_adi}")
             
+            # --- CANLI PİYASA FİYATLARI VE OTOMATİK STATE SENKRONİZASYONU ---
             auto_satis, auto_maliyet = get_realistic_market_pricing(first_mahalle, selected_func_p_type, selected_func_pool, rates["USD"])
 
             cost_key = f"cost_{idx}_{fonk_adi}"
             price_key = f"price_{idx}_{fonk_adi}"
-            last_pt_key = f"last_pt_{idx}_{fonk_adi}"
-            last_pool_key = f"last_pool_{idx}_{fonk_adi}"
+            last_state_key = f"last_state_{idx}_{fonk_adi}_{first_mahalle}"
+            current_state_str = f"{selected_func_p_type}_{selected_func_pool}"
 
-            if st.session_state.get(last_pt_key) != selected_func_p_type or st.session_state.get(last_pool_key) != selected_func_pool:
+            # Parsel, Mahalle, Proje Tipi veya Havuz Değiştiğinde Fiyatları Eşzamanlı Güncelle
+            if (last_state_key not in st.session_state) or (st.session_state.get(last_state_key) != current_state_str):
                 st.session_state[cost_key] = float(auto_maliyet)
                 st.session_state[price_key] = float(auto_satis)
-                st.session_state[last_pt_key] = selected_func_p_type
-                st.session_state[last_pool_key] = selected_func_pool
+                st.session_state[last_state_key] = current_state_str
 
             prc_col1, prc_col2 = st.columns(2)
             with prc_col1:
-                custom_maliyet = st.number_input(f"Otomatik m² Maliyet ($)", min_value=300.0, max_value=10000.0, step=50.0, key=cost_key)
+                custom_maliyet = st.number_input(f"Otomatik m² Maliyet ($)", min_value=300.0, max_value=6000.0, step=50.0, key=cost_key)
             with prc_col2:
-                custom_satis = st.number_input(f"Otomatik m² Satış ($)", min_value=500.0, max_value=30000.0, step=100.0, key=price_key)
+                custom_satis = st.number_input(f"Otomatik m² Satış ($)", min_value=500.0, max_value=18000.0, step=100.0, key=price_key)
             
             for key, p in active_parcel_db.items():
                 breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
@@ -689,7 +690,7 @@ if selected_keys:
                             "proje_tipi": selected_func_p_type,
                             "adet": int(calc_adet),
                             "havuz_mod": selected_func_pool,
-                            "havuz_m2": custom_pool_m2, # Birim havuz alanı
+                            "havuz_m2": custom_pool_m2,
                             "maliyet": custom_maliyet,
                             "satis": custom_satis,
                             "fonk_hesaba_alinan_m2": item["giren_m2"]
@@ -734,7 +735,7 @@ if selected_keys:
                 if t_size > 0:
                     function_configs[parsel_fonk_key]["adet"] = max(1, round(brut_insaat / t_size))
 
-    # --- CIRO, MALIYET VE NET KAR HESAPLAMA MOTORU ---
+    # --- CİRO, MALİYET VE NET KÂR HESAPLAMA MOTORU ---
     total_yasal_brut_insaat = 0.0
     total_bodrum_alani = 0.0
     total_bahce_alani_terki = 0.0
