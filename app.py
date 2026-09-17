@@ -828,7 +828,7 @@ if selected_keys:
                 if t_size > 0:
                     function_configs[parsel_fonk_key]["adet"] = max(1, round(brut_insaat / t_size))
 
-    # --- CİRO, MALİYET VE NET KÂR HESAPLAMA MOTORU ---
+    # --- REVİZE EDİLMİŞ CİRO, MALİYET VE NET KÂR HESAPLAMA MOTORU ---
     total_yasal_brut_insaat = 0.0
     total_bodrum_alani = 0.0
     total_bahce_alani_terki = 0.0
@@ -861,15 +861,12 @@ if selected_keys:
             total_bodrum_alani += bodrum_m2_parsel
             total_bahce_alani_terki += item["bahce_kullanim_alani"]
             
-            bodrum_satis_fiyati = conf["satis"] * 0.50  
+            # CİRO HESABI: Bütün inşaat alanları (Üst Kat + Bodrum + Havuz) doğrudan tam m² Satış fiyatı üzerinden hesaplanır
+            toplam_parsel_insaat_m2 = brut_insaat + bodrum_m2_parsel
+            total_ciro_usd += (toplam_parsel_insaat_m2 * conf["satis"])
             
-            parsel_ust_kat_ciro = net_satilabilir_ust_kat * conf["satis"]
-            parsel_bodrum_ciro = bodrum_m2_parsel * bodrum_satis_fiyati
-            
-            total_ciro_usd += (parsel_ust_kat_ciro + parsel_bodrum_ciro)
-            
-            net_maliyete_esas_ust_kat = brut_insaat 
-            ust_kat_maliyeti = net_maliyete_esas_ust_kat * conf["maliyet"]
+            # MALİYET HESABI
+            ust_kat_maliyeti = brut_insaat * conf["maliyet"]
             bodrum_maliyeti = bodrum_m2_parsel * (conf["maliyet"] * 0.60)
             
             toplam_parsel_maliyeti = ust_kat_maliyeti + bodrum_maliyeti
