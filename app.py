@@ -12,7 +12,7 @@ from weasyprint import CSS, HTML
 
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(
-    page_title="İstestate & Meriç İnşaat - Fizibilite Portalı",
+    page_title="Fizibilite Portalı",
     page_icon="🏢",
     layout="wide",
 )
@@ -65,7 +65,7 @@ st.markdown(
     /* SAYFA İLE BİRLİKTE KAYAN SAĞ ÜST SABİT DÖVİZ BARI */
     .currency-float-bar {{
         position: fixed;
-        top: 60px;
+        top: 15px;
         right: 25px;
         z-index: 999999;
         background: rgba(15, 23, 42, 0.92);
@@ -232,8 +232,8 @@ def get_image_base64(path):
 img1_base64 = get_image_base64("istestate_logo.png")
 img2_base64 = get_image_base64("meric_insaat_emlak_logo.png")
 
-img1_tag = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 45px; width: auto; object-fit: contain;'>" if img1_base64 else "<h4 style='color:#1e3a8a; margin:0;'>İSTESTATE</h4>"
-img2_tag = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 45px; width: auto; object-fit: contain;'>" if img2_base64 else "<h4 style='color:#1e3a8a; margin:0;'>MERİÇ İNŞAAT</h4>"
+img1_tag = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 50px; width: auto; object-fit: contain;'>" if img1_base64 else "<h4 style='color:#1e3a8a; margin:0;'>İSTESTATE</h4>"
+img2_tag = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 50px; width: auto; object-fit: contain;'>" if img2_base64 else "<h4 style='color:#1e3a8a; margin:0;'>MERİÇ İNŞAAT</h4>"
 
 def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_rate):
     mahalle_base_tl = {
@@ -602,13 +602,12 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
 # --- KOMPAKT & KURUMSAL HEADER ---
 st.markdown(f"""
 <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 15px 25px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); margin-bottom: 20px;">
-    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-        <div style="flex: 1; text-align: left;">{img1_tag}</div>
-        <div style="flex: 2; text-align: center;">
-            <h2 style='color: #0f172a; font-size: 18px; font-weight: 800; margin: 0; letter-spacing: -0.3px;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT</h2>
-            <p style='color: #475569; font-size: 12px; font-weight: 500; margin: 2px 0 0 0;'>Akıllı Gayrimenkul Geliştirme ve Fizibilite Portalı</p>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 25px; width: 100%;">
+        <div>{img1_tag}</div>
+        <div style="text-align: center;">
+            <p style='color: #475569; font-size: 13px; font-weight: 600; margin: 0;'>Akıllı Gayrimenkul Geliştirme ve Fizibilite Portalı</p>
         </div>
-        <div style="flex: 1; text-align: right;">{img2_tag}</div>
+        <div>{img2_tag}</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -1170,7 +1169,6 @@ if selected_keys:
                     <td style="width: 30%; text-align: left;">{pdf_logo1_html}</td>
                     <td style="width: 40%; text-align: center;">
                         <h2 style="font-size: 11px; margin: 0; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">AKILLI GAYRİMENKUL GELİŞTİRME VE FİZİBİLİTE RAPORU</h2>
-                        <span style="font-size: 7.5px; color: #94a3b8;">İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT ORTAK PORTALI</span>
                     </td>
                     <td style="width: 30%; text-align: right;">{pdf_logo2_html}</td>
                 </tr>
@@ -1258,7 +1256,7 @@ if selected_keys:
             </table>
 
             <div class="footer">
-                Bu rapor İstestate Gayrimenkul & Meriç İnşaat Emlak Akıllı Fizibilite Portalı tarafından otomatize edilerek oluşturulmuştur.
+                Bu rapor Akıllı Fizibilite Portalı tarafından otomatize edilerek oluşturulmuştur.
             </div>
         </body>
         </html>
