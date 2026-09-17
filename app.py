@@ -232,8 +232,8 @@ def get_image_base64(path):
 img1_base64 = get_image_base64("istestate_logo.png")
 img2_base64 = get_image_base64("meric_insaat_emlak_logo.png")
 
-img1_tag = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 50px; width: auto; object-fit: contain;'>" if img1_base64 else "<h4 style='color:#1e3a8a; margin:0;'>İSTESTATE</h4>"
-img2_tag = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 50px; width: auto; object-fit: contain;'>" if img2_base64 else "<h4 style='color:#1e3a8a; margin:0;'>MERİÇ İNŞAAT</h4>"
+img1_tag = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 55px; width: auto; object-fit: contain;'>" if img1_base64 else "<h4 style='color:#1e3a8a; margin:0;'>İSTESTATE</h4>"
+img2_tag = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 55px; width: auto; object-fit: contain;'>" if img2_base64 else "<h4 style='color:#1e3a8a; margin:0;'>MERİÇ İNŞAAT</h4>"
 
 def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_rate):
     mahalle_base_tl = {
@@ -599,15 +599,17 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
 
     return final_results
 
-# --- KOMPAKT & KURUMSAL HEADER ---
+# --- KOMPAKT & KURUMSAL BANNER / HEADER (YAZI LOGOLARIN ALTINA ALINDI VE BÜYÜTÜLDÜ) ---
 st.markdown(f"""
-<div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 15px 25px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); margin-bottom: 20px;">
-    <div style="display: flex; align-items: center; justify-content: center; gap: 25px; width: 100%;">
-        <div>{img1_tag}</div>
-        <div style="text-align: center;">
-            <p style='color: #475569; font-size: 13px; font-weight: 600; margin: 0;'>Akıllı Gayrimenkul Geliştirme ve Fizibilite Portalı</p>
+<div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 18px 25px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); margin-bottom: 20px;">
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; width: 100%;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 35px; width: 100%;">
+            <div>{img1_tag}</div>
+            <div>{img2_tag}</div>
         </div>
-        <div>{img2_tag}</div>
+        <div style="text-align: center; margin-top: 4px;">
+            <p style='color: #0f172a; font-size: 18px; font-weight: 800; margin: 0; letter-spacing: 0.5px;'>Akıllı Gayrimenkul Geliştirme ve Fizibilite Portalı</p>
+        </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
