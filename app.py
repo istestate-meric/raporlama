@@ -659,12 +659,14 @@ if selected_keys:
             if "İptal" not in selected_func_pool:
                 custom_pool_m2 = st.number_input(f"Birim Başı Havuz (m²) - {fonk_adi}", min_value=5.0, max_value=200.0, value=30.0, step=5.0, key=f"custom_pool_m2_{idx}_{fonk_adi}")
             
-            # --- CANLI PİYASA FİYATLARI VE OTOMATİK STATE SENKRONİZASYONU ---
+            # --- CANLI PİYASA FİYATLARI VE ANLIK STATE SENKRONİZASYONU ---
             auto_satis, auto_maliyet = get_realistic_market_pricing(first_mahalle, selected_func_p_type, selected_func_pool, rates["USD"])
 
-            cost_key = f"cost_{idx}_{fonk_adi}"
-            price_key = f"price_{idx}_{fonk_adi}"
-            last_state_key = f"last_state_{idx}_{fonk_adi}_{first_mahalle}"
+            # Parseller değiştikçe widget key'inin yenilenmesi için dinamik parsel kimliği
+            selected_parcels_hash = "_".join(selected_keys)
+            cost_key = f"cost_{idx}_{fonk_adi}_{first_mahalle}_{selected_parcels_hash}"
+            price_key = f"price_{idx}_{fonk_adi}_{first_mahalle}_{selected_parcels_hash}"
+            last_state_key = f"last_state_{idx}_{fonk_adi}_{first_mahalle}_{selected_parcels_hash}"
             current_state_str = f"{selected_func_p_type}_{selected_func_pool}"
 
             # Parsel, Mahalle, Proje Tipi veya Havuz Değiştiğinde Fiyatları Eşzamanlı Güncelle
@@ -675,9 +677,23 @@ if selected_keys:
 
             prc_col1, prc_col2 = st.columns(2)
             with prc_col1:
-                custom_maliyet = st.number_input(f"Otomatik m² Maliyet ($)", min_value=300.0, max_value=6000.0, step=50.0, key=cost_key)
+                custom_maliyet = st.number_input(
+                    f"Otomatik m² Maliyet ($)", 
+                    min_value=300.0, 
+                    max_value=6000.0, 
+                    value=float(st.session_state.get(cost_key, auto_maliyet)),
+                    step=50.0, 
+                    key=cost_key
+                )
             with prc_col2:
-                custom_satis = st.number_input(f"Otomatik m² Satış ($)", min_value=500.0, max_value=18000.0, step=100.0, key=price_key)
+                custom_satis = st.number_input(
+                    f"Otomatik m² Satış ($)", 
+                    min_value=500.0, 
+                    max_value=18000.0, 
+                    value=float(st.session_state.get(price_key, auto_satis)),
+                    step=100.0, 
+                    key=price_key
+                )
             
             for key, p in active_parcel_db.items():
                 breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
