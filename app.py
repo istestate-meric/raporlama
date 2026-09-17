@@ -68,7 +68,7 @@ st.markdown(
         top: 15px;
         right: 25px;
         z-index: 999999;
-        background: rgba(15, 23, 42, 0.92);
+        background: rgba(15, 23, 42, 0.65);
         backdrop-filter: blur(8px);
         border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: 10px;
@@ -109,12 +109,12 @@ st.markdown(
 
 <div class="currency-float-bar">
     <div class="currency-item">
-        <span class="currency-label">USD/TRY:</span>
+        <span class="currency-label">USD</span>
         <span class="currency-val">₺{rates['USD']:.2f}</span>
     </div>
     <div class="currency-divider"></div>
     <div class="currency-item">
-        <span class="currency-label">EUR/TRY:</span>
+        <span class="currency-label">EUR</span>
         <span class="currency-val">₺{rates['EUR']:.2f}</span>
     </div>
 </div>
@@ -353,7 +353,7 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
         if kw in text_upper:
             if not f"YAPILMAMIŞTIR" in text_upper and not f"YAPILMAMIŞ" in text_upper:
                 return True
-    for kw in kesin_terk_yapilmamis:
+    for kw in kesin_terk_yapilnamis if 'kesin_terk_yapilnamis' in locals() else kesin_terk_yapilmamis:
         if kw in text_upper:
             return False
     return False
