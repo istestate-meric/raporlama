@@ -60,33 +60,51 @@ def clean_fonksiyon_adi(name):
         return ""
     return n
 
-# --- İMAR FONKSİYONUNA GÖRE UYGUN PROJE TİPLERİ FİLTRELEME MOTORU ---
+# --- İMAR FONKSİYONUNA GÖRE KESİN VE UYUMLU PROJE TİPLERİ FİLTRELEME MOTORU ---
 def get_allowed_project_types(fonk_adi):
     f_upper = fonk_adi.upper()
-    if any(k in f_upper for k in ["TİCARET", "TICARI", "İŞ MERKEZİ", "MERKEZİ İŞ"]):
-        return ["Ticari / Ofis Kompleksi", "Karma Proje (Konut + Ticari)"]
+    
+    # 1. Ticaret + Konut Alanı (TİCK / TCK): Sadece Ticaret veya Sadece Konut YAPILAMAZ! Eşit Oranlı Karma Şart.
+    if ("TİCARET" in f_upper or "TICARI" in f_upper) and ("KONUT" in f_upper or "MESKEN" in f_upper):
+        return ["Karma Proje (Eşit Oranlı Ticari + Konut)"]
+    
+    # 2. Turizm + Konut / Turizm + Ticaret Karma Alanları
+    elif "TURİZM" in f_upper or "TURIZM" in f_upper:
+        if "KONUT" in f_upper:
+            return ["Otel + Konut Karma Proje", "Otel / Turizm Tesisi"]
+        elif "TİCARET" in f_upper or "TICARI" in f_upper:
+            return ["Otel + Ticari AVM Kompleksi", "Otel / Turizm Tesisi"]
+        else:
+            return ["Otel / Turizm Tesisi"]
+            
+    # 3. Saf Ticaret Alanı: Konut veya Karma YAPILAMAZ!
+    elif any(k in f_upper for k in ["TİCARET", "TICARI", "İŞ MERKEZİ", "MERKEZİ İŞ"]):
+        return ["Ticari / Ofis Kompleksi"]
+        
+    # 4. Saf Villa / Müstakil Konut Alanı
     elif any(k in f_upper for k in ["VİLLA", "VILLA"]):
-        return ["Lüks Villa / Müstakil Proje", "Standart Konut / Apartman"]
+        return ["Lüks Villa / Müstakil Proje"]
+        
+    # 5. Saf Konut Alanı: Karma veya Ticaret YAPILAMAZ!
     elif any(k in f_upper for k in ["KONUT", "MESKEN", "GELİŞME"]):
         return [
             "Standart Konut / Apartman", 
             "Üst Segment Konut / Rezidans", 
-            "Lüks Villa / Müstakil Proje", 
-            "Karma Proje (Konut + Ticari)"
+            "Lüks Villa / Müstakil Proje"
         ]
+        
+    # Varsayılan / Tanımsız Fonksiyonlar İçin Güvenli Konut / Ticaret Seçenekleri
     else:
         return [
             "Standart Konut / Apartman", 
             "Üst Segment Konut / Rezidans", 
-            "Lüks Villa / Müstakil Proje", 
-            "Ticari / Ofis Kompleksi", 
-            "Karma Proje (Konut + Ticari)"
+            "Ticari / Ofis Kompleksi"
         ]
 
 def get_allowed_pool_options(project_type):
     if "Villa" in project_type:
         return ["Müstakil Özel Havuzlu Villa Projesi", "Ortak Havuzlu Villa Sitesi Konsepti", "Havuz İptal / Yapılmayacak"]
-    elif "Ticari" in project_type:
+    elif "Ticari" in project_type or "AVM" in project_type:
         return ["Havuz İptal / Yapılmayacak"]
     else:
         return ["Standart Ortak Havuzlu Proje", "Havuz İptal / Yapılmayacak"]
@@ -176,7 +194,6 @@ def get_live_exchange_rates():
 
 # --- OTOMATİK PİYASA VE HAVUZ ENTEGRELİ GÜNCEL FİYATLANDIRMA MOTORU ---
 def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_rate):
-    # Güncellenmiş Bölge/Mahalle Tabanlı m² Satış Fiyatları (TL)
     mahalle_base_tl = {
         "ACARLAR": 165000, "ANADOLU HİSARI": 150000, "KANLICA": 145000, 
         "GÖKSU": 130000, "GÖRELE": 135000, "RİVA": 140000, "ÇİFTLİK": 130000, 
@@ -187,13 +204,15 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_ra
     clean_mahalle = mahalle_adi.upper().replace("İ", "I").replace("Ç", "C").replace("Ş", "S").replace("Ğ", "G").replace("Ü", "U").replace("Ö", "O").strip()
     base_tl = mahalle_base_tl.get(clean_mahalle, mahalle_base_tl["VARSAYILAN"])
     
-    # Güncel Piyasa Şartlarına Göre Proje Çarpanları ve İnşaat m² Maliyetleri ($)
     proje_carpanlari = {
         "Lüks Villa / Müstakil Proje": {"satis_mod": 1.65, "maliyet_mod": 1450},
         "Üst Segment Konut / Rezidans": {"satis_mod": 1.30, "maliyet_mod": 1200},
         "Standart Konut / Apartman": {"satis_mod": 1.00, "maliyet_mod": 950},
         "Ticari / Ofis Kompleksi": {"satis_mod": 1.40, "maliyet_mod": 1150},
-        "Karma Proje (Konut + Ticari)": {"satis_mod": 1.25, "maliyet_mod": 1100}
+        "Karma Proje (Eşit Oranlı Ticari + Konut)": {"satis_mod": 1.35, "maliyet_mod": 1180},
+        "Otel + Konut Karma Proje": {"satis_mod": 1.45, "maliyet_mod": 1300},
+        "Otel + Ticari AVM Kompleksi": {"satis_mod": 1.50, "maliyet_mod": 1350},
+        "Otel / Turizm Tesisi": {"satis_mod": 1.55, "maliyet_mod": 1400}
     }
     
     p_conf = proje_carpanlari.get(proje_tipi, proje_carpanlari["Standart Konut / Apartman"])
@@ -599,7 +618,7 @@ if selected_keys:
             <span style="font-size: 18px; margin-right: 8px;">📊</span>
             <div>
                 <h3 style="color: #0f172a; margin: 0; font-size: 15px; font-weight: 700;">Gelişmiş Fizibilite ve Fonksiyon Bazlı Proje Optimizasyonu</h3>
-                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına özel olarak filtrelenmiş proje tipleri, havuz seçenekleri ve otomatik m² maliyet/satış ayarları.</p>
+                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına özel olarak tam uyumlu hale getirilmiş proje tipleri, havuz seçenekleri ve otomatik m² maliyet/satış ayarları.</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -629,7 +648,7 @@ if selected_keys:
 
     col_opt1, col_opt2 = st.columns([3, 1])
     with col_opt1:
-        st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonuna Göre Proje Tipi, Birim Havuz Seçeneği ve Otomatik m² Fiyatları</div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonuna Göre Birebir Uyumlu Proje Tipi, Birim Havuz Seçeneği ve Otomatik m² Fiyatları</div>", unsafe_allow_html=True)
     with col_opt2:
         auto_select_best_margin = st.toggle("Kar Marjına Göre Otomatik Seç (En Yüksek Verim)", value=True, key="auto_select_margin_toggle")
     
@@ -662,14 +681,12 @@ if selected_keys:
             # --- CANLI PİYASA FİYATLARI VE ANLIK STATE SENKRONİZASYONU ---
             auto_satis, auto_maliyet = get_realistic_market_pricing(first_mahalle, selected_func_p_type, selected_func_pool, rates["USD"])
 
-            # Parseller değiştikçe widget key'inin yenilenmesi için dinamik parsel kimliği
             selected_parcels_hash = "_".join(selected_keys)
             cost_key = f"cost_{idx}_{fonk_adi}_{first_mahalle}_{selected_parcels_hash}"
             price_key = f"price_{idx}_{fonk_adi}_{first_mahalle}_{selected_parcels_hash}"
             last_state_key = f"last_state_{idx}_{fonk_adi}_{first_mahalle}_{selected_parcels_hash}"
             current_state_str = f"{selected_func_p_type}_{selected_func_pool}"
 
-            # Parsel, Mahalle, Proje Tipi veya Havuz Değiştiğinde Fiyatları Eşzamanlı Güncelle
             if (last_state_key not in st.session_state) or (st.session_state.get(last_state_key) != current_state_str):
                 st.session_state[cost_key] = float(auto_maliyet)
                 st.session_state[price_key] = float(auto_satis)
