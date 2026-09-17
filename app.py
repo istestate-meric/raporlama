@@ -356,7 +356,7 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
             return False
     return False
 
-# --- DÜZELTİLMİŞ VE KAKS ÇAKIŞMALARINI ENGELLEYEN İMAR PDF AYRIŞTIRMA MOTORU ---
+# --- İMAR PDF AYRIŞTIRMA MOTORU ---
 def parse_imar_pdf(uploaded_file):
     parcel_data = {
         "filename": uploaded_file.name,
@@ -419,7 +419,6 @@ def parse_imar_pdf(uploaded_file):
                             if f_name:
                                 cleaned_check = clean_fonksiyon_adi(f_name)
                                 if cleaned_check and not any(x in cleaned_check for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
-                                    # KAKS VEYA İSMİ FARKLI OLAN HER ALANI AYRI SEGMENT OLARAK KAYDET
                                     existing_exact = next((f for f in parcel_data["fonksiyonlar"] if f["fonksiyon_adi"] == cleaned_check and f["kaks"] == f_kaks), None)
                                     if existing_exact:
                                         if f_taks > 0: existing_exact["taks"] = f_taks
@@ -513,13 +512,13 @@ def parse_imar_pdf(uploaded_file):
         
     return parcel_data
 
-# --- HESAPLAMA ÇAKIŞMALARINI ENGELLEYEN FONKSİYON BAZLI M² VE KAKS DAĞITIM MOTORU ---
+# --- FONKSİYON BAZINDA BİRLEŞTİRİLMİŞ (KONSOLİDE) METRAJ BÖLÜMLEME MOTORU ---
 def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
     toplam_arsa_m2 = p.get("toplam_alan", 0.0)
     is_terkli = p.get("terk_yapilmis_mi", False)
     fonks_list = p.get("fonksiyonlar", [])
     
-    valid_fonks = []
+    valid_sub_items = []
     for f in fonks_list:
         fonk_base_name = clean_fonksiyon_adi(f.get("fonksiyon_adi", ""))
         if not fonk_base_name or any(x in fonk_base_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
@@ -527,38 +526,34 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
         active_kaks = f.get("kaks", 0.0)
         if active_kaks <= 0:
             continue
-            
-        # HATA ÇÖZÜMÜ: Eğer aynı fonksiyon birden fazla farklı KAKS ile tanımlıysa etikete KAKS ekleyerek çakışmayı önle
-        display_fonk_name = f"{fonk_base_name} (E:{active_kaks:.2f})" if len([x for x in fonks_list if clean_fonksiyon_adi(x.get("fonksiyon_adi", "")) == fonk_base_name]) > 1 else fonk_base_name
-        valid_fonks.append((f, display_fonk_name, active_kaks, fonk_base_name))
+        valid_sub_items.append((f, fonk_base_name, active_kaks))
         
-    if not valid_fonks:
+    if not valid_sub_items:
         return []
-        
-    sum_giren = sum(f.get("giren_m2", 0.0) for f, _, _, _ in valid_fonks)
+
+    sum_giren = sum(f.get("giren_m2", 0.0) for f, _, _ in valid_sub_items)
     net_arsa_toplam = toplam_arsa_m2 if is_terkli else (toplam_arsa_m2 * 0.7)
-    
-    results = []
-    for f, display_fonk_name, active_kaks, base_fonk_name in valid_fonks:
+
+    # 1. Aşama: Alt lejant segmentlerinin hesabı
+    temp_results = []
+    for f, base_fonk_name, active_kaks in valid_sub_items:
         giren_m2 = f.get("giren_m2", 0.0)
-        
         if giren_m2 > 0:
             fonk_giren_payi = giren_m2
         else:
-            fonk_giren_payi = toplam_arsa_m2 / len(valid_fonks) if len(valid_fonks) > 0 else toplam_arsa_m2
+            fonk_giren_payi = toplam_arsa_m2 / len(valid_sub_items) if len(valid_sub_items) > 0 else toplam_arsa_m2
             
         bahce_kullanim_alani = fonk_giren_payi
         
         if sum_giren > 0:
             oran = giren_m2 / sum_giren
         else:
-            oran = 1.0 / len(valid_fonks)
+            oran = 1.0 / len(valid_sub_items)
             
         net_arsa_payi = net_arsa_toplam * oran
         brut_insaat = net_arsa_payi * active_kaks * emsal_artis_orani
-            
-        results.append({
-            "fonksiyon_adi": display_fonk_name,
+
+        temp_results.append({
             "base_fonksiyon_adi": base_fonk_name,
             "taks": f.get("taks", 0.0),
             "kaks": active_kaks,
@@ -567,7 +562,42 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
             "bahce_kullanim_alani": bahce_kullanim_alani,
             "brut_insaat": brut_insaat
         })
-    return results
+
+    # 2. Aşama: Aynı ana fonksiyon adını taşıyan kalemleri konsolide etme (toplama)
+    consolidated_dict = {}
+    for item in temp_results:
+        fn = item["base_fonksiyon_adi"]
+        if fn not in consolidated_dict:
+            consolidated_dict[fn] = {
+                "fonksiyon_adi": fn,
+                "base_fonksiyon_adi": fn,
+                "taks": item["taks"],
+                "giren_m2": 0.0,
+                "net_arsa_payi": 0.0,
+                "bahce_kullanim_alani": 0.0,
+                "brut_insaat": 0.0,
+                "kaks_list": []
+            }
+        consolidated_dict[fn]["giren_m2"] += item["giren_m2"]
+        consolidated_dict[fn]["net_arsa_payi"] += item["net_arsa_payi"]
+        consolidated_dict[fn]["bahce_kullanim_alani"] += item["bahce_kullanim_alani"]
+        consolidated_dict[fn]["brut_insaat"] += item["brut_insaat"]
+        consolidated_dict[fn]["kaks_list"].append((item["net_arsa_payi"], item["kaks"]))
+
+    # 3. Aşama: Toplu ağırlıklı KAKS'ın hesaplanması
+    final_results = []
+    for fn, data in consolidated_dict.items():
+        net_arsa_sum = data["net_arsa_payi"]
+        if net_arsa_sum > 0:
+            weighted_kaks = sum(net_p * k for net_p, k in data["kaks_list"]) / net_arsa_sum
+        else:
+            weighted_kaks = data["kaks_list"][0][1] if data["kaks_list"] else 0.0
+
+        data["kaks"] = weighted_kaks
+        del data["kaks_list"]
+        final_results.append(data)
+
+    return final_results
 
 # --- KOMPAKT & KURUMSAL HEADER ---
 st.markdown(f"""
@@ -650,7 +680,7 @@ if selected_keys:
             <span style="font-size: 18px; margin-right: 8px;">📊</span>
             <div>
                 <h3 style="color: #0f172a; margin: 0; font-size: 15px; font-weight: 700;">Gelişmiş Fizibilite ve Fonksiyon Bazlı Proje Optimizasyonu</h3>
-                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına özel olarak tam uyumlu hale getirilmiş proje tipleri, havuz seçenekleri ve otomatik m² maliyet/satış ayarları.</p>
+                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına özel olarak birleştirilmiş metraj, proje tipleri, havuz seçenekleri ve otomatik m² maliyet/satış ayarları.</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -689,7 +719,7 @@ if selected_keys:
     
     for idx, fonk_adi in enumerate(unique_active_functions):
         with func_cols[idx % len(func_cols)]:
-            st.markdown(f"**📌 Fonksiyon Segmenti: {fonk_adi}**")
+            st.markdown(f"**📌 Fonksiyon: {fonk_adi}**")
             
             allowed_p_types = get_allowed_project_types(fonk_adi)
             
@@ -868,7 +898,7 @@ if selected_keys:
     ])
 
     with tab1:
-        st.subheader("📊 Seçilen Parseller & Dinamik Fonksiyon Bazlı İnşaat Alanı")
+        st.subheader("📊 Birleştirilmiş Fonksiyon Bazlı İnşaat Alanı ve Metrajlar")
         table_rows = []
         sum_brut_insaat = 0.0
         sum_bodrum_insaat = 0.0
@@ -903,11 +933,11 @@ if selected_keys:
                     "Parsel": parsel,
                     "Toplam Arsa m²": f"{toplam_arsa_m2:,.2f}",
                     "Terk Durumu": "Yapılmış (Net)" if is_terkli else "Yapılmamış (Brüt)",
-                    "Fonksiyon / KAKS Segmenti": item["fonksiyon_adi"],
-                    "Kaks/Emsal": f"{item['kaks']:.2f}",
-                    "Bahçe Alanı (m²)": f"{bahce_m2:,.2f}",
-                    "Emsal İnşaat Alanı (m²)": f"{emsal_arsa:,.2f}",
-                    "Toplam İnşaat Alanı (m²)": f"{(brut_insaat_arsa + bodrum_arsa):,.2f}"
+                    "Birleştirilmiş Fonksiyon": item["fonksiyon_adi"],
+                    "Ağırlıklı Emsal (KAKS)": f"{item['kaks']:.2f}",
+                    "Toplam Bahçe Alanı (m²)": f"{bahce_m2:,.2f}",
+                    "Toplam Emsal İnşaat (m²)": f"{emsal_arsa:,.2f}",
+                    "Toplam Genel İnşaat (m²)": f"{(brut_insaat_arsa + bodrum_arsa):,.2f}"
                 })
                 
         if table_rows:
@@ -924,7 +954,7 @@ if selected_keys:
 
     with tab2:
         st.subheader("🏛️ Mimari Fizibilite & Senaryo Dağılım Matrisi (Birim Başına Düşen Alanlar)")
-        st.markdown("<p style='color: #64748b; font-size: 13px; margin-top: -10px;'>Aşağıdaki tablo, girilen havuz alanının <strong>birim başına m²</strong> kabul edilerek hesaplandığı net, bodrum ve toplam alan dağılımlarını göstermektedir.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #64748b; font-size: 13px; margin-top: -10px;'>Aşağıdaki tablo, birleştirilmiş fonksiyon bazında hesaplanan net, bodrum ve toplam birim alan dağılımlarını göstermektedir.</p>", unsafe_allow_html=True)
         
         mimari_rows = []
         total_units_sum = 0
@@ -1071,7 +1101,7 @@ if selected_keys:
                     <td style="text-align: right;">{toplam_arsa_m2:,.2f} m²</td>
                     <td style="text-align: center;">{'Yapılmış (Net)' if is_terkli else 'Yapılmamış (Brüt)'}</td>
                     <td>{item['fonksiyon_adi']}</td>
-                    <td style="text-align: center;">{item['kaks']:.2f}</td>
+                    <td style="text-align: center;">{item['kaks']:.2f} (Ağırlıklı)</td>
                     <td style="text-align: right;">{brut_insaat_arsa:,.2f} m²</td>
                     <td style="text-align: right;">{bodrum_arsa:,.2f} m²</td>
                     <td style="text-align: right; font-weight: bold;">{(brut_insaat_arsa + bodrum_arsa):,.2f} m²</td>
@@ -1146,7 +1176,7 @@ if selected_keys:
                 </tr>
             </table>
 
-            <div class="section-title">1. PARSEL VE İMAR METRAJ KÜNYESİ</div>
+            <div class="section-title">1. PARSEL VE İMAR METRAJ KÜNYESİ (BİRLEŞTİRİLMİŞ FONKSİYONLAR)</div>
             <table class="data-table">
                 <thead>
                     <tr>
@@ -1154,8 +1184,8 @@ if selected_keys:
                         <th style="text-align: center;">Ada / Parsel</th>
                         <th style="text-align: right;">Toplam Arsa</th>
                         <th style="text-align: center;">Terk Durumu</th>
-                        <th>İmar Fonksiyonu / KAKS Segmenti</th>
-                        <th style="text-align: center;">Emsal (KAKS)</th>
+                        <th>İmar Fonksiyonu</th>
+                        <th style="text-align: center;">Ağırlıklı Emsal (KAKS)</th>
                         <th style="text-align: right;">Emsal İnşaat (m²)</th>
                         <th style="text-align: right;">Bodrum (m²)</th>
                         <th style="text-align: right;">Toplam İnşaat (m²)</th>
@@ -1272,7 +1302,7 @@ if selected_keys:
         st.download_button(
             label="📥 Kurumsal Fizibilite Raporunu PDF Olarak İndir",
             data=pdf_bytes,
-            file_name=f"Kurumsal_Toplu_Fizibilite_{first_mahalle}.pdf",
+            file_name=f"Kurumsal_Konsolide_Fizibilite_{first_mahalle}.pdf",
             mime="application/pdf",
             use_container_width=True
         )
@@ -1303,8 +1333,9 @@ if selected_keys:
                             "Ada / Parsel": f"{ada} / {parsel}",
                             "Toplam Arsa (m²)": f"{toplam_alan:,.2f}",
                             "Terk Durumu": terk_st,
-                            "Fonksiyon Segmenti": item["fonksiyon_adi"],
-                            "Bahçe Alanı (m²)": f"{bahce_m2:,.2f}",
+                            "Konsolide Fonksiyon": item["fonksiyon_adi"],
+                            "Ağırlıklı KAKS": f"{item['kaks']:.2f}",
+                            "Toplam Bahçe Alanı (m²)": f"{bahce_m2:,.2f}",
                             "Emsal İnşaat Alanı (m²)": f"{brut:,.2f}",
                             "Bodrum (m²)": f"{bod:,.2f}",
                             "Toplam İnşaat (m²)": f"{(brut + bod):,.2f}"
