@@ -149,7 +149,7 @@ img1_tag = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 4
 img2_tag = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 45px; width: auto; object-fit: contain;'>" if img2_base64 else "<h4 style='color:#1e3a8a; margin:0;'>MERİÇ İNŞAAT</h4>"
 
 # --- TCMB CANLI DÖVİZ KURU SERVİSİ ---
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=300)
 def get_live_exchange_rates():
     try:
         url = "https://www.tcmb.gov.tr/kurlar/today.xml"
@@ -168,32 +168,30 @@ def get_live_exchange_rates():
                 eur_rate = float(currency.find('ForexSelling').text)
                 
         return {
-            "USD": usd_rate if usd_rate > 0 else 38.00,
-            "EUR": eur_rate if eur_rate > 0 else 41.50
+            "USD": usd_rate if usd_rate > 0 else 34.00,
+            "EUR": eur_rate if eur_rate > 0 else 37.50
         }
     except Exception:
-        return {"USD": 38.00, "EUR": 41.50}
+        return {"USD": 34.00, "EUR": 37.50}
 
-# --- CANLI VE DİNAMİK PİYASA MALIYET / SATIŞ HESAPLAMA MOTORU ---
+# --- OTOMATİK PİYASA VE HAVUZ ENTEGRELİ FİYATLANDIRMA MOTORU ---
 def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_rate):
-    # Güncel canlı piyasa şartlarına göre bölge bazı TL değerleri
     mahalle_base_tl = {
-        "ACARLAR": 220000, "ANADOLU HİSARI": 190000, "KANLICA": 185000, 
-        "GÖKSU": 160000, "GÖRELE": 170000, "RİVA": 165000, "ÇİFTLİK": 160000, 
-        "BAKLACI": 135000, "KAVACIK": 140000, "ÇENGELDERE": 145000, 
-        "YAVUZ SELİM": 120000, "FATİH": 115000, "SOĞUKSU": 135000, "PAŞABAHÇE": 130000, "VARSAYILAN": 140000
+        "ACARLAR": 140000, "ANADOLU HİSARI": 130000, "KANLICA": 125000, 
+        "GÖKSU": 110000, "GÖRELE": 115000, "RİVA": 120000, "ÇİFTLİK": 115000, 
+        "BAKLACI": 95000, "KAVACIK": 90000, "ÇENGELDERE": 105000, 
+        "YAVUZ SELİM": 80000, "FATİH": 75000, "SOĞUKSU": 95000, "PAŞABAHÇE": 90000, "VARSAYILAN": 95000
     }
     
     clean_mahalle = mahalle_adi.upper().replace("İ", "I").replace("Ç", "C").replace("Ş", "S").replace("Ğ", "G").replace("Ü", "U").replace("Ö", "O").strip()
     base_tl = mahalle_base_tl.get(clean_mahalle, mahalle_base_tl["VARSAYILAN"])
     
-    # Güncel inşaat maliyet ve satış katsayıları
     proje_carpanlari = {
-        "Lüks Villa / Müstakil Proje": {"satis_mod": 1.65, "maliyet_mod": 1800},
-        "Üst Segment Konut / Rezidans": {"satis_mod": 1.35, "maliyet_mod": 1500},
-        "Standart Konut / Apartman": {"satis_mod": 1.10, "maliyet_mod": 1200},
-        "Ticari / Ofis Kompleksi": {"satis_mod": 1.45, "maliyet_mod": 1400},
-        "Karma Proje (Konut + Ticari)": {"satis_mod": 1.30, "maliyet_mod": 1350}
+        "Lüks Villa / Müstakil Proje": {"satis_mod": 1.55, "maliyet_mod": 1350},
+        "Üst Segment Konut / Rezidans": {"satis_mod": 1.25, "maliyet_mod": 1100},
+        "Standart Konut / Apartman": {"satis_mod": 1.00, "maliyet_mod": 900},
+        "Ticari / Ofis Kompleksi": {"satis_mod": 1.35, "maliyet_mod": 1050},
+        "Karma Proje (Konut + Ticari)": {"satis_mod": 1.20, "maliyet_mod": 1000}
     }
     
     p_conf = proje_carpanlari.get(proje_tipi, proje_carpanlari["Standart Konut / Apartman"])
@@ -202,11 +200,11 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_ra
     pool_price_addon = 0.0
     if "İptal" not in havuz_secenegi:
         if "Müstakil" in havuz_secenegi:
-            pool_cost_addon = 75.0   
-            pool_price_addon = 350.0 
+            pool_cost_addon = 45.0   
+            pool_price_addon = 250.0 
         else:
-            pool_cost_addon = 40.0   
-            pool_price_addon = 200.0 
+            pool_cost_addon = 25.0   
+            pool_price_addon = 130.0 
 
     satis_fiyati_usd = round(((base_tl * p_conf["satis_mod"]) / usd_rate) + pool_price_addon, 2)
     maliyet_fiyati_usd = float(p_conf["maliyet_mod"]) + pool_cost_addon
@@ -666,11 +664,7 @@ if selected_keys:
             last_pt_key = f"last_pt_{idx}_{fonk_adi}"
             last_pool_key = f"last_pool_{idx}_{fonk_adi}"
 
-            # Proje tipi, havuz veya mahalle değiştiğinde canlı veriler üzerinden session state güncellemesi
-            if (st.session_state.get(last_pt_key) != selected_func_p_type or 
-                st.session_state.get(last_pool_key) != selected_func_pool or 
-                cost_key not in st.session_state):
-                
+            if st.session_state.get(last_pt_key) != selected_func_p_type or st.session_state.get(last_pool_key) != selected_func_pool:
                 st.session_state[cost_key] = float(auto_maliyet)
                 st.session_state[price_key] = float(auto_satis)
                 st.session_state[last_pt_key] = selected_func_p_type
@@ -678,9 +672,9 @@ if selected_keys:
 
             prc_col1, prc_col2 = st.columns(2)
             with prc_col1:
-                custom_maliyet = st.number_input(f"Otomatik m² Maliyet ($)", min_value=300.0, max_value=10000.0, step=50.0, key=cost_key)
+                custom_maliyet = st.number_input(f"Otomatik m² Maliyet ($)", min_value=300.0, max_value=6000.0, step=50.0, key=cost_key)
             with prc_col2:
-                custom_satis = st.number_input(f"Otomatik m² Satış ($)", min_value=500.0, max_value=25000.0, step=100.0, key=price_key)
+                custom_satis = st.number_input(f"Otomatik m² Satış ($)", min_value=500.0, max_value=18000.0, step=100.0, key=price_key)
             
             for key, p in active_parcel_db.items():
                 breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
