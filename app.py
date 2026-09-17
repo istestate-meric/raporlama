@@ -17,63 +17,105 @@ st.set_page_config(
     layout="wide",
 )
 
-# --- ÖZEL KURUMSAL STİL & KAYDIRILABİLİR DÖVİZ BANDI CSS ENJEKSİYONU ---
+# --- TCMB CANLI DÖVİZ KURU SERVİSİ ---
+@st.cache_data(ttl=300)
+def get_live_exchange_rates():
+    try:
+        url = "https://www.tcmb.gov.tr/kurlar/today.xml"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=5) as response:
+            xml_data = response.read()
+        
+        root = ET.fromstring(xml_data)
+        usd_rate, eur_rate = 0.0, 0.0
+        
+        for currency in root.findall('Currency'):
+            code = currency.get('CurrencyCode')
+            if code == 'USD':
+                usd_rate = float(currency.find('ForexSelling').text)
+            elif code == 'EUR':
+                eur_rate = float(currency.find('ForexSelling').text)
+                
+        return {
+            "USD": usd_rate if usd_rate > 0 else 34.00,
+            "EUR": eur_rate if eur_rate > 0 else 37.50
+        }
+    except Exception:
+        return {"USD": 34.00, "EUR": 37.50}
+
+rates = get_live_exchange_rates()
+
+# --- ÖZEL KURUMSAL STİL & SAĞ ÜST SABİT DÖVİZ KURU WİDGET ENJEKSİYONU ---
 st.markdown(
-    """
+    f"""
 <style>
-    .stSelectbox, .stNumberInput, .stSlider {
+    .stSelectbox, .stNumberInput, .stSlider {{
         background-color: #ffffff;
         border-radius: 6px;
-    }
-    div[data-baseweb="select"] > div {
+    }}
+    div[data-baseweb="select"] > div {{
         border-radius: 6px;
         border-color: #cbd5e1;
-    }
-    .block-container {
+    }}
+    .block-container {{
         padding-top: 1.5rem;
         padding-bottom: 2rem;
-    }
+    }}
     
-    /* KAYDIRILABİLİR DÖVİZ BARI CSS YAPISI */
-    .ticker-wrap {
-        width: 100%;
-        max-width: 320px;
-        overflow: hidden;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 6px 0;
-        box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
-    }
-    .ticker {
+    /* SAYFA İLE BİRLİKTE KAYAN SAĞ ÜST SABİT DÖVİZ BARI */
+    .currency-float-bar {{
+        position: fixed;
+        top: 60px;
+        right: 25px;
+        z-index: 999999;
+        background: rgba(15, 23, 42, 0.92);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 10px;
+        padding: 8px 14px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         display: flex;
-        white-space: nowrap;
-        animation: ticker-scroll 18s linear infinite;
-    }
-    .ticker:hover {
-        animation-play-state: paused;
-    }
-    .ticker-item {
-        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        color: #ffffff;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        pointer-events: auto;
+    }}
+    .currency-item {{
+        display: flex;
         align-items: center;
         gap: 6px;
-        padding: 0 14px;
         font-size: 12px;
         font-weight: 600;
-        color: #1e293b;
-    }
-    .ticker-code {
-        color: #0284c7;
+    }}
+    .currency-label {{
+        color: #94a3b8;
+        font-size: 11px;
+    }}
+    .currency-val {{
+        color: #38bdf8;
+        font-family: monospace;
+        font-size: 13px;
         font-weight: 700;
-    }
-    .ticker-val {
-        color: #0f172a;
-    }
-    @keyframes ticker-scroll {
-        0% { transform: translateX(0); }
-        100% { transform: translateX(-50%); }
-    }
+    }}
+    .currency-divider {{
+        width: 1px;
+        height: 16px;
+        background-color: rgba(255, 255, 255, 0.2);
+    }}
 </style>
+
+<div class="currency-float-bar">
+    <div class="currency-item">
+        <span class="currency-label">USD/TRY:</span>
+        <span class="currency-val">₺{rates['USD']:.2f}</span>
+    </div>
+    <div class="currency-divider"></div>
+    <div class="currency-item">
+        <span class="currency-label">EUR/TRY:</span>
+        <span class="currency-val">₺{rates['EUR']:.2f}</span>
+    </div>
+</div>
 """,
     unsafe_allow_html=True,
 )
@@ -104,8 +146,11 @@ def clean_fonksiyon_adi(name):
 def get_allowed_project_types(fonk_adi):
     f_upper = fonk_adi.upper()
     
+    # 1. Ticaret + Konut Alanı (TİCK / TCK): Sadece Ticaret veya Sadece Konut YAPILAMAZ! Eşit Oranlı Karma Şart.
     if ("TİCARET" in f_upper or "TICARI" in f_upper) and ("KONUT" in f_upper or "MESKEN" in f_upper):
         return ["Karma Proje (Eşit Oranlı Ticari + Konut)"]
+    
+    # 2. Turizm + Konut / Turizm + Ticaret Karma Alanları
     elif "TURİZM" in f_upper or "TURIZM" in f_upper:
         if "KONUT" in f_upper:
             return ["Otel + Konut Karma Proje", "Otel / Turizm Tesisi"]
@@ -113,16 +158,24 @@ def get_allowed_project_types(fonk_adi):
             return ["Otel + Ticari AVM Kompleksi", "Otel / Turizm Tesisi"]
         else:
             return ["Otel / Turizm Tesisi"]
+            
+    # 3. Saf Ticaret Alanı: Konut veya Karma YAPILAMAZ!
     elif any(k in f_upper for k in ["TİCARET", "TICARI", "İŞ MERKEZİ", "MERKEZİ İŞ"]):
         return ["Ticari / Ofis Kompleksi"]
+        
+    # 4. Saf Villa / Müstakil Konut Alanı
     elif any(k in f_upper for k in ["VİLLA", "VILLA"]):
         return ["Lüks Villa / Müstakil Proje"]
+        
+    # 5. Saf Konut Alanı: Karma veya Ticaret YAPILAMAZ!
     elif any(k in f_upper for k in ["KONUT", "MESKEN", "GELİŞME"]):
         return [
             "Standart Konut / Apartman", 
             "Üst Segment Konut / Rezidans", 
             "Lüks Villa / Müstakil Proje"
         ]
+        
+    # Varsayılan / Tanımsız Fonksiyonlar İçin Güvenli Konut / Ticaret Seçenekleri
     else:
         return [
             "Standart Konut / Apartman", 
@@ -194,62 +247,6 @@ img2_base64 = get_image_base64("meric_insaat_emlak_logo.png")
 
 img1_tag = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 45px; width: auto; object-fit: contain;'>" if img1_base64 else "<h4 style='color:#1e3a8a; margin:0;'>İSTESTATE</h4>"
 img2_tag = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 45px; width: auto; object-fit: contain;'>" if img2_base64 else "<h4 style='color:#1e3a8a; margin:0;'>MERİÇ İNŞAAT</h4>"
-
-# --- TCMB CANLI DÖVİZ KURU SERVİSİ (GENİŞLETİLMİŞ) ---
-@st.cache_data(ttl=300)
-def get_live_exchange_rates():
-    rates = {
-        "USD": 34.00,
-        "EUR": 37.50,
-        "GBP": 44.50,
-        "CHF": 39.80,
-        "CAD": 25.10
-    }
-    try:
-        url = "https://www.tcmb.gov.tr/kurlar/today.xml"
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=5) as response:
-            xml_data = response.read()
-        
-        root = ET.fromstring(xml_data)
-        
-        for currency in root.findall('Currency'):
-            code = currency.get('CurrencyCode')
-            if code in rates:
-                selling_elem = currency.find('ForexSelling')
-                if selling_elem is not None and selling_elem.text:
-                    val = float(selling_elem.text)
-                    if val > 0:
-                        rates[code] = val
-        return rates
-    except Exception:
-        return rates
-
-rates = get_live_exchange_rates()
-
-# Kaydırılabilir Döviz Bandı için HTML İçeriği Hazırlama
-rates_list = [
-    ("USD", rates.get("USD", 34.00), "$"),
-    ("EUR", rates.get("EUR", 37.50), "€"),
-    ("GBP", rates.get("GBP", 44.50), "£"),
-    ("CHF", rates.get("CHF", 39.80), "CHF"),
-    ("CAD", rates.get("CAD", 25.10), "C$")
-]
-
-single_ticker_items = "".join([
-    f"<div class='ticker-item'><span class='ticker-code'>{symbol} {code}:</span> <span class='ticker-val'>₺{val:,.2f}</span></div>"
-    for code, val, symbol in rates_list
-])
-
-# Kesintisiz (seamless) sonsuz döngü sağlamak için veriyi ikili kopyalıyoruz
-ticker_html_content = f"""
-<div class="ticker-wrap">
-    <div class="ticker">
-        {single_ticker_items}
-        {single_ticker_items}
-    </div>
-</div>
-"""
 
 # --- OTOMATİK PİYASA VE HAVUZ ENTEGRELİ GÜNCEL FİYATLANDIRMA MOTORU ---
 def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_rate):
@@ -594,22 +591,16 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
         })
     return results
 
-# --- KOMPAKT & KURUMSAL HEADER (SAĞ ÜST CANLI DÖVİZ BANDI ENTEGRELİ) ---
+# --- KOMPAKT & KURUMSAL HEADER ---
 st.markdown(f"""
-<div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); margin-bottom: 20px;">
-    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 15px;">
-        <div style="display: flex; align-items: center; gap: 12px; flex: 1.2;">
-            {img1_tag}
-            <div style="border-left: 1px solid #cbd5e1; height: 35px; margin: 0 4px;"></div>
-            {img2_tag}
+<div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 15px 25px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); margin-bottom: 20px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+        <div style="flex: 1; text-align: left;">{img1_tag}</div>
+        <div style="flex: 2; text-align: center;">
+            <h2 style='color: #0f172a; font-size: 18px; font-weight: 800; margin: 0; letter-spacing: -0.3px;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT</h2>
+            <p style='color: #475569; font-size: 12px; font-weight: 500; margin: 2px 0 0 0;'>Akıllı Gayrimenkul Geliştirme ve Fizibilite Portalı</p>
         </div>
-        <div style="flex: 1.8; text-align: center;">
-            <h2 style='color: #0f172a; font-size: 17px; font-weight: 800; margin: 0; letter-spacing: -0.3px;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT</h2>
-            <p style='color: #475569; font-size: 11px; font-weight: 500; margin: 2px 0 0 0;'>Akıllı Gayrimenkul Geliştirme ve Fizibilite Portalı</p>
-        </div>
-        <div style="flex: 1.2; display: flex; justify-content: flex-end; align-items: center;">
-            {ticker_html_content}
-        </div>
+        <div style="flex: 1; text-align: right;">{img2_tag}</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
