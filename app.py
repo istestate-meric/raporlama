@@ -17,22 +17,95 @@ st.set_page_config(
     layout="wide",
 )
 
-# --- ÖZEL KURUMSAL STİL ENJEKSİYONU ---
+# --- TCMB CANLI DÖVİZ KURU SERVİSİ ---
+@st.cache_data(ttl=300)
+def get_live_exchange_rates():
+    try:
+        url = "https://www.tcmb.gov.tr/kurlar/today.xml"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=5) as response:
+            xml_data = response.read()
+        
+        root = ET.fromstring(xml_data)
+        usd_rate, eur_rate, gbp_rate = 0.0, 0.0, 0.0
+        
+        for currency in root.findall('Currency'):
+            code = currency.get('CurrencyCode')
+            if code == 'USD':
+                usd_rate = float(currency.find('ForexSelling').text)
+            elif code == 'EUR':
+                eur_rate = float(currency.find('ForexSelling').text)
+            elif code == 'GBP':
+                gbp_rate = float(currency.find('ForexSelling').text)
+                
+        return {
+            "USD": usd_rate if usd_rate > 0 else 34.00,
+            "EUR": eur_rate if eur_rate > 0 else 37.50,
+            "GBP": gbp_rate if gbp_rate > 0 else 44.20
+        }
+    except Exception:
+        return {"USD": 34.00, "EUR": 37.50, "GBP": 44.20}
+
+rates = get_live_exchange_rates()
+
+# --- ÖZEL KURUMSAL STİL VE SAĞ ÜST KAYDIRILABİLİR KANBAN/TICKER ENJEKSİYONU ---
 st.markdown(
-    """
+    f"""
 <style>
-    .stSelectbox, .stNumberInput, .stSlider {
+    .stSelectbox, .stNumberInput, .stSlider {{
         background-color: #ffffff;
         border-radius: 6px;
-    }
-    div[data-baseweb="select"] > div {
+    }}
+    div[data-baseweb="select"] > div {{
         border-radius: 6px;
         border-color: #cbd5e1;
-    }
-    .block-container {
+    }}
+    .block-container {{
         padding-top: 1.5rem;
         padding-bottom: 2rem;
-    }
+    }}
+    
+    /* KAYDIRILABİLİR DÖVİZ KURU BARI (RIGHT-TOP MARQUEE) */
+    .ticker-wrapper {{
+        position: relative;
+        width: 100%;
+        max-width: 380px;
+        overflow: hidden;
+        background: #0f172a;
+        border-radius: 8px;
+        padding: 6px 10px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        border: 1px solid #1e293b;
+    }}
+    .ticker-content {{
+        display: flex;
+        white-space: nowrap;
+        animation: ticker 15s linear infinite;
+    }}
+    .ticker-content:hover {{
+        animation-play-state: paused;
+    }}
+    .ticker-item {{
+        display: inline-flex;
+        align-items: center;
+        margin-right: 20px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        color: #f8fafc;
+    }}
+    .ticker-symbol {{
+        color: #38bdf8;
+        margin-right: 5px;
+        font-weight: 700;
+    }}
+    .ticker-value {{
+        color: #34d399;
+    }}
+    @keyframes ticker {{
+        0% {{ transform: translateX(100%); }}
+        100% {{ transform: translateX(-100%); }}
+    }}
 </style>
 """,
     unsafe_allow_html=True,
@@ -64,11 +137,8 @@ def clean_fonksiyon_adi(name):
 def get_allowed_project_types(fonk_adi):
     f_upper = fonk_adi.upper()
     
-    # 1. Ticaret + Konut Alanı (TİCK / TCK): Sadece Ticaret veya Sadece Konut YAPILAMAZ! Eşit Oranlı Karma Şart.
     if ("TİCARET" in f_upper or "TICARI" in f_upper) and ("KONUT" in f_upper or "MESKEN" in f_upper):
         return ["Karma Proje (Eşit Oranlı Ticari + Konut)"]
-    
-    # 2. Turizm + Konut / Turizm + Ticaret Karma Alanları
     elif "TURİZM" in f_upper or "TURIZM" in f_upper:
         if "KONUT" in f_upper:
             return ["Otel + Konut Karma Proje", "Otel / Turizm Tesisi"]
@@ -76,24 +146,16 @@ def get_allowed_project_types(fonk_adi):
             return ["Otel + Ticari AVM Kompleksi", "Otel / Turizm Tesisi"]
         else:
             return ["Otel / Turizm Tesisi"]
-            
-    # 3. Saf Ticaret Alanı: Konut veya Karma YAPILAMAZ!
     elif any(k in f_upper for k in ["TİCARET", "TICARI", "İŞ MERKEZİ", "MERKEZİ İŞ"]):
         return ["Ticari / Ofis Kompleksi"]
-        
-    # 4. Saf Villa / Müstakil Konut Alanı
     elif any(k in f_upper for k in ["VİLLA", "VILLA"]):
         return ["Lüks Villa / Müstakil Proje"]
-        
-    # 5. Saf Konut Alanı: Karma veya Ticaret YAPILAMAZ!
     elif any(k in f_upper for k in ["KONUT", "MESKEN", "GELİŞME"]):
         return [
             "Standart Konut / Apartman", 
             "Üst Segment Konut / Rezidans", 
             "Lüks Villa / Müstakil Proje"
         ]
-        
-    # Varsayılan / Tanımsız Fonksiyonlar İçin Güvenli Konut / Ticaret Seçenekleri
     else:
         return [
             "Standart Konut / Apartman", 
@@ -165,32 +227,6 @@ img2_base64 = get_image_base64("meric_insaat_emlak_logo.png")
 
 img1_tag = f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 45px; width: auto; object-fit: contain;'>" if img1_base64 else "<h4 style='color:#1e3a8a; margin:0;'>İSTESTATE</h4>"
 img2_tag = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 45px; width: auto; object-fit: contain;'>" if img2_base64 else "<h4 style='color:#1e3a8a; margin:0;'>MERİÇ İNŞAAT</h4>"
-
-# --- TCMB CANLI DÖVİZ KURU SERVİSİ ---
-@st.cache_data(ttl=300)
-def get_live_exchange_rates():
-    try:
-        url = "https://www.tcmb.gov.tr/kurlar/today.xml"
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=5) as response:
-            xml_data = response.read()
-        
-        root = ET.fromstring(xml_data)
-        usd_rate, eur_rate = 0.0, 0.0
-        
-        for currency in root.findall('Currency'):
-            code = currency.get('CurrencyCode')
-            if code == 'USD':
-                usd_rate = float(currency.find('ForexSelling').text)
-            elif code == 'EUR':
-                eur_rate = float(currency.find('ForexSelling').text)
-                
-        return {
-            "USD": usd_rate if usd_rate > 0 else 34.00,
-            "EUR": eur_rate if eur_rate > 0 else 37.50
-        }
-    except Exception:
-        return {"USD": 34.00, "EUR": 37.50}
 
 # --- OTOMATİK PİYASA VE HAVUZ ENTEGRELİ GÜNCEL FİYATLANDIRMA MOTORU ---
 def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_rate):
@@ -535,7 +571,7 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
         })
     return results
 
-# --- KOMPAKT & KURUMSAL HEADER ---
+# --- KOMPAKT & KURUMSAL HEADER (SAĞ ÜSTTE KAYDIRILABİLİR KURLAR İLE) ---
 st.markdown(f"""
 <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 15px 25px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); margin-bottom: 20px;">
     <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
@@ -544,12 +580,24 @@ st.markdown(f"""
             <h2 style='color: #0f172a; font-size: 18px; font-weight: 800; margin: 0; letter-spacing: -0.3px;'>İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT</h2>
             <p style='color: #475569; font-size: 12px; font-weight: 500; margin: 2px 0 0 0;'>Akıllı Gayrimenkul Geliştirme ve Fizibilite Portalı</p>
         </div>
-        <div style="flex: 1; text-align: right;">{img2_tag}</div>
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: flex-end; justify-content: center;">
+            <div style="margin-bottom: 4px;">{img2_tag}</div>
+            <!-- KAYDIRILABİLİR ANLIK DÖVİZ BARI -->
+            <div class="ticker-wrapper">
+                <div class="ticker-content">
+                    <div class="ticker-item"><span class="ticker-symbol">USD:</span><span class="ticker-value">₺{rates['USD']:.2f}</span></div>
+                    <div class="ticker-item"><span class="ticker-symbol">EUR:</span><span class="ticker-value">₺{rates['EUR']:.2f}</span></div>
+                    <div class="ticker-item"><span class="ticker-symbol">GBP:</span><span class="ticker-value">₺{rates['GBP']:.2f}</span></div>
+                    <!-- Kesintisiz Döngü İçin İkinci Tur -->
+                    <div class="ticker-item"><span class="ticker-symbol">USD:</span><span class="ticker-value">₺{rates['USD']:.2f}</span></div>
+                    <div class="ticker-item"><span class="ticker-symbol">EUR:</span><span class="ticker-value">₺{rates['EUR']:.2f}</span></div>
+                    <div class="ticker-item"><span class="ticker-symbol">GBP:</span><span class="ticker-value">₺{rates['GBP']:.2f}</span></div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
-
-rates = get_live_exchange_rates()
 
 st.sidebar.header("📁 İmar Belgesi Yükleme")
 uploaded_files = st.sidebar.file_uploader("İmar Durum Raporu (PDF) Seçin", type=["pdf"], accept_multiple_files=True)
@@ -678,7 +726,6 @@ if selected_keys:
             if "İptal" not in selected_func_pool:
                 custom_pool_m2 = st.number_input(f"Birim Başı Havuz (m²) - {fonk_adi}", min_value=5.0, max_value=200.0, value=30.0, step=5.0, key=f"custom_pool_m2_{idx}_{fonk_adi}")
             
-            # --- CANLI PİYASA FİYATLARI VE ANLIK STATE SENKRONİZASYONU ---
             auto_satis, auto_maliyet = get_realistic_market_pricing(first_mahalle, selected_func_p_type, selected_func_pool, rates["USD"])
 
             selected_parcels_hash = "_".join(selected_keys)
