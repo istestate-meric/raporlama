@@ -196,18 +196,15 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_ra
     
     p_conf = proje_carpanlari.get(proje_tipi, proje_carpanlari["Standart Konut / Apartman"])
     
-    pool_cost_addon = 0.0
     pool_price_addon = 0.0
     if "İptal" not in havuz_secenegi:
         if "Müstakil" in havuz_secenegi:
-            pool_cost_addon = 45.0   
             pool_price_addon = 250.0 
         else:
-            pool_cost_addon = 25.0   
             pool_price_addon = 130.0 
 
     satis_fiyati_usd = round(((base_tl * p_conf["satis_mod"]) / usd_rate) + pool_price_addon, 2)
-    maliyet_fiyati_usd = float(p_conf["maliyet_mod"]) + pool_cost_addon
+    maliyet_fiyati_usd = float(p_conf["maliyet_mod"])
     
     return satis_fiyati_usd, maliyet_fiyati_usd
 
@@ -664,7 +661,7 @@ if selected_keys:
             last_pt_key = f"last_pt_{idx}_{fonk_adi}"
             last_pool_key = f"last_pool_{idx}_{fonk_adi}"
 
-            if st.session_state.get(last_pt_key) != selected_func_p_type or st.session_state.get(last_pool_key) != selected_func_pool:
+            if auto_select_best_margin or st.session_state.get(last_pt_key) != selected_func_p_type or st.session_state.get(last_pool_key) != selected_func_pool:
                 st.session_state[cost_key] = float(auto_maliyet)
                 st.session_state[price_key] = float(auto_satis)
                 st.session_state[last_pt_key] = selected_func_p_type
@@ -672,9 +669,9 @@ if selected_keys:
 
             prc_col1, prc_col2 = st.columns(2)
             with prc_col1:
-                custom_maliyet = st.number_input(f"Otomatik m² Maliyet ($)", min_value=300.0, max_value=6000.0, step=50.0, key=cost_key)
+                custom_maliyet = st.number_input(f"Otomatik m² Maliyet ($)", min_value=300.0, max_value=6000.0, step=50.0, key=cost_key, disabled=auto_select_best_margin)
             with prc_col2:
-                custom_satis = st.number_input(f"Otomatik m² Satış ($)", min_value=500.0, max_value=18000.0, step=100.0, key=price_key)
+                custom_satis = st.number_input(f"Otomatik m² Satış ($)", min_value=500.0, max_value=18000.0, step=100.0, key=price_key, disabled=auto_select_best_margin)
             
             for key, p in active_parcel_db.items():
                 breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
@@ -738,6 +735,7 @@ if selected_keys:
     total_bahce_alani_terki = 0.0
     total_ciro_usd = 0.0
     total_maliyet_usd = 0.0
+    HAVUZ_M2_IMALAT_COST = 450.0  # Havuz m2 başına standart imalat maliyeti ($/m2)
 
     for key, p in active_parcel_db.items():
         breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
@@ -772,11 +770,12 @@ if selected_keys:
             
             total_ciro_usd += (parsel_ust_kat_ciro + parsel_bodrum_ciro)
             
-            net_maliyete_esas_ust_kat = brut_insaat 
-            ust_kat_maliyeti = net_maliyete_esas_ust_kat * conf["maliyet"]
+            # İnşaat Maliyeti: Üst Kat + Bodrum + Havuz Yapım Maliyeti
+            ust_kat_maliyeti = brut_insaat * conf["maliyet"]
             bodrum_maliyeti = bodrum_m2_parsel * (conf["maliyet"] * 0.60)
+            havuz_maliyeti = toplam_parsel_havuz_m2 * HAVUZ_M2_IMALAT_COST
             
-            toplam_parsel_maliyeti = ust_kat_maliyeti + bodrum_maliyeti
+            toplam_parsel_maliyeti = ust_kat_maliyeti + bodrum_maliyeti + havuz_maliyeti
             total_maliyet_usd += toplam_parsel_maliyeti
 
     # KÂR VE CİRO PAYLAŞIM AYRIMI
@@ -857,7 +856,7 @@ if selected_keys:
 
     with tab2:
         st.subheader("🏛️ Mimari Fizibilite & Senaryo Dağılım Matrisi (Birim Başına Düşen Alanlar)")
-        st.markdown("<p style='color: #64748b; font-size: 13px; margin-top: -10px;'>Aşağıdaki tablo, girilen havuz alanının <strong>birim başına m²</strong> kabul edilerek hesaplandığı net, bodrum ve toplam alan dağılımlarını göstermektedir.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #64748b; font-size: 13px; margin-top: -10px;'>Aşağıdaki tablo, havuz alanlarının emsalden düşüldüğü ve birim başına net, bodrum ve havuz alanlarının ayrıştırıldığı mimari metrajları göstermektedir.</p>", unsafe_allow_html=True)
         
         mimari_rows = []
         total_units_sum = 0
@@ -928,14 +927,14 @@ if selected_keys:
             m_col2.metric("Ortalama Net/Brüt Birim Alanı", f"{avg_unit_m2:,.1f} m²")
             
             if "Kat Karşılığı" in is_modeli:
-                exact_arsa_sahibi = total_units_sum * (arsa_payi_orani / 100.0)
-                exact_mutaahhit = total_units_sum * ((100 - arsa_payi_orani) / 100.0)
+                exact_arsa_sahibi = round(total_units_sum * (arsa_payi_orani / 100.0))
+                exact_mutaahhit = total_units_sum - exact_arsa_sahibi
                 
-                m_col3.metric("Arsa Sahibi Payı (Adet)", f"{exact_arsa_sahibi:,.2f} Adet (%{arsa_payi_orani})")
-                m_col4.metric("Müteahhit Payı (Adet)", f"{exact_mutaahhit:,.2f} Adet (%{100 - arsa_payi_orani})")
+                m_col3.metric("Arsa Sahibi Payı (Tahmini)", f"{exact_arsa_sahibi} Adet (%{arsa_payi_orani})")
+                m_col4.metric("Müteahhit Payı (Tahmini)", f"{exact_mutaahhit} Adet (%{100 - arsa_payi_orani})")
             else:
                 m_col3.metric("İş Modeli", "Doğrudan Satılık")
-                m_col4.metric("Müteahhit Payı", f"{float(total_units_sum):,.2f} Adet (%100)")
+                m_col4.metric("Müteahhit Payı", f"{total_units_sum} Adet (%100)")
 
     with tab3:
         st.subheader("📑 Finansal Fizibilite ve Fonksiyon Dağılımı (3 Para Birimi Sunumu)")
