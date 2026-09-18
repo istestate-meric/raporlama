@@ -48,5 +48,85 @@
                 "giren_m2": 463.31
             }
         ]
+    },
+    "BAKLACI | Ada: 1306 - Parsel: 1": {
+        "filename": "1306 Ada 1 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1306",
+        "parsel": "1",
+        "toplam_alan": 1394.77,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 1394.77
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1306 - Parsel: 2": {
+        "filename": "1306 Ada 2 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1306",
+        "parsel": "2",
+        "toplam_alan": 1391.83,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 1391.83
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1306 - Parsel: 3": {
+        "filename": "1306 Ada 3 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1306",
+        "parsel": "3",
+        "toplam_alan": 1329.33,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 1329.33
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1306 - Parsel: 4": {
+        "filename": "1306 Ada 4 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1306",
+        "parsel": "4",
+        "toplam_alan": 4001.83,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 4001.83
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1306 - Parsel: 5": {
+        "filename": "1306 Ada 5 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1306",
+        "parsel": "5",
+        "toplam_alan": 886.52,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 886.52
+            }
+        ]
     }
 }
