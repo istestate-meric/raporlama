@@ -642,8 +642,8 @@ if all_db_keys:
     
     filtered_keys = [k for k, p_data in st.session_state["parcel_db"].items() if str(p_data.get("ada", "")).strip() == str(selected_ada_filter).strip()] if selected_ada_filter != "Seçiniz..." else all_db_keys
     
-    raw_default = just_uploaded_keys if just_uploaded_keys else filtered_keys[:min(3, len(filtered_keys))]
-    safe_default = [k for k in raw_default if k in filtered_keys]
+    # SADECE YENİ PDF YÜKLENDİĞİNDE OTOMATİK SEÇİM YAPILIR, DİĞER DURUMLARDA HİÇBİR PARSEL OTOMATİK SEÇİLMEZ (BOŞ GELECEKTİR)
+    safe_default = [k for k in just_uploaded_keys if k in filtered_keys]
     
     selected_keys = st.sidebar.multiselect("Raporlanacak Parselleri Seçin:", options=filtered_keys, default=safe_default)
 else:
