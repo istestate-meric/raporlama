@@ -192,5 +192,21 @@
                 "giren_m2": 649.47
             }
         ]
+    },
+    "BAKLACI | Ada: 1308 - Parsel: 1": {
+        "filename": "1308 Ada 1 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1308",
+        "parsel": "1",
+        "toplam_alan": 1864.35,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 1864.35
+            }
+        ]
     }
 }
