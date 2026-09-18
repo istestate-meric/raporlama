@@ -402,5 +402,233 @@
                 "giren_m2": 464.26
             }
         ]
+    },
+    "BAKLACI | Ada: 1312 - Parsel: 1": {
+        "filename": "1312 Ada 1 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1312",
+        "parsel": "1",
+        "toplam_alan": 1663.01,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 1663.01
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1312 - Parsel: 2": {
+        "filename": "1312 Ada 2 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1312",
+        "parsel": "2",
+        "toplam_alan": 974.23,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 974.23
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1312 - Parsel: 3": {
+        "filename": "1312 Ada 3 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1312",
+        "parsel": "3",
+        "toplam_alan": 876.99,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.3,
+                "giren_m2": 493.06
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1312 - Parsel: 4": {
+        "filename": "1312 Ada 4 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1312",
+        "parsel": "4",
+        "toplam_alan": 1288.93,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 1288.93
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.3,
+                "giren_m2": 845.66
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1312 - Parsel: 5": {
+        "filename": "1312 Ada 5 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1312",
+        "parsel": "5",
+        "toplam_alan": 1268.68,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.3,
+                "giren_m2": 1019.36
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1312 - Parsel: 6": {
+        "filename": "1312 Ada 6 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1312",
+        "parsel": "6",
+        "toplam_alan": 2508.46,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.3,
+                "giren_m2": 1642.86
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1312 - Parsel: 7": {
+        "filename": "1312 Ada 7 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1312",
+        "parsel": "7",
+        "toplam_alan": 1449.02,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.3,
+                "giren_m2": 934.16
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1312 - Parsel: 8": {
+        "filename": "1312 Ada 8 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1312",
+        "parsel": "8",
+        "toplam_alan": 1184.65,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.3,
+                "giren_m2": 883.7
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1312 - Parsel: 9": {
+        "filename": "1312 Ada 9 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1312",
+        "parsel": "9",
+        "toplam_alan": 916.6,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 916.6
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1312 - Parsel: 10": {
+        "filename": "1312 Ada 10 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1312",
+        "parsel": "10",
+        "toplam_alan": 2544.18,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 2544.18
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1312 - Parsel: 11": {
+        "filename": "1312 Ada 11 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1312",
+        "parsel": "11",
+        "toplam_alan": 931.59,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 931.59
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1312 - Parsel: 12": {
+        "filename": "1312 Ada 12 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1312",
+        "parsel": "12",
+        "toplam_alan": 1161.63,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 1161.63
+            }
+        ]
     }
 }
