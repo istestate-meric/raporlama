@@ -4224,5 +4224,21 @@
                 "giren_m2": 2201.38
             }
         ]
+    },
+    "BAKLACI | Ada: 1328 - Parsel: 16": {
+        "filename": "1328 Ada 18 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1328",
+        "parsel": "16",
+        "toplam_alan": 2542.64,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 2542.64
+            }
+        ]
     }
 }
