@@ -2,3 +2,4 @@ weasyprint>=60.0
 streamlit
 pandas
 pdfplumber
+PyGithub
