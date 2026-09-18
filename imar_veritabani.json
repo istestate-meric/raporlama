@@ -4240,5 +4240,21 @@
                 "giren_m2": 2542.64
             }
         ]
+    },
+    "BAKLACI | Ada: 1329 - Parsel: 5": {
+        "filename": "1329 Ada 5 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1329",
+        "parsel": "5",
+        "toplam_alan": 55.25,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 55.25
+            }
+        ]
     }
 }
