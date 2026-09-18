@@ -4816,5 +4816,203 @@
                 "giren_m2": 1012.36
             }
         ]
+    },
+    "BAKLACI | Ada: 1338 - Parsel: 1": {
+        "filename": "1338 Ada 1 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1338",
+        "parsel": "1",
+        "toplam_alan": 498.16,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.45,
+                "giren_m2": 464.5
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1338 - Parsel: 2": {
+        "filename": "1338 Ada 2 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1338",
+        "parsel": "2",
+        "toplam_alan": 1096.05,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.45,
+                "giren_m2": 946.74
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1338 - Parsel: 3": {
+        "filename": "1338 Ada 3 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1338",
+        "parsel": "3",
+        "toplam_alan": 524.15,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.45,
+                "giren_m2": 508.68
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1338 - Parsel: 4": {
+        "filename": "1338 Ada 4 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1338",
+        "parsel": "4",
+        "toplam_alan": 1119.24,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.45,
+                "giren_m2": 876.23
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1338 - Parsel: 5": {
+        "filename": "1338 Ada 5 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1338",
+        "parsel": "5",
+        "toplam_alan": 1603.18,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.45,
+                "giren_m2": 1603.17
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1338 - Parsel: 6": {
+        "filename": "1338 Ada 6 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1338",
+        "parsel": "6",
+        "toplam_alan": 3632.98,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.45,
+                "giren_m2": 2318.92
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1338 - Parsel: 7": {
+        "filename": "1338 Ada 7 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1338",
+        "parsel": "7",
+        "toplam_alan": 3418.39,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.45,
+                "giren_m2": 2242.76
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1338 - Parsel: 8": {
+        "filename": "1338 Ada 8 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1338",
+        "parsel": "8",
+        "toplam_alan": 2256.06,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.45,
+                "giren_m2": 1926.76
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1338 - Parsel: 10": {
+        "filename": "1338 Ada 10 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1338",
+        "parsel": "10",
+        "toplam_alan": 5791.84,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.45,
+                "giren_m2": 3858.03
+            }
+        ]
     }
 }
