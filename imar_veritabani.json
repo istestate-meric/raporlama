@@ -2196,5 +2196,49 @@
                 "giren_m2": 1074.09
             }
         ]
+    },
+    "BAKLACI | Ada: 1320 - Parsel: 8": {
+        "filename": "1320 Ada 8 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1320",
+        "parsel": "8",
+        "toplam_alan": 978.18,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.3,
+                "giren_m2": 969.55
+            }
+        ]
+    },
+    "BAKLACI | Ada: 1320 - Parsel: 9": {
+        "filename": "1320 Ada 9 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "1320",
+        "parsel": "9",
+        "toplam_alan": 364.47,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.3,
+                "giren_m2": 338.93
+            }
+        ]
     }
 }
