@@ -10,8 +10,17 @@ import pdfplumber
 import streamlit as st
 import streamlit.components.v1 as components
 
-# --- GITHUB KONFİGÜRASYONU ---
-GITHUB_TOKEN = ""
+# --- GITHUB KONFİGÜRASYONU & TOKEN YÖNETİMİ ---
+# Güvenlik için token'ı öncelikle Streamlit Secrets/Çevre değişkenlerinden okur, yoksa koda tanımlı değeri kullanır.
+DEFAULT_GITHUB_TOKEN = "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"
+
+if "GITHUB_TOKEN" in st.secrets:
+  GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
+elif os.environ.get("GITHUB_TOKEN"):
+  GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+else:
+  GITHUB_TOKEN = DEFAULT_GITHUB_TOKEN
+
 GITHUB_REPO = "istestate-meric/raporlama"
 DB_FILE_NAME = "imar_veritabani.json"
 
@@ -261,9 +270,29 @@ BASE_DIR = os.path.abspath(os.getcwd())
 DB_FILE = os.path.join(BASE_DIR, DB_FILE_NAME)
 
 
-def push_to_github(data_dict):
-  """PyGithub kullanarak JSON dosyasını depoya push eder."""
+def pull_from_github():
+  """Açılışta GitHub deposundaki son veritabanı JSON dosyasını çeker."""
   if not GITHUB_TOKEN:
+    return None
+  try:
+    g = Github(GITHUB_TOKEN)
+    repo = g.get_repo(GITHUB_REPO)
+    file_content = repo.get_contents(DB_FILE_NAME, ref="main")
+    decoded_content = base64.b64decode(file_content.content).decode("utf-8")
+    data = json.loads(decoded_content)
+    if isinstance(data, dict):
+      with open(DB_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+      return data
+  except Exception:
+    pass
+  return None
+
+
+def push_to_github(data_dict):
+  """PyGithub kullanarak JSON dosyasını doğrudan ana depoya (main branch) günceller."""
+  if not GITHUB_TOKEN:
+    st.sidebar.error("GitHub Token bulunamadı!")
     return
   try:
     g = Github(GITHUB_TOKEN)
@@ -274,16 +303,15 @@ def push_to_github(data_dict):
       contents = repo.get_contents(DB_FILE_NAME, ref="main")
       repo.update_file(
           path=contents.path,
-          message="Otomatik veritabanı güncellemesi [Streamlit]",
+          message="Otomatik veritabanı güncellemesi [Streamlit App]",
           content=json_str,
           sha=contents.sha,
           branch="main",
       )
     except Exception:
-      # Dosya henüz deponuzda oluşturulmadıysa yeni oluşturur
       repo.create_file(
           path=DB_FILE_NAME,
-          message="Otomatik veritabanı oluşturuldu [Streamlit]",
+          message="Otomatik veritabanı oluşturuldu [Streamlit App]",
           content=json_str,
           branch="main",
       )
@@ -292,6 +320,12 @@ def push_to_github(data_dict):
 
 
 def load_persistent_db():
+  # 1. Önce GitHub deposundaki en güncel JSON verisini çek
+  remote_data = pull_from_github()
+  if remote_data is not None:
+    return remote_data
+
+  # 2. GitHub erişimi başarısız olursa yerel diskteki JSON dosyasından oku
   if os.path.exists(DB_FILE):
     try:
       with open(DB_FILE, "r", encoding="utf-8") as f:
@@ -305,15 +339,15 @@ def load_persistent_db():
 
 def save_persistent_db(db_data):
   try:
-    # 1. Yerel ortama yaz (geçici sunucu diski)
+    # 1. Yerel sunucu diskine yaz
     with open(DB_FILE, "w", encoding="utf-8") as f:
       json.dump(db_data, f, ensure_ascii=False, indent=4)
     st.session_state["parcel_db"] = db_data
 
-    # 2. Kalıcılık için GitHub Deponuza Otomatik Commit At
+    # 2. GitHub deponuza Sync et (Commit & Push)
     push_to_github(db_data)
   except Exception as e:
-    st.error(f"Veritabanı kaydedilirken kritik hata oluştu: {e}")
+    st.error(f"Veritabanı kaydedilirken hata oluştu: {e}")
 
 
 if "parcel_db" not in st.session_state:
