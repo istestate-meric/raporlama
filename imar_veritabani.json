@@ -7629,7 +7629,7 @@
         "ada": "2421",
         "parsel": "4",
         "toplam_alan": 7346.76,
-        "terk_yapilmis_mi": false,
+        "terk_yapilmis_mi": true,
         "fonksiyonlar": [
             {
                 "fonksiyon_adi": "KONUT ALANI",
