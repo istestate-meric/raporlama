@@ -7556,5 +7556,49 @@
                 "giren_m2": 1372.22
             }
         ]
+    },
+    "ÇİFTLİK | Ada: 1562 - Parsel: 34": {
+        "filename": "1562 Ada 34 Parsel.pdf",
+        "mahalle": "ÇİFTLİK",
+        "ada": "1562",
+        "parsel": "34",
+        "toplam_alan": 2785.66,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.3,
+                "giren_m2": 1822.25
+            }
+        ]
+    },
+    "ÇİFTLİK | Ada: 1562 - Parsel: 35": {
+        "filename": "1562 Ada 35 Parsel.pdf",
+        "mahalle": "ÇİFTLİK",
+        "ada": "1562",
+        "parsel": "35",
+        "toplam_alan": 3280.06,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.3,
+                "giren_m2": 2359.66
+            }
+        ]
     }
 }
