@@ -7600,5 +7600,27 @@
                 "giren_m2": 2359.66
             }
         ]
+    },
+    "YAVUZSELİM | Ada: 1647 - Parsel: 10": {
+        "filename": "1647 Ada 10 Parsel.pdf",
+        "mahalle": "YAVUZSELİM",
+        "ada": "1647",
+        "parsel": "10",
+        "toplam_alan": 6398.86,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.4,
+                "giren_m2": 5051.15
+            }
+        ]
     }
 }
