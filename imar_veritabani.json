@@ -7622,5 +7622,27 @@
                 "giren_m2": 5051.15
             }
         ]
+    },
+    "YAVUZSELİM | Ada: 2421 - Parsel: 4": {
+        "filename": "2421 Ada 4 Parsel.pdf",
+        "mahalle": "YAVUZSELİM",
+        "ada": "2421",
+        "parsel": "4",
+        "toplam_alan": 7346.76,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.45,
+                "giren_m2": 7346.75
+            }
+        ]
     }
 }
