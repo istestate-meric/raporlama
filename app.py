@@ -11,7 +11,6 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 # --- GITHUB KONFİGÜRASYONU & TOKEN YÖNETİMİ ---
-# Güvenlik için token'ı öncelikle Streamlit Secrets/Çevre değişkenlerinden okur, yoksa koda tanımlı değeri kullanır.
 DEFAULT_GITHUB_TOKEN = "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"
 
 if "GITHUB_TOKEN" in st.secrets:
@@ -320,12 +319,10 @@ def push_to_github(data_dict):
 
 
 def load_persistent_db():
-  # 1. Önce GitHub deposundaki en güncel JSON verisini çek
   remote_data = pull_from_github()
   if remote_data is not None:
     return remote_data
 
-  # 2. GitHub erişimi başarısız olursa yerel diskteki JSON dosyasından oku
   if os.path.exists(DB_FILE):
     try:
       with open(DB_FILE, "r", encoding="utf-8") as f:
@@ -339,12 +336,9 @@ def load_persistent_db():
 
 def save_persistent_db(db_data):
   try:
-    # 1. Yerel sunucu diskine yaz
     with open(DB_FILE, "w", encoding="utf-8") as f:
       json.dump(db_data, f, ensure_ascii=False, indent=4)
     st.session_state["parcel_db"] = db_data
-
-    # 2. GitHub deponuza Sync et (Commit & Push)
     push_to_github(db_data)
   except Exception as e:
     st.error(f"Veritabanı kaydedilirken hata oluştu: {e}")
@@ -1661,7 +1655,7 @@ if selected_keys:
                 .data-table {{ width: 100%; border-collapse: collapse; margin-top: 2px; margin-bottom: 6px; font-size: 8px; }}
                 .data-table th, .data-table td {{ border: 1px solid #cbd5e1; padding: 4px 6px; }}
                 .data-table th {{ background-color: #f8fafc; color: #1e293b; font-weight: 700; text-align: left; }}
-                .footer {{ font-size: 7.5px; color: #64748b; text-align: center; margin-top: 10px; border-top: 1px dashed #cbd5e1; padding-top: 4px; }}
+                .footer {{ font-size: 7.5px; color: #475569; text-align: center; margin-top: 12px; border-top: 1px dashed #cbd5e1; padding-top: 6px; font-weight: 500; line-height: 1.3; }}
                 .highlight {{ background-color: #eff6ff; font-weight: bold; }}
             </style>
             </head>
@@ -1758,7 +1752,8 @@ if selected_keys:
                 </table>
 
                 <div class="footer">
-                    Bu rapor Akıllı Fizibilite Portalı tarafından otomatize edilerek oluşturulmuştur.
+                    Bu rapor İstestate Gayrimenkul ve Meriç İnşaat Emlak bilgi sistemleri tarafından otomatik üretilmiştir.<br>
+                    Resmi belge niteliği taşımaz, fizibilite ve ön inceleme amaçlıdır.
                 </div>
             </body>
             </html>
