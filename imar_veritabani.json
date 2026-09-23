@@ -15370,5 +15370,49 @@
                 "giren_m2": 5768.25
             }
         ]
+    },
+    "BAKLACI | Ada: 2634 - Parsel: 1": {
+        "filename": "2634 Ada 1 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "2634",
+        "parsel": "1",
+        "toplam_alan": 718.2,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.45,
+                "giren_m2": 718.2
+            }
+        ]
+    },
+    "BAKLACI | Ada: 2634 - Parsel: 2": {
+        "filename": "2634 Ada 2 Parsel.pdf",
+        "mahalle": "BAKLACI",
+        "ada": "2634",
+        "parsel": "2",
+        "toplam_alan": 3090.67,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.45,
+                "giren_m2": 3090.67
+            }
+        ]
     }
 }
