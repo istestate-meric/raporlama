@@ -15414,5 +15414,27 @@
                 "giren_m2": 3090.67
             }
         ]
+    },
+    "FATİH | Ada: 39 - Parsel: 11": {
+        "filename": "ImarDurumuRaporu_1790438763674.pdf",
+        "mahalle": "FATİH",
+        "ada": "39",
+        "parsel": "11",
+        "toplam_alan": 5798.22,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.45,
+                "giren_m2": 4382.1
+            }
+        ]
     }
 }
