@@ -270,7 +270,6 @@ DB_FILE = os.path.join(BASE_DIR, DB_FILE_NAME)
 
 
 def pull_from_github():
-  """Açılışta GitHub deposundaki son veritabanı JSON dosyasını çeker."""
   if not GITHUB_TOKEN:
     return None
   try:
@@ -289,7 +288,6 @@ def pull_from_github():
 
 
 def push_to_github(data_dict):
-  """PyGithub kullanarak JSON dosyasını doğrudan ana depoya (main branch) günceller."""
   if not GITHUB_TOKEN:
     st.sidebar.error("GitHub Token bulunamadı!")
     return
@@ -558,7 +556,6 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
   return False
 
 
-# --- İMAR PDF AYRIŞTIRMA MOTORU ---
 def parse_imar_pdf(uploaded_file):
   parcel_data = {
       "filename": uploaded_file.name,
@@ -818,7 +815,6 @@ def parse_imar_pdf(uploaded_file):
   return parcel_data
 
 
-# --- FONKSİYON BAZINDA BİRLEŞTİRİLMİŞ (KONSOLİDE) METRAJ BÖLÜMLEME MOTORU ---
 def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
   toplam_arsa_m2 = p.get("toplam_alan", 0.0)
   is_terkli = p.get("terk_yapilmis_mi", False)
@@ -1258,7 +1254,6 @@ if selected_keys:
               1, round(brut_insaat / t_size)
           )
 
-  # --- CİRO VE MALİYET HESAPLAMALARI ---
   total_yasal_brut_insaat = 0.0
   total_bodrum_alani = 0.0
   total_bahce_alani_terki = 0.0
@@ -1320,12 +1315,13 @@ if selected_keys:
       else 0
   )
 
-  tab1, tab2, tab3, tab4, tab5 = st.tabs([
+  tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
       "📊 Seçilen Parseller & İnşaat Alanı",
       "🏛️ Mimari Fizibilite (Bodrum + Zemin/Normal)",
       "📑 Proje Raporu & Fizibilite",
       "🖨️ Rapor Ön İzleme & PDF",
       "🗄️ Veritabanı & Arşiv Yönetimi",
+      "📱 Sosyal Medya Stüdyosu",
   ])
 
   with tab1:
@@ -1530,8 +1526,7 @@ if selected_keys:
     if not WEASYPRINT_AVAILABLE:
       st.error(
           "⚠️ PDF oluşturma motoru (WeasyPrint) sisteminizde eksik. Lütfen"
-          " `packages.txt` dosyasının GitHub deponuzda bulunduğundan ve"
-          " Streamlit Cloud ortamının yeniden başlatıldığından emin olun."
+          " `packages.txt` dosyasının deponuzda bulunduğundan emin olun."
       )
     else:
       pdf_logo1_html = (
@@ -1867,6 +1862,90 @@ if selected_keys:
           st.rerun()
     else:
       st.info("Veritabanında kayıtlı parsel bulunmuyor.")
+
+  with tab6:
+    st.subheader("📱 Sosyal Medya ve Mobil Pazarlama Stüdyosu")
+    st.markdown(
+        "Seçtiğiniz parsel ve fizibilite verilerini kullanarak Instagram,"
+        " Facebook ve WhatsApp için hazır, dikkat çekici mobil içerikler"
+        " oluşturun."
+    )
+
+    if active_parcel_db:
+      first_p_key = list(active_parcel_db.keys())[0]
+      p_sample = active_parcel_db[first_p_key]
+      mahalle_adi = p_sample.get("mahalle", "BİLİNMİYOR")
+      adas = ", ".join(
+          set(str(p.get("ada", "")) for p in active_parcel_db.values())
+      )
+      parsels = ", ".join(
+          set(str(p.get("parsel", "")) for p in active_parcel_db.values())
+      )
+      toplam_m2 = sum(
+          p.get("toplam_alan", 0.0) for p in active_parcel_db.values()
+      )
+
+      sample_caption = f"""🔥 YATIRIMLIK ÖZEL FIRSAT: {mahalle_adi} MAHALLESİ'NDE DEĞERLİ ARSA! 🏗️
+
+📍 Lokasyon: İstanbul / Beykoz ({mahalle_adi} Mah.)
+🗂️ Ada / Parsel: Ada: {adas} - Parsel: {parsels}
+📐 Toplam Arsa Alanı: {toplam_m2:,.2f} m²
+🏢 Proje Potansiyeli: {is_modeli} ile yüksek kazanç imkanı!
+
+✨ İstestate Gayrimenkul & Meriç İnşaat güvencesiyle hazırlanan profesyonel fizibilite raporumuz yayında. Proje detayları, imar durumu ve yatırım analizleri için hemen bizimle iletişime geçin! 📞
+
+#İstestateGayrimenkul #Meriçİnşaat #GayrimenkulYatırımı #ArsaFizibilitesi #Beykozİmar #EmlakYatırım #IstanbulRealEstate"""
+
+      col_sm1, col_sm2 = st.columns([1, 1])
+
+      with col_sm1:
+        st.markdown("#### 📝 Hazır Sosyal Medya Metni (Caption)")
+        st.info(
+            "Aşağıdaki metni kopyalayarak Instagram, Facebook veya WhatsApp"
+            " durumunuzda doğrudan paylaşabilirsiniz."
+        )
+        user_caption = st.text_area(
+            "Paylaşım Metni Düzenleyici",
+            value=sample_caption,
+            height=250,
+        )
+        st.code(user_caption, language="text")
+
+      with col_sm2:
+        st.markdown("#### 🎨 Mobil Hikaye / Durum Kartı Ön İzlemesi")
+        st.markdown(
+            "Aşağıdaki tasarım, Instagram Hikaye (Story) ve WhatsApp Durum"
+            " formatına (`9:16` dikey) uygun olarak optimize edilmiştir."
+        )
+
+        story_card_html = f"""
+            <div style="width: 280px; height: 500px; background: linear-gradient(135deg, #0b1d3a 0%, #1e3a8a 100%); border-radius: 20px; padding: 25px; color: white; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 10px 25px rgba(0,0,0,0.3); margin: 0 auto; font-family: sans-serif; border: 2px solid rgba(255,255,255,0.2);">
+                <div>
+                    <div style="font-size: 10px; letter-spacing: 2px; color: #38bdf8; font-weight: bold; margin-bottom: 5px;">İSTESTATE & MERİÇ İNŞAAT</div>
+                    <div style="font-size: 18px; font-weight: 800; line-height: 1.2; margin-bottom: 15px;">ÖZEL ARSA & PROJE FİZİBİLİTESİ</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.1); backdrop-filter: blur(5px); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15);">
+                    <div style="font-size: 11px; color: #94a3b8; margin-bottom: 2px;">BÖLGE / LOKASYON</div>
+                    <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">{mahalle_adi}</div>
+                    
+                    <div style="font-size: 11px; color: #94a3b8; margin-bottom: 2px;">ADA / PARSEL</div>
+                    <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">Ada: {adas} | Parsel: {parsels}</div>
+                    
+                    <div style="font-size: 11px; color: #94a3b8; margin-bottom: 2px;">TOPLAM ARSA</div>
+                    <div style="font-size: 16px; font-weight: 800; color: #38bdf8;">{toplam_m2:,.2f} m²</div>
+                </div>
+                <div style="text-align: center; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 10px;">
+                    <div style="font-size: 10px; color: #cbd5e1; font-weight: 600;">DETAYLI BİLGİ VE RANDEVU İÇİN DM 📩</div>
+                </div>
+            </div>
+            """
+        components.html(story_card_html, height=520)
+
+    else:
+      st.info(
+          "Sosyal medya içeriği üretmek için lütfen sol menüden en az bir parsel"
+          " seçin."
+      )
 
 else:
   st.info(
