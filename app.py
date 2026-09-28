@@ -1879,7 +1879,7 @@ if selected_keys:
           p.get("toplam_alan", 0.0) for p in active_parcel_db.values()
       )
 
-      # Tam dönüm hesabı (Kürsüfatsız / Yuvarlanmış veya net tam sayı gösterimi)
+      # Tam dönüm hesabı
       toplam_donum_val = toplam_m2 / 1000.0
       toplam_donum_str = (
           f"{round(toplam_donum_val)} Dönüm"
@@ -1921,7 +1921,7 @@ if selected_keys:
         )
         badge_text = "🏢 PRESTİJLİ KONUT GELİŞTİRME"
 
-      # Yatırımcı odaklı profesyonel bülten metni
+      # Yatırımcı odaklı profesyonel bülten metni (YG% ve Yüksek Potansiyel Eklenmiş Hali)
       sample_caption = f"""İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT | STRATEJİK PROJE GELİŞTİRME BÜLTENİ 🏗️📊
 
 Bölgesel potansiyeli yüksek lokasyonlarda, gayrimenkul yatırımcılarımız ve arsa sahiplerimiz için katma değer üreten projeler kurgulamaya devam ediyoruz.
@@ -1930,10 +1930,14 @@ Bölgesel potansiyeli yüksek lokasyonlarda, gayrimenkul yatırımcılarımız v
 📐 Toplam Arsa Hacmi: {toplam_donum_str} ({toplam_m2:,.0f} m²) | İmar Durumu: {terk_durum_str}
 🏛️ Öngörülen Mimari Konsept: {sample_project_type} ({total_units_sum} Bağımsız Ünite)
 
-✨ Mimari Özellikler & Detaylar:
-• Bağımsız Bölüm Yapısı: Konforlu ve optimize edilmiş üst kat net yaşam alanları.
+✨ Mimari Özellikler & Verimlilik:
+• Maksimum TAKS / Emsal Verimliliği ile optimize edilmiş yapılaşma.
+• Bağımsız Bölüm Yapısı: Konforlu ve üst kat net yaşam alanları.
 • Havuz & Peyzaj: {sample_pool_mod} konsepti ile zenginleştirilmiş ortak/müstakil sosyal donatılar.
-• Arsa Verimliliği: Maksimum yatırım geri dönüşü (YG%) sağlayan kat karşılığı veya doğrudan yatırım modeli.
+
+💰 Finansal Projeksiyon & Yatırım Değeri:
+• Hedeflenen Yatırım Geri Dönüşü (YG): %{yg_orani:.1f}+
+• Yüksek Potansiyelli Proje Değeri & Stratejik Büyüme Fırsatı.
 
 Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında bilgi almak için bizimle iletişime geçebilirsiniz. 📞
 
@@ -1946,8 +1950,8 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
             "#### 📝 Kurumsal Yatırımcı Metni & Bülten (Caption Düzenleyici)"
         )
         st.info(
-            "Terk durumu, dönüm bazlı net arsa ve mimari özelliklerle"
-            " zenginleştirilmiş kurumsal bülten."
+            "YG%, yüksek potansiyel vurgusu ve teknik detaylarla zenginleştirilmiş"
+            " kurumsal bülten."
         )
         user_caption = st.text_area(
             "Paylaşım Metni Düzenleyici",
@@ -1961,8 +1965,8 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
             "#### 🎨 Ultra Vurucu & Profesyonel Kurumsal Hikaye (Story) Kartı"
         )
         st.markdown(
-            "Tüm içeriğin tam göründüğü, küsüratsız dönüm hacmi ve mimari"
-            " detayları içeren `9:16` kart tasarımı:"
+            "Hedeflenen YG%, TAKS/Emsal verimliliği ve yabancı yatırımcılar için"
+            " İngilizce alt başlığı içeren `9:16` kart tasarımı:"
         )
 
         story_logo1_html = (
@@ -1976,13 +1980,14 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
             else "<b style='font-size:10px; color:#0f172a;'>MERİÇ İNŞAAT</b>"
         )
 
-        # Kartın alt kesilme sorununun giderildiği güncel HTML/CSS yapılandırması (height: 610px components.html)
+        # Kart tasarımına YG%, TAKS/Emsal ve İngilizce alt başlık eklenmiş güncel HTML/CSS yapılandırması
         story_card_html = f"""
             <div style="width: 310px; height: 575px; background: linear-gradient(180deg, rgba(11, 29, 58, 0.70) 0%, rgba(15, 23, 42, 0.88) 60%, rgba(15, 23, 42, 0.99) 100%), url('{bg_image_url}'); background-size: cover; background-position: center; border-radius: 22px; padding: 16px; color: white; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 20px 40px rgba(0,0,0,0.6); margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border: 2px solid rgba(56, 189, 248, 0.4); box-sizing: border-box;">
                 
-                <!-- Üst Kısım: Kurumsal Logolar -->
+                <!-- Üst Kısım: Kurumsal Logolar ve Uluslararası İngilizce Alt Başlık -->
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                     <div>{story_logo1_html}</div>
+                    <div style="font-size: 6px; color: #38bdf8; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; background: rgba(56,189,248,0.15); padding: 2px 5px; border-radius: 4px;">Strategic Real Estate Development</div>
                     <div>{story_logo2_html}</div>
                 </div>
 
@@ -1992,37 +1997,43 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                     <div style="font-size: 12px; font-weight: 900; line-height: 1.2; text-transform: uppercase; color: #ffffff; text-shadow: 0 2px 6px rgba(0,0,0,0.6);">{badge_text}</div>
                 </div>
 
-                <!-- Cam Efektli (Glassmorphism) Mimari & Terk Bilgi Kutusu -->
-                <div style="background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); padding: 11px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.25); box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
+                <!-- Cam Efektli (Glassmorphism) Mimari, Terk & Finansal Bilgi Kutusu -->
+                <div style="background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(12px); padding: 10px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.25); box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
                     
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 4px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 3px;">
                         <div>
-                            <div style="font-size: 6.5px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">LOKASYON</div>
-                            <div style="font-size: 10px; font-weight: 800; color: #f8fafc;">{mahalle_adi}, BEYKOZ</div>
+                            <div style="font-size: 6px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">LOKASYON</div>
+                            <div style="font-size: 9.5px; font-weight: 800; color: #f8fafc;">{mahalle_adi}, BEYKOZ</div>
                         </div>
                         <div style="text-align: right;">
-                            <div style="font-size: 6.5px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">ARSA HACMİ</div>
-                            <div style="font-size: 10px; font-weight: 800; color: #38bdf8;">{toplam_donum_str}</div>
+                            <div style="font-size: 6px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">ARSA HACMİ</div>
+                            <div style="font-size: 9.5px; font-weight: 800; color: #38bdf8;">{toplam_donum_str}</div>
                         </div>
                     </div>
 
-                    <div style="font-size: 7px; color: #38bdf8; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">İMAR VE TERK DURUMU</div>
-                    <div style="font-size: 8.5px; color: #e2e8f0; font-weight: 600; margin-bottom: 5px; background: rgba(56,189,248,0.1); padding: 2px 5px; border-radius: 4px;">
-                        • {terk_durum_str}
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <div>
+                            <div style="font-size: 6px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">VERİMLİLİK & İMAR</div>
+                            <div style="font-size: 8px; color: #e2e8f0; font-weight: 600;">Max TAKS / Emsal Uyumlu</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 6px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">HEDEFLENEN YG</div>
+                            <div style="font-size: 9px; font-weight: 800; color: #4ade80;">%{yg_orani:.1f} ROI</div>
+                        </div>
                     </div>
 
-                    <div style="font-size: 7px; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">MİMARİ ÖZELLİKLER & DAĞILIM</div>
-                    <div style="font-size: 8.5px; color: #cbd5e1; line-height: 1.25;">
+                    <div style="font-size: 6.5px; color: #38bdf8; font-weight: 700; text-transform: uppercase; margin-top: 2px; margin-bottom: 1px;">MİMARİ ÖZELLİKLER & DAĞILIM</div>
+                    <div style="font-size: 8px; color: #cbd5e1; line-height: 1.2;">
                         • {total_units_sum} Bağımsız Ünite / Villa Planı<br>
-                        • Optimize Edilmiş Bodrum & Üst Kat Alanı<br>
-                        • {sample_pool_mod} Entegrasyonu & Peyzaj
+                        • Optimize Bodrum & Üst Kat Alanı<br>
+                        • {sample_pool_mod} & Peyzaj Entegrasyonu
                     </div>
 
                 </div>
 
                 <!-- Alt Çağrı (Call to Action) -->
-                <div style="text-align: center; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 5px;">
-                    <div style="font-size: 8px; color: #38bdf8; font-weight: 800; letter-spacing: 0.8px;">DETAYLI FİZİBİLİTE & RANDEVU İÇİN İLETİŞİM 📩</div>
+                <div style="text-align: center; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 4px;">
+                    <div style="font-size: 7.5px; color: #38bdf8; font-weight: 800; letter-spacing: 0.8px;">YÜKSEK POTANSİYELLİ YATIRIM FIRSATI 📩</div>
                 </div>
             </div>
             """
