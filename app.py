@@ -11,15 +11,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 # --- GITHUB KONFİGÜRASYONU & TOKEN YÖNETİMİ ---
-DEFAULT_GITHUB_TOKEN = "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"
-
-if "GITHUB_TOKEN" in st.secrets:
-  GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
-elif os.environ.get("GITHUB_TOKEN"):
-  GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
-else:
-  GITHUB_TOKEN = DEFAULT_GITHUB_TOKEN
-
+GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", os.environ.get("GITHUB_TOKEN", ""))
 GITHUB_REPO = "istestate-meric/raporlama"
 DB_FILE_NAME = "imar_veritabani.json"
 
@@ -31,7 +23,7 @@ try:
 except ImportError:
   OPENAI_AVAILABLE = False
 
-# WeasyPrint kütüphanesinin import kontrolü
+# WeasyPrint Import Kontrolü
 try:
   from weasyprint import CSS, HTML
 
@@ -76,7 +68,7 @@ def get_live_exchange_rates():
 
 rates = get_live_exchange_rates()
 
-# --- ÖZEL KURUMSAL STİL & SAĞ ÜST SABİT DÖVİZ KURU WİDGET ENJEKSİYONU ---
+# --- STİL & DÖVİZ WİDGET ENJEKSİYONU ---
 st.markdown(
     f"""
 <style>
@@ -92,7 +84,6 @@ st.markdown(
         padding-top: 1.5rem;
         padding-bottom: 2rem;
     }}
-    
     .currency-float-bar {{
         position: fixed;
         top: 15px;
@@ -109,7 +100,6 @@ st.markdown(
         gap: 6px;
         color: #ffffff;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        pointer-events: auto;
     }}
     .currency-item {{
         display: flex;
@@ -119,22 +109,9 @@ st.markdown(
         font-size: 12px;
         font-weight: 600;
     }}
-    .currency-label {{
-        color: #94a3b8;
-        font-size: 11px;
-    }}
-    .currency-val {{
-        color: #38bdf8;
-        font-family: monospace;
-        font-size: 13px;
-        font-weight: 700;
-    }}
-    .currency-divider {{
-        width: 100%;
-        height: 1px;
-        background-color: rgba(255, 255, 255, 0.15);
-        margin: 1px 0;
-    }}
+    .currency-label {{ color: #94a3b8; font-size: 11px; }}
+    .currency-val {{ color: #38bdf8; font-family: monospace; font-size: 13px; font-weight: 700; }}
+    .currency-divider {{ width: 100%; height: 1px; background-color: rgba(255, 255, 255, 0.15); margin: 1px 0; }}
 </style>
 
 <div class="currency-float-bar">
@@ -294,7 +271,10 @@ def pull_from_github():
 
 def push_to_github(data_dict):
   if not GITHUB_TOKEN:
-    st.sidebar.error("GitHub Token bulunamadı!")
+    st.sidebar.warning(
+        "GitHub Token bulunamadı. Değişiklikler yalnızca yerel oturumda"
+        " saklanıyor."
+    )
     return
   try:
     g = Github(GITHUB_TOKEN)
@@ -956,8 +936,8 @@ if uploaded_files:
 
   save_persistent_db(current_db)
   st.sidebar.success(
-      f"{len(uploaded_files)} Adet Belge Arşive Eklendi ve GitHub Deponuza"
-      " Kaydedildi!"
+      f"{len(uploaded_files)} Adet Belge Arşive Eklendi ve Veritabanı"
+      " Güncellendi!"
   )
 
 st.sidebar.divider()
@@ -1568,7 +1548,7 @@ if selected_keys:
           f"€{((avg_m2_satis_usd * rate_usd) / rate_eur):,.2f}",
       )
 
-  # --- YENİ SEKMELER: SOSYAL MEDYA & REKLAM İÇERİK ÜRETİCİSİ ---
+  # --- TAB 4: SOSYAL MEDYA & REKLAM ÜRETİCİSİ ---
   with tab4:
     st.subheader(
         "📱 Projeye Özel Yapay Zeka Destekli Sosyal Medya & Reklam Üreticisi"
@@ -1586,22 +1566,40 @@ if selected_keys:
     with col_ai1:
       platform = st.selectbox(
           "Hedef Platform",
-          ["Instagram / Facebook", "LinkedIn (Yatırımcı Odaklı)", "TikTok / Reels Senaryosu", "Görsel Üretim Promptları (Midjourney)"],
+          [
+              "Instagram / Facebook",
+              "LinkedIn (Yatırımcı Odaklı)",
+              "TikTok / Reels Senaryosu",
+              "Görsel Üretim Promptları (Midjourney)",
+          ],
       )
       target_audience = st.selectbox(
           "Hedef Kitle",
-          ["Lüks Konut Alıcıları", "Gayrimenkul Yatırımcıları", "Arsa / Kat Karşılığı Ortakları", "Genel Aile / Yaşam"],
+          [
+              "Lüks Konut Alıcıları",
+              "Gayrimenkul Yatırımcıları",
+              "Arsa / Kat Karşılığı Ortakları",
+              "Genel Aile / Yaşam",
+          ],
       )
       tone_of_voice = st.selectbox(
           "İçerik Tonu",
-          ["Kurumsal ve Prestijli", "Heyecan Verici / Fırsat Odaklı", "Modern ve Minimalist", "Yatırım & Analiz Odaklı"],
+          [
+              "Kurumsal ve Prestijli",
+              "Heyecan Verici / Fırsat Odaklı",
+              "Modern ve Minimalist",
+              "Yatırım & Analiz Odaklı",
+          ],
       )
 
       openai_api_key = st.text_input(
           "OpenAI API Anahtarı (Opsiyonel)",
           type="password",
           value=st.secrets.get("OPENAI_API_KEY", ""),
-          help="Girilirse GPT-4o / GPT-3.5 ile canlı üretir, girilmezse otomatik şablon motoru çalışır.",
+          help=(
+              "Girilirse GPT-4o-mini ile canlı üretir, girilmezse otomatik"
+              " şablon motoru çalışır."
+          ),
       )
 
       generate_btn = st.button("🚀 Sosyal Medya İçerikleri Üret", type="primary")
@@ -1716,6 +1714,7 @@ Kurumsal yatırımcılar ve kat karşılığı arsa ortaklıkları için detayl�
               height=320,
           )
 
+  # --- TAB 5: PDF RAPOR ÖN İZLEME VE İNDİRME MEKANZİMASI ---
   with tab5:
     st.subheader("🖨️ Rapor Ön İzleme ve PDF İndirme Merkezi")
 
@@ -2009,6 +2008,7 @@ Kurumsal yatırımcılar ve kat karşılığı arsa ortaklıkları için detayl�
           use_container_width=True,
       )
 
+  # --- TAB 6: VERİTABANI VE ARŞİV YÖNETİMİ ---
   with tab6:
     st.subheader(
         f"🗄️ Veritabanı Arşiv Yönetimi (`{DB_FILE_NAME}` -> GitHub Sync)"
@@ -2064,14 +2064,14 @@ Kurumsal yatırımcılar ve kat karşılığı arsa ortaklıkları için detayl�
             del current_db[selected_del_key]
             save_persistent_db(current_db)
             st.success(
-                f"'{selected_del_key}' silindi ve GitHub deponuz güncellendi!"
+                f"'{selected_del_key}' silindi ve veritabanı güncellendi!"
             )
             st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("⚠️ Tüm Veritabanını Temizle (Sıfırla)", type="secondary"):
           save_persistent_db({})
-          st.success("Veritabanı sıfırlandı ve GitHub deponuz güncellendi!")
+          st.success("Veritabanı sıfırlandı!")
           st.rerun()
     else:
       st.info("Veritabanında kayıtlı parsel bulunmuyor.")
