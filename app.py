@@ -1866,9 +1866,9 @@ if selected_keys:
         "📱 Yapay Zeka Destekli Sosyal Medya ve Mobil Pazarlama Stüdyosu"
     )
     st.markdown(
-        "Seçtiğiniz parselin proje tipine ve konumuna özel olarak optimize"
-        " edilmiş, Instagram Hikaye (`9:16`) ve WhatsApp Durum uyumlu akıllı"
-        " pazarlama kartları üretin."
+        "Seçtiğiniz parselin proje tipine özel yapay zeka/mimari arka plan"
+        " görselleri ve gerçek kurumsal logolarınızla optimize edilmiş, Instagram"
+        " Hikaye (`9:16`) ve WhatsApp Durum uyumlu pazarlama kartları üretin."
     )
 
     if active_parcel_db:
@@ -1885,31 +1885,27 @@ if selected_keys:
           p.get("toplam_alan", 0.0) for p in active_parcel_db.values()
       )
 
-      # Proje tipini ve görsel temasını belirleyelim
       sample_project_type = "Lüks Konut / Arsa Projesi"
       for k, conf in function_configs.items():
         sample_project_type = conf.get("proje_tipi", sample_project_type)
         break
 
-      # Proje tipine göre yapay zeka tema/arka plan renkleri ve simgeleri
+      # Proje tipine göre yapay zeka / mimari arka plan görselleri (Unsplash HD Görseller)
       if "Villa" in sample_project_type:
-        bg_gradient = (
-            "linear-gradient(135deg, #064e3b 0%, #022c22 50%, #065f46 100%)"
+        bg_image_url = (
+            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1000&auto=format&fit=crop"
         )
-        accent_color = "#34d399"
-        badge_text = "🌿 LÜKS VİLLA PROJE POTANSİYELİ"
+        badge_text = "🌿 LÜKS VİLLA PROJE KONSEPTİ"
       elif "Ticari" in sample_project_type or "Ofis" in sample_project_type:
-        bg_gradient = (
-            "linear-gradient(135deg, #1e1b4b 0%, #31103b 50%, #0f172a 100%)"
+        bg_image_url = (
+            "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1000&auto=format&fit=crop"
         )
-        accent_color = "#f43f5e"
         badge_text = "🏢 TİCARİ & OFİS YATIRIM FIRSATI"
       else:
-        bg_gradient = (
-            "linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #172554 100%)"
+        bg_image_url = (
+            "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1000&auto=format&fit=crop"
         )
-        accent_color = "#38bdf8"
-        badge_text = "🏗️ PRESTİJLİ GAYRİMENKUL GELİŞTİRME"
+        badge_text = "🏗️ PRESTİJLİ KONUT GELİŞTİRME"
 
       sample_caption = f"""🔥 YATIRIMLIK ÖZEL FIRSAT: {mahalle_adi} MAHALLESİ'NDE DEĞERLİ ARSA! 🏗️
 
@@ -1917,11 +1913,11 @@ if selected_keys:
 🗂️ Ada / Parsel: Ada: {adas} - Parsel: {parsels}
 📐 Toplam Arsa Alanı: {toplam_m2:,.2f} m²
 🏢 Proje Tipi Konsepti: {sample_project_type}
-💰 Beklenen Ciro ve Yatırım Potansiyeli ile yüksek kazanç imkanı!
+💰 Yüksek Yatırım Geri Dönüşü ve Kazanç Fırsatı!
 
-✨ İstestate Gayrimenkul & Meriç İnşaat güvencesiyle hazırlanan profesyonel fizibilite raporumuz yayında. Proje detayları, imar durumu ve yatırım analizleri için hemen bizimle iletişime geçin! 📞
+✨ İstestate Gayrimenkul & Meriç İnşaat güvencesiyle hazırlanan profesyonel fizibilite raporumuz yayında. Detaylar için hemen bizimle iletişime geçin! 📞
 
-#İstestateGayrimenkul #Meriçİnşaat #GayrimenkulYatırımı #ArsaFizibilitesi #Beykozİmar #EmlakYatırım #IstanbulRealEstate"""
+#İstestateGayrimenkul #Meriçİnşaat #GayrimenkulYatırımı #ArsaFizibilitesi #Beykozİmar #IstanbulRealEstate"""
 
       col_sm1, col_sm2 = st.columns([1, 1])
 
@@ -1940,38 +1936,56 @@ if selected_keys:
 
       with col_sm2:
         st.markdown(
-            "#### 🎨 Projeye Özel Yapay Zeka Mobil Hikaye (Story) Tasarımı"
+            "#### 🎨 Gerçek Logolu & Yapay Zeka Görsel Destekli Mobil Hikaye"
+            " (Story)"
         )
         st.markdown(
-            "Seçtiğiniz proje konseptine (`"
-            + sample_project_type
-            + '`) dinamik olarak uyarlanan dikey `9:16` mobil ön izleme'
-            " kartı:"
+            "Arka planda gerçek yapay zeka/mimari render görseli ve üst"
+            " kısımda **İstestate** ile **Meriç İnşaat** logolarınızın yer"
+            " aldığı dikey `9:16` kart tasarımı:"
+        )
+
+        # Logoları HTML içinde göstermek için hazırlık
+        story_logo1_html = (
+            f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 28px; width: auto; background: rgba(255,255,255,0.9); padding: 3px 6px; border-radius: 4px;'>"
+            if img1_base64
+            else "<b style='font-size:11px;'>İSTESTATE</b>"
+        )
+        story_logo2_html = (
+            f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 28px; width: auto; background: rgba(255,255,255,0.9); padding: 3px 6px; border-radius: 4px;'>"
+            if img2_base64
+            else "<b style='font-size:11px;'>MERİÇ İNŞAAT</b>"
         )
 
         story_card_html = f"""
-            <div style="width: 290px; height: 510px; background: {bg_gradient}; border-radius: 22px; padding: 22px; color: white; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 12px 30px rgba(0,0,0,0.4); margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border: 2px solid rgba(255,255,255,0.25); position: relative; overflow: hidden;">
-                <!-- Arka Plan Dekoratif Işık Efekti -->
-                <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: {accent_color}; filter: blur(60px); opacity: 0.3; border-radius: 50%;"></div>
+            <div style="width: 290px; height: 510px; background: linear-gradient(rgba(11, 29, 58, 0.75), rgba(15, 23, 42, 0.85)), url('{bg_image_url}'); background-size: cover; background-position: center; border-radius: 22px; padding: 22px; color: white; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 12px 30px rgba(0,0,0,0.4); margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border: 2px solid rgba(255,255,255,0.25); position: relative; overflow: hidden;">
                 
-                <div>
-                    <div style="font-size: 9px; letter-spacing: 2px; color: {accent_color}; font-weight: 800; margin-bottom: 6px;">İSTESTATE & MERİÇ İNŞAAT</div>
-                    <div style="font-size: 16px; font-weight: 800; line-height: 1.25; margin-bottom: 10px; text-transform: uppercase;">{badge_text}</div>
+                <!-- Üst Kısım: Kurumsal Logolar -->
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">
+                    <div>{story_logo1_html}</div>
+                    <div>{story_logo2_html}</div>
                 </div>
 
-                <div style="background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(10px); padding: 14px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.15); z-index: 2;">
-                    <div style="font-size: 10px; color: #94a3b8; font-weight: 600; margin-bottom: 2px;">LOKASYON / MAHALLE</div>
+                <!-- Başlık / Konsept -->
+                <div>
+                    <div style="font-size: 13px; font-weight: 800; line-height: 1.25; margin-top: 5px; text-transform: uppercase; color: #38bdf8; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">{badge_text}</div>
+                </div>
+
+                <!-- Detay Kartı (Cam Efekti) -->
+                <div style="background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(10px); padding: 14px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.2);">
+                    <div style="font-size: 9px; color: #94a3b8; font-weight: 600; margin-bottom: 2px;">LOKASYON / MAHALLE</div>
                     <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px;">{mahalle_adi} / İSTANBUL</div>
                     
-                    <div style="font-size: 10px; color: #94a3b8; font-weight: 600; margin-bottom: 2px;">ADA / PARSEL BİLGİSİ</div>
+                    <div style="font-size: 9px; color: #94a3b8; font-weight: 600; margin-bottom: 2px;">ADA / PARSEL BİLGİSİ</div>
                     <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px;">Ada: {adas} | Parsel: {parsels}</div>
                     
-                    <div style="font-size: 10px; color: #94a3b8; font-weight: 600; margin-bottom: 2px;">TOPLAM ARSA ALANI</div>
-                    <div style="font-size: 15px; font-weight: 800; color: {accent_color};">{toplam_m2:,.2f} m²</div>
+                    <div style="font-size: 9px; color: #94a3b8; font-weight: 600; margin-bottom: 2px;">TOPLAM ARSA ALANI</div>
+                    <div style="font-size: 15px; font-weight: 800; color: #38bdf8;">{toplam_m2:,.2f} m²</div>
                 </div>
 
-                <div style="text-align: center; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 10px; z-index: 2;">
-                    <div style="font-size: 10px; color: #f8fafc; font-weight: 700; letter-spacing: 0.5px;">DETAYLI FİZİBİLİTE & RANDEVU İÇİN ULAŞIN 📩</div>
+                <!-- Alt Bilgi -->
+                <div style="text-align: center; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px;">
+                    <div style="font-size: 9px; color: #f8fafc; font-weight: 700; letter-spacing: 0.5px;">DETAYLI FİZİBİLİTE & İLETİŞİM 📩</div>
                 </div>
             </div>
             """
