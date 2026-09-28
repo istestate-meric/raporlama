@@ -23,6 +23,14 @@ else:
 GITHUB_REPO = "istestate-meric/raporlama"
 DB_FILE_NAME = "imar_veritabani.json"
 
+# OpenAI Opsiyonel Import
+try:
+  import openai
+
+  OPENAI_AVAILABLE = True
+except ImportError:
+  OPENAI_AVAILABLE = False
+
 # WeasyPrint kütüphanesinin import kontrolü
 try:
   from weasyprint import CSS, HTML
@@ -145,7 +153,6 @@ st.markdown(
 )
 
 
-# --- DİNAMİK FONKSİYON ADI ÇÖZÜMLEME VE FİLTRELEME MOTORU ---
 def clean_fonksiyon_adi(name):
   if not name:
     return ""
@@ -202,7 +209,6 @@ def clean_fonksiyon_adi(name):
   return n
 
 
-# --- İMAR FONKSİYONUNA GÖRE KESİN VE UYUMLU PROJE TİPLERİ FİLTRELEME MOTORU ---
 def get_allowed_project_types(fonk_adi):
   f_upper = fonk_adi.upper()
 
@@ -264,13 +270,11 @@ def get_project_size_ranges(project_type):
     return 55, 150, 90, 5
 
 
-# --- KALICI GITHUB & DOSYA TABANLI VERİTABANI YÖNETİMİ ---
 BASE_DIR = os.path.abspath(os.getcwd())
 DB_FILE = os.path.join(BASE_DIR, DB_FILE_NAME)
 
 
 def pull_from_github():
-  """Açılışta GitHub deposundaki son veritabanı JSON dosyasını çeker."""
   if not GITHUB_TOKEN:
     return None
   try:
@@ -289,7 +293,6 @@ def pull_from_github():
 
 
 def push_to_github(data_dict):
-  """PyGithub kullanarak JSON dosyasını doğrudan ana depoya (main branch) günceller."""
   if not GITHUB_TOKEN:
     st.sidebar.error("GitHub Token bulunamadı!")
     return
@@ -558,7 +561,6 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
   return False
 
 
-# --- İMAR PDF AYRIŞTIRMA MOTORU ---
 def parse_imar_pdf(uploaded_file):
   parcel_data = {
       "filename": uploaded_file.name,
@@ -772,7 +774,9 @@ def parse_imar_pdf(uploaded_file):
 
         global_kaks_val = 0.0
         general_kaks_matches = re.findall(
-            r"(?:EMSAL|KAKS|EMS|E)\s*[:=\s]*([\d\.,\s/-]+)", full_text, re.IGNORECASE
+            r"(?:EMSAL|KAKS|EMS|E)\s*[:=\s]*([\d\.,\s/-]+)",
+            full_text,
+            re.IGNORECASE,
         )
         for gkm in general_kaks_matches:
           val = parse_kaks_val(gkm)
@@ -818,7 +822,6 @@ def parse_imar_pdf(uploaded_file):
   return parcel_data
 
 
-# --- FONKSİYON BAZINDA BİRLEŞTİRİLMİŞ (KONSOLİDE) METRAJ BÖLÜMLEME MOTORU ---
 def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
   toplam_arsa_m2 = p.get("toplam_alan", 0.0)
   is_terkli = p.get("terk_yapilmis_mi", False)
@@ -907,9 +910,7 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
           sum(net_p * k for net_p, k in data["kaks_list"]) / net_arsa_sum
       )
     else:
-      weighted_kaks = (
-          data["kaks_list"][0][1] if data["kaks_list"] else 0.0
-      )
+      weighted_kaks = data["kaks_list"][0][1] if data["kaks_list"] else 0.0
 
     data["kaks"] = weighted_kaks
     del data["kaks_list"]
@@ -1149,7 +1150,9 @@ if selected_keys:
       )
 
       selected_parcels_hash = "_".join(selected_keys)
-      cost_key = f"cost_{idx}_{fonk_adi}_{first_mahalle}_{selected_parcels_hash}"
+      cost_key = (
+          f"cost_{idx}_{fonk_adi}_{first_mahalle}_{selected_parcels_hash}"
+      )
       price_key = (
           f"price_{idx}_{fonk_adi}_{first_mahalle}_{selected_parcels_hash}"
       )
@@ -1264,6 +1267,7 @@ if selected_keys:
   total_bahce_alani_terki = 0.0
   total_ciro_usd = 0.0
   total_maliyet_usd = 0.0
+  total_insaat_m2_sum = 0.0
 
   for key, p in active_parcel_db.items():
     breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
@@ -1294,6 +1298,7 @@ if selected_keys:
       total_bahce_alani_terki += item["bahce_kullanim_alani"]
 
       toplam_parsel_insaat_m2 = brut_insaat + bodrum_m2_parsel
+      total_insaat_m2_sum += toplam_parsel_insaat_m2
       total_ciro_usd += toplam_parsel_insaat_m2 * conf["satis"]
 
       ust_kat_maliyeti = brut_insaat * conf["maliyet"]
@@ -1320,10 +1325,18 @@ if selected_keys:
       else 0
   )
 
-  tab1, tab2, tab3, tab4, tab5 = st.tabs([
+  avg_m2_maliyet_usd = (
+      total_maliyet_usd / total_insaat_m2_sum if total_insaat_m2_sum > 0 else 0
+  )
+  avg_m2_satis_usd = (
+      total_ciro_usd / total_insaat_m2_sum if total_insaat_m2_sum > 0 else 0
+  )
+
+  tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
       "📊 Seçilen Parseller & İnşaat Alanı",
       "🏛️ Mimari Fizibilite (Bodrum + Zemin/Normal)",
       "📑 Proje Raporu & Fizibilite",
+      "📱 Sosyal Medya & Reklam Üreticisi",
       "🖨️ Rapor Ön İzleme & PDF",
       "🗄️ Veritabanı & Arşiv Yönetimi",
   ])
@@ -1448,6 +1461,8 @@ if selected_keys:
             "FONKSİYON SEGMENTİ": fonk_name,
             "PROJE TİPİ": f"{conf['proje_tipi']} ({conf['havuz_mod']})",
             "BAĞIMSIZ BÖLÜM": f"{konut_adeti} Adet",
+            "m² MALİYET ($)": f"${conf['maliyet']:,.2f}",
+            "m² SATIŞ ($)": f"${conf['satis']:,.2f}",
             "BİRİM BAHÇE (M²)": f"{birim_bahce:,.1f} m²",
             "BİRİM HAVUZ (M²)": f"{birim_havuz:,.1f} m²",
             "BİRİM BODRUM (M²)": f"{birim_bodrum:,.1f} m²",
@@ -1472,7 +1487,8 @@ if selected_keys:
         exact_arsa_sahibi = total_units_sum * (arsa_payi_orani / 100.0)
         exact_mutaahhit = total_units_sum * ((100 - arsa_payi_orani) / 100.0)
         m_col3.metric(
-            "Arsa Sahibi Payı", f"{exact_arsa_sahibi:,.2f} Adet (%{arsa_payi_orani})"
+            "Arsa Sahibi Payı",
+            f"{exact_arsa_sahibi:,.2f} Adet (%{arsa_payi_orani})",
         )
         m_col4.metric(
             "Müteahhit Payı",
@@ -1480,10 +1496,12 @@ if selected_keys:
         )
       else:
         m_col3.metric("İş Modeli", "Doğrudan Satılık")
-        m_col4.metric("Müteahhit Payı", f"{float(total_units_sum):,.2f} Adet (%100)")
+        m_col4.metric(
+            "Müteahhit Payı", f"{float(total_units_sum):,.2f} Adet (%100)"
+        )
 
   with tab3:
-    st.subheader("📑 Finansal Fizibilite (3 Para Birimi Sunumu)")
+    st.subheader("📑 Finansal Fizibilite (3 Para Birimi & m² Fiyatları)")
     rate_usd = rates["USD"]
     rate_eur = rates["EUR"]
 
@@ -1508,9 +1526,14 @@ if selected_keys:
       c1, c2, c3 = st.columns(3)
       c1.metric("Tahmini Ciro", f"${display_ciro_usd:,.2f}")
       c2.metric("Toplam Maliyet", f"${total_maliyet_usd:,.2f}")
-      c3.metric(
-          "Net Kar", f"${toplam_net_kar_usd:,.2f}", f"%{yg_orani:.1f} YG"
+      c3.metric("Net Kar", f"${toplam_net_kar_usd:,.2f}", f"%{yg_orani:.1f} YG")
+
+      st.markdown("---")
+      cm1, cm2 = st.columns(2)
+      cm1.metric(
+          "Ortalama m² Birim Maliyet ($)", f"${avg_m2_maliyet_usd:,.2f}"
       )
+      cm2.metric("Ortalama m² Birim Satış ($)", f"${avg_m2_satis_usd:,.2f}")
 
     with curr_tab2:
       t1, t2, t3 = st.columns(3)
@@ -1518,13 +1541,182 @@ if selected_keys:
       t2.metric("Toplam Maliyet", f"₺{total_maliyet_tl:,.2f}")
       t3.metric("Net Kar", f"₺{toplam_net_kar_tl:,.2f}", f"%{yg_orani:.1f} YG")
 
+      st.markdown("---")
+      tm1, tm2 = st.columns(2)
+      tm1.metric(
+          "Ortalama m² Birim Maliyet (₺)",
+          f"₺{(avg_m2_maliyet_usd * rate_usd):,.2f}",
+      )
+      tm2.metric(
+          "Ortalama m² Birim Satış (₺)", f"₺{(avg_m2_satis_usd * rate_usd):,.2f}"
+      )
+
     with curr_tab3:
       e1, e2, e3 = st.columns(3)
       e1.metric("Tahmini Ciro", f"€{total_ciro_eur:,.2f}")
       e2.metric("Toplam Maliyet", f"€{total_maliyet_eur:,.2f}")
       e3.metric("Net Kar", f"€{toplam_net_kar_eur:,.2f}", f"%{yg_orani:.1f} YG")
 
+      st.markdown("---")
+      em1, em2 = st.columns(2)
+      em1.metric(
+          "Ortalama m² Birim Maliyet (€)",
+          f"€{((avg_m2_maliyet_usd * rate_usd) / rate_eur):,.2f}",
+      )
+      em2.metric(
+          "Ortalama m² Birim Satış (€)",
+          f"€{((avg_m2_satis_usd * rate_usd) / rate_eur):,.2f}",
+      )
+
+  # --- YENİ SEKMELER: SOSYAL MEDYA & REKLAM İÇERİK ÜRETİCİSİ ---
   with tab4:
+    st.subheader(
+        "📱 Projeye Özel Yapay Zeka Destekli Sosyal Medya & Reklam Üreticisi"
+    )
+    st.markdown(
+        "Seçilen parsel ve mimari fizibiliteye dayalı olarak reklam ve tanıtım"
+        " odaklı içerikler oluşturun."
+    )
+
+    sample_conf = next(iter(function_configs.values()), {})
+    p_type_text = sample_conf.get("proje_tipi", "Konut Projesi")
+
+    col_ai1, col_ai2 = st.columns([1, 2])
+
+    with col_ai1:
+      platform = st.selectbox(
+          "Hedef Platform",
+          ["Instagram / Facebook", "LinkedIn (Yatırımcı Odaklı)", "TikTok / Reels Senaryosu", "Görsel Üretim Promptları (Midjourney)"],
+      )
+      target_audience = st.selectbox(
+          "Hedef Kitle",
+          ["Lüks Konut Alıcıları", "Gayrimenkul Yatırımcıları", "Arsa / Kat Karşılığı Ortakları", "Genel Aile / Yaşam"],
+      )
+      tone_of_voice = st.selectbox(
+          "İçerik Tonu",
+          ["Kurumsal ve Prestijli", "Heyecan Verici / Fırsat Odaklı", "Modern ve Minimalist", "Yatırım & Analiz Odaklı"],
+      )
+
+      openai_api_key = st.text_input(
+          "OpenAI API Anahtarı (Opsiyonel)",
+          type="password",
+          value=st.secrets.get("OPENAI_API_KEY", ""),
+          help="Girilirse GPT-4o / GPT-3.5 ile canlı üretir, girilmezse otomatik şablon motoru çalışır.",
+      )
+
+      generate_btn = st.button("🚀 Sosyal Medya İçerikleri Üret", type="primary")
+
+    with col_ai2:
+      if generate_btn:
+        with st.spinner("Yapay zeka reklam metinleri hazırlanıyor..."):
+          prompt_summary = f"""
+                    Lokasyon: Beykoz / {first_mahalle}
+                    Proje Konsepti: {p_type_text}
+                    Toplam İnşaat Alanı: {total_insaat_m2_sum:,.0f} m²
+                    Toplam Bağımsız Bölüm: {total_units_sum} Adet
+                    Ortalama Birim Alanı: {avg_unit_m2:,.0f} m²
+                    Hedef Kitle: {target_audience}
+                    Ton: {tone_of_voice}
+                    Platform: {platform}
+                    """
+
+          ai_response_text = ""
+
+          if openai_api_key and OPENAI_AVAILABLE:
+            try:
+              client = openai.OpenAI(api_key=openai_api_key)
+              res = client.chat.completions.create(
+                  model="gpt-4o-mini",
+                  messages=[{
+                      "role": "system",
+                      "content": (
+                          "Sen Istestate Gayrimenkul ve Meriç İnşaat için"
+                          " çalışan uzman bir gayrimenkul pazarlama ve metin"
+                          " yazarı AI danışmanısın."
+                      ),
+                  }, {
+                      "role": "user",
+                      "content": (
+                          f"Aşağıdaki proje verilerini kullanarak {platform}"
+                          " için ilgi çekici, yüksek dönüşüm sağlayan metin"
+                          f" ve reklam içeriği yaz:\n{prompt_summary}"
+                      ),
+                  }],
+              )
+              ai_response_text = res.choices[0].message.content
+            except Exception as e:
+              st.error(
+                  f"OpenAI API çağrısı sırasında hata oluştu: {e}. Otomatik"
+                  " şablon motoruna geçiliyor."
+              )
+
+          if not ai_response_text:
+            if "Instagram" in platform:
+              ai_response_text = f"""
+✨ **{first_mahalle.upper()}'DE AYRICALIKLI BİR YAŞAM VE YATIRIM FIRSATI!** ✨
+
+İstestate & Meriç İnşaat güvencesiyle hayata geçen yeni projemizle tanışın! 🏛️
+
+📍 **Lokasyon:** Beykoz / {first_mahalle}
+🏡 **Konsept:** {p_type_text}
+📐 **Birim Detayı:** Ortalama {avg_unit_m2:,.0f} m² genişliğinde {total_units_sum} adet özel bağımsız bölüm.
+🌳 **Öne Çıkanlar:** Geniş peyzaj alanları, prestijli mimari ve yüksek prim potansiyeli.
+
+Detaylı fizibilite ve ön talep avantajları için bizimle iletişime geçin! 📩
+
+#İstestate #Meriçİnşaat #BeykozGayrimenkul #{first_mahalle.replace(' ', '')} #LüksKonut #YatırımFırsatı #GayrimenkulGeliştirme
+"""
+            elif "LinkedIn" in platform:
+              ai_response_text = f"""
+💼 **BEYKOZ / {first_mahalle.upper()} BÖLGESİNDE YÜKSEK VERİMLİ GAYRİMENKUL GELİŞTİRME PROJESİ**
+
+İstestate Gayrimenkul ve Meriç İnşaat olarak, {first_mahalle} lokasyonunda {total_insaat_m2_sum:,.0f} m² toplam inşaat alanına sahip yeni projemizin fizibilite çalışmalarını tamamladık.
+
+📈 **Proje Özet Metrikleri:**
+• **Segment:** {p_type_text}
+• **Toplam Kapasite:** {total_units_sum} Bağımsız Bölüm
+• **Ortalama Birim Alanı:** {avg_unit_m2:,.0f} m²
+• **Öngörülen m² Satış Değeri:** ${avg_m2_satis_usd:,.0f} / m²
+
+Kurumsal yatırımcılar ve kat karşılığı arsa ortaklıkları için detaylı raporumuzu incelemek üzere davetlisiniz.
+
+#RealEstateDevelopment #PropTech #GayrimenkulYatırımı #İstestate #Meriçİnşaat
+"""
+            elif "TikTok" in platform:
+              ai_response_text = f"""
+🎬 **REELS / TIKTOK VİDEO SENARYOSU (15 Saniye)**
+
+**[00:00 - 00:03] (Hook - Kanca Görseli):**
+*Görüntü:* Beykoz / {first_mahalle}'nin havadan büyüleyici dron çekimi.
+*Ses/Metin:* "İstanbul Beykoz'da kat karşılığı projelerde yeni dönem başladı!"
+
+**[00:03 - 00:08] (Proje Detayı):**
+*Görüntü:* Proje mimari çizim render'ları veya 3D villa/konut konsepti.
+*Ses/Metin:* "{total_units_sum} adet ultra lüks {p_type_text}, ortalama {avg_unit_m2:,.0f} m² kullanım alanı."
+
+**[00:08 - 00:15] (Call to Action - Çağrı):**
+*Görüntü:* İstestate & Meriç İnşaat logosu ve iletişim bilgileri.
+*Ses/Metin:* "Detaylı fizibilite ve arsa analizi için profildeki linke tıklayın!"
+"""
+            else:
+              ai_response_text = f"""
+🎨 **MIDJOURNEY / DALL-E GÖRSEL ÜRETİM PROMPTLARI**
+
+**Prompt 1 (Dış Mimari):**
+> Photorealistic architectural render of a modern luxury {p_type_text} in Beykoz {first_mahalle} Istanbul, surround by pine trees, clear blue sky, modern minimalist facade, warm exterior lighting, 8k resolution, cinematic lighting, shot on 35mm lens --ar 16:9
+
+**Prompt 2 (İç Mekan / Yaşam Alanı):**
+> Interior design of a spacious high-end apartment living room, floor-to-ceiling windows looking over Beykoz greenery, Scandinavian modern furniture, elegant marble finishes, soft natural light, ultra detailed, photorealistic --ar 4:5
+"""
+
+          st.markdown("### 📝 Üretilen Sosyal Medya Metni")
+          st.text_area(
+              "Kopyalamak İçin Metin:",
+              value=ai_response_text,
+              height=320,
+          )
+
+  with tab5:
     st.subheader("🖨️ Rapor Ön İzleme ve PDF İndirme Merkezi")
 
     if not WEASYPRINT_AVAILABLE:
@@ -1633,6 +1825,8 @@ if selected_keys:
                         <td>{fonk_name}</td>
                         <td>{conf['proje_tipi']} ({conf['havuz_mod']})</td>
                         <td style="text-align: center; font-weight: bold;">{konut_adeti} Adet</td>
+                        <td style="text-align: right; color: #1e3a8a;">${conf['maliyet']:,.2f}</td>
+                        <td style="text-align: right; color: #166534;">${conf['satis']:,.2f}</td>
                         <td style="text-align: right;">{birim_bahce:,.1f} m²</td>
                         <td style="text-align: right;">{birim_havuz:,.1f} m²</td>
                         <td style="text-align: right;">{birim_bodrum:,.1f} m²</td>
@@ -1697,6 +1891,8 @@ if selected_keys:
                             <th>İmar Fonksiyon Segmenti</th>
                             <th>Seçilen Proje Tipi ve Konsept</th>
                             <th style="text-align: center;">Toplam Bağımsız Bölüm</th>
+                            <th style="text-align: right;">m² Maliyet ($)</th>
+                            <th style="text-align: right;">m² Satış ($)</th>
                             <th style="text-align: right;">Birim Bahçe</th>
                             <th style="text-align: right;">Birim Havuz</th>
                             <th style="text-align: right;">Birim Bodrum</th>
@@ -1723,6 +1919,18 @@ if selected_keys:
                         <tr>
                             <td>Proje İş Modeli / Yapısı</td>
                             <td colspan="3" style="text-align: center; font-weight: bold;">{is_modeli} {"(%"+str(arsa_payi_orani)+" Arsa Payı)" if "Kat Karşılığı" in is_modeli else ""}</td>
+                        </tr>
+                        <tr>
+                            <td>Ortalama İnşaat / Proje Birim Maliyeti (m²)</td>
+                            <td style="text-align: right;">${avg_m2_maliyet_usd:,.2f}</td>
+                            <td style="text-align: right;">₺{(avg_m2_maliyet_usd * rate_usd):,.2f}</td>
+                            <td style="text-align: right;">€{((avg_m2_maliyet_usd * rate_usd) / rate_eur):,.2f}</td>
+                        </tr>
+                        <tr>
+                            <td>Ortalama Proje Satış Değeri (m²)</td>
+                            <td style="text-align: right;">${avg_m2_satis_usd:,.2f}</td>
+                            <td style="text-align: right;">₺{(avg_m2_satis_usd * rate_usd):,.2f}</td>
+                            <td style="text-align: right;">€{((avg_m2_satis_usd * rate_usd) / rate_eur):,.2f}</td>
                         </tr>
                         <tr>
                             <td>Toplam Proje Cirosu (Brüt Satış Geliri)</td>
@@ -1801,7 +2009,7 @@ if selected_keys:
           use_container_width=True,
       )
 
-  with tab5:
+  with tab6:
     st.subheader(
         f"🗄️ Veritabanı Arşiv Yönetimi (`{DB_FILE_NAME}` -> GitHub Sync)"
     )
