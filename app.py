@@ -1862,13 +1862,13 @@ if selected_keys:
 
   with tab6:
     st.subheader(
-        "📱 Yapay Zeka Destekli Mimari & Sosyal Medya Pazarlama Stüdyosu"
+        "📱 Kurumsal Yatırım & Mimari Proje Geliştirme Pazarlama Stüdyosu"
     )
     st.markdown(
-        "Seçtiğiniz parselin imar verilerini; mimari konsept, yaşam kalitesi,"
-        " bağımsız bölüm ve bahçe/havuz avantajlarıyla birleştirerek Instagram,"
-        " Facebook ve WhatsApp için hazır, yüksek etkileşimli pazarlama"
-        " içeriklerine dönüştürün."
+        "Seçtiğiniz parsellerin imar metrajlarını; yatırım geri dönüşü (YG%),"
+        " mimari kat ve bağımsız bölüm verimliliğini öne çıkaran, üst düzey"
+        " kurumsal dil ile hazırlanmış sosyal medya ve yatırımcı bülteni"
+        " modülü."
     )
 
     if active_parcel_db:
@@ -1885,81 +1885,86 @@ if selected_keys:
           p.get("toplam_alan", 0.0) for p in active_parcel_db.values()
       )
 
-      sample_project_type = "Lüks Konut / Arsa Projesi"
+      sample_project_type = "Lüks Konut / Arsa Geliştirme Projesi"
       for k, conf in function_configs.items():
         sample_project_type = conf.get("proje_tipi", sample_project_type)
         break
 
-      # Proje tipine göre dinamik arka plan görselleri (Unsplash Mimari Render)
+      # Proje tipine göre kurumsal arka plan görselleri (Unsplash Mimari Render)
       if "Villa" in sample_project_type:
         bg_image_url = (
             "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1000&auto=format&fit=crop"
         )
-        badge_text = "🌿 LÜKS MÜSTAKİL VİLLA YAŞAM KONSEPTİ"
+        badge_text = "✨ STRATEJİK ARSA & VİLLA GELİŞTİRME"
       elif "Ticari" in sample_project_type or "Ofis" in sample_project_type:
         bg_image_url = (
             "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1000&auto=format&fit=crop"
         )
-        badge_text = "🏢 PRESTİJLİ TİCARİ & OFİS KOMPLEKSİ"
+        badge_text = "💼 KURUMSAL TİCARİ YATIRIM PORTFÖYÜ"
       else:
         bg_image_url = (
             "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1000&auto=format&fit=crop"
         )
-        badge_text = "🏗️ ÖZEL PLANLANMIŞ REZİDANS & KONUT"
+        badge_text = "🏢 PRESTİJLİ KONUT PROJE FİZİBİLİTESİ"
 
-      # Mimari ve yaşam odaklı profesyonel pazarlama metni
-      sample_caption = f"""🌿 DOĞAYLA İÇ İÇE PRESTİJLİ YAŞAM VE YATIRIM FIRSATI! 🏗️
+      # Yatırımcı odaklı profesyonel ve kurumsal bülten metni
+      sample_caption = f"""İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT | STRATEJİK PROJE GELİŞTİRME BÜLTENİ 🏗️📊
 
-📍 Lokasyon: İstanbul / Beykoz ({mahalle_adi} Mah.)
-🗂️ Ada / Parsel: Ada: {adas} - Parsel: {parsels}
-📐 Toplam Arsa Alanı: {toplam_m2:,.2f} m²
-🏛️ Mimari Konsept: {sample_project_type} ({total_units_sum} Bağımsız Bölüm)
+Bölgesel potansiyeli yüksek lokasyonlarda, gayrimenkul yatırımcılarımız ve arsa sahiplerimiz için katma değer üreten projeler kurgulamaya devam ediyoruz.
 
-✨ İstestate Gayrimenkul & Meriç İnşaat güvencesiyle; imar ve emsal verileri üzerinden maksimum net kullanım alanına sahip, ferah bahçe ve modern mimari standartlarıyla kurgulanan bu özel proje potansiyelini kaçırmayın! 
+📍 Lokasyon: İstanbul / Beykoz ({mahalle_adi} Mahallesi)
+🗂️ Ada / Parsel Künyesi: Ada: {adas} | Parsel: {parsels}
+📐 Toplam Arsa Potansiyeli: {toplam_m2:,.2f} m²
+🏛️ Öngörülen Mimari Konsept: {sample_project_type} ({total_units_sum} Bağımsız Bölüm)
+📈 Proje Fizibilite Göstergesi: Yüksek Verimlilik & Optimize Edilmiş Net Kullanım Alanı
 
-📞 Detaylı mimari dağılım raporu ve yatırım randevusu için hemen bizimle iletişime geçin!
+İmar durum belgelerinin teknik analiziyle başlayan süreç; emsal (KAKS) optimizasyonu, bağımsız bölüm dağılımı ve kat karşılığı / doğrudan yatırım modelleriyle profesyonel bir yatırıma dönüştürülmektedir.
 
-#İstestateGayrimenkul #Meriçİnşaat #MimariProje #GayrimenkulYatırımı #BeykozVilla #LüksYaşam #IstanbulRealEstate"""
+Kurumsal portföyümüz ve detaylı fizibilite raporlarımız hakkında bilgi almak için bizimle iletişime geçebilirsiniz. 📞
+
+#İstestateGayrimenkul #Meriçİnşaat #GayrimenkulGeliştirme #ArsaYatırımı #ProjeFizibilitesi #Beykozİmar #RealEstateDevelopment #YatırımFırsatı"""
 
       col_sm1, col_sm2 = st.columns([1, 1])
 
       with col_sm1:
-        st.markdown("#### 📝 Mimari Odaklı Sosyal Medya Metni (Caption)")
+        st.markdown(
+            "#### 📝 Kurumsal Yatırımcı Metni & Bülten (Caption Düzenleyici)"
+        )
         st.info(
-            "Parsel imar verileriniz ve mimari fizibilite sonuçlarınız"
-            " temel alınarak otomatik oluşturulmuştur."
+            "Yatırımcı ve arsa sahiplerine yönelik prestijli kurumsal dil ile"
+            " otomatik oluşturulmuştur."
         )
         user_caption = st.text_area(
             "Paylaşım Metni Düzenleyici",
             value=sample_caption,
-            height=280,
+            height=290,
         )
         st.code(user_caption, language="text")
 
       with col_sm2:
         st.markdown(
-            "#### 🎨 Gerçek Logolu & Mimari Görsel Destekli Mobil Hikaye"
-            " (Story)"
+            "#### 🎨 Gerçek Logolu & Mimari Görsel Destekli Kurumsal Hikaye"
+            " Kartı"
         )
         st.markdown(
-            "Arka planda gerçek mimari render görseli ve üst kısımda"
-            " **İstestate** ile **Meriç İnşaat** logolarınızın yer aldığı dikey"
-            " `9:16` kart tasarımı:"
+            "Arka planda profesyonel mimari render görseli ve üst kısımda"
+            " **İstestate** ile **Meriç İnşaat** kurumsal logolarınızın yer"
+            " aldığı dikey `9:16` hikaye tasarımı:"
         )
 
         story_logo1_html = (
-            f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 28px; width: auto; background: rgba(255,255,255,0.9); padding: 3px 6px; border-radius: 4px;'>"
+            f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 28px; width: auto; background: rgba(255,255,255,0.92); padding: 4px 8px; border-radius: 4px;'>"
             if img1_base64
             else "<b style='font-size:11px;'>İSTESTATE</b>"
         )
         story_logo2_html = (
-            f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 28px; width: auto; background: rgba(255,255,255,0.9); padding: 3px 6px; border-radius: 4px;'>"
+            f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 28px; width: auto; background: rgba(255,255,255,0.92); padding: 4px 8px; border-radius: 4px;'>"
             if img2_base64
             else "<b style='font-size:11px;'>MERİÇ İNŞAAT</b>"
         )
 
         story_card_html = f"""
-            <div style="width: 290px; height: 510px; background: linear-gradient(rgba(11, 29, 58, 0.78), rgba(15, 23, 42, 0.88)), url('{bg_image_url}'); background-size: cover; background-position: center; border-radius: 22px; padding: 22px; color: white; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 12px 30px rgba(0,0,0,0.4); margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border: 2px solid rgba(255,255,255,0.25); position: relative; overflow: hidden;">
+            <div style="width: 290px; height: 510px; background: linear-gradient(rgba(11, 29, 58, 0.82), rgba(15, 23, 42, 0.90)), url('{bg_image_url}'); background-size: cover; background-position: center; border-radius: 22px; padding: 22px; color: white; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 12px 30px rgba(0,0,0,0.4); margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border: 2px solid rgba(255,255,255,0.25); position: relative; overflow: hidden;">
                 
                 <!-- Üst Kısım: Kurumsal Logolar -->
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">
@@ -1967,26 +1972,26 @@ if selected_keys:
                     <div>{story_logo2_html}</div>
                 </div>
 
-                <!-- Mimari Başlık / Konsept -->
+                <!-- Kurumsal Başlık / Rozet -->
                 <div>
-                    <div style="font-size: 12px; font-weight: 800; line-height: 1.25; margin-top: 5px; text-transform: uppercase; color: #38bdf8; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">{badge_text}</div>
+                    <div style="font-size: 11.5px; font-weight: 800; line-height: 1.25; margin-top: 4px; text-transform: uppercase; color: #38bdf8; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">{badge_text}</div>
                 </div>
 
-                <!-- Mimari & Detay Kartı (Cam Efekti) -->
-                <div style="background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(10px); padding: 12px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.2);">
-                    <div style="font-size: 8.5px; color: #94a3b8; font-weight: 600; margin-bottom: 1px;">LOKASYON & BÖLGE</div>
-                    <div style="font-size: 12px; font-weight: bold; margin-bottom: 6px;">{mahalle_adi} / İSTANBUL</div>
+                <!-- Kurumsal Bilgi Kartı (Cam Efekti) -->
+                <div style="background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(10px); padding: 12px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.2);">
+                    <div style="font-size: 8px; color: #94a3b8; font-weight: 600; margin-bottom: 1px;">STRATEJİK LOKASYON</div>
+                    <div style="font-size: 11.5px; font-weight: bold; margin-bottom: 5px;">{mahalle_adi}, BEYKOZ / İSTANBUL</div>
                     
-                    <div style="font-size: 8.5px; color: #94a3b8; font-weight: 600; margin-bottom: 1px;">ADA / PARSEL & ARSA</div>
-                    <div style="font-size: 12px; font-weight: bold; margin-bottom: 6px;">Ada: {adas} | Parsel: {parsels} ({toplam_m2:,.0f} m²)</div>
+                    <div style="font-size: 8px; color: #94a3b8; font-weight: 600; margin-bottom: 1px;">KÜNYE & ARSA HACMİ</div>
+                    <div style="font-size: 11.5px; font-weight: bold; margin-bottom: 5px;">Ada: {adas} | Parsel: {parsels} ({toplam_m2:,.0f} m²)</div>
                     
-                    <div style="font-size: 8.5px; color: #94a3b8; font-weight: 600; margin-bottom: 1px;">MİMARİ PLAN & BAĞIMSIZ BÖLÜM</div>
-                    <div style="font-size: 13px; font-weight: 800; color: #38bdf8;">{total_units_sum} Adet Bağımsız Birim Konsepti</div>
+                    <div style="font-size: 8px; color: #94a3b8; font-weight: 600; margin-bottom: 1px;">MİMARİ PROJE POTANSİYELİ</div>
+                    <div style="font-size: 12.5px; font-weight: 800; color: #38bdf8;">{total_units_sum} Bağımsız Ünite Optimizasyonu</div>
                 </div>
 
-                <!-- Alt Bilgi -->
+                <!-- Alt Kurumsal Bilgi -->
                 <div style="text-align: center; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px;">
-                    <div style="font-size: 9px; color: #f8fafc; font-weight: 700; letter-spacing: 0.5px;">MİMARİ FİZİBİLİTE & RANDEVU 📩</div>
+                    <div style="font-size: 8.5px; color: #f8fafc; font-weight: 700; letter-spacing: 0.5px;">KURUMSAL FİZİBİLİTE & YATIRIM 📩</div>
                 </div>
             </div>
             """
@@ -1994,7 +1999,7 @@ if selected_keys:
 
     else:
       st.info(
-          "Sosyal medya içeriği üretmek için lütfen sol menüden en az bir parsel"
+          "Kurumsal içerik üretmek için lütfen sol menüden en az bir parsel"
           " seçin."
       )
 
