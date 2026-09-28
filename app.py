@@ -1242,6 +1242,17 @@ if selected_keys:
               1, round(brut_insaat / t_size)
           )
 
+  # Güvenli varsayılan konfigürasyon nesnesi
+  default_conf = {
+      "proje_tipi": "Standart Konut / Apartman",
+      "adet": 1,
+      "havuz_mod": "Havuz İptal / Yapılmayacak",
+      "havuz_m2": 0.0,
+      "maliyet": 1000.0,
+      "satis": 2000.0,
+      "fonk_hesaba_alinan_m2": 0.0,
+  }
+
   # --- CİRO VE MALİYET HESAPLAMALARI ---
   total_yasal_brut_insaat = 0.0
   total_bodrum_alani = 0.0
@@ -1260,15 +1271,15 @@ if selected_keys:
         continue
 
       parsel_fonk_key = f"{key}_{fonk_name}"
-      conf = function_configs.get(parsel_fonk_key)
-      if not conf:
-        continue
+      conf = function_configs.get(parsel_fonk_key, default_conf)
 
-      konut_adeti = conf["adet"]
+      konut_adeti = conf.get("adet", 1)
       total_yasal_brut_insaat += brut_insaat
 
       birim_havuz_m2 = (
-          conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
+          conf.get("havuz_m2", 0.0)
+          if "İptal" not in conf.get("havuz_mod", "")
+          else 0.0
       )
       toplam_parsel_havuz_m2 = birim_havuz_m2 * konut_adeti
 
@@ -1280,10 +1291,10 @@ if selected_keys:
 
       toplam_parsel_insaat_m2 = brut_insaat + bodrum_m2_parsel
       total_insaat_m2_sum += toplam_parsel_insaat_m2
-      total_ciro_usd += toplam_parsel_insaat_m2 * conf["satis"]
+      total_ciro_usd += toplam_parsel_insaat_m2 * conf.get("satis", 2000.0)
 
-      ust_kat_maliyeti = brut_insaat * conf["maliyet"]
-      bodrum_maliyeti = bodrum_m2_parsel * (conf["maliyet"] * 0.60)
+      ust_kat_maliyeti = brut_insaat * conf.get("maliyet", 1000.0)
+      bodrum_maliyeti = bodrum_m2_parsel * (conf.get("maliyet", 1000.0) * 0.60)
 
       toplam_parsel_maliyeti = ust_kat_maliyeti + bodrum_maliyeti
       total_maliyet_usd += toplam_parsel_maliyeti
@@ -1407,15 +1418,15 @@ if selected_keys:
           continue
 
         parsel_fonk_key = f"{key}_{fonk_name}"
-        conf = function_configs.get(parsel_fonk_key)
-        if not conf:
-          continue
+        conf = function_configs.get(parsel_fonk_key, default_conf)
 
-        konut_adeti = conf["adet"]
+        konut_adeti = conf.get("adet", 1)
         total_units_sum += konut_adeti
 
         birim_havuz = (
-            conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
+            conf.get("havuz_m2", 0.0)
+            if "İptal" not in conf.get("havuz_mod", "")
+            else 0.0
         )
         toplam_parsel_havuz_m2 = birim_havuz * konut_adeti
 
@@ -1440,10 +1451,13 @@ if selected_keys:
             "MAHALLE": mahalle,
             "ADA/PARSEL": f"{ada}/{parsel}",
             "FONKSİYON SEGMENTİ": fonk_name,
-            "PROJE TİPİ": f"{conf['proje_tipi']} ({conf['havuz_mod']})",
+            "PROJE TİPİ": (
+                f"{conf.get('proje_tipi', '-')}"
+                f" ({conf.get('havuz_mod', '-')})"
+            ),
             "BAĞIMSIZ BÖLÜM": f"{konut_adeti} Adet",
-            "m² MALİYET ($)": f"${conf['maliyet']:,.2f}",
-            "m² SATIŞ ($)": f"${conf['satis']:,.2f}",
+            "m² MALİYET ($)": f"${conf.get('maliyet', 0.0):,.2f}",
+            "m² SATIŞ ($)": f"${conf.get('satis', 0.0):,.2f}",
             "BİRİM BAHÇE (M²)": f"{birim_bahce:,.1f} m²",
             "BİRİM HAVUZ (M²)": f"{birim_havuz:,.1f} m²",
             "BİRİM BODRUM (M²)": f"{birim_bodrum:,.1f} m²",
@@ -1549,7 +1563,7 @@ if selected_keys:
           f"€{((avg_m2_satis_usd * rate_usd) / rate_eur):,.2f}",
       )
 
-  # --- TAB 4: SOSYAL MEDYA & REKLAM ÜRETİCİSİ (OTOMATİK 9:16 GÖRSEL ÜRETİMİ ENTEGRELİ) ---
+  # --- TAB 4: SOSYAL MEDYA & REKLAM ÜRETİCİSİ ---
   with tab4:
     st.subheader(
         "📱 Projeye Özel Yapay Zeka Destekli Sosyal Medya, Reklam & Otomatik 9:16"
@@ -1561,7 +1575,11 @@ if selected_keys:
         " adet yapay zeka mimari görseli** otomatik üretilir."
     )
 
-    sample_conf = next(iter(function_configs.values()), {})
+    sample_conf = (
+        next(iter(function_configs.values()), default_conf)
+        if function_configs
+        else default_conf
+    )
     p_type_text = sample_conf.get("proje_tipi", "Konut Projesi")
 
     col_ai1, col_ai2 = st.columns([1, 2])
@@ -1773,7 +1791,6 @@ Detaylı fizibilite ve ön talep avantajları için bizimle iletişime geçin! �
 
           generated_image_urls = []
 
-          # Görsel Üretim Süreci
           img_progress = st.progress(
               0, text="Yapay Zeka Mimari Görselleri Otomatik Üretiliyor..."
           )
@@ -1790,7 +1807,7 @@ Detaylı fizibilite ve ön talep avantajları için bizimle iletişime geçin! �
                   img_res = client.images.generate(
                       model="dall-e-3",
                       prompt=p_text,
-                      size="1024x1792",  # 9:16 DALL-E Desteği
+                      size="1024x1792",
                       quality="standard",
                       n=1,
                   )
@@ -1798,14 +1815,12 @@ Detaylı fizibilite ve ön talep avantajları için bizimle iletişime geçin! �
                       (title, img_res.data[0].url, p_text)
                   )
                 except Exception:
-                  # DALL-E Hata verirse Pollinations AI fallback
                   encoded_prompt = urllib.parse.quote(p_text)
                   fallback_url = f"https://pollinations.ai/p/{encoded_prompt}?width=1080&height=1920&seed={idx+100}&model=flux"
                   generated_image_urls.append((title, fallback_url, p_text))
             except Exception:
               pass
 
-          # OpenAI yoksa veya DALL-E başarısızsa Doğrudan Pollinations AI ile Üretim
           if not generated_image_urls:
             for idx, (title, p_text) in enumerate(image_prompts):
               img_progress.progress(
@@ -1824,7 +1839,6 @@ Detaylı fizibilite ve ön talep avantajları için bizimle iletişime geçin! �
 
           img_progress.empty()
 
-          # Görselleri 5 Sütunlu Izgarada Gösterme
           img_cols = st.columns(5)
           for i in range(10):
             title, url, p_text = generated_image_urls[i]
@@ -1840,7 +1854,7 @@ Detaylı fizibilite ve ön talep avantajları için bizimle iletişime geçin! �
               with st.expander("📌 Kullanılan Yapay Zeka Promptu"):
                 st.code(p_text, language="text")
 
-  # --- TAB 5: PDF RAPOR ÖN İZLEME VE İNDİRME MEKANZİMASI ---
+  # --- TAB 5: PDF RAPOR ÖN İZLEME VE İNDİRME MEKANİZMASI ---
   with tab5:
     st.subheader("🖨️ Rapor Ön İzleme ve PDF İndirme Merkezi")
 
@@ -1925,13 +1939,13 @@ Detaylı fizibilite ve ön talep avantajları için bizimle iletişime geçin! �
             continue
 
           parsel_fonk_key = f"{key}_{fonk_name}"
-          conf = function_configs.get(parsel_fonk_key)
-          if not conf:
-            continue
+          conf = function_configs.get(parsel_fonk_key, default_conf)
 
-          konut_adeti = conf["adet"]
+          konut_adeti = conf.get("adet", 1)
           birim_havuz = (
-              conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
+              conf.get("havuz_m2", 0.0)
+              if "İptal" not in conf.get("havuz_mod", "")
+              else 0.0
           )
           toplam_parsel_havuz_m2 = birim_havuz * konut_adeti
 
@@ -1948,10 +1962,10 @@ Detaylı fizibilite ve ön talep avantajları için bizimle iletişime geçin! �
           arch_rows_html += f"""
                     <tr>
                         <td>{fonk_name}</td>
-                        <td>{conf['proje_tipi']} ({conf['havuz_mod']})</td>
+                        <td>{conf.get('proje_tipi', '-')} ({conf.get('havuz_mod', '-')})</td>
                         <td style="text-align: center; font-weight: bold;">{konut_adeti} Adet</td>
-                        <td style="text-align: right; color: #1e3a8a;">${conf['maliyet']:,.2f}</td>
-                        <td style="text-align: right; color: #166534;">${conf['satis']:,.2f}</td>
+                        <td style="text-align: right; color: #1e3a8a;">${conf.get('maliyet', 0.0):,.2f}</td>
+                        <td style="text-align: right; color: #166534;">${conf.get('satis', 0.0):,.2f}</td>
                         <td style="text-align: right;">{birim_bahce:,.1f} m²</td>
                         <td style="text-align: right;">{birim_havuz:,.1f} m²</td>
                         <td style="text-align: right;">{birim_bodrum:,.1f} m²</td>
