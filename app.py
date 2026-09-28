@@ -2,6 +2,7 @@ import base64
 import json
 import os
 import re
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from github import Github
@@ -1548,16 +1549,16 @@ if selected_keys:
           f"€{((avg_m2_satis_usd * rate_usd) / rate_eur):,.2f}",
       )
 
-  # --- TAB 4: SOSYAL MEDYA & REKLAM ÜRETİCİSİ (YAPAY ZEKA GÖRSEL & METİN ENTEGRASYONU) ---
+  # --- TAB 4: SOSYAL MEDYA & REKLAM ÜRETİCİSİ (OTOMATİK 9:16 GÖRSEL ÜRETİMİ ENTEGRELİ) ---
   with tab4:
     st.subheader(
-        "📱 Projeye Özel Yapay Zeka Destekli Sosyal Medya, Reklam & 9:16 Görsel"
-        " Üreticisi"
+        "📱 Projeye Özel Yapay Zeka Destekli Sosyal Medya, Reklam & Otomatik 9:16"
+        " Görsel Üreticisi"
     )
     st.markdown(
         "Seçilen parsel, lokasyon ve mimari fizibiliteye dayalı olarak reklam"
         " metinleri ve **Instagram/Story/Reels uyumlu 9:16 formatında en az 10"
-        " adet yapay zeka konsept görseli** üretin."
+        " adet yapay zeka mimari görseli** otomatik üretilir."
     )
 
     sample_conf = next(iter(function_configs.values()), {})
@@ -1594,13 +1595,13 @@ if selected_keys:
       )
 
       openai_api_key = st.text_input(
-          "OpenAI API Anahtarı (Görsel ve Metin Üretimi İçin)",
+          "OpenAI API Anahtarı (Opsiyonel)",
           type="password",
           value=st.secrets.get("OPENAI_API_KEY", ""),
           help=(
-              "Girilirse GPT-4o-mini ile reklam metinleri ve DALL-E 3 ile 9:16"
-              " yüksek kaliteli mimari görseller üretilir. Girilmezse dahili"
-              " grafik şablon motoru çalışır."
+              "Girilirse metinler GPT-4o-mini, görseller DALL-E 3 ile üretilir."
+              " Girilmezse yüksek çözünürlüklü otomatik yapay zeka görsel motoru"
+              " (Pollinations AI) devreye girer."
           ),
       )
 
@@ -1652,7 +1653,7 @@ if selected_keys:
             except Exception as e:
               st.error(
                   f"OpenAI API çağrısı sırasında hata oluştu: {e}. Otomatik"
-                  " şablon motoruna geçiliyor."
+                  " metin motoruna geçiliyor."
               )
 
           if not ai_response_text:
@@ -1678,8 +1679,8 @@ Detaylı fizibilite ve ön talep avantajları için bizimle iletişime geçin! �
 
           st.divider()
           st.markdown(
-              "### 🎨 Projeye Özel 9:16 Formatta Yapay Zeka Mimari Görselleri (10"
-              " Adet)"
+              "### 🎨 Projeye Özel 9:16 Formatta Otomatik Yapay Zeka Mimari"
+              " Görselleri (10 Adet)"
           )
 
           image_prompts = [
@@ -1772,15 +1773,18 @@ Detaylı fizibilite ve ön talep avantajları için bizimle iletişime geçin! �
 
           generated_image_urls = []
 
+          # Görsel Üretim Süreci
+          img_progress = st.progress(
+              0, text="Yapay Zeka Mimari Görselleri Otomatik Üretiliyor..."
+          )
+
           if openai_api_key and OPENAI_AVAILABLE:
             try:
               client = openai.OpenAI(api_key=openai_api_key)
-              img_progress = st.progress(0, text="DALL-E 3 Görselleri Üretiliyor...")
-              
               for idx, (title, p_text) in enumerate(image_prompts):
                 img_progress.progress(
                     (idx + 1) / 10,
-                    text=f"Görsel {idx+1}/10 üretiliyor: {title}...",
+                    text=f"DALL-E 3 Görseli {idx+1}/10 Üretiliyor: {title}...",
                 )
                 try:
                   img_res = client.images.generate(
@@ -1793,51 +1797,47 @@ Detaylı fizibilite ve ön talep avantajları için bizimle iletişime geçin! �
                   generated_image_urls.append(
                       (title, img_res.data[0].url, p_text)
                   )
-                except Exception as ie:
-                  generated_image_urls.append((title, None, p_text))
-              img_progress.empty()
-            except Exception as e:
-              st.warning(
-                  f"OpenAI DALL-E servisine ulaşılamadı: {e}. Şablon kartları"
-                  " gösteriliyor."
-              )
+                except Exception:
+                  # DALL-E Hata verirse Pollinations AI fallback
+                  encoded_prompt = urllib.parse.quote(p_text)
+                  fallback_url = f"https://pollinations.ai/p/{encoded_prompt}?width=1080&height=1920&seed={idx+100}&model=flux"
+                  generated_image_urls.append((title, fallback_url, p_text))
+            except Exception:
+              pass
 
+          # OpenAI yoksa veya DALL-E başarısızsa Doğrudan Pollinations AI ile Üretim
+          if not generated_image_urls:
+            for idx, (title, p_text) in enumerate(image_prompts):
+              img_progress.progress(
+                  (idx + 1) / 10,
+                  text=(
+                      f"Yapay Zeka Görseli {idx+1}/10 Otomatik Üretiliyor:"
+                      f" {title}..."
+                  ),
+              )
+              encoded_prompt = urllib.parse.quote(
+                  f"{p_text}, vertical 9:16 ratio, realistic architectural"
+                  " rendering, highly detailed"
+              )
+              pollinations_url = f"https://pollinations.ai/p/{encoded_prompt}?width=1080&height=1920&seed={idx+42}&model=flux"
+              generated_image_urls.append((title, pollinations_url, p_text))
+
+          img_progress.empty()
+
+          # Görselleri 5 Sütunlu Izgarada Gösterme
           img_cols = st.columns(5)
           for i in range(10):
-            title, url, p_text = (
-                generated_image_urls[i]
-                if i < len(generated_image_urls)
-                else (image_prompts[i][0], None, image_prompts[i][1])
-            )
+            title, url, p_text = generated_image_urls[i]
             col_target = img_cols[i % 5]
 
             with col_target:
               st.caption(f"**{i+1}. {title}**")
-              if url:
-                st.image(
-                    url,
-                    use_column_width=True,
-                    caption="9:16 DALL-E Render (1024x1792)",
-                )
-              else:
-                # 9:16 Hazır Tipografik Canvas Görseli (OpenAI Key yoksa veya limit aşıldıysa)
-                card_html = f"""
-                                <div style="width: 100%; aspect-ratio: 9/16; background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); border-radius: 12px; padding: 15px; color: #ffffff; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.2); font-family: sans-serif;">
-                                    <div style="font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 4px; width: fit-content;">İSTESTATE & MERİÇ</div>
-                                    <div style="text-align: center;">
-                                        <div style="font-size: 24px; margin-bottom: 5px;">🏛️</div>
-                                        <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #38bdf8;">{first_mahalle}</div>
-                                        <div style="font-size: 10px; font-weight: 600; margin-top: 4px; color: #cbd5e1;">{p_type_text}</div>
-                                        <div style="font-size: 9px; opacity: 0.8; margin-top: 8px;">{avg_unit_m2:,.0f} m² | {total_units_sum} Ünite</div>
-                                    </div>
-                                    <div style="font-size: 8px; text-align: center; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px; color: #94a3b8;">
-                                        9:16 Story / Reels Konsepti #{i+1}
-                                    </div>
-                                </div>
-                                """
-                components.html(card_html, height=280)
-
-              with st.expander("📌 Midjourney / DALL-E Promptu"):
+              st.image(
+                  url,
+                  use_column_width=True,
+                  caption="9:16 AI Render (1080x1920)",
+              )
+              with st.expander("📌 Kullanılan Yapay Zeka Promptu"):
                 st.code(p_text, language="text")
 
   # --- TAB 5: PDF RAPOR ÖN İZLEME VE İNDİRME MEKANZİMASI ---
