@@ -1257,6 +1257,7 @@ if selected_keys:
   total_bahce_alani_terki = 0.0
   total_ciro_usd = 0.0
   total_maliyet_usd = 0.0
+  total_units_sum = 0
 
   for key, p in active_parcel_db.items():
     breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
@@ -1273,6 +1274,7 @@ if selected_keys:
         continue
 
       konut_adeti = conf["adet"]
+      total_units_sum += konut_adeti
       total_yasal_brut_insaat += brut_insaat
 
       birim_havuz_m2 = (
@@ -1389,7 +1391,6 @@ if selected_keys:
         " Alanlar)"
     )
     mimari_rows = []
-    total_units_sum = 0
     total_net_insaat_sum = 0.0
     total_genel_insaat_sum = 0.0
 
@@ -1412,8 +1413,6 @@ if selected_keys:
           continue
 
         konut_adeti = conf["adet"]
-        total_units_sum += konut_adeti
-
         birim_havuz = (
             conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
         )
@@ -1863,12 +1862,13 @@ if selected_keys:
 
   with tab6:
     st.subheader(
-        "📱 Yapay Zeka Destekli Sosyal Medya ve Mobil Pazarlama Stüdyosu"
+        "📱 Yapay Zeka Destekli Mimari & Sosyal Medya Pazarlama Stüdyosu"
     )
     st.markdown(
-        "Seçtiğiniz parselin proje tipine özel yapay zeka/mimari arka plan"
-        " görselleri ve gerçek kurumsal logolarınızla optimize edilmiş, Instagram"
-        " Hikaye (`9:16`) ve WhatsApp Durum uyumlu pazarlama kartları üretin."
+        "Seçtiğiniz parselin imar verilerini; mimari konsept, yaşam kalitesi,"
+        " bağımsız bölüm ve bahçe/havuz avantajlarıyla birleştirerek Instagram,"
+        " Facebook ve WhatsApp için hazır, yüksek etkileşimli pazarlama"
+        " içeriklerine dönüştürün."
     )
 
     if active_parcel_db:
@@ -1890,42 +1890,44 @@ if selected_keys:
         sample_project_type = conf.get("proje_tipi", sample_project_type)
         break
 
-      # Proje tipine göre yapay zeka / mimari arka plan görselleri (Unsplash HD Görseller)
+      # Proje tipine göre dinamik arka plan görselleri (Unsplash Mimari Render)
       if "Villa" in sample_project_type:
         bg_image_url = (
             "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1000&auto=format&fit=crop"
         )
-        badge_text = "🌿 LÜKS VİLLA PROJE KONSEPTİ"
+        badge_text = "🌿 LÜKS MÜSTAKİL VİLLA YAŞAM KONSEPTİ"
       elif "Ticari" in sample_project_type or "Ofis" in sample_project_type:
         bg_image_url = (
             "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1000&auto=format&fit=crop"
         )
-        badge_text = "🏢 TİCARİ & OFİS YATIRIM FIRSATI"
+        badge_text = "🏢 PRESTİJLİ TİCARİ & OFİS KOMPLEKSİ"
       else:
         bg_image_url = (
             "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1000&auto=format&fit=crop"
         )
-        badge_text = "🏗️ PRESTİJLİ KONUT GELİŞTİRME"
+        badge_text = "🏗️ ÖZEL PLANLANMIŞ REZİDANS & KONUT"
 
-      sample_caption = f"""🔥 YATIRIMLIK ÖZEL FIRSAT: {mahalle_adi} MAHALLESİ'NDE DEĞERLİ ARSA! 🏗️
+      # Mimari ve yaşam odaklı profesyonel pazarlama metni
+      sample_caption = f"""🌿 DOĞAYLA İÇ İÇE PRESTİJLİ YAŞAM VE YATIRIM FIRSATI! 🏗️
 
 📍 Lokasyon: İstanbul / Beykoz ({mahalle_adi} Mah.)
 🗂️ Ada / Parsel: Ada: {adas} - Parsel: {parsels}
 📐 Toplam Arsa Alanı: {toplam_m2:,.2f} m²
-🏢 Proje Tipi Konsepti: {sample_project_type}
-💰 Yüksek Yatırım Geri Dönüşü ve Kazanç Fırsatı!
+🏛️ Mimari Konsept: {sample_project_type} ({total_units_sum} Bağımsız Bölüm)
 
-✨ İstestate Gayrimenkul & Meriç İnşaat güvencesiyle hazırlanan profesyonel fizibilite raporumuz yayında. Detaylar için hemen bizimle iletişime geçin! 📞
+✨ İstestate Gayrimenkul & Meriç İnşaat güvencesiyle; imar ve emsal verileri üzerinden maksimum net kullanım alanına sahip, ferah bahçe ve modern mimari standartlarıyla kurgulanan bu özel proje potansiyelini kaçırmayın! 
 
-#İstestateGayrimenkul #Meriçİnşaat #GayrimenkulYatırımı #ArsaFizibilitesi #Beykozİmar #IstanbulRealEstate"""
+📞 Detaylı mimari dağılım raporu ve yatırım randevusu için hemen bizimle iletişime geçin!
+
+#İstestateGayrimenkul #Meriçİnşaat #MimariProje #GayrimenkulYatırımı #BeykozVilla #LüksYaşam #IstanbulRealEstate"""
 
       col_sm1, col_sm2 = st.columns([1, 1])
 
       with col_sm1:
-        st.markdown("#### 📝 Akıllı Sosyal Medya Metni (Caption)")
+        st.markdown("#### 📝 Mimari Odaklı Sosyal Medya Metni (Caption)")
         st.info(
-            "Parsel verilerine ve seçilen proje tipine göre yapay zeka tarafından"
-            " otomatik üretilmiştir."
+            "Parsel imar verileriniz ve mimari fizibilite sonuçlarınız"
+            " temel alınarak otomatik oluşturulmuştur."
         )
         user_caption = st.text_area(
             "Paylaşım Metni Düzenleyici",
@@ -1936,16 +1938,15 @@ if selected_keys:
 
       with col_sm2:
         st.markdown(
-            "#### 🎨 Gerçek Logolu & Yapay Zeka Görsel Destekli Mobil Hikaye"
+            "#### 🎨 Gerçek Logolu & Mimari Görsel Destekli Mobil Hikaye"
             " (Story)"
         )
         st.markdown(
-            "Arka planda gerçek yapay zeka/mimari render görseli ve üst"
-            " kısımda **İstestate** ile **Meriç İnşaat** logolarınızın yer"
-            " aldığı dikey `9:16` kart tasarımı:"
+            "Arka planda gerçek mimari render görseli ve üst kısımda"
+            " **İstestate** ile **Meriç İnşaat** logolarınızın yer aldığı dikey"
+            " `9:16` kart tasarımı:"
         )
 
-        # Logoları HTML içinde göstermek için hazırlık
         story_logo1_html = (
             f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 28px; width: auto; background: rgba(255,255,255,0.9); padding: 3px 6px; border-radius: 4px;'>"
             if img1_base64
@@ -1958,7 +1959,7 @@ if selected_keys:
         )
 
         story_card_html = f"""
-            <div style="width: 290px; height: 510px; background: linear-gradient(rgba(11, 29, 58, 0.75), rgba(15, 23, 42, 0.85)), url('{bg_image_url}'); background-size: cover; background-position: center; border-radius: 22px; padding: 22px; color: white; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 12px 30px rgba(0,0,0,0.4); margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border: 2px solid rgba(255,255,255,0.25); position: relative; overflow: hidden;">
+            <div style="width: 290px; height: 510px; background: linear-gradient(rgba(11, 29, 58, 0.78), rgba(15, 23, 42, 0.88)), url('{bg_image_url}'); background-size: cover; background-position: center; border-radius: 22px; padding: 22px; color: white; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 12px 30px rgba(0,0,0,0.4); margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border: 2px solid rgba(255,255,255,0.25); position: relative; overflow: hidden;">
                 
                 <!-- Üst Kısım: Kurumsal Logolar -->
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">
@@ -1966,26 +1967,26 @@ if selected_keys:
                     <div>{story_logo2_html}</div>
                 </div>
 
-                <!-- Başlık / Konsept -->
+                <!-- Mimari Başlık / Konsept -->
                 <div>
-                    <div style="font-size: 13px; font-weight: 800; line-height: 1.25; margin-top: 5px; text-transform: uppercase; color: #38bdf8; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">{badge_text}</div>
+                    <div style="font-size: 12px; font-weight: 800; line-height: 1.25; margin-top: 5px; text-transform: uppercase; color: #38bdf8; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">{badge_text}</div>
                 </div>
 
-                <!-- Detay Kartı (Cam Efekti) -->
-                <div style="background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(10px); padding: 14px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.2);">
-                    <div style="font-size: 9px; color: #94a3b8; font-weight: 600; margin-bottom: 2px;">LOKASYON / MAHALLE</div>
-                    <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px;">{mahalle_adi} / İSTANBUL</div>
+                <!-- Mimari & Detay Kartı (Cam Efekti) -->
+                <div style="background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(10px); padding: 12px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.2);">
+                    <div style="font-size: 8.5px; color: #94a3b8; font-weight: 600; margin-bottom: 1px;">LOKASYON & BÖLGE</div>
+                    <div style="font-size: 12px; font-weight: bold; margin-bottom: 6px;">{mahalle_adi} / İSTANBUL</div>
                     
-                    <div style="font-size: 9px; color: #94a3b8; font-weight: 600; margin-bottom: 2px;">ADA / PARSEL BİLGİSİ</div>
-                    <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px;">Ada: {adas} | Parsel: {parsels}</div>
+                    <div style="font-size: 8.5px; color: #94a3b8; font-weight: 600; margin-bottom: 1px;">ADA / PARSEL & ARSA</div>
+                    <div style="font-size: 12px; font-weight: bold; margin-bottom: 6px;">Ada: {adas} | Parsel: {parsels} ({toplam_m2:,.0f} m²)</div>
                     
-                    <div style="font-size: 9px; color: #94a3b8; font-weight: 600; margin-bottom: 2px;">TOPLAM ARSA ALANI</div>
-                    <div style="font-size: 15px; font-weight: 800; color: #38bdf8;">{toplam_m2:,.2f} m²</div>
+                    <div style="font-size: 8.5px; color: #94a3b8; font-weight: 600; margin-bottom: 1px;">MİMARİ PLAN & BAĞIMSIZ BÖLÜM</div>
+                    <div style="font-size: 13px; font-weight: 800; color: #38bdf8;">{total_units_sum} Adet Bağımsız Birim Konsepti</div>
                 </div>
 
                 <!-- Alt Bilgi -->
                 <div style="text-align: center; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px;">
-                    <div style="font-size: 9px; color: #f8fafc; font-weight: 700; letter-spacing: 0.5px;">DETAYLI FİZİBİLİTE & İLETİŞİM 📩</div>
+                    <div style="font-size: 9px; color: #f8fafc; font-weight: 700; letter-spacing: 0.5px;">MİMARİ FİZİBİLİTE & RANDEVU 📩</div>
                 </div>
             </div>
             """
