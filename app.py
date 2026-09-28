@@ -1548,14 +1548,16 @@ if selected_keys:
           f"€{((avg_m2_satis_usd * rate_usd) / rate_eur):,.2f}",
       )
 
-  # --- TAB 4: SOSYAL MEDYA & REKLAM ÜRETİCİSİ ---
+  # --- TAB 4: SOSYAL MEDYA & REKLAM ÜRETİCİSİ (YAPAY ZEKA GÖRSEL & METİN ENTEGRASYONU) ---
   with tab4:
     st.subheader(
-        "📱 Projeye Özel Yapay Zeka Destekli Sosyal Medya & Reklam Üreticisi"
+        "📱 Projeye Özel Yapay Zeka Destekli Sosyal Medya, Reklam & 9:16 Görsel"
+        " Üreticisi"
     )
     st.markdown(
-        "Seçilen parsel ve mimari fizibiliteye dayalı olarak reklam ve tanıtım"
-        " odaklı içerikler oluşturun."
+        "Seçilen parsel, lokasyon ve mimari fizibiliteye dayalı olarak reklam"
+        " metinleri ve **Instagram/Story/Reels uyumlu 9:16 formatında en az 10"
+        " adet yapay zeka konsept görseli** üretin."
     )
 
     sample_conf = next(iter(function_configs.values()), {})
@@ -1567,10 +1569,9 @@ if selected_keys:
       platform = st.selectbox(
           "Hedef Platform",
           [
-              "Instagram / Facebook",
+              "Instagram / Facebook (Story & Post)",
               "LinkedIn (Yatırımcı Odaklı)",
               "TikTok / Reels Senaryosu",
-              "Görsel Üretim Promptları (Midjourney)",
           ],
       )
       target_audience = st.selectbox(
@@ -1593,20 +1594,26 @@ if selected_keys:
       )
 
       openai_api_key = st.text_input(
-          "OpenAI API Anahtarı (Opsiyonel)",
+          "OpenAI API Anahtarı (Görsel ve Metin Üretimi İçin)",
           type="password",
           value=st.secrets.get("OPENAI_API_KEY", ""),
           help=(
-              "Girilirse GPT-4o-mini ile canlı üretir, girilmezse otomatik"
-              " şablon motoru çalışır."
+              "Girilirse GPT-4o-mini ile reklam metinleri ve DALL-E 3 ile 9:16"
+              " yüksek kaliteli mimari görseller üretilir. Girilmezse dahili"
+              " grafik şablon motoru çalışır."
           ),
       )
 
-      generate_btn = st.button("🚀 Sosyal Medya İçerikleri Üret", type="primary")
+      generate_btn = st.button(
+          "🚀 10 Adet 9:16 Görsel & Reklam Kampanyası Üret", type="primary"
+      )
 
     with col_ai2:
       if generate_btn:
-        with st.spinner("Yapay zeka reklam metinleri hazırlanıyor..."):
+        with st.spinner(
+            "Yapay zeka kampanya metinleri ve 9:16 görseller"
+            " oluşturuluyor..."
+        ):
           prompt_summary = f"""
                     Lokasyon: Beykoz / {first_mahalle}
                     Proje Konsepti: {p_type_text}
@@ -1649,8 +1656,7 @@ if selected_keys:
               )
 
           if not ai_response_text:
-            if "Instagram" in platform:
-              ai_response_text = f"""
+            ai_response_text = f"""
 ✨ **{first_mahalle.upper()}'DE AYRICALIKLI BİR YAŞAM VE YATIRIM FIRSATI!** ✨
 
 İstestate & Meriç İnşaat güvencesiyle hayata geçen yeni projemizle tanışın! 🏛️
@@ -1664,55 +1670,175 @@ Detaylı fizibilite ve ön talep avantajları için bizimle iletişime geçin! �
 
 #İstestate #Meriçİnşaat #BeykozGayrimenkul #{first_mahalle.replace(' ', '')} #LüksKonut #YatırımFırsatı #GayrimenkulGeliştirme
 """
-            elif "LinkedIn" in platform:
-              ai_response_text = f"""
-💼 **BEYKOZ / {first_mahalle.upper()} BÖLGESİNDE YÜKSEK VERİMLİ GAYRİMENKUL GELİŞTİRME PROJESİ**
 
-İstestate Gayrimenkul ve Meriç İnşaat olarak, {first_mahalle} lokasyonunda {total_insaat_m2_sum:,.0f} m² toplam inşaat alanına sahip yeni projemizin fizibilite çalışmalarını tamamladık.
-
-📈 **Proje Özet Metrikleri:**
-• **Segment:** {p_type_text}
-• **Toplam Kapasite:** {total_units_sum} Bağımsız Bölüm
-• **Ortalama Birim Alanı:** {avg_unit_m2:,.0f} m²
-• **Öngörülen m² Satış Değeri:** ${avg_m2_satis_usd:,.0f} / m²
-
-Kurumsal yatırımcılar ve kat karşılığı arsa ortaklıkları için detaylı raporumuzu incelemek üzere davetlisiniz.
-
-#RealEstateDevelopment #PropTech #GayrimenkulYatırımı #İstestate #Meriçİnşaat
-"""
-            elif "TikTok" in platform:
-              ai_response_text = f"""
-🎬 **REELS / TIKTOK VİDEO SENARYOSU (15 Saniye)**
-
-**[00:00 - 00:03] (Hook - Kanca Görseli):**
-*Görüntü:* Beykoz / {first_mahalle}'nin havadan büyüleyici dron çekimi.
-*Ses/Metin:* "İstanbul Beykoz'da kat karşılığı projelerde yeni dönem başladı!"
-
-**[00:03 - 00:08] (Proje Detayı):**
-*Görüntü:* Proje mimari çizim render'ları veya 3D villa/konut konsepti.
-*Ses/Metin:* "{total_units_sum} adet ultra lüks {p_type_text}, ortalama {avg_unit_m2:,.0f} m² kullanım alanı."
-
-**[00:08 - 00:15] (Call to Action - Çağrı):**
-*Görüntü:* İstestate & Meriç İnşaat logosu ve iletişim bilgileri.
-*Ses/Metin:* "Detaylı fizibilite ve arsa analizi için profildeki linke tıklayın!"
-"""
-            else:
-              ai_response_text = f"""
-🎨 **MIDJOURNEY / DALL-E GÖRSEL ÜRETİM PROMPTLARI**
-
-**Prompt 1 (Dış Mimari):**
-> Photorealistic architectural render of a modern luxury {p_type_text} in Beykoz {first_mahalle} Istanbul, surround by pine trees, clear blue sky, modern minimalist facade, warm exterior lighting, 8k resolution, cinematic lighting, shot on 35mm lens --ar 16:9
-
-**Prompt 2 (İç Mekan / Yaşam Alanı):**
-> Interior design of a spacious high-end apartment living room, floor-to-ceiling windows looking over Beykoz greenery, Scandinavian modern furniture, elegant marble finishes, soft natural light, ultra detailed, photorealistic --ar 4:5
-"""
-
-          st.markdown("### 📝 Üretilen Sosyal Medya Metni")
+          st.markdown("### 📝 Üretilen Kampanya Metni")
           st.text_area(
-              "Kopyalamak İçin Metin:",
-              value=ai_response_text,
-              height=320,
+              "Kopyalamak İçin Metin:", value=ai_response_text, height=220
           )
+
+          st.divider()
+          st.markdown(
+              "### 🎨 Projeye Özel 9:16 Formatta Yapay Zeka Mimari Görselleri (10"
+              " Adet)"
+          )
+
+          image_prompts = [
+              (
+                  "1. Dış Cephe & Gündüz Perspektifi",
+                  (
+                      f"A 9:16 vertical photorealistic architectural render of"
+                      f" luxury {p_type_text} in Beykoz {first_mahalle} Istanbul,"
+                      " surround by lush pine trees, modern glass facade, sun"
+                      " flared clear sky, ultra high definition, 8k resolution"
+                  ),
+              ),
+              (
+                  "2. Gece Aydınlatması & Havuz Başı",
+                  (
+                      f"A 9:16 vertical architectural evening photo of luxury"
+                      f" residential villas in Beykoz {first_mahalle},"
+                      " illuminated private pool, warm ambient outdoor"
+                      " lighting, luxury furniture, 8k resolution, cinematic"
+                  ),
+              ),
+              (
+                  "3. Lüks Salon İç Mekan (Interior)",
+                  (
+                      "A 9:16 vertical high-end interior design shot of a"
+                      " modern penthouse living room in Istanbul, floor to"
+                      " ceiling windows with forest view, Scandinavian"
+                      " luxury furniture, marble fireplace, golden hour light"
+                  ),
+              ),
+              (
+                  "4. Havadan Kuş Bakışı (Aerial Drone View)",
+                  (
+                      f"A 9:16 vertical drone view of a premium villa complex"
+                      f" in forest hills of Beykoz {first_mahalle} Istanbul,"
+                      " master plan overview, luxury swimming pools, organic"
+                      " architectural layout"
+                  ),
+              ),
+              (
+                  "5. Ebeveyn Yatak Odası & Manzara",
+                  (
+                      "A 9:16 vertical master bedroom interior in luxury villa,"
+                      " contemporary wooden design, minimalist king bed,"
+                      " panoramic nature view, soft morning sunlight, 8k"
+                  ),
+              ),
+              (
+                  "6. Peyzaj & Yeşil Bahçe Kullanımı",
+                  (
+                      f"A 9:16 vertical garden and landscape design for {p_type_text}"
+                      f" in Beykoz {first_mahalle}, private walking path, stone"
+                      " patio, elegant outdoor lounging area, lush greenery"
+                  ),
+              ),
+              (
+                  "7. Mutfak & Modern Mimari Detaylar",
+                  (
+                      "A 9:16 vertical luxury kitchen design with dark marble"
+                      " island, built-in premium kitchen appliances,"
+                      " recessed LED lighting, modern aesthetics"
+                  ),
+              ),
+              (
+                  "8. Sosyal Tesis / Fitness & SPA",
+                  (
+                      "A 9:16 vertical indoor wellness center and SPA area in a"
+                      " luxury residence project, heated indoor pool, glass"
+                      " ceiling, minimalist relaxing atmosphere"
+                  ),
+              ),
+              (
+                  "9. Giriş Kampüsü & Güvenlik Kapısı",
+                  (
+                      f"A 9:16 vertical architectural entrance gate of"
+                      f" Istestate & Meric {first_mahalle} gated community,"
+                      " security checkpoint, marble walls, modern branding,"
+                      " elite atmosphere"
+                  ),
+              ),
+              (
+                  "10. Gün Batımı Teras Manzarası",
+                  (
+                      "A 9:16 vertical rooftop lounge terrace view during"
+                      " Bosphorus sunset, infinity edge jacuzzi, cozy outdoor"
+                      " sofa, champagne glasses, lifestyle conceptual photo"
+                  ),
+              ),
+          ]
+
+          generated_image_urls = []
+
+          if openai_api_key and OPENAI_AVAILABLE:
+            try:
+              client = openai.OpenAI(api_key=openai_api_key)
+              img_progress = st.progress(0, text="DALL-E 3 Görselleri Üretiliyor...")
+              
+              for idx, (title, p_text) in enumerate(image_prompts):
+                img_progress.progress(
+                    (idx + 1) / 10,
+                    text=f"Görsel {idx+1}/10 üretiliyor: {title}...",
+                )
+                try:
+                  img_res = client.images.generate(
+                      model="dall-e-3",
+                      prompt=p_text,
+                      size="1024x1792",  # 9:16 DALL-E Desteği
+                      quality="standard",
+                      n=1,
+                  )
+                  generated_image_urls.append(
+                      (title, img_res.data[0].url, p_text)
+                  )
+                except Exception as ie:
+                  generated_image_urls.append((title, None, p_text))
+              img_progress.empty()
+            except Exception as e:
+              st.warning(
+                  f"OpenAI DALL-E servisine ulaşılamadı: {e}. Şablon kartları"
+                  " gösteriliyor."
+              )
+
+          img_cols = st.columns(5)
+          for i in range(10):
+            title, url, p_text = (
+                generated_image_urls[i]
+                if i < len(generated_image_urls)
+                else (image_prompts[i][0], None, image_prompts[i][1])
+            )
+            col_target = img_cols[i % 5]
+
+            with col_target:
+              st.caption(f"**{i+1}. {title}**")
+              if url:
+                st.image(
+                    url,
+                    use_column_width=True,
+                    caption="9:16 DALL-E Render (1024x1792)",
+                )
+              else:
+                # 9:16 Hazır Tipografik Canvas Görseli (OpenAI Key yoksa veya limit aşıldıysa)
+                card_html = f"""
+                                <div style="width: 100%; aspect-ratio: 9/16; background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); border-radius: 12px; padding: 15px; color: #ffffff; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 4px 10px rgba(0,0,0,0.2); font-family: sans-serif;">
+                                    <div style="font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 4px; width: fit-content;">İSTESTATE & MERİÇ</div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 24px; margin-bottom: 5px;">🏛️</div>
+                                        <div style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #38bdf8;">{first_mahalle}</div>
+                                        <div style="font-size: 10px; font-weight: 600; margin-top: 4px; color: #cbd5e1;">{p_type_text}</div>
+                                        <div style="font-size: 9px; opacity: 0.8; margin-top: 8px;">{avg_unit_m2:,.0f} m² | {total_units_sum} Ünite</div>
+                                    </div>
+                                    <div style="font-size: 8px; text-align: center; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px; color: #94a3b8;">
+                                        9:16 Story / Reels Konsepti #{i+1}
+                                    </div>
+                                </div>
+                                """
+                components.html(card_html, height=280)
+
+              with st.expander("📌 Midjourney / DALL-E Promptu"):
+                st.code(p_text, language="text")
 
   # --- TAB 5: PDF RAPOR ÖN İZLEME VE İNDİRME MEKANZİMASI ---
   with tab5:
