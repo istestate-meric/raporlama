@@ -1890,24 +1890,24 @@ if selected_keys:
         sample_project_type = conf.get("proje_tipi", sample_project_type)
         break
 
-      # Proje tipine göre kurumsal arka plan görselleri (Unsplash Mimari Render)
+      # Proje tipine göre yüksek kaliteli kurumsal arka plan görselleri (Unsplash Mimari Render)
       if "Villa" in sample_project_type:
         bg_image_url = (
             "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1000&auto=format&fit=crop"
         )
-        badge_text = "✨ STRATEJİK ARSA & VİLLA GELİŞTİRME"
+        badge_text = "✨ ÖZEL VİLLA PROJE KONSEPTİ"
       elif "Ticari" in sample_project_type or "Ofis" in sample_project_type:
         bg_image_url = (
             "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1000&auto=format&fit=crop"
         )
-        badge_text = "💼 KURUMSAL TİCARİ YATIRIM PORTFÖYÜ"
+        badge_text = "💼 TİCARİ YATIRIM FIRSATI"
       else:
         bg_image_url = (
             "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1000&auto=format&fit=crop"
         )
-        badge_text = "🏢 PRESTİJLİ KONUT PROJE FİZİBİLİTESİ"
+        badge_text = "🏢 PRESTİJLİ KONUT GELİŞTİRME"
 
-      # Yatırımcı odaklı profesyonel ve kurumsal bülten metni
+      # Yatırımcı odaklı profesyonel bülten metni
       sample_caption = f"""İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT | STRATEJİK PROJE GELİŞTİRME BÜLTENİ 🏗️📊
 
 Bölgesel potansiyeli yüksek lokasyonlarda, gayrimenkul yatırımcılarımız ve arsa sahiplerimiz için katma değer üreten projeler kurgulamaya devam ediyoruz.
@@ -1943,59 +1943,76 @@ Kurumsal portföyümüz ve detaylı fizibilite raporlarımız hakkında bilgi al
 
       with col_sm2:
         st.markdown(
-            "#### 🎨 Gerçek Logolu & Mimari Görsel Destekli Kurumsal Hikaye"
-            " Kartı"
+            "#### 🎨 Ultra Vurucu & Profesyonel Kurumsal Hikaye (Story) Kartı"
         )
         st.markdown(
-            "Arka planda profesyonel mimari render görseli ve üst kısımda"
-            " **İstestate** ile **Meriç İnşaat** kurumsal logolarınızın yer"
-            " aldığı dikey `9:16` hikaye tasarımı:"
+            "Lüks dergi kapağı konseptinde, üst kısımda şık beyaz zeminli"
+            " **İstestate** & **Meriç İnşaat** logoları ve mimari odaklı"
+            " dikkat çekici `9:16` kart tasarımı:"
         )
 
+        # Logolar için şık, okunaklı beyaz arka planlı kutular
         story_logo1_html = (
-            f"<img src='data:image/png;base64,{img1_base64}' style='max-height: 28px; width: auto; background: rgba(255,255,255,0.92); padding: 4px 8px; border-radius: 4px;'>"
+            f"<div style='background: #ffffff; padding: 6px 10px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: flex; align-items: center;'><img src='data:image/png;base64,{img1_base64}' style='max-height: 24px; width: auto; object-fit: contain;'></div>"
             if img1_base64
-            else "<b style='font-size:11px;'>İSTESTATE</b>"
+            else "<b style='font-size:11px; color:#0f172a;'>İSTESTATE</b>"
         )
         story_logo2_html = (
-            f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 28px; width: auto; background: rgba(255,255,255,0.92); padding: 4px 8px; border-radius: 4px;'>"
+            f"<div style='background: #ffffff; padding: 6px 10px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: flex; align-items: center;'><img src='data:image/png;base64,{img2_base64}' style='max-height: 24px; width: auto; object-fit: contain;'></div>"
             if img2_base64
-            else "<b style='font-size:11px;'>MERİÇ İNŞAAT</b>"
+            else "<b style='font-size:11px; color:#0f172a;'>MERİÇ İNŞAAT</b>"
         )
 
+        # Yüksek dikkat çekici, lüks vitrin tasarımı
         story_card_html = f"""
-            <div style="width: 290px; height: 510px; background: linear-gradient(rgba(11, 29, 58, 0.82), rgba(15, 23, 42, 0.90)), url('{bg_image_url}'); background-size: cover; background-position: center; border-radius: 22px; padding: 22px; color: white; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 12px 30px rgba(0,0,0,0.4); margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border: 2px solid rgba(255,255,255,0.25); position: relative; overflow: hidden;">
+            <div style="width: 300px; height: 530px; background: linear-gradient(180deg, rgba(11, 29, 58, 0.65) 0%, rgba(15, 23, 42, 0.85) 60%, rgba(15, 23, 42, 0.98) 100%), url('{bg_image_url}'); background-size: cover; background-position: center; border-radius: 24px; padding: 20px; color: white; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 20px 40px rgba(0,0,0,0.5); margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border: 2px solid rgba(56, 189, 248, 0.4); position: relative; overflow: hidden;">
                 
-                <!-- Üst Kısım: Kurumsal Logolar -->
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">
+                <!-- Üst Kısım: Kurumsal Logolar (Şık Beyaz Zeminli) -->
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                     <div>{story_logo1_html}</div>
                     <div>{story_logo2_html}</div>
                 </div>
 
-                <!-- Kurumsal Başlık / Rozet -->
-                <div>
-                    <div style="font-size: 11.5px; font-weight: 800; line-height: 1.25; margin-top: 4px; text-transform: uppercase; color: #38bdf8; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">{badge_text}</div>
+                <!-- Orta Alan: Dikkat Çekici Rozet ve Konsept -->
+                <div style="text-align: center; margin-top: 5px;">
+                    <div style="display: inline-block; background: rgba(56, 189, 248, 0.2); border: 1px solid #38bdf8; color: #38bdf8; font-size: 9px; font-weight: 800; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; box-shadow: 0 0 15px rgba(56,189,248,0.3);">PRESTİJ PROJE FİZİBİLİTESİ</div>
+                    <div style="font-size: 14px; font-weight: 900; line-height: 1.25; text-transform: uppercase; color: #ffffff; text-shadow: 0 2px 6px rgba(0,0,0,0.6);">{badge_text}</div>
                 </div>
 
-                <!-- Kurumsal Bilgi Kartı (Cam Efekti) -->
-                <div style="background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(10px); padding: 12px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.2);">
-                    <div style="font-size: 8px; color: #94a3b8; font-weight: 600; margin-bottom: 1px;">STRATEJİK LOKASYON</div>
-                    <div style="font-size: 11.5px; font-weight: bold; margin-bottom: 5px;">{mahalle_adi}, BEYKOZ / İSTANBUL</div>
+                <!-- Cam Efektli (Glassmorphism) Mimari Detay Kutusu -->
+                <div style="background: rgba(15, 23, 42, 0.78); backdrop-filter: blur(12px); padding: 14px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.25); box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
                     
-                    <div style="font-size: 8px; color: #94a3b8; font-weight: 600; margin-bottom: 1px;">KÜNYE & ARSA HACMİ</div>
-                    <div style="font-size: 11.5px; font-weight: bold; margin-bottom: 5px;">Ada: {adas} | Parsel: {parsels} ({toplam_m2:,.0f} m²)</div>
-                    
-                    <div style="font-size: 8px; color: #94a3b8; font-weight: 600; margin-bottom: 1px;">MİMARİ PROJE POTANSİYELİ</div>
-                    <div style="font-size: 12.5px; font-weight: 800; color: #38bdf8;">{total_units_sum} Bağımsız Ünite Optimizasyonu</div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 6px;">
+                        <div>
+                            <div style="font-size: 7.5px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">LOKASYON</div>
+                            <div style="font-size: 11px; font-weight: 800; color: #f8fafc;">{mahalle_adi} / BEYKOZ</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 7.5px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">ADA / PARSEL</div>
+                            <div style="font-size: 11px; font-weight: 800; color: #38bdf8;">{adas} / {parsels}</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-size: 7.5px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">ARSA HACMİ</div>
+                            <div style="font-size: 12px; font-weight: 800; color: #ffffff;">{toplam_m2:,.0f} m²</div>
+                        </div>
+                        <div style="text-align: right; background: rgba(56, 189, 248, 0.15); padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(56,189,248,0.3);">
+                            <div style="font-size: 7.5px; color: #38bdf8; font-weight: 700; text-transform: uppercase;">BAĞIMSIZ ÜNİTE</div>
+                            <div style="font-size: 12px; font-weight: 900; color: #38bdf8;">{total_units_sum} Adet Konsept</div>
+                        </div>
+                    </div>
+
                 </div>
 
-                <!-- Alt Kurumsal Bilgi -->
+                <!-- Alt Çağrı (Call to Action) -->
                 <div style="text-align: center; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px;">
-                    <div style="font-size: 8.5px; color: #f8fafc; font-weight: 700; letter-spacing: 0.5px;">KURUMSAL FİZİBİLİTE & YATIRIM 📩</div>
+                    <div style="font-size: 9px; color: #38bdf8; font-weight: 800; letter-spacing: 0.8px;">DETAYLI FİZİBİLİTE & RANDEVU İÇİN İLETİŞİM 📩</div>
                 </div>
             </div>
             """
-        components.html(story_card_html, height=530)
+        components.html(story_card_html, height=550)
 
     else:
       st.info(
