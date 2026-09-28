@@ -1921,7 +1921,7 @@ if selected_keys:
         )
         badge_text = "🏢 PRESTİJLİ KONUT GELİŞTİRME"
 
-      # Yatırımcı odaklı profesyonel bülten metni (YG% ve Yüksek Potansiyel Eklenmiş Hali)
+      # Yatırımcı odaklı profesyonel bülten metni
       sample_caption = f"""İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT | STRATEJİK PROJE GELİŞTİRME BÜLTENİ 🏗️📊
 
 Bölgesel potansiyeli yüksek lokasyonlarda, gayrimenkul yatırımcılarımız ve arsa sahiplerimiz için katma değer üreten projeler kurgulamaya devam ediyoruz.
@@ -1965,8 +1965,8 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
             "#### 🎨 Ultra Vurucu & Profesyonel Kurumsal Hikaye (Story) Kartı"
         )
         st.markdown(
-            "Hedeflenen YG%, TAKS/Emsal verimliliği ve yabancı yatırımcılar için"
-            " İngilizce alt başlığı içeren `9:16` kart tasarımı:"
+            "Hedeflenen YG%, TAKS/Emsal verimliliği içeren ve indirme butonu"
+            " bulunan `9:16` kart tasarımı:"
         )
 
         story_logo1_html = (
@@ -1980,14 +1980,13 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
             else "<b style='font-size:10px; color:#0f172a;'>MERİÇ İNŞAAT</b>"
         )
 
-        # Kart tasarımına YG%, TAKS/Emsal ve İngilizce alt başlık eklenmiş güncel HTML/CSS yapılandırması
+        # İngilizce alt başlığın kaldırıldığı ve sadeleştirilmiş güncel HTML/CSS yapılandırması
         story_card_html = f"""
-            <div style="width: 310px; height: 575px; background: linear-gradient(180deg, rgba(11, 29, 58, 0.70) 0%, rgba(15, 23, 42, 0.88) 60%, rgba(15, 23, 42, 0.99) 100%), url('{bg_image_url}'); background-size: cover; background-position: center; border-radius: 22px; padding: 16px; color: white; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 20px 40px rgba(0,0,0,0.6); margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border: 2px solid rgba(56, 189, 248, 0.4); box-sizing: border-box;">
+            <div id="story-card-box" style="width: 310px; height: 575px; background: linear-gradient(180deg, rgba(11, 29, 58, 0.70) 0%, rgba(15, 23, 42, 0.88) 60%, rgba(15, 23, 42, 0.99) 100%), url('{bg_image_url}'); background-size: cover; background-position: center; border-radius: 22px; padding: 16px; color: white; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 20px 40px rgba(0,0,0,0.6); margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border: 2px solid rgba(56, 189, 248, 0.4); box-sizing: border-box;">
                 
-                <!-- Üst Kısım: Kurumsal Logolar ve Uluslararası İngilizce Alt Başlık -->
+                <!-- Üst Kısım: Kurumsal Logolar -->
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                     <div>{story_logo1_html}</div>
-                    <div style="font-size: 6px; color: #38bdf8; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; background: rgba(56,189,248,0.15); padding: 2px 5px; border-radius: 4px;">Strategic Real Estate Development</div>
                     <div>{story_logo2_html}</div>
                 </div>
 
@@ -2037,7 +2036,24 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                 </div>
             </div>
             """
-        components.html(story_card_html, height=610)
+        components.html(story_card_html, height=600)
+
+        # HTML içeriğini doğrudan indirme dosyasına dönüştüren Python indirme butonu
+        story_html_download_data = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Istestate & Meriç İnşaat - Story Kartı</title></head>
+<body style="background:#0f172a; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;">
+    {story_card_html}
+</body>
+</html>"""
+
+        st.download_button(
+            label="📥 Story Kartını HTML/Görsel Olarak İndir",
+            data=story_html_download_data,
+            file_name=f"Istestate_Meric_Story_Karti_{mahalle_adi}.html",
+            mime="text/html",
+            use_container_width=True,
+        )
 
     else:
       st.info(
