@@ -1026,6 +1026,7 @@ if selected_keys:
                 <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına özel olarak birleştirilmiş metraj, proje tipleri, havuz seçenekleri ve otomatik m² maliyet/satış ayarları.</p>
             </div>
         </div>
+    </div>
     """,
       unsafe_allow_html=True,
   )
@@ -1084,12 +1085,11 @@ if selected_keys:
     )
 
   function_configs = {}
-  func_cols = st.columns(
-      len(unique_active_functions) if len(unique_active_functions) > 0 else 1
-  )
+  num_func_cols = max(1, len(unique_active_functions))
+  func_cols = st.columns(num_func_cols)
 
   for idx, fonk_adi in enumerate(unique_active_functions):
-    with func_cols[idx % len(func_cols)]:
+    with func_cols[idx % num_func_cols]:
       st.markdown(f"**📌 Fonksiyon: {fonk_adi}**")
 
       allowed_p_types = get_allowed_project_types(fonk_adi)
@@ -1196,10 +1196,11 @@ if selected_keys:
         " Bağımsız Bölüm Alanları (m²)</div>",
         unsafe_allow_html=True,
     )
-    fn_cols = st.columns(len(valid_active_functions_with_area))
+    num_target_cols = max(1, len(valid_active_functions_with_area))
+    fn_cols = st.columns(num_target_cols)
 
     for idx, fonk_adi in enumerate(valid_active_functions_with_area):
-      with fn_cols[idx % len(fn_cols)]:
+      with fn_cols[idx % num_target_cols]:
         parsel_fonk_sample_key = next(
             (k for k in function_configs if fonk_adi in k), None
         )
@@ -1223,8 +1224,6 @@ if selected_keys:
             step=step_v,
             key=f"target_size_{idx}_{fonk_adi}",
         )
-
-  st.markdown("</div>", unsafe_allow_html=True)
 
   for key, p in active_parcel_db.items():
     breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
