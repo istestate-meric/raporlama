@@ -1965,8 +1965,8 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
             "#### 🎨 Ultra Vurucu & Profesyonel Kurumsal Hikaye (Story) Kartı"
         )
         st.markdown(
-            "Hedeflenen YG%, TAKS/Emsal verimliliği içeren ve indirme butonu"
-            " bulunan `9:16` kart tasarımı:"
+            "Hedeflenen YG%, TAKS/Emsal verimliliği içeren ve doğrudan **PNG"
+            " görsel** olarak indirilebilen `9:16` kart tasarımı:"
         )
 
         story_logo1_html = (
@@ -1980,80 +1980,88 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
             else "<b style='font-size:10px; color:#0f172a;'>MERİÇ İNŞAAT</b>"
         )
 
-        # İngilizce alt başlığın kaldırıldığı ve sadeleştirilmiş güncel HTML/CSS yapılandırması
-        story_card_html = f"""
-            <div id="story-card-box" style="width: 310px; height: 575px; background: linear-gradient(180deg, rgba(11, 29, 58, 0.70) 0%, rgba(15, 23, 42, 0.88) 60%, rgba(15, 23, 42, 0.99) 100%), url('{bg_image_url}'); background-size: cover; background-position: center; border-radius: 22px; padding: 16px; color: white; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 20px 40px rgba(0,0,0,0.6); margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border: 2px solid rgba(56, 189, 248, 0.4); box-sizing: border-box;">
+        # html2canvas kütüphanesi entegre edilmiş güncel Story Kartı HTML/JS bileşeni
+        story_card_component_html = f"""
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%;">
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
                 
-                <!-- Üst Kısım: Kurumsal Logolar -->
-                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                    <div>{story_logo1_html}</div>
-                    <div>{story_logo2_html}</div>
-                </div>
-
-                <!-- Orta Alan: Rozet ve Konsept -->
-                <div style="text-align: center;">
-                    <div style="display: inline-block; background: rgba(56, 189, 248, 0.22); border: 1px solid #38bdf8; color: #38bdf8; font-size: 8px; font-weight: 800; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; box-shadow: 0 0 12px rgba(56,189,248,0.3);">MİMARİ PROJE VİZYONU</div>
-                    <div style="font-size: 12px; font-weight: 900; line-height: 1.2; text-transform: uppercase; color: #ffffff; text-shadow: 0 2px 6px rgba(0,0,0,0.6);">{badge_text}</div>
-                </div>
-
-                <!-- Cam Efektli (Glassmorphism) Mimari, Terk & Finansal Bilgi Kutusu -->
-                <div style="background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(12px); padding: 10px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.25); box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
+                <div id="story-card-box" style="width: 310px; height: 575px; background: linear-gradient(180deg, rgba(11, 29, 58, 0.70) 0%, rgba(15, 23, 42, 0.88) 60%, rgba(15, 23, 42, 0.99) 100%), url('{bg_image_url}'); background-size: cover; background-position: center; border-radius: 22px; padding: 16px; color: white; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 20px 40px rgba(0,0,0,0.6); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border: 2px solid rgba(56, 189, 248, 0.4); box-sizing: border-box;">
                     
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 3px;">
-                        <div>
-                            <div style="font-size: 6px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">LOKASYON</div>
-                            <div style="font-size: 9.5px; font-weight: 800; color: #f8fafc;">{mahalle_adi}, BEYKOZ</div>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="font-size: 6px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">ARSA HACMİ</div>
-                            <div style="font-size: 9.5px; font-weight: 800; color: #38bdf8;">{toplam_donum_str}</div>
-                        </div>
+                    <!-- Üst Kısım: Kurumsal Logolar -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <div>{story_logo1_html}</div>
+                        <div>{story_logo2_html}</div>
                     </div>
 
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                        <div>
-                            <div style="font-size: 6px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">VERİMLİLİK & İMAR</div>
-                            <div style="font-size: 8px; color: #e2e8f0; font-weight: 600;">Max TAKS / Emsal Uyumlu</div>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="font-size: 6px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">HEDEFLENEN YG</div>
-                            <div style="font-size: 9px; font-weight: 800; color: #4ade80;">%{yg_orani:.1f} ROI</div>
-                        </div>
+                    <!-- Orta Alan: Rozet ve Konsept -->
+                    <div style="text-align: center;">
+                        <div style="display: inline-block; background: rgba(56, 189, 248, 0.22); border: 1px solid #38bdf8; color: #38bdf8; font-size: 8px; font-weight: 800; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; box-shadow: 0 0 12px rgba(56,189,248,0.3);">MİMARİ PROJE VİZYONU</div>
+                        <div style="font-size: 12px; font-weight: 900; line-height: 1.2; text-transform: uppercase; color: #ffffff; text-shadow: 0 2px 6px rgba(0,0,0,0.6);">{badge_text}</div>
                     </div>
 
-                    <div style="font-size: 6.5px; color: #38bdf8; font-weight: 700; text-transform: uppercase; margin-top: 2px; margin-bottom: 1px;">MİMARİ ÖZELLİKLER & DAĞILIM</div>
-                    <div style="font-size: 8px; color: #cbd5e1; line-height: 1.2;">
-                        • {total_units_sum} Bağımsız Ünite / Villa Planı<br>
-                        • Optimize Bodrum & Üst Kat Alanı<br>
-                        • {sample_pool_mod} & Peyzaj Entegrasyonu
+                    <!-- Cam Efektli (Glassmorphism) Mimari, Terk & Finansal Bilgi Kutusu -->
+                    <div style="background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(12px); padding: 10px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.25); box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
+                        
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 3px;">
+                            <div>
+                                <div style="font-size: 6px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">LOKASYON</div>
+                                <div style="font-size: 9.5px; font-weight: 800; color: #f8fafc;">{mahalle_adi}, BEYKOZ</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 6px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">ARSA HACMİ</div>
+                                <div style="font-size: 9.5px; font-weight: 800; color: #38bdf8;">{toplam_donum_str}</div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <div>
+                                <div style="font-size: 6px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">VERİMLİLİK & İMAR</div>
+                                <div style="font-size: 8px; color: #e2e8f0; font-weight: 600;">Max TAKS / Emsal Uyumlu</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 6px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">HEDEFLENEN YG</div>
+                                <div style="font-size: 9px; font-weight: 800; color: #4ade80;">%{yg_orani:.1f} ROI</div>
+                            </div>
+                        </div>
+
+                        <div style="font-size: 6.5px; color: #38bdf8; font-weight: 700; text-transform: uppercase; margin-top: 2px; margin-bottom: 1px;">MİMARİ ÖZELLİKLER & DAĞILIM</div>
+                        <div style="font-size: 8px; color: #cbd5e1; line-height: 1.2;">
+                            • {total_units_sum} Bağımsız Ünite / Villa Planı<br>
+                            • Optimize Bodrum & Üst Kat Alanı<br>
+                            • {sample_pool_mod} & Peyzaj Entegrasyonu
+                        </div>
+
                     </div>
 
+                    <!-- Alt Çağrı (Call to Action) -->
+                    <div style="text-align: center; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 4px;">
+                        <div style="font-size: 7.5px; color: #38bdf8; font-weight: 800; letter-spacing: 0.8px;">YÜKSEK POTANSİYELLİ YATIRIM FIRSATI 📩</div>
+                    </div>
                 </div>
 
-                <!-- Alt Çağrı (Call to Action) -->
-                <div style="text-align: center; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 4px;">
-                    <div style="font-size: 7.5px; color: #38bdf8; font-weight: 800; letter-spacing: 0.8px;">YÜKSEK POTANSİYELLİ YATIRIM FIRSATI 📩</div>
-                </div>
+                <button onclick="downloadStoryImage()" style="background-color: #0b1d3a; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); width: 310px; transition: background 0.2s;">
+                    📥 Story Kartını Görsel Olarak İndir (.PNG)
+                </button>
+
+                <script>
+                    function downloadStoryImage() {
+                        const cardElement = document.getElementById('story-card-box');
+                        html2canvas(cardElement, {{
+                            scale: 3,
+                            useCORS: true,
+                            allowTaint: true,
+                            backgroundColor: null
+                        }}).then(canvas => {{
+                            const link = document.createElement('a');
+                            link.download = 'Istestate_Meric_Story_Karti_{mahalle_adi}.png';
+                            link.href = canvas.toDataURL('image/png');
+                            link.click();
+                        }});
+                    }
+                </script>
             </div>
             """
-        components.html(story_card_html, height=600)
-
-        # HTML içeriğini doğrudan indirme dosyasına dönüştüren Python indirme butonu
-        story_html_download_data = f"""<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Istestate & Meriç İnşaat - Story Kartı</title></head>
-<body style="background:#0f172a; display:flex; justify-content:center; align-items:center; height:100vh; margin:0;">
-    {story_card_html}
-</body>
-</html>"""
-
-        st.download_button(
-            label="📥 Story Kartını HTML/Görsel Olarak İndir",
-            data=story_html_download_data,
-            file_name=f"Istestate_Meric_Story_Karti_{mahalle_adi}.html",
-            mime="text/html",
-            use_container_width=True,
-        )
+        components.html(story_card_component_html, height=660)
 
     else:
       st.info(
