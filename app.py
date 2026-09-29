@@ -1980,7 +1980,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
             else "<b style='font-size:10px; color:#0f172a;'>MERİÇ İNŞAAT</b>"
         )
 
-        # html2canvas kütüphanesi entegre edilmiş güncel Story Kartı HTML/JS bileşeni
+        # Süslü parantezlerin çiftlendiği güncel Story Kartı HTML/JS bileşeni
         story_card_component_html = f"""
             <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%;">
                 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -2044,7 +2044,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                 </button>
 
                 <script>
-                    function downloadStoryImage() {
+                    function downloadStoryImage() {{
                         const cardElement = document.getElementById('story-card-box');
                         html2canvas(cardElement, {{
                             scale: 3,
@@ -2057,7 +2057,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                             link.href = canvas.toDataURL('image/png');
                             link.click();
                         }});
-                    }
+                    }}
                 </script>
             </div>
             """
