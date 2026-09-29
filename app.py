@@ -1980,7 +1980,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
             else "<b style='font-size:10px; color:#0f172a;'>MERİÇ İNŞAAT</b>"
         )
 
-        # MİMARİ ÖZELLİKLER & DAĞILIM alanının bilgilendirici ve profesyonel kurumsal metinlerle zenginleştirildiği güncel yapı:
+        # MİMARİ ÖZELLİKLER & DAĞILIM alanının bilgilendirici ve profesyonel kurumsal mesajlarla güncellenmiş hali:
         story_card_component_html = f"""
             <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%;">
                 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -1995,7 +1995,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
 
                     <!-- Orta Alan: Rozet ve Konsept -->
                     <div style="text-align: center;">
-                        <div style="display: inline-block; background: rgba(56, 189, 248, 0.22); border: 1px solid #38bdf8; color: #38bdf8; font-size: 8px; font-weight: 800; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; box-shadow: 0 0 12px rgba(56,189,248,0.3);">MİMARİ PROJE VİZYONU</div>
+                        <div style="display: inline-block; background: rgba(56, 189, 248, 0.22); border: 1px solid #38bdf8; color: #38bdf8; font-size: 8px; font-weight: 800; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; box-shadow: 0 0 12px rgba(56,189,248,0.3);">STRATEJİK PROJE VİZYONU</div>
                         <div style="font-size: 12px; font-weight: 900; line-height: 1.2; text-transform: uppercase; color: #ffffff; text-shadow: 0 2px 6px rgba(0,0,0,0.6);">{badge_text}</div>
                     </div>
 
@@ -2015,8 +2015,8 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
 
                         <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
                             <div>
-                                <div style="font-size: 6px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">VERİMLİLİK & İMAR</div>
-                                <div style="font-size: 8px; color: #e2e8f0; font-weight: 600;">Max TAKS / Emsal Uyumlu</div>
+                                <div style="font-size: 6px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">YAPI VERİMLİLİĞİ</div>
+                                <div style="font-size: 8px; color: #e2e8f0; font-weight: 600;">Max Emsal & TAKS Optimizasyonu</div>
                             </div>
                             <div style="text-align: right;">
                                 <div style="font-size: 6px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">HEDEFLENEN YG</div>
@@ -2024,12 +2024,12 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                             </div>
                         </div>
 
-                        <div style="font-size: 6.5px; color: #38bdf8; font-weight: 700; text-transform: uppercase; margin-top: 3px; margin-bottom: 1px;">MİMARİ ÖZELLİKLER & PROJE DAĞILIMI</div>
-                        <div style="font-size: 7.5px; color: #cbd5e1; line-height: 1.3;">
-                            • Toplam <b>{total_units_sum} Bağımsız Ünite</b> ve Yüksek Verimli Planlama<br>
-                            • Emsal Harici Ek Kazanım Sağlayan <b>Optimize Bodrum Katı</b><br>
-                            • Konseptle Bütünleşen <b>{sample_pool_mod}</b> & Peyzaj Alanları<br>
-                            • Yatırımcı Odaklı Maksimum Arsa ve Kat Değerlemesi
+                        <div style="font-size: 6.5px; color: #38bdf8; font-weight: 700; text-transform: uppercase; margin-top: 4px; margin-bottom: 2px;">MİMARİ ÖZELLİKLER & DAĞILIM RAPORU</div>
+                        <div style="font-size: 7.2px; color: #cbd5e1; line-height: 1.35;">
+                            • <b>{total_units_sum} Bağımsız Ünite</b> ile Yüksek Verimli Yerleşim Planı<br>
+                            • Emsal Harici Ek Katma Değer Sağlayan <b>Optimize Bodrum Katı</b><br>
+                            • Konseptle Bütünleşen <b>{sample_pool_mod}</b> ve Peyzaj Donatıları<br>
+                            • Yatırımcı Odaklı Maksimum Arsa ve Metrekare Değerlemesi
                         </div>
 
                     </div>
