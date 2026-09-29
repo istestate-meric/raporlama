@@ -1643,7 +1643,7 @@ if selected_keys:
                 body {{ font-family: 'Helvetica', 'Arial', sans-serif; color: #0f172a; font-size: 8.5px; line-height: 1.2; background-color: #ffffff; }}
                 .report-banner {{ background-color: #0b1d3a; color: #ffffff; width: 100%; border-collapse: collapse; margin-bottom: 8mm; border-radius: 4px; overflow: hidden; }}
                 .report-banner td {{ border: none; padding: 8px 12px; vertical-align: middle; }}
-                .section-title {{ font-size: 9.5px; font-weight: bold; color: #0b1d3a; border-left: 4px solid #0b1d3a; padding-left: 6px; background-color: #f1f5f9; margin-top: 8px; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }}
+                .section-title {{ font-size: 9.5px; font-weight: bold; color: #0b1d3a; border-left: 4px solid #0b1d3a; padding-left: 6px; background-color: #f1f5f9; margin-top: 8mm; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }}
                 .data-table {{ width: 100%; border-collapse: collapse; margin-top: 2px; margin-bottom: 6px; font-size: 8px; }}
                 .data-table th, .data-table td {{ border: 1px solid #cbd5e1; padding: 4px 6px; }}
                 .data-table th {{ background-color: #f8fafc; color: #1e293b; font-weight: 700; text-align: left; }}
@@ -1965,8 +1965,8 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
             "#### 🎨 Ultra Vurucu & Profesyonel Kurumsal Hikaye (Story) Kartı"
         )
         st.markdown(
-            "Hedeflenen YG%, TAKS/Emsal verimliliği içeren ve doğrudan **PNG"
-            " görsel** olarak indirilebilen `9:16` kart tasarımı:"
+            "Hedeflenen YG%, detaylı mimari özellikler içeren ve doğrudan"
+            " **PNG görsel** olarak indirilebilen `9:16` kart tasarımı:"
         )
 
         story_logo1_html = (
@@ -1980,7 +1980,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
             else "<b style='font-size:10px; color:#0f172a;'>MERİÇ İNŞAAT</b>"
         )
 
-        # Süslü parantezlerin çiftlendiği güncel Story Kartı HTML/JS bileşeni
+        # MİMARİ ÖZELLİKLER & DAĞILIM alanının bilgilendirici ve profesyonel kurumsal metinlerle zenginleştirildiği güncel yapı:
         story_card_component_html = f"""
             <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%;">
                 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -2024,11 +2024,12 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                             </div>
                         </div>
 
-                        <div style="font-size: 6.5px; color: #38bdf8; font-weight: 700; text-transform: uppercase; margin-top: 2px; margin-bottom: 1px;">MİMARİ ÖZELLİKLER & DAĞILIM</div>
-                        <div style="font-size: 8px; color: #cbd5e1; line-height: 1.2;">
-                            • {total_units_sum} Bağımsız Ünite / Villa Planı<br>
-                            • Optimize Bodrum & Üst Kat Alanı<br>
-                            • {sample_pool_mod} & Peyzaj Entegrasyonu
+                        <div style="font-size: 6.5px; color: #38bdf8; font-weight: 700; text-transform: uppercase; margin-top: 3px; margin-bottom: 1px;">MİMARİ ÖZELLİKLER & PROJE DAĞILIMI</div>
+                        <div style="font-size: 7.5px; color: #cbd5e1; line-height: 1.3;">
+                            • Toplam <b>{total_units_sum} Bağımsız Ünite</b> ve Yüksek Verimli Planlama<br>
+                            • Emsal Harici Ek Kazanım Sağlayan <b>Optimize Bodrum Katı</b><br>
+                            • Konseptle Bütünleşen <b>{sample_pool_mod}</b> & Peyzaj Alanları<br>
+                            • Yatırımcı Odaklı Maksimum Arsa ve Kat Değerlemesi
                         </div>
 
                     </div>
