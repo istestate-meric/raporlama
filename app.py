@@ -1320,7 +1320,7 @@ if selected_keys:
       "🏛️ Mimari Fizibilite (Bodrum + Zemin/Normal)",
       "📑 Proje Raporu & Fizibilite",
       "🖨️ Rapor Ön İzleme & PDF",
-      "🗄️ Veritabanı & Arşiv Yönetimi",
+      "🗄️️ Veritabanı & Arşiv Yönetimi",
       "📱 Sosyal Medya Stüdyosu",
   ])
 
@@ -1867,8 +1867,8 @@ if selected_keys:
     st.markdown(
         "Seçtiğiniz parsellerin imar metrajlarını; yatırım geri dönüşü (YG%),"
         " mimari kat ve bağımsız bölüm verimliliğini öne çıkaran, üst düzey"
-        " kurumsal dil ile hazırlanmış sosyal medya hikaye kartı ve **video"
-        " prodüksiyon** modülü."
+        " kurumsal dil ile hazırlanmış sosyal medya hikaye kartı ve **kurgusal"
+        " senaryolu video prodüksiyon** modülü."
     )
 
     if active_parcel_db:
@@ -1902,7 +1902,6 @@ if selected_keys:
         sample_pool_mod = conf.get("havuz_mod", sample_pool_mod)
         break
 
-      # --- YAPAY ZEKA DESTEKLİ / PROJE TİPİNE UYUMLU AKILLI ARKA PLAN GÖRSELLERİ ---
       p_type_upper = sample_project_type.upper()
       if "VİLLA" in p_type_upper or "VILLA" in p_type_upper:
         bg_image_url = (
@@ -1970,12 +1969,12 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
 
       with col_sm2:
         st.markdown(
-            "#### 🎬 Ultra Vurucu & Profesyonel Sosyal Medya Hikaye Videosu"
+            "#### 🎬 Kurgusal Senaryolu & Ultra Vurucu Hikaye Videosu Stüdyosu"
         )
         st.markdown(
-            "Doğrudan tarayıcınızda kart ile birebir aynı görsel standartlarda"
-            " animasyonlu hikaye videosu (`9:16` formatında, `.mp4`) üreten"
-            " profesyonel modül:"
+            "Sistemdeki görsel standartlar ile %100 uyumlu, 3 aşamalı sinematik"
+            " kurgu senaryosuyla (Hızlı Giriş -> Mimari Çözüm -> Yüksek YG"
+            " Finali) dinamik video üreten modül:"
         )
 
         story_logo1_html = (
@@ -2058,10 +2057,10 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                             <div>{story_logo2_html}</div>
                         </div>
 
-                        <!-- Orta Alan: Üstün Vizyon Rozeti ve Başlık -->
+                        <!-- Orta Alan: Kurgusal Senaryo & Vizyon Rozeti -->
                         <div style="text-align: center;">
-                            <div class="anim-glow" style="display: inline-block; background: rgba(56, 189, 248, 0.25); border: 1px solid #38bdf8; color: #38bdf8; font-size: 8.5px; font-weight: 800; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">STRATEJİK PROJE VİZYONU</div>
-                            <div style="font-size: 13px; font-weight: 900; line-height: 1.25; text-transform: uppercase; color: #ffffff; text-shadow: 0 2px 8px rgba(0,0,0,0.7);">{badge_text}</div>
+                            <div class="anim-glow" style="display: inline-block; background: rgba(56, 189, 248, 0.25); border: 1px solid #38bdf8; color: #38bdf8; font-size: 8.5px; font-weight: 800; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">KURUMSAL PROJE SENARYOSU</div>
+                            <div id="scenario-title-view" style="font-size: 13px; font-weight: 900; line-height: 1.25; text-transform: uppercase; color: #ffffff; text-shadow: 0 2px 8px rgba(0,0,0,0.7);">{badge_text}</div>
                         </div>
 
                         <!-- Cam Efektli (Glassmorphism) Detay Kartı -->
@@ -2090,7 +2089,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                             </div>
 
                             <div style="font-size: 7px; color: #38bdf8; font-weight: 700; text-transform: uppercase; margin-top: 6px; margin-bottom: 3px;">MİMARİ ÖZELLİKLER & DAĞILIM RAPORU</div>
-                            <div style="font-size: 7.5px; color: #cbd5e1; line-height: 1.4;">
+                            <div id="scenario-desc-view" style="font-size: 7.5px; color: #cbd5e1; line-height: 1.4;">
                                 • <b>{total_units_sum} Bağımsız Ünite</b> ile Yüksek Verimli Yerleşim Planı<br>
                                 • Emsal Harici Ek Katma Değer Sağlayan <b>Optimize Bodrum Katı</b><br>
                                 • Konseptle Bütünleşen <b>{sample_pool_mod}</b> ve Peyzaj Donatıları<br>
@@ -2112,7 +2111,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         📥 PNG İndir
                     </button>
                     <button id="rec-btn" onclick="recordStoryVideo()" style="flex: 1; background-color: #16a34a; color: white; border: none; padding: 11px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 11.5px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
-                        🎥 Video Üret (.mp4)
+                        🎥 Video Üret (.webm)
                     </button>
                 </div>
                 <div id="status-msg" style="font-size: 11px; color: #38bdf8; font-weight: 600; text-align: center;"></div>
@@ -2127,7 +2126,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                             backgroundColor: null
                         }}).then(canvas => {{
                             const link = document.createElement('a');
-                            link.download = 'Istestate_Meric_Story_Karti_{mahalle_adi}.png';
+                            link.download = 'Istestate_Meric_Story_Karti_{mahalle_adi}.webm';
                             link.href = canvas.toDataURL('image/png');
                             link.click();
                         }});
@@ -2137,64 +2136,103 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         const btn = document.getElementById('rec-btn');
                         const msg = document.getElementById('status-msg');
                         const cardElement = document.getElementById('story-card-box');
+                        const titleView = document.getElementById('scenario-title-view');
+                        const descView = document.getElementById('scenario-desc-view');
                         
                         btn.disabled = true;
-                        msg.innerText = "⏳ Animasyonlu profesyonel video prodüksiyonu hazırlanıyor...";
+                        msg.innerText = "🎬 Kurgusal senaryo sahneleri hazırlanıyor...";
+
+                        // Kurgusal Senaryo Adımları (Dinamik Akış)
+                        const narrativeSteps = [
+                            {{
+                                title: "📍 {mahalle_adi}, BEYKOZ - ARSA FIRSATI",
+                                desc: "• {toplam_donum_str} Değerinde Stratejik Lokasyon<br>• Doğru Analiz ile Doğru Yatırım Başlangıcı<br>• Bölgesel Gelişim ve Yüksek Potansiyel Alanı"
+                            }},
+                            {{
+                                title: "⚙️ MİMARİ VE İMAR OPTİMİZASYONU",
+                                desc: "• Maksimum TAKS ve Emsal Hesaplama Modeli<br>• Emsal Harici Değer Yaratan Bodrum Kat Çözümü<br>• {sample_pool_mod} ile Zenginleştirilmiş Konsept"
+                            }},
+                            {{
+                                title: "💰 %{yg_orani:.1f} HEDEFLENEN YATIRIM Geri Dönüşü",
+                                desc: "• <b>{total_units_sum} Bağımsız Ünite</b> ile Üst Segment Kazanç<br>• İstestate & Meriç İnşaat Güvencesiyle<br>• Hemen Fizibiliteye Başlayın!"
+                            }}
+                        ];
 
                         try {{
-                            const canvas = document.createElement('canvas');
-                            canvas.width = 640;
-                            canvas.height = 1140;
-                            const ctx = canvas.getContext('2d');
-
-                            const stream = canvas.captureStream(30);
-                            let recorder;
-                            try {{
-                                recorder = new MediaRecorder(stream, {{ mimeType: 'video/webm;codecs=vp9' }});
-                            }} catch(e) {{
-                                recorder = new MediaRecorder(stream);
+                            const canvasStream = cardElement.captureStream ? cardElement.captureStream(30) : null;
+                            if (!canvasStream && typeof html2canvas === 'undefined') {{
+                                throw new Error("Tarayıcınız video kaydını desteklemiyor.");
                             }}
 
-                            let chunks = [];
-                            recorder.ondataavailable = e => chunks.push(e.data);
-                            recorder.onstop = () => {{
-                                const blob = new Blob(chunks, {{ type: 'video/mp4' }});
-                                const url = URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = 'Istestate_Meric_Fizibilite_Story_{mahalle_adi}.mp4';
-                                a.click();
-                                btn.disabled = false;
-                                msg.innerText = "✅ Video başarıyla oluşturuldu ve indirildi!";
+                            // Alternatif olarak frame bazlı html2canvas kaydı veya MediaRecorder
+                            let recordedChunks = [];
+                            let streamToUse = canvasStream;
+                            
+                            // Eğer captureStream doğrudan DOM elementini desteklemiyorsa temp canvas çizimi
+                            const recordCanvas = document.createElement('canvas');
+                            recordCanvas.width = 640;
+                            recordCanvas.height = 1140;
+                            const ctx = recordCanvas.getContext('2d');
+                            const altStream = recordCanvas.captureStream(30);
+
+                            const mediaRecorder = new MediaRecorder(altStream, {{ mimeType: 'video/webm;codecs=vp9' }});
+                            
+                            mediaRecorder.ondataavailable = function(e) {{
+                                if (e.data.size > 0) recordedChunks.push(e.data);
                             }};
 
-                            recorder.start();
+                            mediaRecorder.onstop = function() {{
+                                const blob = new Blob(recordedChunks, {{ type: 'video/webm' }});
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.style.display = 'none';
+                                a.href = url;
+                                a.download = 'Istestate_Meric_Hikaye_Kurgusu_{mahalle_adi}.webm';
+                                document.body.appendChild(a);
+                                a.click();
+                                setTimeout(() => {{
+                                    document.body.removeChild(a);
+                                    window.URL.revokeObjectURL(url);
+                                }}, 100);
+                                btn.disabled = false;
+                                msg.innerText = "✅ Kurgusal hikaye videosu başarıyla indirildi!";
+                            }};
 
-                            // Kartı html2canvas ile yüksek kalitede render edip videoya kare olarak ekliyoruz (Görsel uyumsuzluk tamamen ortadan kalkar)
-                            const fps = 30;
-                            const durationSec = 4;
-                            const totalFrames = fps * durationSec;
-                            
-                            for(let i = 0; i < totalFrames; i++) {{
-                                const renderedCanvas = await html2canvas(cardElement, {{
-                                    scale: 2,
-                                    useCORS: true,
-                                    allowTaint: true,
-                                    backgroundColor: null
-                                }});
-                                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                                ctx.drawImage(renderedCanvas, 0, 0, canvas.width, canvas.height);
-                                await new Promise(r => setTimeout(r, 1000 / fps));
-                            }}
+                            mediaRecorder.start();
 
-                            recorder.stop();
-                        }} catch(err) {{
+                            // Sahneler arası geçiş döngüsü (Her sahne 2.5 saniye)
+                            let stepIndex = 0;
+                            const interval = setInterval(async () => {{
+                                if (stepIndex < narrativeSteps.length) {{
+                                    titleView.innerHTML = narrativeSteps[stepIndex].title;
+                                    descView.innerHTML = narrativeSteps[stepIndex].desc;
+                                    msg.innerText = `🎬 Sahne kurgulanıyor: ${{stepIndex + 1}} / ${narrativeSteps.length}`;
+                                    
+                                    // Canvas frame render
+                                    const renderedCanvas = await html2canvas(cardElement, {{ scale: 2, useCORS: true, backgroundColor: null }});
+                                    ctx.clearRect(0, 0, recordCanvas.width, recordCanvas.height);
+                                    ctx.drawImage(renderedCanvas, 0, 0, recordCanvas.width, recordCanvas.height);
+                                    
+                                    stepIndex++;
+                                }} else {{
+                                    clearInterval(interval);
+                                    mediaRecorder.stop();
+                                }}
+                            }}, 2500);
+
+                        } catch (err) {{
                             console.error(err);
-                            msg.innerText = "⚠️ Video oluşturulurken hata oluştu. Lütfen tekrar deneyin.";
+                            msg.innerText = "⚠️ Video üretilirken bir hata oluştu. Lütfen PNG İndir butonunu kullanın.";
                             btn.disabled = false;
                         }}
                     }}
                 </script>
             </div>
             """
-        components.html(story_video_component_html, height=720)
+        components.html(story_video_component_html, height=680)
+
+else:
+  st.info(
+      "Sol menüden parsel seçimi yaparak pazarlama stüdyosu ve hikaye"
+      " içeriklerini aktif edin."
+  )
