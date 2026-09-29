@@ -996,7 +996,7 @@ else:
 
 if selected_keys:
   st.sidebar.divider()
-  st.sidebar.subheader("⚙️ Parsel Terk Durumu Ayarı (Manuel Düzeltme)")
+  st.sidebar.subheader("⚙️️ Parsel Terk Durumu Ayarı (Manuel Düzeltme)")
   current_db = st.session_state["parcel_db"]
   any_terk_updated = False
 
@@ -1320,7 +1320,7 @@ if selected_keys:
       "🏛️ Mimari Fizibilite (Bodrum + Zemin/Normal)",
       "📑 Proje Raporu & Fizibilite",
       "🖨️ Rapor Ön İzleme & PDF",
-      "🗄️️ Veritabanı & Arşiv Yönetimi",
+      "🗄 Veritabanı & Arşiv Yönetimi",
       "📱 Sosyal Medya Stüdyosu",
   ])
 
@@ -2141,98 +2141,47 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         
                         btn.disabled = true;
                         msg.innerText = "🎬 Kurgusal senaryo sahneleri hazırlanıyor...";
-
-                        // Kurgusal Senaryo Adımları (Dinamik Akış)
-                        const narrativeSteps = [
-                            {{
-                                title: "📍 {mahalle_adi}, BEYKOZ - ARSA FIRSATI",
-                                desc: "• {toplam_donum_str} Değerinde Stratejik Lokasyon<br>• Doğru Analiz ile Doğru Yatırım Başlangıcı<br>• Bölgesel Gelişim ve Yüksek Potansiyel Alanı"
-                            }},
-                            {{
-                                title: "⚙️ MİMARİ VE İMAR OPTİMİZASYONU",
-                                desc: "• Maksimum TAKS ve Emsal Hesaplama Modeli<br>• Emsal Harici Değer Yaratan Bodrum Kat Çözümü<br>• {sample_pool_mod} ile Zenginleştirilmiş Konsept"
-                            }},
-                            {{
-                                title: "💰 %{yg_orani:.1f} HEDEFLENEN YATIRIM Geri Dönüşü",
-                                desc: "• <b>{total_units_sum} Bağımsız Ünite</b> ile Üst Segment Kazanç<br>• İstestate & Meriç İnşaat Güvencesiyle<br>• Hemen Fizibiliteye Başlayın!"
-                            }}
-                        ];
-
+                        
                         try {{
-                            const canvasStream = cardElement.captureStream ? cardElement.captureStream(30) : null;
-                            if (!canvasStream && typeof html2canvas === 'undefined') {{
-                                throw new Error("Tarayıcınız video kaydını desteklemiyor.");
-                            }}
-
-                            // Alternatif olarak frame bazlı html2canvas kaydı veya MediaRecorder
-                            let recordedChunks = [];
-                            let streamToUse = canvasStream;
+                            const canvas = await html2canvas(cardElement, {{ scale: 2, useCORS: true, allowTaint: true }});
+                            const stream = canvas.captureStream(30);
+                            const recorder = new MediaRecorder(stream, {{ mimeType: 'video/webm' }});
+                            let chunks = [];
                             
-                            // Eğer captureStream doğrudan DOM elementini desteklemiyorsa temp canvas çizimi
-                            const recordCanvas = document.createElement('canvas');
-                            recordCanvas.width = 640;
-                            recordCanvas.height = 1140;
-                            const ctx = recordCanvas.getContext('2d');
-                            const altStream = recordCanvas.captureStream(30);
-
-                            const mediaRecorder = new MediaRecorder(altStream, {{ mimeType: 'video/webm;codecs=vp9' }});
-                            
-                            mediaRecorder.ondataavailable = function(e) {{
-                                if (e.data.size > 0) recordedChunks.push(e.data);
-                            }};
-
-                            mediaRecorder.onstop = function() {{
-                                const blob = new Blob(recordedChunks, {{ type: 'video/webm' }});
+                            recorder.ondataavailable = e => chunks.push(e.data);
+                            recorder.onstop = e => {{
+                                const blob = new Blob(chunks, {{ type: 'video/webm' }});
                                 const url = URL.createObjectURL(blob);
                                 const a = document.createElement('a');
-                                a.style.display = 'none';
                                 a.href = url;
-                                a.download = 'Istestate_Meric_Hikaye_Kurgusu_{mahalle_adi}.webm';
-                                document.body.appendChild(a);
+                                a.download = 'Istestate_Meric_Hikaye_Videosu_{mahalle_adi}.webm';
                                 a.click();
-                                setTimeout(() => {{
-                                    document.body.removeChild(a);
-                                    window.URL.revokeObjectURL(url);
-                                }}, 100);
+                                msg.innerText = "✅ Video başarıyla oluşturuldu ve indirildi!";
                                 btn.disabled = false;
-                                msg.innerText = "✅ Kurgusal hikaye videosu başarıyla indirildi!";
                             }};
-
-                            mediaRecorder.start();
-
-                            // Sahneler arası geçiş döngüsü (Her sahne 2.5 saniye)
-                            let stepIndex = 0;
-                            const interval = setInterval(async () => {{
-                                if (stepIndex < narrativeSteps.length) {{
-                                    titleView.innerHTML = narrativeSteps[stepIndex].title;
-                                    descView.innerHTML = narrativeSteps[stepIndex].desc;
-                                    msg.innerText = `🎬 Sahne kurgulanıyor: ${{stepIndex + 1}} / ${narrativeSteps.length}`;
-                                    
-                                    // Canvas frame render
-                                    const renderedCanvas = await html2canvas(cardElement, {{ scale: 2, useCORS: true, backgroundColor: null }});
-                                    ctx.clearRect(0, 0, recordCanvas.width, recordCanvas.height);
-                                    ctx.drawImage(renderedCanvas, 0, 0, recordCanvas.width, recordCanvas.height);
-                                    
-                                    stepIndex++;
-                                }} else {{
-                                    clearInterval(interval);
-                                    mediaRecorder.stop();
-                                }}
-                            }}, 2500);
-
-                        } catch (err) {{
-                            console.error(err);
-                            msg.innerText = "⚠️ Video üretilirken bir hata oluştu. Lütfen PNG İndir butonunu kullanın.";
+                            
+                            recorder.start();
+                            
+                            setTimeout(() => {{
+                                titleView.innerText = "📍 LOKASYON & ARSA ANALİZİ";
+                                descView.innerHTML = "• Yüksek Potansiyelli Bölgesel Gelişim<br>• Doğru Ada/Parsel Konumlandırması<br>• Stratejik Yatırım Hamlesi";
+                            }}, 2000);
+                            
+                            setTimeout(() => {{
+                                titleView.innerText = "💰 FİNANSAL YATIRIM GERİ DÖNÜŞÜ";
+                                descView.innerHTML = "• Maksimum Ciro ve Optimize Maliyet<br>• Avantajlı Kat Karşılığı / Satış Modeli<br>• Yüksek YG (%+ ROI)";
+                            }}, 4000);
+                            
+                            setTimeout(() => {{
+                                recorder.stop();
+                            }}, 6000);
+                            
+                        }} catch (err) {{
+                            msg.innerText = "⚠️ Video oluşturulurken hata: " + err.message;
                             btn.disabled = false;
                         }}
                     }}
                 </script>
             </div>
-            """
+        """
         components.html(story_video_component_html, height=680)
-
-else:
-  st.info(
-      "Sol menüden parsel seçimi yaparak pazarlama stüdyosu ve hikaye"
-      " içeriklerini aktif edin."
-  )
