@@ -1867,8 +1867,8 @@ if selected_keys:
     st.markdown(
         "Seçtiğiniz parsellerin imar metrajlarını; yatırım geri dönüşü (YG%),"
         " mimari kat ve bağımsız bölüm verimliliğini öne çıkaran, üst düzey"
-        " kurumsal dil ile hazırlanmış sosyal medya ve yatırımcı bülteni"
-        " modülü."
+        " kurumsal dil ile hazırlanmış sosyal medya hikaye kartı ve **video"
+        " prodüksiyon** modülü."
     )
 
     if active_parcel_db:
@@ -1879,7 +1879,6 @@ if selected_keys:
           p.get("toplam_alan", 0.0) for p in active_parcel_db.values()
       )
 
-      # Tam dönüm hesabı
       toplam_donum_val = toplam_m2 / 1000.0
       toplam_donum_str = (
           f"{round(toplam_donum_val)} Dönüm"
@@ -1887,7 +1886,6 @@ if selected_keys:
           else f"{int(toplam_m2)} m² Arsa"
       )
 
-      # Terk durumu kontrolü
       is_any_terkli = any(
           p.get("terk_yapilmis_mi", False) for p in active_parcel_db.values()
       )
@@ -1904,7 +1902,6 @@ if selected_keys:
         sample_pool_mod = conf.get("havuz_mod", sample_pool_mod)
         break
 
-      # Proje tipine göre görsel arka plan
       if "Villa" in sample_project_type:
         bg_image_url = (
             "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1000&auto=format&fit=crop"
@@ -1921,7 +1918,6 @@ if selected_keys:
         )
         badge_text = "🏢 PRESTİJLİ KONUT GELİŞTİRME"
 
-      # Yatırımcı odaklı profesyonel bülten metni
       sample_caption = f"""İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT | STRATEJİK PROJE GELİŞTİRME BÜLTENİ 🏗️📊
 
 Bölgesel potansiyeli yüksek lokasyonlarda, gayrimenkul yatırımcılarımız ve arsa sahiplerimiz için katma değer üreten projeler kurgulamaya devam ediyoruz.
@@ -1962,11 +1958,11 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
 
       with col_sm2:
         st.markdown(
-            "#### 🎨 Ultra Vurucu & Profesyonel Kurumsal Hikaye (Story) Kartı"
+            "#### 🎬 Ultra Vurucu & Profesyonel Sosyal Medya Hikaye Videosu"
         )
         st.markdown(
-            "Hedeflenen YG%, detaylı mimari özellikler içeren ve doğrudan"
-            " **PNG görsel** olarak indirilebilen `9:16` kart tasarımı:"
+            "Doğrudan tarayıcınızda animasyonlu kurumsal hikaye videosu (`9:16`"
+            " formatında) üreten profesyonel modül:"
         )
 
         story_logo1_html = (
@@ -1980,8 +1976,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
             else "<b style='font-size:10px; color:#0f172a;'>MERİÇ İNŞAAT</b>"
         )
 
-        # MİMARİ ÖZELLİKLER & DAĞILIM alanının bilgilendirici ve profesyonel kurumsal mesajlarla güncellenmiş hali:
-        story_card_component_html = f"""
+        story_video_component_html = f"""
             <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%;">
                 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
                 
@@ -2036,13 +2031,19 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
 
                     <!-- Alt Çağrı (Call to Action) -->
                     <div style="text-align: center; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 4px;">
-                        <div style="font-size: 7.5px; color: #38bdf8; font-weight: 800; letter-spacing: 0.8px;">YÜKSEK POTANSİYELLİ YATIRIM FIRSATI 📩</div>
+                        <div style="font-size: 7.5px; color: #38bdf8; font-weight: 800; letter-spacing: 0.8px;">YÜKSEK POTANSİYEL VİDEO PROJE SUNUMU 🎥</div>
                     </div>
                 </div>
 
-                <button onclick="downloadStoryImage()" style="background-color: #0b1d3a; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); width: 310px; transition: background 0.2s;">
-                    📥 Story Kartını Görsel Olarak İndir (.PNG)
-                </button>
+                <div style="display: flex; gap: 8px; width: 310px;">
+                    <button onclick="downloadStoryImage()" style="flex: 1; background-color: #0b1d3a; color: white; border: none; padding: 10px 10px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 11px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                        📥 PNG İndir
+                    </button>
+                    <button id="rec-btn" onclick="recordStoryVideo()" style="flex: 1; background-color: #16a34a; color: white; border: none; padding: 10px 10px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 11px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                        🎥 Video Üret (.webm)
+                    </button>
+                </div>
+                <div id="status-msg" style="font-size: 11px; color: #38bdf8; font-weight: 600; text-align: center;"></div>
 
                 <script>
                     function downloadStoryImage() {{
@@ -2059,10 +2060,49 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                             link.click();
                         }});
                     }}
+
+                    async function recordStoryVideo() {{
+                        const btn = document.getElementById('rec-btn');
+                        const msg = document.getElementById('status-msg');
+                        const cardElement = document.getElementById('story-card-box');
+                        
+                        btn.disabled = true;
+                        msg.innerText = "⏳ Video prodüksiyonu hazırlanıyor (3 sn animasyon)...";
+
+                        try {{
+                            const canvas = await html2canvas(cardElement, {{ scale: 2, useCORS: true, allowTaint: true }});
+                            const stream = canvas.captureStream(30); // 30 FPS
+                            const recorder = new MediaRecorder(stream, {{ mimeType: 'video/webm;codecs=vp9' }});
+                            let chunks = [];
+
+                            recorder.ondataavailable = e => chunks.push(e.data);
+                            recorder.onstop = e => {{
+                                const blob = new Blob(chunks, {{ type: 'video/webm' }});
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'Istestate_Meric_Kurumsal_Story_{mahalle_adi}.webm';
+                                a.click();
+                                msg.innerText = "✅ Kurumsal Hikaye Videosu Başarıyla İndirildi!";
+                                btn.disabled = false;
+                            }};
+
+                            recorder.start();
+                            
+                            // 3 saniye kayıt süresi
+                            setTimeout(() => {{
+                                recorder.stop();
+                            }}, 3000);
+
+                        }} catch(err) {{
+                            msg.innerText = "⚠️ Tarayıcınız video kaydını desteklemiyor olabilir. PNG İndir kullanabilirsiniz.";
+                            btn.disabled = false;
+                        }}
+                    }}
                 </script>
             </div>
             """
-        components.html(story_card_component_html, height=660)
+        components.html(story_video_component_html, height=665)
 
     else:
       st.info(
