@@ -1980,7 +1980,33 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
             <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%;">
                 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
                 
-                <div id="story-card-box" style="width: 310px; height: 575px; background: linear-gradient(180deg, rgba(11, 29, 58, 0.70) 0%, rgba(15, 23, 42, 0.88) 60%, rgba(15, 23, 42, 0.99) 100%), url('{bg_image_url}'); background-size: cover; background-position: center; border-radius: 22px; padding: 16px; color: white; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 20px 40px rgba(0,0,0,0.6); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border: 2px solid rgba(56, 189, 248, 0.4); box-sizing: border-box;">
+                <style>
+                    @keyframes bgZoom {{
+                        0% {{ background-size: 100% auto; }}
+                        50% {{ background-size: 112% auto; }}
+                        100% {{ background-size: 100% auto; }}
+                    }}
+                    @keyframes slideUp {{
+                        0% {{ opacity: 0; transform: translateY(25px); }}
+                        100% {{ opacity: 1; transform: translateY(0); }}
+                    }}
+                    @keyframes pulseGlow {{
+                        0% {{ box-shadow: 0 0 8px rgba(56, 189, 248, 0.3); }}
+                        50% {{ box-shadow: 0 0 20px rgba(56, 189, 248, 0.7); }}
+                        100% {{ box-shadow: 0 0 8px rgba(56, 189, 248, 0.3); }}
+                    }}
+                    .animated-bg {{
+                        animation: bgZoom 6s infinite ease-in-out;
+                    }}
+                    .anim-slide {{
+                        animation: slideUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                    }}
+                    .anim-glow {{
+                        animation: pulseGlow 2.5s infinite ease-in-out;
+                    }}
+                </style>
+
+                <div id="story-card-box" class="animated-bg" style="width: 310px; height: 575px; background: linear-gradient(180deg, rgba(11, 29, 58, 0.75) 0%, rgba(15, 23, 42, 0.90) 60%, rgba(15, 23, 42, 0.98) 100%), url('{bg_image_url}'); background-size: cover; background-position: center; border-radius: 22px; padding: 16px; color: white; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 20px 40px rgba(0,0,0,0.6); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border: 2px solid rgba(56, 189, 248, 0.4); box-sizing: border-box;">
                     
                     <!-- Üst Kısım: Kurumsal Logolar -->
                     <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
@@ -1990,12 +2016,12 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
 
                     <!-- Orta Alan: Rozet ve Konsept -->
                     <div style="text-align: center;">
-                        <div style="display: inline-block; background: rgba(56, 189, 248, 0.22); border: 1px solid #38bdf8; color: #38bdf8; font-size: 8px; font-weight: 800; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; box-shadow: 0 0 12px rgba(56,189,248,0.3);">STRATEJİK PROJE VİZYONU</div>
+                        <div class="anim-glow" style="display: inline-block; background: rgba(56, 189, 248, 0.25); border: 1px solid #38bdf8; color: #38bdf8; font-size: 8px; font-weight: 800; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px;">STRATEJİK PROJE VİZYONU</div>
                         <div style="font-size: 12px; font-weight: 900; line-height: 1.2; text-transform: uppercase; color: #ffffff; text-shadow: 0 2px 6px rgba(0,0,0,0.6);">{badge_text}</div>
                     </div>
 
                     <!-- Cam Efektli (Glassmorphism) Mimari, Terk & Finansal Bilgi Kutusu -->
-                    <div style="background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(12px); padding: 10px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.25); box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
+                    <div class="anim-slide" style="background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(12px); padding: 10px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.25); box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
                         
                         <div style="display: flex; justify-content: space-between; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 3px;">
                             <div>
@@ -2067,7 +2093,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         const cardElement = document.getElementById('story-card-box');
                         
                         btn.disabled = true;
-                        msg.innerText = "⏳ Video prodüksiyonu hazırlanıyor (3 sn animasyon)...";
+                        msg.innerText = "⏳ Animasyonlu video prodüksiyonu kaydediliyor (4 saniye)...";
 
                         try {{
                             const canvas = await html2canvas(cardElement, {{ scale: 2, useCORS: true, allowTaint: true }});
@@ -2083,16 +2109,16 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                                 a.href = url;
                                 a.download = 'Istestate_Meric_Kurumsal_Story_{mahalle_adi}.webm';
                                 a.click();
-                                msg.innerText = "✅ Kurumsal Hikaye Videosu Başarıyla İndirildi!";
+                                msg.innerText = "✅ Hareketli Hikaye Videosu Başarıyla Üretildi!";
                                 btn.disabled = false;
                             }};
 
                             recorder.start();
                             
-                            // 3 saniye kayıt süresi
+                            // Canlı animasyonların yansıması için kayıt süresi 4 saniyeye çıkarıldı
                             setTimeout(() => {{
                                 recorder.stop();
-                            }}, 3000);
+                            }}, 4000);
 
                         }} catch(err) {{
                             msg.innerText = "⚠️ Tarayıcınız video kaydını desteklemiyor olabilir. PNG İndir kullanabilirsiniz.";
