@@ -996,7 +996,7 @@ else:
 
 if selected_keys:
   st.sidebar.divider()
-  st.sidebar.subheader("⚙️️ Parsel Terk Durumu Ayarı (Manuel Düzeltme)")
+  st.sidebar.subheader("⚙ Parsel Terk Durumu Ayarı (Manuel Düzeltme)")
   current_db = st.session_state["parcel_db"]
   any_terk_updated = False
 
@@ -1387,7 +1387,7 @@ if selected_keys:
 
   with tab2:
     st.subheader(
-        "🏛️ Mimari Fizibilite & Senaryo Dağılım Matrisi (Birim Başına Düşen"
+        "🏛️️ Mimari Fizibilite & Senaryo Dağılım Matrisi (Birim Başına Düşen"
         " Alanlar)"
     )
     mimari_rows = []
@@ -1837,7 +1837,7 @@ if selected_keys:
         st.markdown("#### 🔍 Ham JSON Veri Yapısı")
         st.json(db_items)
       with col_db2:
-        st.markdown("#### ⚙️ Veritabanı İşlemleri")
+        st.markdown("#### ⚙️️ Veritabanı İşlemleri")
         selected_del_key = st.selectbox(
             "Arşivden kaldırılacak parseli seçin:",
             options=list(db_items.keys()),
@@ -2126,7 +2126,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                             backgroundColor: null
                         }}).then(canvas => {{
                             const link = document.createElement('a');
-                            link.download = 'Istestate_Meric_Story_Karti_{mahalle_adi}.webm';
+                            link.download = 'Istestate_Meric_Story_Karti_{mahalle_adi}.png';
                             link.href = canvas.toDataURL('image/png');
                             link.click();
                         }});
@@ -2136,52 +2136,91 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         const btn = document.getElementById('rec-btn');
                         const msg = document.getElementById('status-msg');
                         const cardElement = document.getElementById('story-card-box');
-                        const titleView = document.getElementById('scenario-title-view');
-                        const descView = document.getElementById('scenario-desc-view');
                         
                         btn.disabled = true;
-                        msg.innerText = "🎬 Kurgusal senaryo sahneleri hazırlanıyor...";
-                        
+                        msg.innerText = "🎬 Video kurgulanıyor ve kaydediliyor, lütfen bekleyin...";
+
                         try {{
-                            const canvas = await html2canvas(cardElement, {{ scale: 2, useCORS: true, allowTaint: true }});
-                            const stream = canvas.captureStream(30);
-                            const recorder = new MediaRecorder(stream, {{ mimeType: 'video/webm' }});
+                            const width = cardElement.offsetWidth * 2;
+                            const height = cardElement.offsetHeight * 2;
+                            const recCanvas = document.createElement('canvas');
+                            recCanvas.width = width;
+                            recCanvas.height = height;
+                            const ctx = recCanvas.getContext('2d');
+
+                            const stream = recCanvas.captureStream(30);
+                            let recorder;
+                            try {{
+                                recorder = new MediaRecorder(stream, {{ mimeType: 'video/webm;codecs=vp9' }});
+                            }} catch (e) {{
+                                try {{
+                                    recorder = new MediaRecorder(stream, {{ mimeType: 'video/webm' }});
+                                }} catch (err) {{
+                                    recorder = new MediaRecorder(stream);
+                                }}
+                            }}
+
                             let chunks = [];
-                            
-                            recorder.ondataavailable = e => chunks.push(e.data);
-                            recorder.onstop = e => {{
+                            recorder.ondataavailable = function(e) {{
+                                if (e.data && e.data.size > 0) {{
+                                    chunks.push(e.data);
+                                }}
+                            }};
+
+                            recorder.onstop = function() {{
                                 const blob = new Blob(chunks, {{ type: 'video/webm' }});
                                 const url = URL.createObjectURL(blob);
                                 const a = document.createElement('a');
+                                a.style.display = 'none';
                                 a.href = url;
                                 a.download = 'Istestate_Meric_Hikaye_Videosu_{mahalle_adi}.webm';
+                                document.body.appendChild(a);
                                 a.click();
-                                msg.innerText = "✅ Video başarıyla oluşturuldu ve indirildi!";
+                                setTimeout(() => {{
+                                    document.body.removeChild(a);
+                                    window.URL.revokeObjectURL(url);
+                                }}, 100);
                                 btn.disabled = false;
+                                msg.innerText = "✅ Hikaye videosu başarıyla üretildi ve indirildi!";
                             }};
-                            
+
                             recorder.start();
-                            
-                            setTimeout(() => {{
-                                titleView.innerText = "📍 LOKASYON & ARSA ANALİZİ";
-                                descView.innerHTML = "• Yüksek Potansiyelli Bölgesel Gelişim<br>• Doğru Ada/Parsel Konumlandırması<br>• Stratejik Yatırım Hamlesi";
-                            }}, 2000);
-                            
-                            setTimeout(() => {{
-                                titleView.innerText = "💰 FİNANSAL YATIRIM GERİ DÖNÜŞÜ";
-                                descView.innerHTML = "• Maksimum Ciro ve Optimize Maliyet<br>• Avantajlı Kat Karşılığı / Satış Modeli<br>• Yüksek YG (%+ ROI)";
-                            }}, 4000);
-                            
-                            setTimeout(() => {{
-                                recorder.stop();
-                            }}, 6000);
-                            
-                        }} catch (err) {{
-                            msg.innerText = "⚠️ Video oluşturulurken hata: " + err.message;
+
+                            const duration = 3000;
+                            const fps = 15;
+                            const interval = 1000 / fps;
+                            let elapsed = 0;
+
+                            const timer = setInterval(async () => {{
+                                elapsed += interval;
+                                try {{
+                                    const canvasSnapshot = await html2canvas(cardElement, {{
+                                        scale: 2,
+                                        useCORS: true,
+                                        allowTaint: true,
+                                        backgroundColor: null
+                                    }});
+                                    ctx.clearRect(0, 0, width, height);
+                                    ctx.drawImage(canvasSnapshot, 0, 0, width, height);
+                                }} catch (err) {{
+                                    console.error(err);
+                                }}
+
+                                if (elapsed >= duration) {{
+                                    clearInterval(timer);
+                                    setTimeout(() => {{
+                                        recorder.stop();
+                                    }}, 200);
+                                }}
+                            }}, interval);
+
+                        } catch (err) {{
+                            console.error(err);
+                            msg.innerText = "❌ Video üretilirken hata oluştu.";
                             btn.disabled = false;
                         }}
                     }}
                 </script>
             </div>
         """
-        components.html(story_video_component_html, height=680)
+        components.html(story_video_component_html, height=670)
