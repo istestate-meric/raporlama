@@ -2111,6 +2111,19 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                             bgImg.onerror = resolve;
                         }});
 
+                        const logo1Img = new Image();
+                        logo1Img.crossOrigin = "anonymous";
+                        logo1Img.src = "data:image/png;base64,{img1_base64}";
+                        
+                        const logo2Img = new Image();
+                        logo2Img.crossOrigin = "anonymous";
+                        logo2Img.src = "data:image/png;base64,{img2_base64}";
+
+                        await Promise.all([
+                            new Promise(r => {{ logo1Img.onload = r; logo1Img.onerror = r; }}),
+                            new Promise(r => {{ logo2Img.onload = r; logo2Img.onerror = r; }})
+                        ]);
+
                         const fps = 30;
                         const durationSec = 4;
                         const totalFrames = fps * durationSec;
@@ -2151,171 +2164,145 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         recorder.start();
 
                         function drawFrame() {{
+                            if (frameCount >= totalFrames) {{
+                                recorder.stop();
+                                return;
+                            }}
+
                             const progress = frameCount / totalFrames;
                             
                             ctx.save();
-                            const zoomScale = 1 + (progress * 0.1);
+                            ctx.clearRect(0, 0, width, height);
+                            
+                            // 1. Arka plan zoom efekti
+                            const zoomScale = 1 + (progress * 0.08);
                             ctx.translate(width / 2, height / 2);
                             ctx.scale(zoomScale, zoomScale);
-                            ctx.translate(-width / 2, -height / 2);
-                            if (bgImg.complete && bgImg.naturalWidth !== 0) {{
-                                ctx.drawImage(bgImg, 0, 0, width, height);
-                            }} else {{
-                                ctx.fillStyle = '#0f172a';
-                                ctx.fillRect(0, 0, width, height);
-                            }}
+                            ctx.drawImage(bgImg, -width / 2, -height / 2, width, height);
                             ctx.restore();
-
-                            const gradient = ctx.createLinearGradient(0, 0, 0, height);
-                            gradient.addColorStop(0, 'rgba(11, 29, 58, 0.82)');
-                            gradient.addColorStop(0.6, 'rgba(15, 23, 42, 0.92)');
-                            gradient.addColorStop(1, 'rgba(15, 23, 42, 0.98)');
-                            ctx.fillStyle = gradient;
+                            
+                            // 2. Koyu gradyan örtü
+                            const grad = ctx.createLinearGradient(0, 0, 0, height);
+                            grad.addColorStop(0, 'rgba(11, 29, 58, 0.80)');
+                            grad.addColorStop(0.6, 'rgba(15, 23, 42, 0.92)');
+                            grad.addColorStop(1, 'rgba(15, 23, 42, 0.98)');
+                            ctx.fillStyle = grad;
                             ctx.fillRect(0, 0, width, height);
-
-                            const slideAnim = Math.min(1, progress * 3);
-                            const alphaAnim = Math.min(1, progress * 2.5);
-
-                            ctx.save();
-                            ctx.translate(0, (1 - slideAnim) * 30);
-                            ctx.globalAlpha = alphaAnim;
-
-                            ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
-                            ctx.strokeStyle = '#38bdf8';
-                            ctx.lineWidth = 2;
-                            roundRect(ctx, width / 2 - 160, 100, 320, 36, 18, true, true);
-
-                            ctx.fillStyle = '#38bdf8';
-                            ctx.font = 'bold 15px sans-serif';
+                            
+                            // 3. Logolar
+                            if (logo1Img.complete && logo1Img.naturalWidth > 0) {{
+                                ctx.save();
+                                ctx.fillStyle = '#ffffff';
+                                ctx.beginPath();
+                                ctx.roundRect(35, 35, 130, 55, 8);
+                                ctx.fill();
+                                ctx.drawImage(logo1Img, 45, 43, 110, 39);
+                                ctx.restore();
+                            }}
+                            if (logo2Img.complete && logo2Img.naturalWidth > 0) {{
+                                ctx.save();
+                                ctx.fillStyle = '#ffffff';
+                                ctx.beginPath();
+                                ctx.roundRect(width - 165, 35, 130, 55, 8);
+                                ctx.fill();
+                                ctx.drawImage(logo2Img, width - 155, 43, 110, 39);
+                                ctx.restore();
+                            }}
+                            
+                            // 4. Rozet ve Konsept Başlığı
                             ctx.textAlign = 'center';
-                            ctx.fillText('STRATEJİK PROJE VİZYONU', width / 2, 124);
-
+                            ctx.fillStyle = '#38bdf8';
+                            ctx.font = 'bold 16px -apple-system, sans-serif';
+                            ctx.fillText("STRATEJİK PROJE VİZYONU", width / 2, 135);
+                            
                             ctx.fillStyle = '#ffffff';
-                            ctx.font = '900 22px sans-serif';
-                            ctx.fillText('{badge_text}', width / 2, 170);
-
+                            ctx.font = '900 24px -apple-system, sans-serif';
+                            ctx.fillText("{badge_text}", width / 2, 172);
+                            
+                            // 5. Cam Efektli (Glassmorphism) Ana Bilgi Kutusu
+                            ctx.save();
                             ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
                             ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
                             ctx.lineWidth = 2;
-                            roundRect(ctx, 35, 210, width - 70, 720, 24, true, true);
-
-                            ctx.textAlign = 'left';
-                            ctx.fillStyle = '#94a3b8';
-                            ctx.font = 'bold 12px sans-serif';
-                            ctx.fillText('LOKASYON', 65, 255);
-                            ctx.fillStyle = '#f8fafc';
-                            ctx.font = '800 18px sans-serif';
-                            ctx.fillText('{mahalle_adi}, BEYKOZ', 65, 280);
-
-                            ctx.textAlign = 'right';
-                            ctx.fillStyle = '#94a3b8';
-                            ctx.font = 'bold 12px sans-serif';
-                            ctx.fillText('ARSA HACMİ', width - 65, 255);
-                            ctx.fillStyle = '#38bdf8';
-                            ctx.font = '800 18px sans-serif';
-                            ctx.fillText('{toplam_donum_str}', width - 65, 280);
-
-                            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-                            ctx.lineWidth = 1.5;
                             ctx.beginPath();
-                            ctx.moveTo(65, 310);
-                            ctx.lineTo(width - 65, 310);
+                            ctx.roundRect(35, 215, width - 70, 780, 18);
+                            ctx.fill();
                             ctx.stroke();
-
-                            ctx.textAlign = 'left';
-                            ctx.fillStyle = '#94a3b8';
-                            ctx.font = 'bold 12px sans-serif';
-                            ctx.fillText('YAPI VERİMLİLİĞİ', 65, 350);
-                            ctx.fillStyle = '#e2e8f0';
-                            ctx.font = '600 15px sans-serif';
-                            ctx.fillText('Max Emsal & TAKS Optimizasyonu', 65, 375);
-
-                            ctx.textAlign = 'right';
-                            ctx.fillStyle = '#94a3b8';
-                            ctx.font = 'bold 12px sans-serif';
-                            ctx.fillText('HEDEFLENEN YG', width - 65, 350);
-                            ctx.fillStyle = '#4ade80';
-                            ctx.font = '800 18px sans-serif';
-                            ctx.fillText('%{yg_orani:.1f} ROI', width - 65, 375);
-
-                            ctx.textAlign = 'left';
-                            ctx.fillStyle = '#38bdf8';
-                            ctx.font = 'bold 13px sans-serif';
-                            ctx.fillText('MİMARİ ÖZELLİKLER & DAĞILIM RAPORU', 65, 430);
-
-                            ctx.fillStyle = '#cbd5e1';
-                            ctx.font = '14px sans-serif';
-                            wrapText(ctx, '• {total_units_sum} Bağımsız Ünite ile Yüksek Verimli Yerleşim Planı', 65, 470, width - 130, 22);
-                            wrapText(ctx, '• Emsal Harici Ek Katma Değer Sağlayan Optimize Bodrum Katı', 65, 530, width - 130, 22);
-                            wrapText(ctx, '• Konseptle Bütünleşen {sample_pool_mod} ve Peyzaj Donatıları', 65, 590, width - 130, 22);
-                            wrapText(ctx, '• Yatırımcı Odaklı Maksimum Arsa ve Metrekare Değerlemesi', 65, 650, width - 130, 22);
-
-                            ctx.fillStyle = '#38bdf8';
-                            ctx.font = '800 14px sans-serif';
-                            ctx.textAlign = 'center';
-                            ctx.fillText('YÜKSEK POTANSİYEL VİDEO PROJE SUNUMU 🎥', width / 2, 885);
-
                             ctx.restore();
-
-                            frameCount++;
-                            if (frameCount <= totalFrames) {{
-                                setTimeout(() => {{
-                                    requestAnimationFrame(drawFrame);
-                                }}, 1000 / fps);
-                            }} else {{
-                                recorder.stop();
-                            }}
-                        }}
-
-                        function roundRect(ctx, x, y, width, height, radius, fill, stroke) {{
+                            
+                            // Bilgi Kutusu İçerik Metinleri
+                            ctx.textAlign = 'left';
+                            ctx.fillStyle = '#94a3b8';
+                            ctx.font = 'bold 13px -apple-system, sans-serif';
+                            ctx.fillText("LOKASYON", 65, 260);
+                            ctx.textAlign = 'right';
+                            ctx.fillText("ARSA HACMİ", width - 65, 260);
+                            
+                            ctx.textAlign = 'left';
+                            ctx.fillStyle = '#f8fafc';
+                            ctx.font = '800 20px -apple-system, sans-serif';
+                            ctx.fillText("{mahalle_adi}, BEYKOZ", 65, 295);
+                            ctx.textAlign = 'right';
+                            ctx.fillStyle = '#38bdf8';
+                            ctx.fillText("{toplam_donum_str}", width - 65, 295);
+                            
+                            // Ayırıcı Çizgi
+                            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                            ctx.lineWidth = 1;
                             ctx.beginPath();
-                            ctx.moveTo(x + radius, y);
-                            ctx.lineTo(x + width - radius, y);
-                            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-                            ctx.lineTo(x + width, y + height - radius);
-                            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-                            ctx.lineTo(x + radius, y + height);
-                            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-                            ctx.lineTo(x, y + radius);
-                            ctx.quadraticCurveTo(x, y, x + radius, y);
-                            ctx.closePath();
-                            if (fill) ctx.fill();
-                            if (stroke) ctx.stroke();
+                            ctx.moveTo(65, 330);
+                            ctx.lineTo(width - 65, 330);
+                            ctx.stroke();
+                            
+                            ctx.textAlign = 'left';
+                            ctx.fillStyle = '#94a3b8';
+                            ctx.font = 'bold 13px -apple-system, sans-serif';
+                            ctx.fillText("YAPI VERİMLİLİĞİ", 65, 370);
+                            ctx.textAlign = 'right';
+                            ctx.fillText("HEDEFLENEN YG", width - 65, 370);
+                            
+                            ctx.textAlign = 'left';
+                            ctx.fillStyle = '#e2e8f0';
+                            ctx.font = 'bold 16px -apple-system, sans-serif';
+                            ctx.fillText("Max Emsal & TAKS Optimizasyonu", 65, 405);
+                            ctx.textAlign = 'right';
+                            ctx.fillStyle = '#4ade80';
+                            ctx.font = '800 20px -apple-system, sans-serif';
+                            ctx.fillText("%{yg_orani:.1f} ROI", width - 65, 405);
+                            
+                            ctx.beginPath();
+                            ctx.moveTo(65, 440);
+                            ctx.lineTo(width - 65, 440);
+                            ctx.stroke();
+                            
+                            ctx.textAlign = 'left';
+                            ctx.fillStyle = '#38bdf8';
+                            ctx.font = 'bold 15px -apple-system, sans-serif';
+                            ctx.fillText("MİMARİ ÖZELLİKLER & DAĞILIM RAPORU", 65, 495);
+                            
+                            ctx.fillStyle = '#cbd5e1';
+                            ctx.font = '16px -apple-system, sans-serif';
+                            ctx.fillText("• {total_units_sum} Bağımsız Ünite ile Yüksek Verimli Yerleşim", 65, 545);
+                            ctx.fillText("• Emsal Harici Ek Katma Değer Sağlayan Bodrum Katı", 65, 595);
+                            ctx.fillText("• Konseptle Bütünleşen {sample_pool_mod} ve Peyzaj Donatıları", 65, 645);
+                            ctx.fillText("• Yatırımcı Odaklı Maksimum Arsa ve Metrekare Değerlemesi", 65, 695);
+                            
+                            // Alt Çağrı Alanı
+                            ctx.textAlign = 'center';
+                            ctx.fillStyle = '#38bdf8';
+                            ctx.font = 'bold 16px -apple-system, sans-serif';
+                            ctx.fillText("YÜKSEK POTANSİYEL VİDEO PROJE SUNUMU 🎥", width / 2, 1045);
+                            
+                            frameCount++;
+                            setTimeout(() => {{
+                                requestAnimationFrame(drawFrame);
+                            }}, 1000 / fps);
                         }}
 
-                        function wrapText(ctx, text, x, y, maxWidth, lineHeight) {{
-                            const words = text.split(' ');
-                            let line = '';
-                            for(let n = 0; n < words.length; n++) {{
-                                let testLine = line + words[n] + ' ';
-                                let metrics = ctx.measureText(testLine);
-                                let testWidth = metrics.width;
-                                if (testWidth > maxWidth && n > 0) {{
-                                    ctx.fillText(line, x, y);
-                                    line = words[n] + ' ';
-                                    y += lineHeight;
-                                }} else {{
-                                    line = testLine;
-                                }}
-                            }}
-                            ctx.fillText(line, x, y);
-                        }}
-
-                        requestAnimationFrame(drawFrame);
+                        drawFrame();
                     }}
                 </script>
             </div>
             """
-        components.html(story_video_component_html, height=665)
 
-    else:
-      st.info(
-          "Kurumsal içerik üretmek için lütfen sol menüden en az bir parsel"
-          " seçin."
-      )
-
-else:
-  st.info(
-      "👋 **Hoş Geldiniz!** Raporları görüntülemek için lütfen sol menüden"
-      " istenilen parselleri seçin veya yeni bir imar belgesi (PDF) yükleyin."
-  )
+        components.html(story_video_component_html, height=640)
