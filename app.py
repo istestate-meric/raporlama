@@ -1842,7 +1842,7 @@ if selected_keys:
             "Arşivden kaldırılacak parseli seçin:",
             options=list(db_items.keys()),
         )
-        if st.button("🗑️ Seçili Parseli Arşivden Kaldır", type="primary"):
+        if st.button("🗑️️ Seçili Parseli Arşivden Kaldır", type="primary"):
           if selected_del_key in st.session_state["parcel_db"]:
             current_db = st.session_state["parcel_db"]
             del current_db[selected_del_key]
@@ -1867,8 +1867,9 @@ if selected_keys:
     st.markdown(
         "Seçtiğiniz parsellerin imar metrajlarını; yatırım geri dönüşü (YG%),"
         " mimari kat ve bağımsız bölüm verimliliğini öne çıkaran, üst düzey"
-        " kurumsal dil ile hazırlanmış sosyal medya hikaye kartı ve **kurgusal"
-        " senaryolu video prodüksiyon** modülü."
+        " kurumsal dil ile hazırlanmış sosyal medya hikaye kartı, **fotoğraf"
+        " indirme** ve **kurgusal senaryolu animasyonlu video prodüksiyonu**"
+        " modülü."
     )
 
     if active_parcel_db:
@@ -1972,9 +1973,10 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
             "#### 🎬 Kurgusal Senaryolu & Ultra Vurucu Hikaye Videosu Stüdyosu"
         )
         st.markdown(
-            "Sistemdeki görsel standartlar ile %100 uyumlu, 3 aşamalı sinematik"
-            " kurgu senaryosuyla (Hızlı Giriş -> Mimari Çözüm -> Yüksek YG"
-            " Finali) dinamik video üreten modül:"
+            "Sistemdeki görsel standartlar ile %100 uyumlu, imar ve mimari"
+            " senaryo verilerini içeren, tek tıkla **PNG Fotoğraf** veya"
+            " **Animasyonlu Sosyal Medya Videosu (WebM)** olarak indirebileceğiniz"
+            " stüdyo:"
         )
 
         story_logo1_html = (
@@ -2017,6 +2019,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         border: 2px solid rgba(56, 189, 248, 0.5);
                         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                         box-sizing: border-box;
+                        background: #0f172a;
                     }}
                     .story-bg {{
                         position: absolute;
@@ -2045,6 +2048,25 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                     .anim-glow {{
                         animation: pulseGlow 2.5s infinite ease-in-out;
                     }}
+                    .action-btn {{
+                        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+                        color: white;
+                        border: none;
+                        padding: 10px 14px;
+                        border-radius: 8px;
+                        font-weight: 700;
+                        font-size: 11px;
+                        cursor: pointer;
+                        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+                        transition: all 0.2s ease;
+                        text-align: center;
+                        display: inline-block;
+                        text-decoration: none;
+                    }}
+                    .action-btn:hover {{
+                        transform: translateY(-2px);
+                        box-shadow: 0 6px 16px rgba(2, 132, 199, 0.6);
+                    }}
                 </style>
 
                 <div id="story-card-box" class="story-wrapper">
@@ -2060,7 +2082,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         <!-- Orta Alan: Kurgusal Senaryo & Vizyon Rozeti -->
                         <div style="text-align: center;">
                             <div class="anim-glow" style="display: inline-block; background: rgba(56, 189, 248, 0.25); border: 1px solid #38bdf8; color: #38bdf8; font-size: 8.5px; font-weight: 800; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">KURUMSAL PROJE SENARYOSU</div>
-                            <div id="scenario-title-view" style="font-size: 13px; font-weight: 900; line-height: 1.25; text-transform: uppercase; color: #ffffff; text-shadow: 0 2px 8px rgba(0,0,0,0.7);">{badge_text}</div>
+                            <div style="font-size: 13px; font-weight: 900; line-height: 1.25; text-transform: uppercase; color: #ffffff; text-shadow: 0 2px 8px rgba(0,0,0,0.7);">{badge_text}</div>
                         </div>
 
                         <!-- Cam Efektli (Glassmorphism) Detay Kartı -->
@@ -2094,9 +2116,108 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
 
                     </div>
                 </div>
+
+                <!-- İndirme Butonları Alanı -->
+                <div style="display: flex; gap: 10px; justify-content: center; width: 100%; margin-top: 6px;">
+                    <button class="action-btn" onclick="downloadStoryImage()">📸 Fotoğraf İndir (PNG)</button>
+                    <button class="action-btn" id="record-video-btn" onclick="recordStoryVideo()" style="background: linear-gradient(135deg, #10b981 0%, #047857 100%); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);">🎬 Video Üret & İndir (WebM)</button>
+                </div>
+                <div id="status-msg" style="font-size: 10px; color: #94a3b8; font-weight: 600; text-align: center; min-height: 15px;"></div>
+
+                <script>
+                    function downloadStoryImage() {{
+                        const el = document.getElementById('story-card-box');
+                        document.getElementById('status-msg').innerText = "Fotoğraf oluşturuluyor...";
+                        html2canvas(el, {{ scale: 3, useCORS: true, backgroundColor: null }}).then(canvas => {{
+                            const link = document.createElement('a');
+                            link.download = 'Istestate_Meric_Hikaye_Karti.png';
+                            link.href = canvas.toDataURL('image/png');
+                            link.click();
+                            document.getElementById('status-msg').innerText = "Fotoğraf başarıyla indirildi!";
+                        }}).catch(err => {{
+                            document.getElementById('status-msg').innerText = "Fotoğraf oluşturulamadı.";
+                        }});
+                    }}
+
+                    async function recordStoryVideo() {{
+                        const el = document.getElementById('story-card-box');
+                        const statusEl = document.getElementById('status-msg');
+                        const btn = document.getElementById('record-video-btn');
+                        
+                        btn.disabled = true;
+                        statusEl.innerText = "🎬 Sinematik video kaydediliyor (5 sn)... Lütfen bekleyin.";
+
+                        try {{
+                            const canvasStream = el.captureStream ? el.captureStream(30) : null;
+                            if (!canvasStream && typeof html2canvas === 'undefined') {{
+                                alert("Tarayıcınız video kayıt özelliğini desteklemiyor.");
+                                btn.disabled = false;
+                                return;
+                            }}
+
+                            // Alternatif olarak canvas tabanlı hızlı kayıt döngüsü
+                            let chunks = [];
+                            const width = 320;
+                            const height = 570;
+                            const offCanvas = document.createElement('canvas');
+                            offCanvas.width = width;
+                            offCanvas.height = height;
+                            const ctx = offCanvas.getContext('2d');
+                            const stream = offCanvas.captureStream(30);
+                            
+                            let mediaRecorder;
+                            try {{
+                                mediaRecorder = new MediaRecorder(stream, {{ mimeType: 'video/webm;codecs=vp9' }});
+                            }} catch (e) {{
+                                mediaRecorder = new MediaRecorder(stream, {{ mimeType: 'video/webm' }});
+                            }}
+
+                            mediaRecorder.ondataavailable = e => {{
+                                if (e.data && e.data.size > 0) chunks.push(e.data);
+                            }};
+
+                            mediaRecorder.onstop = () => {{
+                                const blob = new Blob(chunks, {{ type: 'video/webm' }});
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'Istestate_Meric_Kurumsal_Hikaye_Videosu.webm';
+                                a.click();
+                                statusEl.innerText = "✅ Video başarıyla oluşturuldu ve indirildi!";
+                                btn.disabled = false;
+                            }};
+
+                            mediaRecorder.start();
+
+                            // 5 saniye boyunca her kareyi html2canvas ile yakalayıp offCanvas'a basarak kayıt yapıyoruz
+                            let startTime = Date.now();
+                            let duration = 5000; // 5 saniye
+
+                            function captureFrame() {{
+                                let elapsed = Date.now() - startTime;
+                                if (elapsed < duration) {{
+                                    html2canvas(el, {{ scale: 1.5, useCORS: true }}).then(renderedCanvas => {{
+                                        ctx.clearRect(0, 0, width, height);
+                                        ctx.drawImage(renderedCanvas, 0, 0, width, height);
+                                        requestAnimationFrame(captureFrame);
+                                    }});
+                                }} else {{
+                                    mediaRecorder.stop();
+                                }}
+                            }}
+
+                            captureFrame();
+
+                        }} catch (err) {{
+                            console.error(err);
+                            statusEl.innerText = "Video oluşturulurken hata oluştu.";
+                            btn.disabled = false;
+                        }}
+                    }}
+                </script>
             </div>
             """
-        components.html(story_video_component_html, height=610)
+        components.html(story_video_component_html, height=670)
     else:
       st.info(
           "Sosyal medya hikaye kartı oluşturmak için lütfen sol menüden parsel"
