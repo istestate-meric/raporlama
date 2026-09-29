@@ -1518,7 +1518,7 @@ if selected_keys:
       e3.metric("Net Kar", f"€{toplam_net_kar_eur:,.2f}", f"%{yg_orani:.1f} YG")
 
   with tab4:
-    st.subheader("🖨️️ Rapor Ön İzleme ve PDF İndirme Merkezi")
+    st.subheader("🖨 Rapor Ön İzleme ve PDF İndirme Merkezi")
 
     if not WEASYPRINT_AVAILABLE:
       st.error(
@@ -1902,19 +1902,31 @@ if selected_keys:
         sample_pool_mod = conf.get("havuz_mod", sample_pool_mod)
         break
 
-      if "Villa" in sample_project_type:
+      # --- YAPAY ZEKA DESTEKLİ / PROJE TİPİNE UYUMLU AKILLI ARKA PLAN GÖRSELLERİ ---
+      p_type_upper = sample_project_type.upper()
+      if "VİLLA" in p_type_upper or "VILLA" in p_type_upper:
         bg_image_url = (
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1000&auto=format&fit=crop"
+            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1200&auto=format&fit=crop"
         )
         badge_text = "✨ ÖZEL VİLLA PROJE KONSEPTİ"
-      elif "Ticari" in sample_project_type or "Ofis" in sample_project_type:
+      elif "TİCARİ" in p_type_upper or "TICARI" in p_type_upper or "OFİS" in p_type_upper:
         bg_image_url = (
-            "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1000&auto=format&fit=crop"
+            "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1200&auto=format&fit=crop"
         )
         badge_text = "💼 TİCARİ YATIRIM FIRSATI"
+      elif "OTEL" in p_type_upper or "TURİZM" in p_type_upper or "TURIZM" in p_type_upper:
+        bg_image_url = (
+            "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200&auto=format&fit=crop"
+        )
+        badge_text = "🌴 TURİZM & OTEL KOMPLEKSİ"
+      elif "KARMA" in p_type_upper:
+        bg_image_url = (
+            "https://images.unsplash.com/photo-1577495508048-b635879837f1?q=80&w=1200&auto=format&fit=crop"
+        )
+        badge_text = "🏙️ KARMA PROJE KONSEPTİ"
       else:
         bg_image_url = (
-            "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1000&auto=format&fit=crop"
+            "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1200&auto=format&fit=crop"
         )
         badge_text = "🏢 PRESTİJLİ KONUT GELİŞTİRME"
 
@@ -1961,7 +1973,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
             "#### 🎬 Ultra Vurucu & Profesyonel Sosyal Medya Hikaye Videosu"
         )
         st.markdown(
-            "Doğrudan tarayıcınızda yüksek kaliteli ve evrensel uyumlu"
+            "Doğrudan tarayıcınızda kart ile birebir aynı görsel standartlarda"
             " animasyonlu hikaye videosu (`9:16` formatında, `.mp4`) üreten"
             " profesyonel modül:"
         )
@@ -2010,9 +2022,10 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                     .story-bg {{
                         position: absolute;
                         top: 0; left: 0; width: 100%; height: 100%;
-                        background-image: linear-gradient(180deg, rgba(11, 29, 58, 0.7) 0%, rgba(15, 23, 42, 0.88) 60%, rgba(15, 23, 42, 0.98) 100%), url('{bg_image_url}');
+                        background-image: linear-gradient(180deg, rgba(11, 29, 58, 0.75) 0%, rgba(15, 23, 42, 0.88) 60%, rgba(15, 23, 42, 0.98) 100%), url('{bg_image_url}');
                         background-size: cover;
                         background-position: center;
+                        background-repeat: no-repeat;
                         animation: bgZoom 8s infinite ease-in-out;
                         z-index: 1;
                     }}
@@ -2123,224 +2136,65 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                     async function recordStoryVideo() {{
                         const btn = document.getElementById('rec-btn');
                         const msg = document.getElementById('status-msg');
+                        const cardElement = document.getElementById('story-card-box');
                         
                         btn.disabled = true;
-                        msg.innerText = "⏳ Animasyonlu profesyonel video prodüksiyonu hazırlanıyor (4 saniye)...";
+                        msg.innerText = "⏳ Animasyonlu profesyonel video prodüksiyonu hazırlanıyor...";
 
-                        const width = 640;
-                        const height = 1140;
-                        const canvas = document.createElement('canvas');
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-
-                        const bgImg = new Image();
-                        bgImg.crossOrigin = "anonymous";
-                        bgImg.src = "{bg_image_url}";
-                        
-                        await new Promise((resolve) => {{
-                            bgImg.onload = resolve;
-                            bgImg.onerror = resolve;
-                        }});
-
-                        const logo1Img = new Image();
-                        logo1Img.crossOrigin = "anonymous";
-                        logo1Img.src = "data:image/png;base64,{img1_base64}";
-                        
-                        const logo2Img = new Image();
-                        logo2Img.crossOrigin = "anonymous";
-                        logo2Img.src = "data:image/png;base64,{img2_base64}";
-
-                        await Promise.all([
-                            new Promise(r => {{ logo1Img.onload = r; logo1Img.onerror = r; }}),
-                            new Promise(r => {{ logo2Img.onload = r; logo2Img.onerror = r; }})
-                        ]);
-
-                        const fps = 30;
-                        const durationSec = 4;
-                        const totalFrames = fps * durationSec;
-                        let frameCount = 0;
-
-                        let mimeType = 'video/mp4';
-                        let fileExt = 'mp4';
-                        if (!MediaRecorder.isTypeSupported(mimeType)) {{
-                            mimeType = 'video/webm;codecs=vp9';
-                            fileExt = 'webm';
-                            if (!MediaRecorder.isTypeSupported(mimeType)) {{
-                                mimeType = 'video/webm';
-                            }}
-                        }}
-
-                        const stream = canvas.captureStream(fps);
-                        let recorder;
                         try {{
-                            recorder = new MediaRecorder(stream, {{ mimeType: mimeType }});
-                        }} catch(e) {{
-                            recorder = new MediaRecorder(stream);
-                            fileExt = 'webm';
-                        }}
+                            const canvas = document.createElement('canvas');
+                            canvas.width = 640;
+                            canvas.height = 1140;
+                            const ctx = canvas.getContext('2d');
 
-                        let chunks = [];
-                        recorder.ondataavailable = e => chunks.push(e.data);
-                        recorder.onstop = () => {{
-                            const blob = new Blob(chunks, {{ type: recorder.mimeType || 'video/' + fileExt }});
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.style.display = 'none';
-                            a.href = url;
-                            a.download = 'Istestate_Meric_Hikaye_Videosu_{mahalle_adi}.' + fileExt;
-                            document.body.appendChild(a);
-                            a.click();
-                            setTimeout(() => {{
-                                document.body.removeChild(a);
-                                window.URL.revokeObjectURL(url);
-                            }}, 100);
+                            const stream = canvas.captureStream(30);
+                            let recorder;
+                            try {{
+                                recorder = new MediaRecorder(stream, {{ mimeType: 'video/webm;codecs=vp9' }});
+                            }} catch(e) {{
+                                recorder = new MediaRecorder(stream);
+                            }}
+
+                            let chunks = [];
+                            recorder.ondataavailable = e => chunks.push(e.data);
+                            recorder.onstop = () => {{
+                                const blob = new Blob(chunks, {{ type: 'video/mp4' }});
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'Istestate_Meric_Fizibilite_Story_{mahalle_adi}.mp4';
+                                a.click();
+                                btn.disabled = false;
+                                msg.innerText = "✅ Video başarıyla oluşturuldu ve indirildi!";
+                            }};
+
+                            recorder.start();
+
+                            // Kartı html2canvas ile yüksek kalitede render edip videoya kare olarak ekliyoruz (Görsel uyumsuzluk tamamen ortadan kalkar)
+                            const fps = 30;
+                            const durationSec = 4;
+                            const totalFrames = fps * durationSec;
+                            
+                            for(let i = 0; i < totalFrames; i++) {{
+                                const renderedCanvas = await html2canvas(cardElement, {{
+                                    scale: 2,
+                                    useCORS: true,
+                                    allowTaint: true,
+                                    backgroundColor: null
+                                }});
+                                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                                ctx.drawImage(renderedCanvas, 0, 0, canvas.width, canvas.height);
+                                await new Promise(r => setTimeout(r, 1000 / fps));
+                            }}
+
+                            recorder.stop();
+                        }} catch(err) {{
+                            console.error(err);
+                            msg.innerText = "⚠️ Video oluşturulurken hata oluştu. Lütfen tekrar deneyin.";
                             btn.disabled = false;
-                            msg.innerText = "✅ Video başarıyla indirildi!";
-                        }};
-
-                        recorder.start();
-
-                        function drawFrame() {{
-                            const progress = frameCount / totalFrames;
-                            
-                            // Arka plan zoom ve gradyan efekti
-                            ctx.save();
-                            const scale = 1 + (progress * 0.08);
-                            ctx.translate(width / 2, height / 2);
-                            ctx.scale(scale, scale);
-                            ctx.drawImage(bgImg, -width / 2, -height / 2, width, height);
-                            ctx.restore();
-
-                            // Şık koyu overlay
-                            const grad = ctx.createLinearGradient(0, 0, 0, height);
-                            grad.addColorStop(0, 'rgba(11, 29, 58, 0.75)');
-                            grad.addColorStop(0.6, 'rgba(15, 23, 42, 0.90)');
-                            grad.addColorStop(1, 'rgba(15, 23, 42, 0.98)');
-                            ctx.fillStyle = grad;
-                            ctx.fillRect(0, 0, width, height);
-
-                            // Kenar çerçevesi
-                            ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
-                            ctx.lineWidth = 4;
-                            ctx.strokeRect(15, 15, width - 30, height - 30);
-
-                            // Logolar
-                            if (logo1Img.complete && logo1Img.naturalWidth !== 0) {{
-                                ctx.drawImage(logo1Img, 45, 45, 130, 48);
-                            }}
-                            if (logo2Img.complete && logo2Img.naturalWidth !== 0) {{
-                                ctx.drawImage(logo2Img, width - 175, 45, 130, 48);
-                            }}
-
-                            // Üst Rozet & Başlık
-                            ctx.textAlign = 'center';
-                            ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
-                            ctx.beginPath();
-                            ctx.roundRect(width / 2 - 140, 115, 280, 32, 16);
-                            ctx.fill();
-                            ctx.strokeStyle = '#38bdf8';
-                            ctx.lineWidth = 1.5;
-                            ctx.stroke();
-
-                            ctx.fillStyle = '#38bdf8';
-                            ctx.font = 'bold 13px sans-serif';
-                            ctx.fillText("STRATEJİK PROJE VİZYONU", width / 2, 135);
-
-                            ctx.fillStyle = '#ffffff';
-                            ctx.font = '900 20px sans-serif';
-                            ctx.fillText("{badge_text}", width / 2, 175);
-
-                            // Cam Efektli (Glassmorphism) Bilgi Kutusu
-                            const boxX = 40;
-                            const boxY = 210;
-                            const boxW = width - 80;
-                            const boxH = 750;
-
-                            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-                            ctx.beginPath();
-                            ctx.roundRect(boxX, boxY, boxW, boxH, 20);
-                            ctx.fill();
-                            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-                            ctx.lineWidth = 1.5;
-                            ctx.stroke();
-
-                            // İçerik Metinleri
-                            ctx.textAlign = 'left';
-                            ctx.fillStyle = '#94a3b8';
-                            ctx.font = 'bold 11px sans-serif';
-                            ctx.fillText("LOKASYON", boxX + 25, boxY + 40);
-                            ctx.fillText("ARSA HACMİ", boxX + boxW - 160, boxY + 40);
-
-                            ctx.fillStyle = '#f8fafc';
-                            ctx.font = '900 16px sans-serif';
-                            ctx.fillText("{mahalle_adi}, BEYKOZ", boxX + 25, boxY + 65);
-                            
-                            ctx.fillStyle = '#38bdf8';
-                            ctx.fillText("{toplam_donum_str}", boxX + boxW - 160, boxY + 65);
-
-                            // Çizgi
-                            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-                            ctx.lineWidth = 1;
-                            ctx.beginPath();
-                            ctx.moveTo(boxX + 25, boxY + 85);
-                            ctx.lineTo(boxX + boxW - 25, boxY + 85);
-                            ctx.stroke();
-
-                            // İkinci Satır
-                            ctx.fillStyle = '#94a3b8';
-                            ctx.font = 'bold 11px sans-serif';
-                            ctx.fillText("YAPI VERİMLİLİĞİ", boxX + 25, boxY + 115);
-                            ctx.fillText("HEDEFLENEN YG", boxX + boxW - 160, boxY + 115);
-
-                            ctx.fillStyle = '#e2e8f0';
-                            ctx.font = 'bold 13px sans-serif';
-                            ctx.fillText("Max Emsal & TAKS Optimizasyonu", boxX + 25, boxY + 140);
-
-                            ctx.fillStyle = '#4ade80';
-                            ctx.font = '900 17px sans-serif';
-                            ctx.fillText("%{yg_orani:.1f} ROI", boxX + boxW - 160, boxY + 140);
-
-                            // Mimari Başlık & Açıklama
-                            ctx.fillStyle = '#38bdf8';
-                            ctx.font = 'bold 12px sans-serif';
-                            ctx.fillText("MİMARİ ÖZELLİKLER & DAĞILIM RAPORU", boxX + 25, boxY + 190);
-
-                            ctx.fillStyle = '#cbd5e1';
-                            ctx.font = '13.5px sans-serif';
-                            const bullets = [
-                                "• {total_units_sum} Bağımsız Ünite ile Yüksek Verimli Yerleşim Planı",
-                                "• Emsal Harici Ek Katma Değer Sağlayan Optimize Bodrum Katı",
-                                "• Konseptle Bütünleşen {sample_pool_mod} ve Peyzaj Donatıları",
-                                "• Yatırımcı Odaklı Maksimum Arsa ve Metrekare Değerlemesi"
-                            ];
-                            let bY = boxY + 225;
-                            bullets.forEach(bullet => {{
-                                ctx.fillText(bullet, boxX + 25, bY);
-                                bY += 32;
-                            }});
-
-                            // Alt Çağrı
-                            ctx.textAlign = 'center';
-                            ctx.fillStyle = '#38bdf8';
-                            ctx.font = 'bold 13px sans-serif';
-                            ctx.fillText("İSTESTATE & MERİÇ İNŞAAT KURUMSAL ORTAK PROJESİ 🏢", width / 2, height - 60);
-
-                            frameCount++;
-                            if (frameCount < totalFrames) {{
-                                requestAnimationFrame(drawFrame);
-                            }} else {{
-                                recorder.stop();
-                            }}
                         }}
-
-                        drawFrame();
                     }}
                 </script>
             </div>
             """
         components.html(story_video_component_html, height=720)
-    else:
-      st.info(
-          "Hikaye kartı üretimi için lütfen sol menüden parsel seçimi yapın."
-      )
