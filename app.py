@@ -1961,8 +1961,9 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
             "#### 🎬 Ultra Vurucu & Profesyonel Sosyal Medya Hikaye Videosu"
         )
         st.markdown(
-            "Doğrudan tarayıcınızda animasyonlu kurumsal hikaye videosu (`9:16`"
-            " formatında) üreten profesyonel modül:"
+            "Doğrudan tarayıcınızda yüksek kaliteli ve evrensel uyumlu"
+            " animasyonlu hikaye videosu (`9:16` formatında, `.mp4`) üreten"
+            " profesyonel modül:"
         )
 
         story_logo1_html = (
@@ -2066,7 +2067,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         📥 PNG İndir
                     </button>
                     <button id="rec-btn" onclick="recordStoryVideo()" style="flex: 1; background-color: #16a34a; color: white; border: none; padding: 10px 10px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 11px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
-                        🎥 Video Üret (.webm)
+                        🎥 Video Üret (.mp4)
                     </button>
                 </div>
                 <div id="status-msg" style="font-size: 11px; color: #38bdf8; font-weight: 600; text-align: center;"></div>
@@ -2090,40 +2091,217 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                     async function recordStoryVideo() {{
                         const btn = document.getElementById('rec-btn');
                         const msg = document.getElementById('status-msg');
-                        const cardElement = document.getElementById('story-card-box');
                         
                         btn.disabled = true;
-                        msg.innerText = "⏳ Animasyonlu video prodüksiyonu kaydediliyor (4 saniye)...";
+                        msg.innerText = "⏳ Animasyonlu profesyonel video prodüksiyonu hazırlanıyor (4 saniye)...";
 
-                        try {{
-                            const canvas = await html2canvas(cardElement, {{ scale: 2, useCORS: true, allowTaint: true }});
-                            const stream = canvas.captureStream(30); // 30 FPS
-                            const recorder = new MediaRecorder(stream, {{ mimeType: 'video/webm;codecs=vp9' }});
-                            let chunks = [];
+                        const width = 620;
+                        const height = 1150;
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
 
-                            recorder.ondataavailable = e => chunks.push(e.data);
-                            recorder.onstop = e => {{
-                                const blob = new Blob(chunks, {{ type: 'video/webm' }});
-                                const url = URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = 'Istestate_Meric_Kurumsal_Story_{mahalle_adi}.webm';
-                                a.click();
-                                msg.innerText = "✅ Hareketli Hikaye Videosu Başarıyla Üretildi!";
-                                btn.disabled = false;
-                            }};
+                        const bgImg = new Image();
+                        bgImg.crossOrigin = "anonymous";
+                        bgImg.src = "{bg_image_url}";
+                        
+                        await new Promise((resolve) => {{
+                            bgImg.onload = resolve;
+                            bgImg.onerror = resolve;
+                        }});
 
-                            recorder.start();
-                            
-                            // Canlı animasyonların yansıması için kayıt süresi 4 saniyeye çıkarıldı
-                            setTimeout(() => {{
-                                recorder.stop();
-                            }}, 4000);
+                        const fps = 30;
+                        const durationSec = 4;
+                        const totalFrames = fps * durationSec;
+                        let frameCount = 0;
 
-                        }} catch(err) {{
-                            msg.innerText = "⚠️ Tarayıcınız video kaydını desteklemiyor olabilir. PNG İndir kullanabilirsiniz.";
-                            btn.disabled = false;
+                        let mimeType = 'video/mp4';
+                        let fileExt = 'mp4';
+                        if (!MediaRecorder.isTypeSupported(mimeType)) {{
+                            mimeType = 'video/webm;codecs=vp9';
+                            fileExt = 'webm';
+                            if (!MediaRecorder.isTypeSupported(mimeType)) {{
+                                mimeType = 'video/webm';
+                            }}
                         }}
+
+                        const stream = canvas.captureStream(fps);
+                        let recorder;
+                        try {{
+                            recorder = new MediaRecorder(stream, {{ mimeType: mimeType }});
+                        }} catch(e) {{
+                            recorder = new MediaRecorder(stream);
+                            fileExt = 'webm';
+                        }}
+
+                        let chunks = [];
+                        recorder.ondataavailable = e => chunks.push(e.data);
+                        recorder.onstop = () => {{
+                            const blob = new Blob(chunks, {{ type: recorder.mimeType || 'video/' + fileExt }});
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'Istestate_Meric_Kurumsal_Story_{mahalle_adi}.' + fileExt;
+                            a.click();
+                            msg.innerText = "✅ Hareketli Hikaye Videosu Başarıyla Üretildi (" + fileExt.toUpperCase() + ")!";
+                            btn.disabled = false;
+                        }};
+
+                        recorder.start();
+
+                        function drawFrame() {{
+                            const progress = frameCount / totalFrames;
+                            
+                            ctx.save();
+                            const zoomScale = 1 + (progress * 0.1);
+                            ctx.translate(width / 2, height / 2);
+                            ctx.scale(zoomScale, zoomScale);
+                            ctx.translate(-width / 2, -height / 2);
+                            if (bgImg.complete && bgImg.naturalWidth !== 0) {{
+                                ctx.drawImage(bgImg, 0, 0, width, height);
+                            }} else {{
+                                ctx.fillStyle = '#0f172a';
+                                ctx.fillRect(0, 0, width, height);
+                            }}
+                            ctx.restore();
+
+                            const gradient = ctx.createLinearGradient(0, 0, 0, height);
+                            gradient.addColorStop(0, 'rgba(11, 29, 58, 0.82)');
+                            gradient.addColorStop(0.6, 'rgba(15, 23, 42, 0.92)');
+                            gradient.addColorStop(1, 'rgba(15, 23, 42, 0.98)');
+                            ctx.fillStyle = gradient;
+                            ctx.fillRect(0, 0, width, height);
+
+                            const slideAnim = Math.min(1, progress * 3);
+                            const alphaAnim = Math.min(1, progress * 2.5);
+
+                            ctx.save();
+                            ctx.translate(0, (1 - slideAnim) * 30);
+                            ctx.globalAlpha = alphaAnim;
+
+                            ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+                            ctx.strokeStyle = '#38bdf8';
+                            ctx.lineWidth = 2;
+                            roundRect(ctx, width / 2 - 160, 100, 320, 36, 18, true, true);
+
+                            ctx.fillStyle = '#38bdf8';
+                            ctx.font = 'bold 15px sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.fillText('STRATEJİK PROJE VİZYONU', width / 2, 124);
+
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = '900 22px sans-serif';
+                            ctx.fillText('{badge_text}', width / 2, 170);
+
+                            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+                            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+                            ctx.lineWidth = 2;
+                            roundRect(ctx, 35, 210, width - 70, 720, 24, true, true);
+
+                            ctx.textAlign = 'left';
+                            ctx.fillStyle = '#94a3b8';
+                            ctx.font = 'bold 12px sans-serif';
+                            ctx.fillText('LOKASYON', 65, 255);
+                            ctx.fillStyle = '#f8fafc';
+                            ctx.font = '800 18px sans-serif';
+                            ctx.fillText('{mahalle_adi}, BEYKOZ', 65, 280);
+
+                            ctx.textAlign = 'right';
+                            ctx.fillStyle = '#94a3b8';
+                            ctx.font = 'bold 12px sans-serif';
+                            ctx.fillText('ARSA HACMİ', width - 65, 255);
+                            ctx.fillStyle = '#38bdf8';
+                            ctx.font = '800 18px sans-serif';
+                            ctx.fillText('{toplam_donum_str}', width - 65, 280);
+
+                            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                            ctx.lineWidth = 1.5;
+                            ctx.beginPath();
+                            ctx.moveTo(65, 310);
+                            ctx.lineTo(width - 65, 310);
+                            ctx.stroke();
+
+                            ctx.textAlign = 'left';
+                            ctx.fillStyle = '#94a3b8';
+                            ctx.font = 'bold 12px sans-serif';
+                            ctx.fillText('YAPI VERİMLİLİĞİ', 65, 350);
+                            ctx.fillStyle = '#e2e8f0';
+                            ctx.font = '600 15px sans-serif';
+                            ctx.fillText('Max Emsal & TAKS Optimizasyonu', 65, 375);
+
+                            ctx.textAlign = 'right';
+                            ctx.fillStyle = '#94a3b8';
+                            ctx.font = 'bold 12px sans-serif';
+                            ctx.fillText('HEDEFLENEN YG', width - 65, 350);
+                            ctx.fillStyle = '#4ade80';
+                            ctx.font = '800 18px sans-serif';
+                            ctx.fillText('%{yg_orani:.1f} ROI', width - 65, 375);
+
+                            ctx.textAlign = 'left';
+                            ctx.fillStyle = '#38bdf8';
+                            ctx.font = 'bold 13px sans-serif';
+                            ctx.fillText('MİMARİ ÖZELLİKLER & DAĞILIM RAPORU', 65, 430);
+
+                            ctx.fillStyle = '#cbd5e1';
+                            ctx.font = '14px sans-serif';
+                            wrapText(ctx, '• {total_units_sum} Bağımsız Ünite ile Yüksek Verimli Yerleşim Planı', 65, 470, width - 130, 22);
+                            wrapText(ctx, '• Emsal Harici Ek Katma Değer Sağlayan Optimize Bodrum Katı', 65, 530, width - 130, 22);
+                            wrapText(ctx, '• Konseptle Bütünleşen {sample_pool_mod} ve Peyzaj Donatıları', 65, 590, width - 130, 22);
+                            wrapText(ctx, '• Yatırımcı Odaklı Maksimum Arsa ve Metrekare Değerlemesi', 65, 650, width - 130, 22);
+
+                            ctx.fillStyle = '#38bdf8';
+                            ctx.font = '800 14px sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.fillText('YÜKSEK POTANSİYEL VİDEO PROJE SUNUMU 🎥', width / 2, 885);
+
+                            ctx.restore();
+
+                            frameCount++;
+                            if (frameCount <= totalFrames) {{
+                                setTimeout(() => {{
+                                    requestAnimationFrame(drawFrame);
+                                }}, 1000 / fps);
+                            }} else {{
+                                recorder.stop();
+                            }}
+                        }}
+
+                        function roundRect(ctx, x, y, width, height, radius, fill, stroke) {{
+                            ctx.beginPath();
+                            ctx.moveTo(x + radius, y);
+                            ctx.lineTo(x + width - radius, y);
+                            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+                            ctx.lineTo(x + width, y + height - radius);
+                            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+                            ctx.lineTo(x + radius, y + height);
+                            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+                            ctx.lineTo(x, y + radius);
+                            ctx.quadraticCurveTo(x, y, x + radius, y);
+                            ctx.closePath();
+                            if (fill) ctx.fill();
+                            if (stroke) ctx.stroke();
+                        }}
+
+                        function wrapText(ctx, text, x, y, maxWidth, lineHeight) {{
+                            const words = text.split(' ');
+                            let line = '';
+                            for(let n = 0; n < words.length; n++) {{
+                                let testLine = line + words[n] + ' ';
+                                let metrics = ctx.measureText(testLine);
+                                let testWidth = metrics.width;
+                                if (testWidth > maxWidth && n > 0) {{
+                                    ctx.fillText(line, x, y);
+                                    line = words[n] + ' ';
+                                    y += lineHeight;
+                                }} else {{
+                                    line = testLine;
+                                }}
+                            }}
+                            ctx.fillText(line, x, y);
+                        }}
+
+                        requestAnimationFrame(drawFrame);
                     }}
                 </script>
             </div>
