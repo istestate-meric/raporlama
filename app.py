@@ -1518,7 +1518,7 @@ if selected_keys:
       e3.metric("Net Kar", f"€{toplam_net_kar_eur:,.2f}", f"%{yg_orani:.1f} YG")
 
   with tab4:
-    st.subheader("🖨️ Rapor Ön İzleme ve PDF İndirme Merkezi")
+    st.subheader("🖨️️ Rapor Ön İzleme ve PDF İndirme Merkezi")
 
     if not WEASYPRINT_AVAILABLE:
       st.error(
@@ -1967,106 +1967,138 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
         )
 
         story_logo1_html = (
-            f"<div style='background: #ffffff; padding: 5px 8px; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: flex; align-items: center;'><img src='data:image/png;base64,{img1_base64}' style='max-height: 20px; width: auto; object-fit: contain;'></div>"
+            f"<div style='background: #ffffff; padding: 6px 10px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; align-items: center;'><img src='data:image/png;base64,{img1_base64}' style='max-height: 24px; width: auto; object-fit: contain;'></div>"
             if img1_base64
-            else "<b style='font-size:10px; color:#0f172a;'>İSTESTATE</b>"
+            else "<b style='font-size:11px; color:#0f172a;'>İSTESTATE</b>"
         )
         story_logo2_html = (
-            f"<div style='background: #ffffff; padding: 5px 8px; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: flex; align-items: center;'><img src='data:image/png;base64,{img2_base64}' style='max-height: 20px; width: auto; object-fit: contain;'></div>"
+            f"<div style='background: #ffffff; padding: 6px 10px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; align-items: center;'><img src='data:image/png;base64,{img2_base64}' style='max-height: 24px; width: auto; object-fit: contain;'></div>"
             if img2_base64
-            else "<b style='font-size:10px; color:#0f172a;'>MERİÇ İNŞAAT</b>"
+            else "<b style='font-size:11px; color:#0f172a;'>MERİÇ İNŞAAT</b>"
         )
 
         story_video_component_html = f"""
-            <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%;">
                 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
                 
                 <style>
                     @keyframes bgZoom {{
-                        0% {{ background-size: 100% auto; }}
-                        50% {{ background-size: 112% auto; }}
-                        100% {{ background-size: 100% auto; }}
+                        0% {{ transform: scale(1); }}
+                        50% {{ transform: scale(1.08); }}
+                        100% {{ transform: scale(1); }}
                     }}
                     @keyframes slideUp {{
-                        0% {{ opacity: 0; transform: translateY(25px); }}
+                        0% {{ opacity: 0; transform: translateY(30px); }}
                         100% {{ opacity: 1; transform: translateY(0); }}
                     }}
                     @keyframes pulseGlow {{
-                        0% {{ box-shadow: 0 0 8px rgba(56, 189, 248, 0.3); }}
-                        50% {{ box-shadow: 0 0 20px rgba(56, 189, 248, 0.7); }}
-                        100% {{ box-shadow: 0 0 8px rgba(56, 189, 248, 0.3); }}
+                        0% {{ box-shadow: 0 0 10px rgba(56, 189, 248, 0.4); }}
+                        50% {{ box-shadow: 0 0 25px rgba(56, 189, 248, 0.8); }}
+                        100% {{ box-shadow: 0 0 10px rgba(56, 189, 248, 0.4); }}
                     }}
-                    .animated-bg {{
-                        animation: bgZoom 6s infinite ease-in-out;
+                    .story-wrapper {{
+                        width: 320px;
+                        height: 570px;
+                        border-radius: 24px;
+                        overflow: hidden;
+                        position: relative;
+                        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+                        border: 2px solid rgba(56, 189, 248, 0.5);
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        box-sizing: border-box;
+                    }}
+                    .story-bg {{
+                        position: absolute;
+                        top: 0; left: 0; width: 100%; height: 100%;
+                        background-image: linear-gradient(180deg, rgba(11, 29, 58, 0.7) 0%, rgba(15, 23, 42, 0.88) 60%, rgba(15, 23, 42, 0.98) 100%), url('{bg_image_url}');
+                        background-size: cover;
+                        background-position: center;
+                        animation: bgZoom 8s infinite ease-in-out;
+                        z-index: 1;
+                    }}
+                    .story-content {{
+                        position: relative;
+                        z-index: 2;
+                        width: 100%;
+                        height: 100%;
+                        padding: 18px;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: space-between;
+                        box-sizing: border-box;
                     }}
                     .anim-slide {{
-                        animation: slideUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                        animation: slideUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
                     }}
                     .anim-glow {{
                         animation: pulseGlow 2.5s infinite ease-in-out;
                     }}
                 </style>
 
-                <div id="story-card-box" class="animated-bg" style="width: 310px; height: 575px; background: linear-gradient(180deg, rgba(11, 29, 58, 0.75) 0%, rgba(15, 23, 42, 0.90) 60%, rgba(15, 23, 42, 0.98) 100%), url('{bg_image_url}'); background-size: cover; background-position: center; border-radius: 22px; padding: 16px; color: white; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 20px 40px rgba(0,0,0,0.6); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border: 2px solid rgba(56, 189, 248, 0.4); box-sizing: border-box;">
-                    
-                    <!-- Üst Kısım: Kurumsal Logolar -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                        <div>{story_logo1_html}</div>
-                        <div>{story_logo2_html}</div>
-                    </div>
-
-                    <!-- Orta Alan: Rozet ve Konsept -->
-                    <div style="text-align: center;">
-                        <div class="anim-glow" style="display: inline-block; background: rgba(56, 189, 248, 0.25); border: 1px solid #38bdf8; color: #38bdf8; font-size: 8px; font-weight: 800; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px;">STRATEJİK PROJE VİZYONU</div>
-                        <div style="font-size: 12px; font-weight: 900; line-height: 1.2; text-transform: uppercase; color: #ffffff; text-shadow: 0 2px 6px rgba(0,0,0,0.6);">{badge_text}</div>
-                    </div>
-
-                    <!-- Cam Efektli (Glassmorphism) Mimari, Terk & Finansal Bilgi Kutusu -->
-                    <div class="anim-slide" style="background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(12px); padding: 10px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.25); box-shadow: 0 8px 32px rgba(0,0,0,0.4);">
+                <div id="story-card-box" class="story-wrapper">
+                    <div class="story-bg"></div>
+                    <div class="story-content">
                         
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 3px;">
-                            <div>
-                                <div style="font-size: 6px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">LOKASYON</div>
-                                <div style="font-size: 9.5px; font-weight: 800; color: #f8fafc;">{mahalle_adi}, BEYKOZ</div>
-                            </div>
-                            <div style="text-align: right;">
-                                <div style="font-size: 6px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">ARSA HACMİ</div>
-                                <div style="font-size: 9.5px; font-weight: 800; color: #38bdf8;">{toplam_donum_str}</div>
-                            </div>
+                        <!-- Üst Kısım: Kurumsal Logolar -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            <div>{story_logo1_html}</div>
+                            <div>{story_logo2_html}</div>
                         </div>
 
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                            <div>
-                                <div style="font-size: 6px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">YAPI VERİMLİLİĞİ</div>
-                                <div style="font-size: 8px; color: #e2e8f0; font-weight: 600;">Max Emsal & TAKS Optimizasyonu</div>
-                            </div>
-                            <div style="text-align: right;">
-                                <div style="font-size: 6px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">HEDEFLENEN YG</div>
-                                <div style="font-size: 9px; font-weight: 800; color: #4ade80;">%{yg_orani:.1f} ROI</div>
-                            </div>
+                        <!-- Orta Alan: Üstün Vizyon Rozeti ve Başlık -->
+                        <div style="text-align: center;">
+                            <div class="anim-glow" style="display: inline-block; background: rgba(56, 189, 248, 0.25); border: 1px solid #38bdf8; color: #38bdf8; font-size: 8.5px; font-weight: 800; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">STRATEJİK PROJE VİZYONU</div>
+                            <div style="font-size: 13px; font-weight: 900; line-height: 1.25; text-transform: uppercase; color: #ffffff; text-shadow: 0 2px 8px rgba(0,0,0,0.7);">{badge_text}</div>
                         </div>
 
-                        <div style="font-size: 6.5px; color: #38bdf8; font-weight: 700; text-transform: uppercase; margin-top: 4px; margin-bottom: 2px;">MİMARİ ÖZELLİKLER & DAĞILIM RAPORU</div>
-                        <div style="font-size: 7.2px; color: #cbd5e1; line-height: 1.35;">
-                            • <b>{total_units_sum} Bağımsız Ünite</b> ile Yüksek Verimli Yerleşim Planı<br>
-                            • Emsal Harici Ek Katma Değer Sağlayan <b>Optimize Bodrum Katı</b><br>
-                            • Konseptle Bütünleşen <b>{sample_pool_mod}</b> ve Peyzaj Donatıları<br>
-                            • Yatırımcı Odaklı Maksimum Arsa ve Metrekare Değerlemesi
+                        <!-- Cam Efektli (Glassmorphism) Detay Kartı -->
+                        <div class="anim-slide" style="background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(14px); padding: 12px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.25); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                            
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 4px;">
+                                <div>
+                                    <div style="font-size: 6.5px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">LOKASYON</div>
+                                    <div style="font-size: 10px; font-weight: 800; color: #f8fafc;">{mahalle_adi}, BEYKOZ</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 6.5px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">ARSA HACMİ</div>
+                                    <div style="font-size: 10px; font-weight: 800; color: #38bdf8;">{toplam_donum_str}</div>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                <div>
+                                    <div style="font-size: 6.5px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">YAPI VERİMLİLİĞİ</div>
+                                    <div style="font-size: 8.5px; color: #e2e8f0; font-weight: 600;">Max Emsal & TAKS Optimizasyonu</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 6.5px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">HEDEFLENEN YG</div>
+                                    <div style="font-size: 10px; font-weight: 800; color: #4ade80;">%{yg_orani:.1f} ROI</div>
+                                </div>
+                            </div>
+
+                            <div style="font-size: 7px; color: #38bdf8; font-weight: 700; text-transform: uppercase; margin-top: 6px; margin-bottom: 3px;">MİMARİ ÖZELLİKLER & DAĞILIM RAPORU</div>
+                            <div style="font-size: 7.5px; color: #cbd5e1; line-height: 1.4;">
+                                • <b>{total_units_sum} Bağımsız Ünite</b> ile Yüksek Verimli Yerleşim Planı<br>
+                                • Emsal Harici Ek Katma Değer Sağlayan <b>Optimize Bodrum Katı</b><br>
+                                • Konseptle Bütünleşen <b>{sample_pool_mod}</b> ve Peyzaj Donatıları<br>
+                                • Yatırımcı Odaklı Maksimum Arsa ve Metrekare Değerlemesi
+                            </div>
+
                         </div>
 
-                    </div>
+                        <!-- Alt Çağrı (Call to Action) -->
+                        <div style="text-align: center; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 6px;">
+                            <div style="font-size: 8px; color: #38bdf8; font-weight: 800; letter-spacing: 0.8px;">İSTESTATE & MERİÇ İNŞAAT KURUMSAL ORTAK PROJESİ 🏢</div>
+                        </div>
 
-                    <!-- Alt Çağrı (Call to Action) -->
-                    <div style="text-align: center; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 4px;">
-                        <div style="font-size: 7.5px; color: #38bdf8; font-weight: 800; letter-spacing: 0.8px;">YÜKSEK POTANSİYEL VİDEO PROJE SUNUMU 🎥</div>
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 8px; width: 310px;">
-                    <button onclick="downloadStoryImage()" style="flex: 1; background-color: #0b1d3a; color: white; border: none; padding: 10px 10px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 11px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                <div style="display: flex; gap: 10px; width: 320px;">
+                    <button onclick="downloadStoryImage()" style="flex: 1; background-color: #0b1d3a; color: white; border: none; padding: 11px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 11.5px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
                         📥 PNG İndir
                     </button>
-                    <button id="rec-btn" onclick="recordStoryVideo()" style="flex: 1; background-color: #16a34a; color: white; border: none; padding: 10px 10px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 11px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                    <button id="rec-btn" onclick="recordStoryVideo()" style="flex: 1; background-color: #16a34a; color: white; border: none; padding: 11px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 11.5px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
                         🎥 Video Üret (.mp4)
                     </button>
                 </div>
@@ -2095,8 +2127,8 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         btn.disabled = true;
                         msg.innerText = "⏳ Animasyonlu profesyonel video prodüksiyonu hazırlanıyor (4 saniye)...";
 
-                        const width = 620;
-                        const height = 1150;
+                        const width = 640;
+                        const height = 1140;
                         const canvas = document.createElement('canvas');
                         canvas.width = width;
                         canvas.height = height;
@@ -2154,149 +2186,152 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                             const blob = new Blob(chunks, {{ type: recorder.mimeType || 'video/' + fileExt }});
                             const url = URL.createObjectURL(blob);
                             const a = document.createElement('a');
+                            a.style.display = 'none';
                             a.href = url;
-                            a.download = 'Istestate_Meric_Kurumsal_Story_{mahalle_adi}.' + fileExt;
+                            a.download = 'Istestate_Meric_Hikaye_Videosu_{mahalle_adi}.' + fileExt;
+                            document.body.appendChild(a);
                             a.click();
-                            msg.innerText = "✅ Hareketli Hikaye Videosu Başarıyla Üretildi (" + fileExt.toUpperCase() + ")!";
+                            setTimeout(() => {{
+                                document.body.removeChild(a);
+                                window.URL.revokeObjectURL(url);
+                            }}, 100);
                             btn.disabled = false;
+                            msg.innerText = "✅ Video başarıyla indirildi!";
                         }};
 
                         recorder.start();
 
                         function drawFrame() {{
-                            if (frameCount >= totalFrames) {{
-                                recorder.stop();
-                                return;
-                            }}
-
                             const progress = frameCount / totalFrames;
                             
+                            // Arka plan zoom ve gradyan efekti
                             ctx.save();
-                            ctx.clearRect(0, 0, width, height);
-                            
-                            // 1. Arka plan zoom efekti
-                            const zoomScale = 1 + (progress * 0.08);
+                            const scale = 1 + (progress * 0.08);
                             ctx.translate(width / 2, height / 2);
-                            ctx.scale(zoomScale, zoomScale);
+                            ctx.scale(scale, scale);
                             ctx.drawImage(bgImg, -width / 2, -height / 2, width, height);
                             ctx.restore();
-                            
-                            // 2. Koyu gradyan örtü
+
+                            // Şık koyu overlay
                             const grad = ctx.createLinearGradient(0, 0, 0, height);
-                            grad.addColorStop(0, 'rgba(11, 29, 58, 0.80)');
-                            grad.addColorStop(0.6, 'rgba(15, 23, 42, 0.92)');
+                            grad.addColorStop(0, 'rgba(11, 29, 58, 0.75)');
+                            grad.addColorStop(0.6, 'rgba(15, 23, 42, 0.90)');
                             grad.addColorStop(1, 'rgba(15, 23, 42, 0.98)');
                             ctx.fillStyle = grad;
                             ctx.fillRect(0, 0, width, height);
-                            
-                            // 3. Logolar
-                            if (logo1Img.complete && logo1Img.naturalWidth > 0) {{
-                                ctx.save();
-                                ctx.fillStyle = '#ffffff';
-                                ctx.beginPath();
-                                ctx.roundRect(35, 35, 130, 55, 8);
-                                ctx.fill();
-                                ctx.drawImage(logo1Img, 45, 43, 110, 39);
-                                ctx.restore();
+
+                            // Kenar çerçevesi
+                            ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+                            ctx.lineWidth = 4;
+                            ctx.strokeRect(15, 15, width - 30, height - 30);
+
+                            // Logolar
+                            if (logo1Img.complete && logo1Img.naturalWidth !== 0) {{
+                                ctx.drawImage(logo1Img, 45, 45, 130, 48);
                             }}
-                            if (logo2Img.complete && logo2Img.naturalWidth > 0) {{
-                                ctx.save();
-                                ctx.fillStyle = '#ffffff';
-                                ctx.beginPath();
-                                ctx.roundRect(width - 165, 35, 130, 55, 8);
-                                ctx.fill();
-                                ctx.drawImage(logo2Img, width - 155, 43, 110, 39);
-                                ctx.restore();
+                            if (logo2Img.complete && logo2Img.naturalWidth !== 0) {{
+                                ctx.drawImage(logo2Img, width - 175, 45, 130, 48);
                             }}
-                            
-                            // 4. Rozet ve Konsept Başlığı
+
+                            // Üst Rozet & Başlık
                             ctx.textAlign = 'center';
-                            ctx.fillStyle = '#38bdf8';
-                            ctx.font = 'bold 16px -apple-system, sans-serif';
-                            ctx.fillText("STRATEJİK PROJE VİZYONU", width / 2, 135);
-                            
-                            ctx.fillStyle = '#ffffff';
-                            ctx.font = '900 24px -apple-system, sans-serif';
-                            ctx.fillText("{badge_text}", width / 2, 172);
-                            
-                            // 5. Cam Efektli (Glassmorphism) Ana Bilgi Kutusu
-                            ctx.save();
-                            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-                            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-                            ctx.lineWidth = 2;
+                            ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
                             ctx.beginPath();
-                            ctx.roundRect(35, 215, width - 70, 780, 18);
+                            ctx.roundRect(width / 2 - 140, 115, 280, 32, 16);
                             ctx.fill();
+                            ctx.strokeStyle = '#38bdf8';
+                            ctx.lineWidth = 1.5;
                             ctx.stroke();
-                            ctx.restore();
-                            
-                            // Bilgi Kutusu İçerik Metinleri
+
+                            ctx.fillStyle = '#38bdf8';
+                            ctx.font = 'bold 13px sans-serif';
+                            ctx.fillText("STRATEJİK PROJE VİZYONU", width / 2, 135);
+
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = '900 20px sans-serif';
+                            ctx.fillText("{badge_text}", width / 2, 175);
+
+                            // Cam Efektli (Glassmorphism) Bilgi Kutusu
+                            const boxX = 40;
+                            const boxY = 210;
+                            const boxW = width - 80;
+                            const boxH = 750;
+
+                            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+                            ctx.beginPath();
+                            ctx.roundRect(boxX, boxY, boxW, boxH, 20);
+                            ctx.fill();
+                            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+                            ctx.lineWidth = 1.5;
+                            ctx.stroke();
+
+                            // İçerik Metinleri
                             ctx.textAlign = 'left';
                             ctx.fillStyle = '#94a3b8';
-                            ctx.font = 'bold 13px -apple-system, sans-serif';
-                            ctx.fillText("LOKASYON", 65, 260);
-                            ctx.textAlign = 'right';
-                            ctx.fillText("ARSA HACMİ", width - 65, 260);
-                            
-                            ctx.textAlign = 'left';
+                            ctx.font = 'bold 11px sans-serif';
+                            ctx.fillText("LOKASYON", boxX + 25, boxY + 40);
+                            ctx.fillText("ARSA HACMİ", boxX + boxW - 160, boxY + 40);
+
                             ctx.fillStyle = '#f8fafc';
-                            ctx.font = '800 20px -apple-system, sans-serif';
-                            ctx.fillText("{mahalle_adi}, BEYKOZ", 65, 295);
-                            ctx.textAlign = 'right';
-                            ctx.fillStyle = '#38bdf8';
-                            ctx.fillText("{toplam_donum_str}", width - 65, 295);
+                            ctx.font = '900 16px sans-serif';
+                            ctx.fillText("{mahalle_adi}, BEYKOZ", boxX + 25, boxY + 65);
                             
-                            // Ayırıcı Çizgi
-                            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                            ctx.fillStyle = '#38bdf8';
+                            ctx.fillText("{toplam_donum_str}", boxX + boxW - 160, boxY + 65);
+
+                            // Çizgi
+                            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
                             ctx.lineWidth = 1;
                             ctx.beginPath();
-                            ctx.moveTo(65, 330);
-                            ctx.lineTo(width - 65, 330);
+                            ctx.moveTo(boxX + 25, boxY + 85);
+                            ctx.lineTo(boxX + boxW - 25, boxY + 85);
                             ctx.stroke();
-                            
-                            ctx.textAlign = 'left';
+
+                            // İkinci Satır
                             ctx.fillStyle = '#94a3b8';
-                            ctx.font = 'bold 13px -apple-system, sans-serif';
-                            ctx.fillText("YAPI VERİMLİLİĞİ", 65, 370);
-                            ctx.textAlign = 'right';
-                            ctx.fillText("HEDEFLENEN YG", width - 65, 370);
-                            
-                            ctx.textAlign = 'left';
+                            ctx.font = 'bold 11px sans-serif';
+                            ctx.fillText("YAPI VERİMLİLİĞİ", boxX + 25, boxY + 115);
+                            ctx.fillText("HEDEFLENEN YG", boxX + boxW - 160, boxY + 115);
+
                             ctx.fillStyle = '#e2e8f0';
-                            ctx.font = 'bold 16px -apple-system, sans-serif';
-                            ctx.fillText("Max Emsal & TAKS Optimizasyonu", 65, 405);
-                            ctx.textAlign = 'right';
+                            ctx.font = 'bold 13px sans-serif';
+                            ctx.fillText("Max Emsal & TAKS Optimizasyonu", boxX + 25, boxY + 140);
+
                             ctx.fillStyle = '#4ade80';
-                            ctx.font = '800 20px -apple-system, sans-serif';
-                            ctx.fillText("%{yg_orani:.1f} ROI", width - 65, 405);
-                            
-                            ctx.beginPath();
-                            ctx.moveTo(65, 440);
-                            ctx.lineTo(width - 65, 440);
-                            ctx.stroke();
-                            
-                            ctx.textAlign = 'left';
+                            ctx.font = '900 17px sans-serif';
+                            ctx.fillText("%{yg_orani:.1f} ROI", boxX + boxW - 160, boxY + 140);
+
+                            // Mimari Başlık & Açıklama
                             ctx.fillStyle = '#38bdf8';
-                            ctx.font = 'bold 15px -apple-system, sans-serif';
-                            ctx.fillText("MİMARİ ÖZELLİKLER & DAĞILIM RAPORU", 65, 495);
-                            
+                            ctx.font = 'bold 12px sans-serif';
+                            ctx.fillText("MİMARİ ÖZELLİKLER & DAĞILIM RAPORU", boxX + 25, boxY + 190);
+
                             ctx.fillStyle = '#cbd5e1';
-                            ctx.font = '16px -apple-system, sans-serif';
-                            ctx.fillText("• {total_units_sum} Bağımsız Ünite ile Yüksek Verimli Yerleşim", 65, 545);
-                            ctx.fillText("• Emsal Harici Ek Katma Değer Sağlayan Bodrum Katı", 65, 595);
-                            ctx.fillText("• Konseptle Bütünleşen {sample_pool_mod} ve Peyzaj Donatıları", 65, 645);
-                            ctx.fillText("• Yatırımcı Odaklı Maksimum Arsa ve Metrekare Değerlemesi", 65, 695);
-                            
-                            // Alt Çağrı Alanı
+                            ctx.font = '13.5px sans-serif';
+                            const bullets = [
+                                "• {total_units_sum} Bağımsız Ünite ile Yüksek Verimli Yerleşim Planı",
+                                "• Emsal Harici Ek Katma Değer Sağlayan Optimize Bodrum Katı",
+                                "• Konseptle Bütünleşen {sample_pool_mod} ve Peyzaj Donatıları",
+                                "• Yatırımcı Odaklı Maksimum Arsa ve Metrekare Değerlemesi"
+                            ];
+                            let bY = boxY + 225;
+                            bullets.forEach(bullet => {{
+                                ctx.fillText(bullet, boxX + 25, bY);
+                                bY += 32;
+                            }});
+
+                            // Alt Çağrı
                             ctx.textAlign = 'center';
                             ctx.fillStyle = '#38bdf8';
-                            ctx.font = 'bold 16px -apple-system, sans-serif';
-                            ctx.fillText("YÜKSEK POTANSİYEL VİDEO PROJE SUNUMU 🎥", width / 2, 1045);
-                            
+                            ctx.font = 'bold 13px sans-serif';
+                            ctx.fillText("İSTESTATE & MERİÇ İNŞAAT KURUMSAL ORTAK PROJESİ 🏢", width / 2, height - 60);
+
                             frameCount++;
-                            setTimeout(() => {{
+                            if (frameCount < totalFrames) {{
                                 requestAnimationFrame(drawFrame);
-                            }}, 1000 / fps);
+                            }} else {{
+                                recorder.stop();
+                            }}
                         }}
 
                         drawFrame();
@@ -2304,5 +2339,8 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                 </script>
             </div>
             """
-
-        components.html(story_video_component_html, height=640)
+        components.html(story_video_component_html, height=720)
+    else:
+      st.info(
+          "Hikaye kartı üretimi için lütfen sol menüden parsel seçimi yapın."
+      )
