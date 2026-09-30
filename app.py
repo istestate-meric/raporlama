@@ -26,6 +26,7 @@ DB_FILE_NAME = "imar_veritabani.json"
 # WeasyPrint kütüphanesinin import kontrolü
 try:
     from weasyprint import CSS, HTML
+
     WEASYPRINT_AVAILABLE = True
 except Exception:
     WEASYPRINT_AVAILABLE = False
@@ -152,16 +153,45 @@ def clean_fonksiyon_adi(name):
     n = n.replace("FONKSİYON ADI", "").replace("FONKSIYON ADI", "").strip()
 
     gecersiz_ifadeler = [
-        "-", "--", ".", ",", "0", "N/A", "İMAR DURUMU", "İMAR DURUMU BİLGİLERİ",
-        "PARK", "PARK ALANI", "ÇOCUK PARKI", "YEŞİL ALAN", "TEKNİK ALTYAPI",
-        "TRAFO", "CAMİ", "İBADET YERİ", "OKUL", "LİSE", "İLKÖĞRETİM",
-        "ANAOKULU", "KÜLTÜREL", "SOSYAL TESİS", "BELEDİYE HİZMET ALANI", "YOL",
-        "AÇIK OTOPARK", "",
+        "-",
+        "--",
+        ".",
+        ",",
+        "0",
+        "N/A",
+        "İMAR DURUMU",
+        "İMAR DURUMU BİLGİLERİ",
+        "PARK",
+        "PARK ALANI",
+        "ÇOCUK PARKI",
+        "YEŞİL ALAN",
+        "TEKNİK ALTYAPI",
+        "TRAFO",
+        "CAMİ",
+        "İBADET YERİ",
+        "OKUL",
+        "LİSE",
+        "İLKÖĞRETİM",
+        "ANAOKULU",
+        "KÜLTÜREL",
+        "SOSYAL TESİS",
+        "BELEDİYE HİZMET ALANI",
+        "YOL",
+        "AÇIK OTOPARK",
+        "",
     ]
 
     if n in gecersiz_ifadeler or any(
-        x in n for x in [
-            "PARK", "YEŞİL", "TEKNİK", "İBADET", "OKUL", "YOL", "TESİS", "TRAFO"
+        x in n
+        for x in [
+            "PARK",
+            "YEŞİL",
+            "TEKNİK",
+            "İBADET",
+            "OKUL",
+            "YOL",
+            "TESİS",
+            "TRAFO",
         ]
     ):
         return ""
@@ -477,21 +507,46 @@ def parse_kaks_val(val_str):
 def detect_terk_status(text, toplam_alan, fonksiyonlar):
     text_upper = text.upper()
     kesin_terk_yapilmis = [
-        "TERKİ YAPILMIŞTIR", "TERKİ YAPILMIŞ", "TERK YAPILMIŞTIR", "TERK YAPILMIŞ",
-        "KAMUYA TERK EDİLMİŞTİR", "YOLA TERKİ YAPILMIŞTIR", "TERK EDİLMİŞTİR",
-        "TERK: YOK", "TERK YOK", "YOLA TERK: 0", "TERK MİKTARI: 0", "NET PARSEL",
-        "TERKSİZ", "TERK GEREKMEMEKTEDİR", "İFRAZ GÖRMÜŞ", "TAPU ALANI NET",
-        "TERKİ YAPILMIŞ OLAN", "DOP YAPILMIŞ",
+        "TERKİ YAPILMIŞTIR",
+        "TERKİ YAPILMIŞ",
+        "TERK YAPILMIŞTIR",
+        "TERK YAPILMIŞ",
+        "KAMUYA TERK EDİLMİŞTİR",
+        "YOLA TERKİ YAPILMIŞTIR",
+        "TERK EDİLMİŞTİR",
+        "TERK: YOK",
+        "TERK YOK",
+        "YOLA TERK: 0",
+        "TERK MİKTARI: 0",
+        "NET PARSEL",
+        "TERKSİZ",
+        "TERK GEREKMEMEKTEDİR",
+        "İFRAZ GÖRMÜŞ",
+        "TAPU ALANI NET",
+        "TERKİ YAPILMIŞ OLAN",
+        "DOP YAPILMIŞ",
     ]
     kesin_terk_yapilmamis = [
-        "TERK YAPILMAMIŞ", "TERKİ YAPILMAMIŞ", "TERK YAPILMADAN", "DOP TERKİ YAPILMAMIŞ",
-        "YOLA TERK VAR", "KAMUYA TERK VAR", "TERK EDİLECEKTİR", "YOLA TERKİ VARDIR",
-        "TERK EDİLMELİDİR", "TERKİ YAPILMIŞTIR DEĞİLDİR", "TERKİ YAPILMAMIŞTIR",
-        "TERK EDİLECEK", "YOLA TERK MİKTARI",
+        "TERK YAPILMAMIŞ",
+        "TERKİ YAPILMAMIŞ",
+        "TERK YAPILMADAN",
+        "DOP TERKİ YAPILMAMIŞ",
+        "YOLA TERK VAR",
+        "KAMUYA TERK VAR",
+        "TERK EDİLECEKTİR",
+        "YOLA TERKİ VARDIR",
+        "TERK EDİLMELİDİR",
+        "TERKİ YAPILMIŞTIR DEĞİLDİR",
+        "TERKİ YAPILMAMIŞTIR",
+        "TERK EDİLECEK",
+        "YOLA TERK MİKTARI",
     ]
     for kw in kesin_terk_yapilmis:
         if kw in text_upper:
-            if "YAPILMAMIŞTIR" not in text_upper and "YAPILMAMIŞ" not in text_upper:
+            if (
+                "YAPILMAMIŞTIR" not in text_upper
+                and "YAPILMAMIŞ" not in text_upper
+            ):
                 return True
     for kw in kesin_terk_yapilmamis:
         if kw in text_upper:
@@ -521,14 +576,20 @@ def parse_imar_pdf(uploaded_file):
                 for table in tables:
                     for r_idx, row in enumerate(table):
                         cells = [
-                            str(c).strip().replace("\n", " ") if c is not None else ""
+                            str(c).strip().replace("\n", " ")
+                            if c is not None
+                            else ""
                             for c in row
                         ]
 
-                        if any("Mahalle" in c for c in cells) and any("Ada" in c for c in cells):
+                        if any("Mahalle" in c for c in cells) and any(
+                            "Ada" in c for c in cells
+                        ):
                             if r_idx + 1 < len(table):
                                 v_row = [
-                                    str(c).strip().replace("\n", " ") if c is not None else ""
+                                    str(c).strip().replace("\n", " ")
+                                    if c is not None
+                                    else ""
                                     for c in table[r_idx + 1]
                                 ]
                                 for idx, head in enumerate(cells):
@@ -537,18 +598,31 @@ def parse_imar_pdf(uploaded_file):
                                         if "Mahalle" in head and val:
                                             parcel_data["mahalle"] = val.upper()
                                         elif "Ada" in head and val:
-                                            parcel_data["ada"] = str(val).strip()
+                                            parcel_data["ada"] = str(
+                                                val
+                                            ).strip()
                                         elif "Parsel" in head and val:
-                                            parcel_data["parsel"] = str(val).strip()
+                                            parcel_data["parsel"] = str(
+                                                val
+                                            ).strip()
                                         elif "Alan" in head and val:
-                                            parcel_data["toplam_alan"] = parse_tr_float(val)
+                                            parcel_data["toplam_alan"] = (
+                                                parse_tr_float(val)
+                                            )
 
                         joined_row_str = " ".join(cells).upper()
                         if any(
                             kw in joined_row_str
                             for kw in [
-                                "KONUT", "TİCARET", "TİCARİ", "PARK", "VİLLA",
-                                "GELİŞME", "EMSAL", "KAKS", "E:",
+                                "KONUT",
+                                "TİCARET",
+                                "TİCARİ",
+                                "PARK",
+                                "VİLLA",
+                                "GELİŞME",
+                                "EMSAL",
+                                "KAKS",
+                                "E:",
                             ]
                         ):
                             f_name = ""
@@ -561,8 +635,12 @@ def parse_imar_pdf(uploaded_file):
                                 if any(
                                     x in c_up
                                     for x in [
-                                        "KONUT", "TİCARET", "TİCARİ", "PARK",
-                                        "VİLLA", "GELİŞME",
+                                        "KONUT",
+                                        "TİCARET",
+                                        "TİCARİ",
+                                        "PARK",
+                                        "VİLLA",
+                                        "GELİŞME",
                                     ]
                                 ):
                                     cleaned = clean_fonksiyon_adi(c)
@@ -575,11 +653,20 @@ def parse_imar_pdf(uploaded_file):
                                         if 0 < val <= 1.0:
                                             f_taks = val
                                 elif any(
-                                    k in c_up for k in ["KAKS", "EMSAL", "EMS", "E:", "E="]
+                                    k in c_up
+                                    for k in [
+                                        "KAKS",
+                                        "EMSAL",
+                                        "EMS",
+                                        "E:",
+                                        "E=",
+                                    ]
                                 ):
                                     f_kaks = parse_kaks_val(c)
 
-                                m2_m = re.search(r"([\d\.,]+)\s*(?:M²|M2|%)", c, re.IGNORECASE)
+                                m2_m = re.search(
+                                    r"([\d\.,]+)\s*(?:M²|M2|%)", c, re.IGNORECASE
+                                )
                                 if m2_m and "ALAN" not in c_up:
                                     val = parse_tr_float(m2_m.group(1))
                                     if val > 1.0:
@@ -590,15 +677,19 @@ def parse_imar_pdf(uploaded_file):
                                 if cleaned_check and not any(
                                     x in cleaned_check
                                     for x in [
-                                        "PARK", "TEKNİK ALTYAPI", "LİSE",
-                                        "KÜLTÜREL", "ANAOKULU",
+                                        "PARK",
+                                        "TEKNİK ALTYAPI",
+                                        "LİSE",
+                                        "KÜLTÜREL",
+                                        "ANAOKULU",
                                     ]
                                 ):
                                     existing_exact = next(
                                         (
                                             f
                                             for f in parcel_data["fonksiyonlar"]
-                                            if f["fonksiyon_adi"] == cleaned_check
+                                            if f["fonksiyon_adi"]
+                                            == cleaned_check
                                             and f["kaks"] == f_kaks
                                         ),
                                         None,
@@ -622,8 +713,11 @@ def parse_imar_pdf(uploaded_file):
                     if any(
                         kw in line_up
                         for kw in [
-                            "KONUT ALANI", "TİCARET ALANI", "TİCARET VE KONUT",
-                            "GELİŞME KONUT", "VİLLA ALANI",
+                            "KONUT ALANI",
+                            "TİCARET ALANI",
+                            "TİCARET VE KONUT",
+                            "GELİŞME KONUT",
+                            "VİLLA ALANI",
                         ]
                     ):
                         clean_n = clean_fonksiyon_adi(line)
@@ -633,7 +727,9 @@ def parse_imar_pdf(uploaded_file):
                             curr_kaks = 0.0
                             curr_m2 = 0.0
 
-                            for sub_line in lines[max(0, i - 5) : min(len(lines), i + 8)]:
+                            for sub_line in lines[
+                                max(0, i - 5) : min(len(lines), i + 8)
+                            ]:
                                 sub_up = sub_line.upper()
                                 if "TAKS" in sub_up:
                                     num_m = re.search(r"([\d\.,]+)", sub_line)
@@ -643,14 +739,23 @@ def parse_imar_pdf(uploaded_file):
                                             curr_taks = val
 
                                 if any(
-                                    k in sub_up for k in ["KAKS", "EMSAL", "EMS", "E:", "E="]
+                                    k in sub_up
+                                    for k in [
+                                        "KAKS",
+                                        "EMSAL",
+                                        "EMS",
+                                        "E:",
+                                        "E=",
+                                    ]
                                 ):
                                     val = parse_kaks_val(sub_line)
                                     if val > 0:
                                         curr_kaks = val
 
                                 m2_m = re.search(
-                                    r"([\d\.,]+)\s*(?:m²|m2|%)", sub_line, re.IGNORECASE
+                                    r"([\d\.,]+)\s*(?:m²|m2|%)",
+                                    sub_line,
+                                    re.IGNORECASE,
                                 )
                                 if m2_m:
                                     val = parse_tr_float(m2_m.group(1))
@@ -658,19 +763,25 @@ def parse_imar_pdf(uploaded_file):
                                         curr_m2 = val
 
                             if curr_fonk:
-                                cleaned_curr_fonk = clean_fonksiyon_adi(curr_fonk)
+                                cleaned_curr_fonk = clean_fonksiyon_adi(
+                                    curr_fonk
+                                )
                                 if cleaned_curr_fonk and not any(
                                     x in cleaned_curr_fonk
                                     for x in [
-                                        "PARK", "TEKNİK ALTYAPI", "LİSE",
-                                        "KÜLTÜREL", "ANAOKULU",
+                                        "PARK",
+                                        "TEKNİK ALTYAPI",
+                                        "LİSE",
+                                        "KÜLTÜREL",
+                                        "ANAOKULU",
                                     ]
                                 ):
                                     existing_exact = next(
                                         (
                                             f
                                             for f in parcel_data["fonksiyonlar"]
-                                            if f["fonksiyon_adi"] == cleaned_curr_fonk
+                                            if f["fonksiyon_adi"]
+                                            == cleaned_curr_fonk
                                             and f["kaks"] == curr_kaks
                                         ),
                                         None,
@@ -690,7 +801,9 @@ def parse_imar_pdf(uploaded_file):
 
                 global_kaks_val = 0.0
                 general_kaks_matches = re.findall(
-                    r"(?:EMSAL|KAKS|EMS|E)\s*[:=\s]*([\d\.,\s/-]+)", full_text, re.IGNORECASE
+                    r"(?:EMSAL|KAKS|EMS|E)\s*[:=\s]*([\d\.,\s/-]+)",
+                    full_text,
+                    re.IGNORECASE,
                 )
                 for gkm in general_kaks_matches:
                     val = parse_kaks_val(gkm)
@@ -702,11 +815,18 @@ def parse_imar_pdf(uploaded_file):
                     if f["kaks"] <= 0 and global_kaks_val > 0:
                         f["kaks"] = global_kaks_val
 
-                if parcel_data["mahalle"] == "BİLİNMİYOR" or parcel_data["ada"] == "0":
-                    m_m = re.search(r"Mahalle\s*[:\|]\s*([A-ZÇĞİÖŞÜa-zçğıöşü]+)", full_text)
+                if (
+                    parcel_data["mahalle"] == "BİLİNMİYOR"
+                    or parcel_data["ada"] == "0"
+                ):
+                    m_m = re.search(
+                        r"Mahalle\s*[:\|]\s*([A-ZÇĞİÖŞÜa-zçğıöşü]+)", full_text
+                    )
                     a_m = re.search(r"Ada\s*[:\|]\s*(\d+)", full_text)
                     p_m = re.search(r"Parsel\s*[:\|]\s*(\d+)", full_text)
-                    al_m = re.search(r"Alan\s*\*?\s*[:\|]\s*([\d\.,]+)\s*m²", full_text)
+                    al_m = re.search(
+                        r"Alan\s*\*?\s*[:\|]\s*([\d\.,]+)\s*m²", full_text
+                    )
 
                     if m_m:
                         parcel_data["mahalle"] = m_m.group(1).upper()
@@ -715,7 +835,9 @@ def parse_imar_pdf(uploaded_file):
                     if p_m:
                         parcel_data["parsel"] = str(p_m.group(1)).strip()
                     if al_m and parcel_data["toplam_alan"] == 0.0:
-                        parcel_data["toplam_alan"] = parse_tr_float(al_m.group(1))
+                        parcel_data["toplam_alan"] = parse_tr_float(
+                            al_m.group(1)
+                        )
 
                 if not parcel_data["fonksiyonlar"]:
                     parcel_data["fonksiyonlar"].append({
@@ -726,7 +848,9 @@ def parse_imar_pdf(uploaded_file):
                     })
 
                 parcel_data["terk_yapilmis_mi"] = detect_terk_status(
-                    full_text, parcel_data["toplam_alan"], parcel_data["fonksiyonlar"]
+                    full_text,
+                    parcel_data["toplam_alan"],
+                    parcel_data["fonksiyonlar"],
                 )
     except Exception as e:
         print(f"PDF işlenirken hata oluştu: {e}")
@@ -806,9 +930,13 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
             }
         consolidated_dict[fn]["giren_m2"] += item["giren_m2"]
         consolidated_dict[fn]["net_arsa_payi"] += item["net_arsa_payi"]
-        consolidated_dict[fn]["bahce_kullanim_alani"] += item["bahce_kullanim_alani"]
+        consolidated_dict[fn]["bahce_kullanim_alani"] += item[
+            "bahce_kullanim_alani"
+        ]
         consolidated_dict[fn]["brut_insaat"] += item["brut_insaat"]
-        consolidated_dict[fn]["kaks_list"].append((item["net_arsa_payi"], item["kaks"]))
+        consolidated_dict[fn]["kaks_list"].append(
+            (item["net_arsa_payi"], item["kaks"])
+        )
 
     final_results = []
     for fn, data in consolidated_dict.items():
@@ -1060,13 +1188,13 @@ if selected_keys:
             )
 
             selected_parcels_hash = "_".join(selected_keys)
-            cost_key = f"cost_{idx}_{fonk_adi}_{first_mahalle}_{selected_parcels_hash}"
+            cost_key = (
+                f"cost_{idx}_{fonk_adi}_{first_mahalle}_{selected_parcels_hash}"
+            )
             price_key = (
                 f"price_{idx}_{fonk_adi}_{first_mahalle}_{selected_parcels_hash}"
             )
-            last_state_key = (
-                f"last_state_{idx}_{fonk_adi}_{first_mahalle}_{selected_parcels_hash}"
-            )
+            last_state_key = f"last_state_{idx}_{fonk_adi}_{first_mahalle}_{selected_parcels_hash}"
             current_state_str = f"{selected_func_p_type}_{selected_func_pool}"
 
             if (last_state_key not in st.session_state) or (
@@ -1099,9 +1227,14 @@ if selected_keys:
             for key, p in active_parcel_db.items():
                 breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
                 for item in breakdown:
-                    if item["fonksiyon_adi"] == fonk_adi and item["brut_insaat"] > 0:
+                    if (
+                        item["fonksiyon_adi"] == fonk_adi
+                        and item["brut_insaat"] > 0
+                    ):
                         parsel_fonk_key = f"{key}_{fonk_adi}"
-                        eff_sz = 95.0 if "Konut" in selected_func_p_type else 150.0
+                        eff_sz = (
+                            95.0 if "Konut" in selected_func_p_type else 150.0
+                        )
                         calc_adet = max(1, round(item["brut_insaat"] / eff_sz))
                         function_configs[parsel_fonk_key] = {
                             "proje_tipi": selected_func_p_type,
@@ -1140,7 +1273,9 @@ if selected_keys:
                 else:
                     chosen_p_type = get_allowed_project_types(fonk_adi)[0]
 
-                min_v, max_v, def_v, step_v = get_project_size_ranges(chosen_p_type)
+                min_v, max_v, def_v, step_v = get_project_size_ranges(
+                    chosen_p_type
+                )
 
                 function_target_sizes[fonk_adi] = st.slider(
                     f"{fonk_adi[:20]}...",
@@ -1199,7 +1334,9 @@ if selected_keys:
             )
             toplam_parsel_havuz_m2 = birim_havuz_m2 * konut_adeti
 
-            net_satilabilir_ust_kat = max(0.0, brut_insaat - toplam_parsel_havuz_m2)
+            net_satilabilir_ust_kat = max(
+                0.0, brut_insaat - toplam_parsel_havuz_m2
+            )
             bodrum_m2_parsel = net_satilabilir_ust_kat * 0.50
 
             total_bodrum_alani += bodrum_m2_parsel
@@ -1234,9 +1371,9 @@ if selected_keys:
 
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "📊 Seçilen Parseller & İnşaat Alanı",
-        "🏛️️ Mimari Fizibilite (Bodrum + Zemin/Normal)",
+        "🏛 Mimari Fizibilite (Bodrum + Zemin/Normal)",
         "📑 Proje Raporu & Fizibilite",
-        "🖨️️ Rapor Ön İzleme & PDF",
+        "🖨 Rapor Ön İzleme & PDF",
         "🗄 Veritabanı & Arşiv Yönetimi",
         "📱 Sosyal Medya Stüdyosu",
     ])
@@ -1248,7 +1385,9 @@ if selected_keys:
         sum_bodrum_insaat = 0.0
         sum_emsal_insaat = 0.0
         sum_bahce_alani = 0.0
-        sum_alan = sum(p.get("toplam_alan", 0.0) for p in active_parcel_db.values())
+        sum_alan = sum(
+            p.get("toplam_alan", 0.0) for p in active_parcel_db.values()
+        )
 
         for key, p in active_parcel_db.items():
             mahalle = p.get("mahalle", "BİLİNMİYOR")
@@ -1335,7 +1474,9 @@ if selected_keys:
                 )
                 toplam_parsel_havuz_m2 = birim_havuz * konut_adeti
 
-                net_konut_insaat = max(0.0, brut_insaat - toplam_parsel_havuz_m2)
+                net_konut_insaat = max(
+                    0.0, brut_insaat - toplam_parsel_havuz_m2
+                )
                 total_net_insaat_sum += net_konut_insaat
 
                 bodrum_m2 = net_konut_insaat * 0.50
@@ -1380,9 +1521,12 @@ if selected_keys:
 
             if "Kat Karşılığı" in is_modeli:
                 exact_arsa_sahibi = total_units_sum * (arsa_payi_orani / 100.0)
-                exact_mutaahhit = total_units_sum * ((100 - arsa_payi_orani) / 100.0)
+                exact_mutaahhit = total_units_sum * (
+                    (100 - arsa_payi_orani) / 100.0
+                )
                 m_col3.metric(
-                    "Arsa Sahibi Payı", f"{exact_arsa_sahibi:,.2f} Adet (%{arsa_payi_orani})"
+                    "Arsa Sahibi Payı",
+                    f"{exact_arsa_sahibi:,.2f} Adet (%{arsa_payi_orani})",
                 )
                 m_col4.metric(
                     "Müteahhit Payı",
@@ -1390,7 +1534,10 @@ if selected_keys:
                 )
             else:
                 m_col3.metric("İş Modeli", "Doğrudan Satılık")
-                m_col4.metric("Müteahhit Payı", f"{float(total_units_sum):,.2f} Adet (%100)")
+                m_col4.metric(
+                    "Müteahhit Payı",
+                    f"{float(total_units_sum):,.2f} Adet (%100)",
+                )
 
     with tab3:
         st.subheader("📑 Finansal Fizibilite (3 Para Birimi Sunumu)")
@@ -1426,13 +1573,17 @@ if selected_keys:
             t1, t2, t3 = st.columns(3)
             t1.metric("Tahmini Ciro", f"₺{total_ciro_tl:,.2f}")
             t2.metric("Toplam Maliyet", f"₺{total_maliyet_tl:,.2f}")
-            t3.metric("Net Kar", f"₺{toplam_net_kar_tl:,.2f}", f"%{yg_orani:.1f} YG")
+            t3.metric(
+                "Net Kar", f"₺{toplam_net_kar_tl:,.2f}", f"%{yg_orani:.1f} YG"
+            )
 
         with curr_tab3:
             e1, e2, e3 = st.columns(3)
             e1.metric("Tahmini Ciro", f"€{total_ciro_eur:,.2f}")
             e2.metric("Toplam Maliyet", f"€{total_maliyet_eur:,.2f}")
-            e3.metric("Net Kar", f"€{toplam_net_kar_eur:,.2f}", f"%{yg_orani:.1f} YG")
+            e3.metric(
+                "Net Kar", f"€{toplam_net_kar_eur:,.2f}", f"%{yg_orani:.1f} YG"
+            )
 
     with tab4:
         st.subheader("🖨 Rapor Ön İzleme ve PDF İndirme Merkezi")
@@ -1446,8 +1597,8 @@ if selected_keys:
             pdf_logo1_html = (
                 "<div style='background-color: #ffffff; padding: 6px 10px;"
                 " border-radius: 6px; display: inline-block;'><img"
-                f" src='data:image/png;base64,{img1_base64}' style='max-height: 38px;"
-                " width: auto; vertical-align: middle;'></div>"
+                f" src='data:image/png;base64,{img1_base64}' style='max-height:"
+                " 38px; width: auto; vertical-align: middle;'></div>"
                 if img1_base64
                 else "<b style='color:#ffffff; font-size:14px;'>İSTESTATE"
                      " GAYRİMENKUL</b>"
@@ -1455,8 +1606,8 @@ if selected_keys:
             pdf_logo2_html = (
                 "<div style='background-color: #ffffff; padding: 6px 10px;"
                 " border-radius: 6px; display: inline-block;'><img"
-                f" src='data:image/png;base64,{img2_base64}' style='max-height: 38px;"
-                " width: auto; vertical-align: middle;'></div>"
+                f" src='data:image/png;base64,{img2_base64}' style='max-height:"
+                " 38px; width: auto; vertical-align: middle;'></div>"
                 if img2_base64
                 else "<b style='color:#ffffff; font-size:14px;'>MERİÇ İNŞAAT"
                      " EMLAK</b>"
@@ -1523,15 +1674,23 @@ if selected_keys:
 
                     konut_adeti = conf["adet"]
                     birim_havuz = (
-                        conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
+                        conf["havuz_m2"]
+                        if "İptal" not in conf["havuz_mod"]
+                        else 0.0
                     )
                     toplam_parsel_havuz_m2 = birim_havuz * konut_adeti
 
-                    net_konut_insaat = max(0.0, brut_insaat - toplam_parsel_havuz_m2)
+                    net_konut_insaat = max(
+                        0.0, brut_insaat - toplam_parsel_havuz_m2
+                    )
                     bodrum_m2 = net_konut_insaat * 0.50
 
-                    birim_bahce = bahce_m2 / konut_adeti if konut_adeti > 0 else 0.0
-                    birim_bodrum = bodrum_m2 / konut_adeti if konut_adeti > 0 else 0.0
+                    birim_bahce = (
+                        bahce_m2 / konut_adeti if konut_adeti > 0 else 0.0
+                    )
+                    birim_bodrum = (
+                        bodrum_m2 / konut_adeti if konut_adeti > 0 else 0.0
+                    )
                     birim_ust_kat = (
                         net_konut_insaat / konut_adeti if konut_adeti > 0 else 0.0
                     )
@@ -1723,7 +1882,11 @@ if selected_keys:
                 parsel = p_val.get("parsel", "-")
                 toplam_alan = p_val.get("toplam_alan", 0.0)
                 is_terk = p_val.get("terk_yapilmis_mi", False)
-                terk_st = "Terk Yapılmış (Net)" if is_terk else "Terk Yapılmamış (Brüt)"
+                terk_st = (
+                    "Terk Yapılmış (Net)"
+                    if is_terk
+                    else "Terk Yapılmamış (Brüt)"
+                )
 
                 breakdown = get_parcel_function_breakdown(p_val, 1.30)
                 if breakdown:
@@ -1765,14 +1928,19 @@ if selected_keys:
                         del current_db[selected_del_key]
                         save_persistent_db(current_db)
                         st.success(
-                            f"'{selected_del_key}' silindi ve GitHub deponuz güncellendi!"
+                            f"'{selected_del_key}' silindi ve GitHub deponuz"
+                            " güncellendi!"
                         )
                         st.rerun()
 
                 st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("⚠️ Tüm Veritabanını Temizle (Sıfırla)", type="secondary"):
+                if st.button(
+                    "⚠️ Tüm Veritabanını Temizle (Sıfırla)", type="secondary"
+                ):
                     save_persistent_db({})
-                    st.success("Veritabanı sıfırlandı ve GitHub deponuz güncellendi!")
+                    st.success(
+                        "Veritabanı sıfırlandı ve GitHub deponuz güncellendi!"
+                    )
                     st.rerun()
         else:
             st.info("Veritabanında kayıtlı parsel bulunmuyor.")
@@ -1785,7 +1953,7 @@ if selected_keys:
             "Seçtiğiniz parsellerin imar metrajlarını; yatırım geri dönüşü (YG%),"
             " mimari kat ve bağımsız bölüm verimliliğini öne çıkaran, üst düzey"
             " kurumsal dil ile hazırlanmış sosyal medya hikaye kartı, **HD Fotoğraf"
-            " indirme** ve **Aşama Aşama Reklam Filmi Videosu (WebM)** üreten"
+            " indirme** ve **Aşama Aşama Dinamik Reklam Filmi Videosu** üreten"
             " stüdyo:"
         )
 
@@ -1802,7 +1970,8 @@ if selected_keys:
             toplam_donum_str = f"{donum_tam_sayi:,} Dönüm".replace(",", ".")
 
             is_any_terkli = any(
-                p.get("terk_yapilmis_mi", False) for p in active_parcel_db.values()
+                p.get("terk_yapilmis_mi", False)
+                for p in active_parcel_db.values()
             )
             terk_durum_str = (
                 "Yola Terki Yapılmış (Net Parsel)"
@@ -1813,43 +1982,52 @@ if selected_keys:
             sample_project_type = "Lüks Konut / Arsa Geliştirme Projesi"
             sample_pool_mod = "Havuzlu"
             for k, conf in function_configs.items():
-                sample_project_type = conf.get("proje_tipi", sample_project_type)
+                sample_project_type = conf.get(
+                    "proje_tipi", sample_project_type
+                )
                 sample_pool_mod = conf.get("havuz_mod", sample_pool_mod)
                 break
 
             p_type_upper = sample_project_type.upper()
+
+            # Proje tipine göre sahneler değiştikçe arka plana yüklenecek görseller
             if "VİLLA" in p_type_upper or "VILLA" in p_type_upper:
-                bg_image_url = (
-                    "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1200&auto=format&fit=crop"
-                )
+                scene1_bg = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1200&auto=format&fit=crop"
+                scene2_bg = "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1200&auto=format&fit=crop"
+                scene3_bg = "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1200&auto=format&fit=crop"
+                scene4_bg = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop"
                 badge_text = "✨ PRESTİJLİ VİLLA PROJESİ"
             elif (
                 "TİCARİ" in p_type_upper
                 or "TICARI" in p_type_upper
                 or "OFİS" in p_type_upper
             ):
-                bg_image_url = (
-                    "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1200&auto=format&fit=crop"
-                )
+                scene1_bg = "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1200&auto=format&fit=crop"
+                scene2_bg = "https://images.unsplash.com/photo-1554469384-e58fac16e23a?q=80&w=1200&auto=format&fit=crop"
+                scene3_bg = "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1200&auto=format&fit=crop"
+                scene4_bg = "https://images.unsplash.com/photo-1477959858617-67f30ac78b00?q=80&w=1200&auto=format&fit=crop"
                 badge_text = "💼 STRATEJİK TİCARİ YATIRIM"
             elif (
                 "OTEL" in p_type_upper
                 or "TURİZM" in p_type_upper
                 or "TURIZM" in p_type_upper
             ):
-                bg_image_url = (
-                    "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200&auto=format&fit=crop"
-                )
+                scene1_bg = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop"
+                scene2_bg = "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200&auto=format&fit=crop"
+                scene3_bg = "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=1200&auto=format&fit=crop"
+                scene4_bg = "https://images.unsplash.com/photo-1571896349842-33c89424de2d?q=80&w=1200&auto=format&fit=crop"
                 badge_text = "🌴 TURİZM & OTEL KOMPLEKSİ"
             elif "KARMA" in p_type_upper:
-                bg_image_url = (
-                    "https://images.unsplash.com/photo-1577495508048-b635879837f1?q=80&w=1200&auto=format&fit=crop"
-                )
-                badge_text = "🏙️ PRESTİJLİ KARMA PROJE"
+                scene1_bg = "https://images.unsplash.com/photo-1577495508048-b635879837f1?q=80&w=1200&auto=format&fit=crop"
+                scene2_bg = "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1200&auto=format&fit=crop"
+                scene3_bg = "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=1200&auto=format&fit=crop"
+                scene4_bg = "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1200&auto=format&fit=crop"
+                badge_text = "🏙️️ PRESTİJLİ KARMA PROJE"
             else:
-                bg_image_url = (
-                    "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1200&auto=format&fit=crop"
-                )
+                scene1_bg = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1200&auto=format&fit=crop"
+                scene2_bg = "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1200&auto=format&fit=crop"
+                scene3_bg = "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=1200&auto=format&fit=crop"
+                scene4_bg = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop"
                 badge_text = "🏢 LÜKS KONUT GELİŞTİRME"
 
             avg_unit_net = (
@@ -1887,39 +2065,60 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
 
             with col_sm1:
                 st.markdown(
-                    "#### 📝 Kurumsal Yatırımcı Metni & Bülten (Caption Düzenleyici)"
+                    "#### 📝 Kurumsal Yatırımcı Metni & Bülten (Caption"
+                    " Düzenleyici)"
                 )
                 st.info(
-                    "YG%, yüksek potansiyel vurgusu ve teknik detaylarla zenginleştirilmiş"
-                    " kurumsal bülten."
+                    "YG%, yüksek potansiyel vurgusu ve teknik detaylarla"
+                    " zenginleştirilmiş kurumsal bülten."
                 )
                 user_caption = st.text_area(
                     "Paylaşım Metni Düzenleyici",
                     value=sample_caption,
-                    height=340,
+                    height=360,
                 )
                 st.code(user_caption, language="text")
 
             with col_sm2:
                 st.markdown(
-                    "#### 🎬 Müşteri Sunum Kenti & Reklam Filmi Stüdyosu (HD Foto & Video)"
+                    "#### 🎬 Müşteri Sunum Kenti & Reklam Filmi Stüdyosu (HD Foto"
+                    " & Video)"
                 )
                 st.markdown(
-                    "Müşterilerinize direkt sunum yapabileceğiniz, **Aşama Aşama Reklam"
-                    " Filmi Videosu (WebM)** veya **HD Fotoğraf Kartı (PNG)** olarak"
-                    " tek tıkla indirebileceğiniz tam donanımlı stüdyo:"
+                    "Müşterilerinize direkt sunum yapabileceğiniz, **Aşama Aşama"
+                    " Reklam Filmi Videosu** veya **HD Fotoğraf Kartı (PNG)**"
+                    " olarak tek tıkla indirebileceğiniz tam donanımlı stüdyo:"
                 )
 
-                # Logoların her koşulda kusursuz görünmesi için sağlamlaştırılmış HTML logoları
                 story_logo1_html = (
-                    f"<div style='background: #ffffff; padding: 6px 12px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;'><img src='data:image/png;base64,{img1_base64}' style='max-height: 28px; width: auto; object-fit: contain;'></div>"
+                    f"<div style='background: #ffffff; padding: 6px 12px;"
+                    " border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);"
+                    " display: flex; align-items: center; justify-content:"
+                    f" center;'><img src='data:image/png;base64,{img1_base64}'"
+                    " style='max-height: 28px; width: auto; object-fit:"
+                    " contain;'></div>"
                     if img1_base64
-                    else "<div style='background: #ffffff; padding: 6px 12px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;'><b style='font-size:12px; color:#0b1d3a; font-family: sans-serif; letter-spacing:0.5px;'>İSTESTATE</b></div>"
+                    else "<div style='background: #ffffff; padding: 6px 12px;"
+                         " border-radius: 8px; box-shadow: 0 4px 12px"
+                         " rgba(0,0,0,0.4); display: flex; align-items: center;"
+                         " justify-content: center;'><b style='font-size:12px;"
+                         " color:#0b1d3a; font-family: sans-serif;"
+                         " letter-spacing:0.5px;'>İSTESTATE</b></div>"
                 )
                 story_logo2_html = (
-                    f"<div style='background: #ffffff; padding: 6px 12px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;'><img src='data:image/png;base64,{img2_base64}' style='max-height: 28px; width: auto; object-fit: contain;'></div>"
+                    f"<div style='background: #ffffff; padding: 6px 12px;"
+                    " border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);"
+                    " display: flex; align-items: center; justify-content:"
+                    f" center;'><img src='data:image/png;base64,{img2_base64}'"
+                    " style='max-height: 28px; width: auto; object-fit:"
+                    " contain;'></div>"
                     if img2_base64
-                    else "<div style='background: #ffffff; padding: 6px 12px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;'><b style='font-size:12px; color:#0b1d3a; font-family: sans-serif; letter-spacing:0.5px;'>MERİÇ İNŞAAT</b></div>"
+                    else "<div style='background: #ffffff; padding: 6px 12px;"
+                         " border-radius: 8px; box-shadow: 0 4px 12px"
+                         " rgba(0,0,0,0.4); display: flex; align-items: center;"
+                         " justify-content: center;'><b style='font-size:12px;"
+                         " color:#0b1d3a; font-family: sans-serif;"
+                         " letter-spacing:0.5px;'>MERİÇ İNŞAAT</b></div>"
                 )
 
                 story_video_component_html = f"""
@@ -1942,7 +2141,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         align-items: center;
                         gap: 12px;
                         width: 100%;
-                        max-width: 400px;
+                        max-width: 420px;
                         margin: 0 auto;
                     }}
                     .controls-bar {{
@@ -1956,7 +2155,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
                         color: #ffffff;
                         border: none;
-                        padding: 9px 14px;
+                        padding: 8px 12px;
                         border-radius: 8px;
                         font-size: 11px;
                         font-weight: 700;
@@ -1965,7 +2164,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         transition: all 0.2s ease;
                         display: flex;
                         align-items: center;
-                        gap: 6px;
+                        gap: 4px;
                     }}
                     .btn:hover {{
                         transform: translateY(-2px);
@@ -1982,10 +2181,14 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         background: #38bdf8 !important;
                         color: #0f172a !important;
                     }}
+                    .btn-success {{
+                        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+                        box-shadow: 0 4px 12px rgba(5, 150, 105, 0.35);
+                    }}
 
                     .card-frame {{
                         width: 360px;
-                        height: 600px;
+                        height: 580px;
                         border-radius: 20px;
                         overflow: hidden;
                         position: relative;
@@ -1997,348 +2200,398 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                     .card-bg {{
                         position: absolute;
                         top: 0; left: 0; width: 100%; height: 100%;
-                        background-image: linear-gradient(180deg, rgba(15, 23, 42, 0.75) 0%, rgba(15, 23, 42, 0.85) 50%, rgba(15, 23, 42, 0.98) 100%), url('{bg_image_url}');
                         background-size: cover;
                         background-position: center;
                         background-repeat: no-repeat;
                         z-index: 1;
-                        transition: all 0.5s ease;
+                        transition: background-image 0.8s ease-in-out;
+                    }}
+                    .card-overlay {{
+                        position: absolute;
+                        top: 0; left: 0; width: 100%; height: 100%;
+                        background: linear-gradient(180deg, rgba(15, 23, 42, 0.82) 0%, rgba(15, 23, 42, 0.65) 40%, rgba(15, 23, 42, 0.95) 100%);
+                        z-index: 2;
                     }}
                     .card-content {{
                         position: relative;
-                        z-index: 2;
+                        z-index: 3;
                         width: 100%;
                         height: 100%;
-                        padding: 18px;
+                        padding: 20px;
                         display: flex;
                         flex-direction: column;
                         justify-content: space-between;
                         box-sizing: border-box;
                     }}
-
-                    .progress-bar-container {{
-                        display: flex;
-                        gap: 4px;
-                        width: 100%;
-                        margin-bottom: 8px;
-                    }}
-                    .progress-step {{
-                        flex: 1;
-                        height: 3.5px;
-                        background: rgba(255, 255, 255, 0.25);
-                        border-radius: 2px;
-                        overflow: hidden;
-                    }}
-                    .progress-fill {{
-                        height: 100%;
-                        width: 0%;
-                        background: #38bdf8;
-                        transition: width 0.1s linear;
-                    }}
-
-                    .logo-bar {{
+                    .header-logos {{
                         display: flex;
                         justify-content: space-between;
                         align-items: center;
                         width: 100%;
-                        margin-top: 4px;
                     }}
-
-                    .glass-box {{
-                        background: rgba(15, 23, 42, 0.90);
-                        backdrop-filter: blur(16px);
-                        -webkit-backdrop-filter: blur(16px);
-                        padding: 16px;
-                        border-radius: 16px;
-                        border: 1px solid rgba(255, 255, 255, 0.2);
-                        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
-                        margin-top: auto;
-                    }}
-
                     .scene-badge {{
-                        display: inline-block;
-                        padding: 4px 10px;
                         background: rgba(56, 189, 248, 0.2);
                         border: 1px solid rgba(56, 189, 248, 0.5);
-                        border-radius: 20px;
-                        font-size: 9px;
-                        font-weight: 800;
                         color: #38bdf8;
-                        margin-bottom: 8px;
-                    }}
-
-                    .scene-title {{
+                        padding: 4px 10px;
+                        border-radius: 20px;
                         font-size: 10px;
                         font-weight: 800;
-                        color: #38bdf8;
+                        letter-spacing: 0.5px;
                         text-transform: uppercase;
-                        letter-spacing: 1px;
-                        margin-bottom: 4px;
+                        display: inline-block;
+                        margin-bottom: 8px;
                     }}
-                    .scene-main-text {{
-                        font-size: 15px;
+                    .main-info {{
+                        margin-top: auto;
+                        margin-bottom: auto;
+                    }}
+                    .title-text {{
+                        font-size: 19px;
                         font-weight: 900;
-                        color: #ffffff;
                         line-height: 1.25;
-                        margin-bottom: 12px;
-                        text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+                        color: #ffffff;
+                        margin: 0 0 6px 0;
+                        text-shadow: 0 2px 8px rgba(0,0,0,0.6);
                     }}
-                    .metric-grid {{
-                        display: grid;
-                        grid-template-columns: 1fr 1fr;
-                        gap: 10px;
+                    .sub-text {{
+                        font-size: 12px;
+                        color: #e2e8f0;
+                        margin: 0 0 16px 0;
+                        font-weight: 500;
+                    }}
+                    .stat-box {{
+                        background: rgba(15, 23, 42, 0.75);
+                        backdrop-filter: blur(8px);
+                        border: 1px solid rgba(255, 255, 255, 0.15);
+                        border-radius: 12px;
+                        padding: 10px 14px;
+                        margin-bottom: 8px;
+                    }}
+                    .stat-label {{
+                        color: #94a3b8;
+                        font-size: 10px;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    }}
+                    .stat-value {{
+                        color: #38bdf8;
+                        font-size: 15px;
+                        font-weight: 800;
+                        margin-top: 2px;
+                    }}
+                    .footer-bar {{
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
                         border-top: 1px solid rgba(255, 255, 255, 0.15);
                         padding-top: 10px;
-                    }}
-                    .metric-item {{
-                        display: flex;
-                        flex-direction: column;
-                    }}
-                    .metric-label {{
-                        font-size: 7.5px;
+                        font-size: 10px;
                         color: #94a3b8;
-                        font-weight: 700;
-                        text-transform: uppercase;
                     }}
-                    .metric-val {{
-                        font-size: 12px;
-                        font-weight: 800;
-                        color: #f8fafc;
+                    .progress-dots {{
+                        display: flex;
+                        gap: 6px;
                     }}
-                    .metric-highlight {{
-                        color: #4ade80 !important;
+                    .dot {{
+                        width: 8px;
+                        height: 8px;
+                        border-radius: 50%;
+                        background: rgba(255, 255, 255, 0.3);
+                        transition: all 0.3s ease;
                     }}
-                    .metric-cyan {{
-                        color: #38bdf8 !important;
+                    .dot-active {{
+                        background: #38bdf8;
+                        width: 20px;
+                        border-radius: 10px;
                     }}
-
-                    .footer-brand {{
-                        text-align: center;
-                        padding-top: 8px;
-                        border-top: 1px solid rgba(255, 255, 255, 0.1);
-                        font-size: 8px;
-                        color: #cbd5e1;
+                    #status-msg {{
+                        font-size: 11px;
+                        color: #38bdf8;
                         font-weight: 600;
+                        text-align: center;
+                        min-height: 18px;
                     }}
                 </style>
                 </head>
                 <body>
-                    <div class="studio-wrapper">
-                        <div class="controls-bar">
-                            <button id="play-btn" class="btn" onclick="togglePlay()">⏸ Durdur</button>
-                            <button id="rec-btn" class="btn" onclick="recordVideo()">🎬 Reklam Filmi İndir (WebM)</button>
-                            <button class="btn btn-secondary" onclick="downloadImage()">📸 HD Fotoğraf İndir (PNG)</button>
-                        </div>
-                        <div class="controls-bar" style="margin-top: -4px;">
-                            <button class="btn btn-secondary scene-btn" onclick="selectScene(0)">Sahne 1</button>
-                            <button class="btn btn-secondary scene-btn" onclick="selectScene(1)">Sahne 2</button>
-                            <button class="btn btn-secondary scene-btn" onclick="selectScene(2)">Sahne 3</button>
-                            <button class="btn btn-secondary scene-btn" onclick="selectScene(3)">Sahne 4</button>
-                        </div>
+                <div class="studio-wrapper">
+                    <div class="controls-bar">
+                        <button class="btn btn-secondary btn-active" id="btn-s1" onclick="setScene(0)">Sahne 1</button>
+                        <button class="btn btn-secondary" id="btn-s2" onclick="setScene(1)">Sahne 2</button>
+                        <button class="btn btn-secondary" id="btn-s3" onclick="setScene(2)">Sahne 3</button>
+                        <button class="btn btn-secondary" id="btn-s4" onclick="setScene(3)">Sahne 4</button>
+                        <button class="btn btn-secondary" id="btn-play" onclick="togglePlay()">⏸️ Durdur</button>
+                    </div>
 
-                        <div id="card-to-capture" class="card-frame">
-                            <div class="card-bg"></div>
-                            <div class="card-content">
-                                <div>
-                                    <div class="progress-bar-container">
-                                        <div class="progress-step"><div id="fill-0" class="progress-fill"></div></div>
-                                        <div class="progress-step"><div id="fill-1" class="progress-fill"></div></div>
-                                        <div class="progress-step"><div id="fill-2" class="progress-fill"></div></div>
-                                        <div class="progress-step"><div id="fill-3" class="progress-fill"></div></div>
-                                    </div>
-                                    <div class="logo-bar">
-                                        {story_logo1_html}
-                                        {story_logo2_html}
-                                    </div>
-                                </div>
+                    <div class="card-frame" id="capture-card">
+                        <div class="card-bg" id="card-bg"></div>
+                        <div class="card-overlay"></div>
+                        <div class="card-content">
+                            <div class="header-logos">
+                                {story_logo1_html}
+                                {story_logo2_html}
+                            </div>
 
-                                <div class="glass-box">
-                                    <div id="scene-badge" class="scene-badge">{badge_text}</div>
-                                    <div id="scene-title" class="scene-title">📍 BÖLGE VE ARSA DÖNÜM BİLGİSİ</div>
-                                    <div id="scene-main-text" class="scene-main-text">İstanbul / Beykoz<br>{mahalle_adi} Mahallesi</div>
-                                    <div id="metric-grid" class="metric-grid">
-                                        <!-- Dinamik Metrikler -->
-                                    </div>
-                                    <div class="footer-brand" style="margin-top: 10px;">
-                                        İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK
-                                    </div>
+                            <div class="main-info">
+                                <span class="scene-badge" id="scene-badge"></span>
+                                <h2 class="title-text" id="scene-title"></h2>
+                                <p class="sub-text" id="scene-sub"></p>
+                                <div id="stats-container"></div>
+                            </div>
+
+                            <div class="footer-bar">
+                                <span>İSTESTATE & MERİÇ İNŞAAT</span>
+                                <div class="progress-dots">
+                                    <div class="dot" id="dot-0"></div>
+                                    <div class="dot" id="dot-1"></div>
+                                    <div class="dot" id="dot-2"></div>
+                                    <div class="dot" id="dot-3"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <script>
-                        let currentScene = 0;
-                        let isPlaying = true;
-                        let progressTimer = null;
-                        let progressVal = 0;
+                    <div id="status-msg"></div>
 
-                        const scenes = [
-                            {{
-                                title: "📍 BÖLGE VE ARSA DÖNÜM BİLGİSİ",
-                                mainText: "İstanbul / Beykoz<br>{mahalle_adi} Mahallesi",
-                                badge: "{badge_text}",
-                                metrics: [
-                                    {{ label: "ARSA HACMİ", val: "{toplam_donum_str}", cls: "metric-cyan" }},
-                                    {{ label: "İMAR DURUMU", val: "{terk_durum_str}", cls: "" }}
-                                ]
-                            }},
-                            {{
-                                title: "🏛️ MİMARİ KONSEPT VE KAPASİTE",
-                                mainText: "{sample_project_type}",
-                                badge: "✨ OPTİMUM MİMARİ",
-                                metrics: [
-                                    {{ label: "BAĞIMSIZ BÖLÜM", val: "{total_units_sum} Adet", cls: "metric-cyan" }},
-                                    {{ label: "ORT. BİRİM ALAN", val: "{avg_unit_net:,.1f} m²", cls: "" }}
-                                ]
-                            }},
-                            {{
-                                title: "📐 YAPILAŞMA VE SOSYAL YAŞAM",
-                                mainText: "Emsal Verimli Yaşam Projesi",
-                                badge: "🏊 {sample_pool_mod}",
-                                metrics: [
-                                    {{ label: "EMSAL İNŞAAT", val: "{total_yasal_brut_insaat:,.0f} m²", cls: "" }},
-                                    {{ label: "TOPLAM İNŞAAT", val: "{total_genel_insaat_m2:,.0f} m²", cls: "metric-cyan" }}
-                                ]
-                            }},
-                            {{
-                                title: "💎 FİNANSAL PROJEKSİYON",
-                                mainText: "Yüksek Yatırım Getirisi & Değer Artışı",
-                                badge: "🚀 YATIRIM FIRSATI",
-                                metrics: [
-                                    {{ label: "TAHMİNİ CİRO", val: "${display_ciro_usd:,.0f}", cls: "metric-cyan" }},
-                                    {{ label: "HEDEF KAR (YG)", val: "%{yg_orani:.1f}", cls: "metric-highlight" }}
-                                ]
+                    <div class="controls-bar" style="margin-top: 4px;">
+                        <button class="btn" onclick="downloadHDPhoto()">📸 HD Fotoğraf Kartı İndir (.png)</button>
+                        <button class="btn btn-success" onclick="recordAndDownloadVideo()">🎬 Reklam Filmini İndir (.mp4 / .webm)</button>
+                    </div>
+                </div>
+
+                <script>
+                    const scenes = [
+                        {{
+                            bg: "{scene1_bg}",
+                            badge: "{badge_text}",
+                            title: "LOKASYON VE ARSA POTANSİYELİ",
+                            sub: "İstanbul / Beykoz ({mahalle_adi} Mahallesi)",
+                            stats: [
+                                {{ label: "Toplam Arsa Hacmi", val: "{toplam_donum_str}" }},
+                                {{ label: "İmar Durumu", val: "{terk_durum_str}" }}
+                            ]
+                        }},
+                        {{
+                            bg: "{scene2_bg}",
+                            badge: "🏛️ MİMARİ KONSEPT",
+                            title: "{sample_project_type.upper()}",
+                            sub: "{total_units_sum} Adet Seçkin Bağımsız Ünite",
+                            stats: [
+                                {{ label: "Emsal İnşaat Alanı", val: "{total_yasal_brut_insaat:,.0f} m²" }},
+                                {{ label: "Sosyal Donatı / Konsept", val: "{sample_pool_mod}" }}
+                            ]
+                        }},
+                        {{
+                            bg: "{scene3_bg}",
+                            badge: "✨ ALAN VERİMLİLİĞİ",
+                            title: "OPTIMİZE YAŞAM ALANLARI",
+                            sub: "{avg_unit_net:,.1f} m² / Ünite Ortalama Net Alan",
+                            stats: [
+                                {{ label: "Genel Toplam İnşaat Alanı", val: "{total_genel_insaat_m2:,.0f} m²" }},
+                                {{ label: "Mimari Verimlilik Oranı", val: "%100 Optimize Yapılaşma" }}
+                            ]
+                        }},
+                        {{
+                            bg: "{scene4_bg}",
+                            badge: "🚀 FİNANSAL PROJEKSİYON",
+                            title: "YÜKSEK YATIRIM DEĞERİ",
+                            sub: "%{yg_orani:.1f} Tahmini Yatırım Geri Dönüşü (YG)",
+                            stats: [
+                                {{ label: "Tahmini Proje Cirosu", val: "${display_ciro_usd:,.0f}" }},
+                                {{ label: "Bölgesel Büyüme Potansiyeli", val: "A+ Segment Yatırım" }}
+                            ]
+                        }}
+                    ];
+
+                    let currentSceneIdx = 0;
+                    let isPlaying = true;
+                    let timer = null;
+
+                    function renderScene(idx) {{
+                        currentSceneIdx = idx;
+                        const sc = scenes[idx];
+                        const bgEl = document.getElementById('card-bg');
+                        bgEl.style.backgroundImage = "url('" + sc.bg + "')";
+                        
+                        document.getElementById('scene-badge').innerText = sc.badge;
+                        document.getElementById('scene-title').innerText = sc.title;
+                        document.getElementById('scene-sub').innerText = sc.sub;
+
+                        let statsHTML = '';
+                        sc.stats.forEach(st => {{
+                            statsHTML += `
+                                <div class="stat-box">
+                                    <div class="stat-label">${{st.label}}</div>
+                                    <div class="stat-value">${{st.val}}</div>
+                                </div>
+                            `;
+                        }});
+                        document.getElementById('stats-container').innerHTML = statsHTML;
+
+                        for (let i = 0; i < 4; i++) {{
+                            const dot = document.getElementById('dot-' + i);
+                            const btn = document.getElementById('btn-s' + (i + 1));
+                            if (i === idx) {{
+                                dot.className = 'dot dot-active';
+                                if (btn) btn.className = 'btn btn-secondary btn-active';
+                            }} else {{
+                                dot.className = 'dot';
+                                if (btn) btn.className = 'btn btn-secondary';
                             }}
-                        ];
+                        }}
+                    }}
 
-                        function renderScene(idx) {{
-                            currentScene = idx;
-                            const sc = scenes[idx];
-                            document.getElementById("scene-title").innerHTML = sc.title;
-                            document.getElementById("scene-main-text").innerHTML = sc.mainText;
-                            document.getElementById("scene-badge").innerHTML = sc.badge;
-                            
-                            let mHtml = "";
-                            sc.metrics.forEach(m => {{
-                                mHtml += `<div class="metric-item"><span class="metric-label">${{m.label}}</span><span class="metric-val ${{m.cls}}">${{m.val}}</span></div>`;
-                            }});
-                            document.getElementById("metric-grid").innerHTML = mHtml;
+                    function setScene(idx) {{
+                        renderScene(idx);
+                    }}
 
-                            for (let i = 0; i < 4; i++) {{
-                                const fill = document.getElementById("fill-" + i);
-                                if (i < idx) {{
-                                    fill.style.width = "100%";
-                                }} else if (i > idx) {{
-                                    fill.style.width = "0%";
-                                }}
-                            }}
-                            
-                            document.querySelectorAll(".scene-btn").forEach((btn, i) => {{
-                                if (i === idx) btn.classList.add("btn-active");
-                                else btn.classList.remove("btn-active");
-                            }});
+                    function nextScene() {{
+                        currentSceneIdx = (currentSceneIdx + 1) % scenes.length;
+                        renderScene(currentSceneIdx);
+                    }}
+
+                    function startAutoPlay() {{
+                        if (timer) clearInterval(timer);
+                        timer = setInterval(nextScene, 3500);
+                        isPlaying = true;
+                        document.getElementById('btn-play').innerText = "⏸️ Durdur";
+                    }}
+
+                    function stopAutoPlay() {{
+                        if (timer) clearInterval(timer);
+                        isPlaying = false;
+                        document.getElementById('btn-play').innerText = "▶️ Oynat";
+                    }}
+
+                    function togglePlay() {{
+                        if (isPlaying) {{
+                            stopAutoPlay();
+                        }} else {{
+                            startAutoPlay();
+                        }}
+                    }}
+
+                    // Sayfa açılışı
+                    renderScene(0);
+                    startAutoPlay();
+
+                    // HD Fotoğraf Kartı İndir
+                    function downloadHDPhoto() {{
+                        const card = document.getElementById('capture-card');
+                        const statusEl = document.getElementById('status-msg');
+                        statusEl.innerText = "⏳ HD Fotoğraf hazırlanıyor...";
+                        
+                        html2canvas(card, {{
+                            scale: 2,
+                            useCORS: true,
+                            allowTaint: true
+                        }}).then(canvas => {{
+                            const link = document.createElement('a');
+                            link.download = `Meric_Istestate_Sahne_${{currentSceneIdx + 1}}_{mahalle_adi}.png`;
+                            link.href = canvas.toDataURL('image/png');
+                            link.click();
+                            statusEl.innerText = "✅ HD Fotoğraf indirildi!";
+                            setTimeout(() => {{ statusEl.innerText = ""; }}, 3000);
+                        }}).catch(err => {{
+                            statusEl.innerText = "❌ Görsel oluşturulurken hata oluştu!";
+                            console.error(err);
+                        }});
+                    }}
+
+                    // Video Kaydı ve İndirme Motoru
+                    async function recordAndDownloadVideo() {{
+                        stopAutoPlay();
+                        const statusEl = document.getElementById('status-msg');
+                        statusEl.innerText = "🎬 Reklam Filmi hazırlanıyor...";
+
+                        const card = document.getElementById('capture-card');
+                        const width = 360 * 2;
+                        const height = 580 * 2;
+                        
+                        const recCanvas = document.createElement('canvas');
+                        recCanvas.width = width;
+                        recCanvas.height = height;
+                        const ctx = recCanvas.getContext('2d');
+
+                        const stream = recCanvas.captureStream(25);
+                        
+                        let mimeType = 'video/webm;codecs=vp9';
+                        let fileExt = 'webm';
+                        
+                        if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {{
+                            mimeType = 'video/mp4;codecs=avc1';
+                            fileExt = 'mp4';
+                        }} else if (MediaRecorder.isTypeSupported('video/mp4')) {{
+                            mimeType = 'video/mp4';
+                            fileExt = 'mp4';
+                        }} else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {{
+                            mimeType = 'video/webm;codecs=vp8';
+                            fileExt = 'webm';
                         }}
 
-                        function startTimers() {{
-                            stopTimers();
-                            progressVal = 0;
-                            progressTimer = setInterval(() => {{
-                                if (!isPlaying) return;
-                                progressVal += 2;
-                                const fill = document.getElementById("fill-" + currentScene);
-                                if (fill) fill.style.width = progressVal + "%";
-                                if (progressVal >= 100) {{
-                                    progressVal = 0;
-                                    currentScene = (currentScene + 1) % scenes.length;
-                                    renderScene(currentScene);
-                                }}
-                            }}, 70);
+                        let recorder;
+                        try {{
+                            recorder = new MediaRecorder(stream, {{ mimeType: mimeType }});
+                        }} catch(e) {{
+                            recorder = new MediaRecorder(stream);
+                            fileExt = 'webm';
                         }}
 
-                        function stopTimers() {{
-                            if (progressTimer) clearInterval(progressTimer);
-                        }}
-
-                        function togglePlay() {{
-                            isPlaying = !isPlaying;
-                            const pBtn = document.getElementById("play-btn");
-                            pBtn.innerText = isPlaying ? "⏸ Durdur" : "▶ Oynat";
-                        }}
-
-                        function selectScene(idx) {{
-                            isPlaying = false;
-                            document.getElementById("play-btn").innerText = "▶ Oynat";
-                            progressVal = 0;
-                            renderScene(idx);
-                            document.getElementById("fill-" + idx).style.width = "100%";
-                        }}
-
-                        function downloadImage() {{
-                            const cardEl = document.getElementById("card-to-capture");
-                            html2canvas(cardEl, {{ scale: 2, useCORS: true, allowTaint: true }}).then(canvas => {{
-                                const link = document.createElement('a');
-                                link.download = 'Musteri_Sunum_Karti_Beykoz.png';
-                                link.href = canvas.toDataURL('image/png');
-                                link.click();
-                            }});
-                        }}
-
-                        async function recordVideo() {{
-                            const cardEl = document.getElementById("card-to-capture");
-                            const recBtn = document.getElementById("rec-btn");
-                            recBtn.innerText = "⏳ Video Üretiliyor...";
-                            recBtn.disabled = true;
-
-                            isPlaying = false;
-                            stopTimers();
-
-                            const canvas = await html2canvas(cardEl, {{ scale: 1.5, useCORS: true, allowTaint: true }});
-                            const stream = canvas.captureStream(30);
-                            let recorder;
-                            try {{
-                                recorder = new MediaRecorder(stream, {{ mimeType: 'video/webm' }});
-                            }} catch(e) {{
-                                recorder = new MediaRecorder(stream);
-                            }}
-                            
-                            const chunks = [];
-                            recorder.ondataavailable = e => chunks.push(e.data);
-                            recorder.onstop = () => {{
-                                const blob = new Blob(chunks, {{ type: 'video/webm' }});
-                                const url = URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = 'Reklam_Filmi_Beykoz.webm';
-                                a.click();
-                                recBtn.innerText = "🎬 Reklam Filmi İndir (WebM)";
-                                recBtn.disabled = false;
-                                isPlaying = true;
-                                startTimers();
-                            }};
-
-                            recorder.start();
-
-                            for (let i = 0; i < scenes.length; i++) {{
-                                renderScene(i);
-                                document.getElementById("fill-" + i).style.width = "100%";
-                                const frameCanvas = await html2canvas(cardEl, {{ scale: 1.5, useCORS: true, allowTaint: true }});
-                                const ctx = canvas.getContext('2d');
-                                ctx.drawImage(frameCanvas, 0, 0);
-                                await new Promise(r => setTimeout(r, 2500));
-                            }}
-
-                            recorder.stop();
-                        }}
-
-                        window.onload = () => {{
-                            renderScene(0);
-                            startTimers();
+                        const chunks = [];
+                        recorder.ondataavailable = e => {{
+                            if (e.data.size > 0) chunks.push(e.data);
                         }};
-                    </script>
+
+                        recorder.onstop = () => {{
+                            const blob = new Blob(chunks, {{ type: recorder.mimeType || 'video/webm' }});
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `Meric_Istestate_Reklam_Filmi_{mahalle_adi}.${{fileExt}}`;
+                            a.click();
+                            statusEl.innerText = "✅ Reklam Filmi başarıyla indirildi!";
+                            startAutoPlay();
+                            setTimeout(() => {{ statusEl.innerText = ""; }}, 4000);
+                        }};
+
+                        recorder.start();
+
+                        const sceneDuration = 2500;
+                        const framesPerScene = 20;
+
+                        for (let s = 0; s < 4; s++) {{
+                            renderScene(s);
+                            statusEl.innerText = `🎬 Reklam Filmi Kaydediliyor: Sahne ${{s + 1}} / 4...`;
+                            
+                            for (let f = 0; f < framesPerScene; f++) {{
+                                const canvasSnapshot = await html2canvas(card, {{
+                                    scale: 2,
+                                    useCORS: true,
+                                    allowTaint: true,
+                                    width: 360,
+                                    height: 580
+                                }});
+                                ctx.clearRect(0, 0, width, height);
+                                ctx.drawImage(canvasSnapshot, 0, 0, width, height);
+                                await new Promise(r => setTimeout(r, sceneDuration / framesPerScene));
+                            }}
+                        }}
+
+                        statusEl.innerText = "⚡ Video İşleniyor ve İndiriliyor...";
+                        setTimeout(() => {{
+                            recorder.stop();
+                        }}, 500);
+                    }}
+                </script>
                 </body>
                 </html>
                 """
-                components.html(story_video_component_html, height=690)
+
+                components.html(story_video_component_html, height=760)
         else:
-            st.info("Sol taraftan raporlanacak en az bir parsel seçiniz.")
+            st.info(
+                "Sosyal medya pazarlama kartı üretmek için sol menüden parsel"
+                " seçin."
+            )
