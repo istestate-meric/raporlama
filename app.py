@@ -1658,132 +1658,121 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                                     <div class="progress-bar"><div id="p3" class="progress-fill"></div></div>
                                 </div>
                                 <div class="card-header">
-                                    <img src="{logo1_src}" class="logo-img" onerror="this.style.display='none'">
-                                    <span class="badge">İSTESTATE & MERİÇ</span>
-                                    <img src="{logo2_src}" class="logo-img" onerror="this.style.display='none'">
+                                    <img src="{logo1_src}" class="logo-img" alt="Logo 1">
+                                    <span class="badge">STRATEJİK FİZİBİLİTE</span>
+                                    <img src="{logo2_src}" class="logo-img" alt="Logo 2">
                                 </div>
-                                <div class="card-title">İmar & Fizibilite Bülteni</div>
-                                <div class="card-subtitle">📍 {mahalle_adi} | {toplam_donum_str}</div>
+                                <div class="card-title">İSTANBUL / BEYKOZ ({mahalle_adi})</div>
+                                <div class="card-subtitle">Kurumsal Arsa Geliştirme Portföyü</div>
                             </div>
                             
-                            <div class="scene-content active" id="scene-1">
+                            <!-- Sahne 1: Lokasyon & Arsa Hacmi -->
+                            <div id="scene-0" class="scene-content active">
                                 <div class="metrics-grid">
                                     <div class="metric-box">
-                                        <div class="metric-label">Toplam Arsa</div>
-                                        <div class="metric-val">{toplam_m2:,.0f} m²</div>
+                                        <div class="metric-label">Arsa Hacmi</div>
+                                        <div class="metric-val">{toplam_donum_str}</div>
                                     </div>
                                     <div class="metric-box">
-                                        <div class="metric-label">Terk Durumu</div>
-                                        <div class="metric-val" style="font-size:8.5px;">{'Net Parsel' if is_any_terkli else '%70 Net Oranlı'}</div>
+                                        <div class="metric-label">İmar Durumu</div>
+                                        <div class="metric-val" style="font-size: 8.5px;">{terk_durum_str}</div>
                                     </div>
+                                </div>
+                                <div class="info-box">
+                                    <b>Bölgesel Avantaj:</b> Beykoz lokasyonunda yüksek değerli arsa stoğu ve yatırım potansiyeli yüksek imar parselleri.
+                                </div>
+                            </div>
+                            
+                            <!-- Sahne 2: Mimari & Yapılaşma -->
+                            <div id="scene-1" class="scene-content">
+                                <div class="metrics-grid">
                                     <div class="metric-box">
                                         <div class="metric-label">Emsal İnşaat</div>
                                         <div class="metric-val">{total_yasal_brut_insaat:,.0f} m²</div>
                                     </div>
                                     <div class="metric-box">
                                         <div class="metric-label">Bağımsız Ünite</div>
-                                        <div class="metric-val">{total_units_sum} Adet</div>
+                                        <div class="metric-val">{total_units_sum} Bağımsız Bölüm</div>
                                     </div>
                                 </div>
                                 <div class="info-box">
                                     <b>Mimari Konsept:</b> {sample_project_type}<br>
-                                    <b>Ortalama Ünite:</b> {avg_unit_net:,.1f} m² | <b>Donatılar:</b> {sample_pool_mod}
+                                    <b>Ortalama Ünite:</b> {avg_unit_net:,.1f} m² net yaşam alanı.
                                 </div>
                             </div>
-
-                            <div class="scene-content" id="scene-2">
+                            
+                            <!-- Sahne 3: Finansal Projeksiyon & YG -->
+                            <div id="scene-2" class="scene-content">
                                 <div class="metrics-grid">
                                     <div class="metric-box">
-                                        <div class="metric-label">Genel Toplam İnşaat</div>
-                                        <div class="metric-val">{total_genel_insaat_m2:,.0f} m²</div>
+                                        <div class="metric-label">Proje Cirosu</div>
+                                        <div class="metric-val">${display_ciro_usd:,.0f}</div>
                                     </div>
                                     <div class="metric-box">
-                                        <div class="metric-label">Bodrum Kat Alanı</div>
-                                        <div class="metric-val">{total_bodrum_alani:,.0f} m²</div>
-                                    </div>
-                                    <div class="metric-box">
-                                        <div class="metric-label">İş Modeli</div>
-                                        <div class="metric-val" style="font-size:8px;">{is_modeli}</div>
-                                    </div>
-                                    <div class="metric-box">
-                                        <div class="metric-label">Bahçe Alanı Terki</div>
-                                        <div class="metric-val">{total_bahce_alani_terki:,.0f} m²</div>
+                                        <div class="metric-label">Yatırım Geri Dönüşü</div>
+                                        <div class="metric-val" style="color: #4ade80;">%{yg_orani:.1f} YG</div>
                                     </div>
                                 </div>
                                 <div class="info-box">
-                                    <b>Bölge Analizi:</b> {mahalle_adi} bölgesi için optimize edilmiş emsal hesaplamaları ve yapılaşma koşulları.
+                                    <b>Stratejik Değer:</b> Yüksek kârlılık oranları ve prestijli mimari tasarım ile yatırımcılarına maksimum kazanç.
                                 </div>
                             </div>
-
-                            <div class="scene-content" id="scene-3">
-                                <div class="metrics-grid" style="grid-template-columns: 1fr;">
-                                    <div class="metric-box" style="background: rgba(2, 132, 199, 0.25); border-color: #38bdf8;">
-                                        <div class="metric-label" style="color: #38bdf8;">Tahmini Proje Cirosu</div>
-                                        <div class="metric-val" style="font-size:13px; color:#ffffff;">${display_ciro_usd:,.0f}</div>
-                                    </div>
-                                    <div class="metric-box" style="background: rgba(16, 185, 129, 0.25); border-color: #34d399;">
-                                        <div class="metric-label" style="color: #34d399;">Hedeflenen Yatırım Geri Dönüşü (YG)</div>
-                                        <div class="metric-val" style="font-size:13px; color:#34d399;">%{yg_orani:.1f}+</div>
-                                    </div>
-                                </div>
-                                <div class="info-box" style="text-align: center; font-weight:600; color:#38bdf8;">
-                                    İstestate & Meriç İnşaat Ortak Geliştirme Projesidir.
-                                </div>
-                            </div>
-
+                            
                             <div>
-                                <div class="footer-badge">İstestate Gayrimenkul & Meriç İnşaat Emlak</div>
+                                <div class="footer-badge">İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK KÜRESEL PORTFÖYÜ</div>
                             </div>
                         </div>
                     </div>
-                    
-                    <button class="download-btn" id="download-card-btn">📥 Görseli / Kartı İndir (PNG)</button>
+                    <button class="download-btn" onclick="downloadCard()">📥 Hazırlanan İçeriği / Görseli İndir</button>
                 </div>
 
                 <script>
-                    const bgImages = {json.dumps(active_bg_urls)};
-                    let currentScene = 1;
+                    const bgUrls = ["{active_bg_urls[0]}", "{active_bg_urls[1]}", "{active_bg_urls[2]}"];
+                    let currentScene = 0;
                     const totalScenes = 3;
-                    const isVideo = {'true' if is_video_mode else 'false'};
+                    const isVideo = {"true" if is_video_mode else "false"};
 
-                    if (isVideo) {{
-                        function runReels() {{
-                            for(let i=1; i<=totalScenes; i++) {{
-                                document.getElementById('p'+i).style.width = '0%';
-                                document.getElementById('scene-'+i).classList.remove('active');
+                    function showScene(index) {{
+                        const scenes = document.querySelectorAll('.scene-content');
+                        scenes.forEach((s, idx) => {{
+                            if(idx === index) {{
+                                s.classList.add('active');
+                            }} else {{
+                                s.classList.remove('active');
                             }}
-                            
-                            document.getElementById('scene-'+currentScene).classList.add('active');
-                            document.getElementById('capture-card').style.backgroundImage = 'url(' + bgImages[currentScene-1] + ')';
-                            
-                            let progress = 0;
-                            const interval = setInterval(function() {{
-                                progress += 2;
-                                document.getElementById('p'+currentScene).style.width = progress + '%';
-                                if (progress >= 100) {{
-                                    clearInterval(interval);
-                                    currentScene++;
-                                    if (currentScene > totalScenes) {{
-                                        currentScene = 1;
-                                    }}
-                                    setTimeout(runReels, 200);
-                                }}
-                            }}, 60);
+                        }});
+                        
+                        document.getElementById('capture-card').style.backgroundImage = `url('${{bgUrls[index]}}')`;
+
+                        if (isVideo) {{
+                            for(let i=0; i<totalScenes; i++) {{
+                                const fill = document.getElementById('p' + (i+1));
+                                if(i < index) fill.style.width = '100%';
+                                else if(i === index) fill.style.width = '100%';
+                                else fill.style.width = '0%';
+                            }}
                         }}
-                        runReels();
                     }}
 
-                    document.getElementById('download-card-btn').addEventListener('click', function() {{
+                    if (isVideo) {{
+                        setInterval(() => {{
+                            currentScene = (currentScene + 1) % totalScenes;
+                            showScene(currentScene);
+                        }, 3500);
+                    }}
+
+                    function downloadCard() {{
                         const card = document.getElementById('capture-card');
-                        html2canvas(card, {{ scale: 3, useCORS: true, allowTaint: true }}).then(canvas => {{
+                        html2canvas(card, {{ scale: 2, useCORS: true, allowTaint: true }}).then(canvas => {{
                             const link = document.createElement('a');
-                            link.download = 'Istestate_Meric_Proje_Karti.png';
+                            link.download = 'Istestate_Meric_Kurumsal_Icerik_{mahalle_adi}.png';
                             link.href = canvas.toDataURL('image/png');
                             link.click();
                         }});
-                    }});
+                    }}
                 </script>
                 </body>
                 </html>
                 """
-                components.html(studio_html, height=650)
+
+                components.html(studio_html, height=640 if "Hikaye" in card_aspect else (560 if "Dikey" in card_aspect else 480))
