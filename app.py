@@ -1953,8 +1953,8 @@ if selected_keys:
             "Seçtiğiniz parsellerin imar metrajlarını; yatırım geri dönüşü (YG%),"
             " mimari kat ve bağımsız bölüm verimliliğini öne çıkaran, üst düzey"
             " kurumsal dil ile hazırlanmış sosyal medya hikaye kartı, **HD Fotoğraf"
-            " indirme** ve **Her sahnede logoların yer aldığı Aşama Aşama Dinamik Reklam Filmi Videosu** üreten"
-            " stüdyo:"
+            " indirme** ve **Her Sahnede Logo Garantili Aşama Aşama Dinamik Reklam"
+            " Filmi Videosu** üreten stüdyo:"
         )
 
         if active_parcel_db:
@@ -1965,7 +1965,7 @@ if selected_keys:
                 p.get("toplam_alan", 0.0) for p in active_parcel_db.values()
             )
 
-            # Arsa alanını sadece dönüm cinsinden hesaplayalım (m2 gizlendi)
+            # Arsa alanını dönüm cinsinden hesaplayalım (m2 bilgisi gizlendi)
             donum_tam_sayi = max(1, round(toplam_m2 / 1000.0))
             toplam_donum_str = f"{donum_tam_sayi:,} Dönüm".replace(",", ".")
 
@@ -1990,6 +1990,7 @@ if selected_keys:
 
             p_type_upper = sample_project_type.upper()
 
+            # Proje tipine göre görsel arka plan seçimi
             if "VİLLA" in p_type_upper or "VILLA" in p_type_upper:
                 scene1_bg = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1200&auto=format&fit=crop"
                 scene2_bg = "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1200&auto=format&fit=crop"
@@ -2083,8 +2084,10 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                     " & Video)"
                 )
                 st.markdown(
-                    "Müşterilerinize direkt sunabileceğiniz **Aşama Aşama Reklam"
-                    " Filmi Videosu** (her sahnede kurumsal logolarımız görünür) veya **Genel Özet Fotoğraf Kartı (HD PNG)**:"
+                    "Müşterilerinize direkt sunabileceğiniz **Her Sahnede Logolu"
+                    " Aşama Aşama Reklam Filmi Videosu** veya tüm genel"
+                    " fizibilite bilgilerini içeren **Genel Özet Fotoğraf Kartı"
+                    " (HD PNG)**:"
                 )
 
                 logo1_src = (
@@ -2107,310 +2110,240 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                 <style>
                     * {{ box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }}
                     body {{ margin: 0; padding: 0; background-color: #0f172a; color: #ffffff; }}
-                    .tab-buttons {{ display: flex; gap: 10px; margin-bottom: 12px; }}
+                    .studio-wrapper {{ max-width: 450px; margin: 0 auto; background: #0b1d3a; border-radius: 16px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }}
+                    .tab-buttons {{ display: flex; gap: 10px; margin-bottom: 16px; }}
                     .tab-btn {{ flex: 1; padding: 10px; border: none; background: #1e293b; color: #94a3b8; font-weight: 700; border-radius: 8px; cursor: pointer; font-size: 13px; transition: all 0.2s; }}
                     .tab-btn.active {{ background: #2563eb; color: #ffffff; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }}
                     
-                    .studio-content {{ display: none; }}
-                    .studio-content.active {{ display: block; }}
+                    .content-panel {{ display: none; }}
+                    .content-panel.active {{ display: block; }}
 
-                    /* PHOTO CARD STYLES */
+                    /* PHOTO CARD STYLING */
                     #photo-card {{
                         width: 100%;
-                        max-width: 380px;
-                        margin: 0 auto;
                         aspect-ratio: 9/16;
-                        background: linear-gradient(145deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-                        border-radius: 16px;
+                        background: linear-gradient(135deg, #0b1329 0%, #1e293b 100%);
+                        border-radius: 14px;
                         padding: 20px;
-                        box-shadow: 0 20px 40px rgba(0,0,0,0.5);
                         position: relative;
                         display: flex;
                         flex-direction: column;
                         justify-content: space-between;
+                        border: 1px solid rgba(255,255,255,0.15);
                         overflow: hidden;
-                        border: 1px solid rgba(255, 255, 255, 0.15);
                     }}
                     .card-header {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }}
-                    .card-logo {{ max-height: 32px; width: auto; object-fit: contain; background: #fff; padding: 3px 6px; border-radius: 4px; }}
-                    .card-badge {{ background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }}
-                    .card-title {{ font-size: 16px; font-weight: 800; color: #ffffff; margin: 4px 0 2px 0; line-height: 1.2; }}
-                    .card-subtitle {{ font-size: 11px; color: #38bdf8; font-weight: 600; margin-bottom: 8px; }}
+                    .card-logo {{ max-height: 32px; width: auto; object-fit: contain; background: #ffffff; padding: 3px 6px; border-radius: 4px; }}
+                    .badge {{ background: #38bdf8; color: #0f172a; font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; }}
                     
-                    .metrics-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0; }}
-                    .metric-box {{ background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 8px 10px; }}
-                    .metric-lbl {{ font-size: 9px; color: #94a3b8; text-transform: uppercase; font-weight: 600; }}
-                    .metric-val {{ font-size: 13px; color: #ffffff; font-weight: 700; margin-top: 2px; }}
+                    .card-body {{ display: flex; flex-direction: column; gap: 8px; z-index: 2; }}
+                    .card-title {{ font-size: 16px; font-weight: 800; margin: 0; color: #ffffff; line-height: 1.2; }}
+                    .card-subtitle {{ font-size: 11px; color: #94a3b8; margin: 0; }}
+                    
+                    .metrics-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }}
+                    .metric-box {{ background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 8px; }}
+                    .metric-label {{ font-size: 9px; color: #94a3b8; text-transform: uppercase; }}
+                    .metric-val {{ font-size: 13px; font-weight: 700; color: #38bdf8; margin-top: 2px; }}
 
-                    .highlight-box {{ background: rgba(37, 99, 235, 0.2); border: 1px solid rgba(37, 99, 235, 0.4); border-radius: 8px; padding: 10px; text-align: center; margin-top: 4px; }}
-                    .highlight-lbl {{ font-size: 9px; color: #93c5fd; text-transform: uppercase; font-weight: 700; }}
-                    .highlight-val {{ font-size: 18px; color: #60a5fa; font-weight: 900; margin-top: 2px; }}
+                    .card-footer {{ font-size: 8px; color: #94a3b8; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; }}
 
-                    .card-footer {{ font-size: 8px; color: #64748b; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 6px; }}
-
-                    /* VIDEO PLAYER STYLES */
-                    #video-stage {{
+                    /* VIDEO PLAYER STYLING */
+                    #video-container {{
                         width: 100%;
-                        max-width: 380px;
-                        margin: 0 auto;
                         aspect-ratio: 9/16;
-                        background: #000;
-                        border-radius: 16px;
+                        background: #000000;
+                        border-radius: 14px;
                         position: relative;
                         overflow: hidden;
-                        box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-                        border: 1px solid rgba(255, 255, 255, 0.15);
-                    }}
-                    .v-slide {{
-                        position: absolute;
-                        top: 0; left: 0; width: 100%; height: 100%;
-                        background-size: cover;
-                        background-position: center;
+                        border: 1px solid rgba(255,255,255,0.15);
                         display: flex;
                         flex-direction: column;
                         justify-content: space-between;
-                        padding: 20px;
-                        opacity: 0;
-                        transition: opacity 0.8s ease-in-out;
-                        z-index: 1;
+                        padding: 16px;
                     }}
-                    .v-slide.active {{ opacity: 1; z-index: 2; }}
-                    .v-slide::before {{
-                        content: "";
+                    .video-bg {{
                         position: absolute;
                         top: 0; left: 0; width: 100%; height: 100%;
-                        background: linear-gradient(to bottom, rgba(15,23,42,0.85) 0%, rgba(15,23,42,0.4) 40%, rgba(15,23,42,0.9) 100%);
+                        object-fit: cover;
+                        opacity: 0.45;
                         z-index: 1;
+                        transition: opacity 0.5s ease-in-out;
                     }}
-                    .v-slide > * {{ position: relative; z-index: 2; }}
-
-                    .v-header {{ display: flex; justify-content: space-between; align-items: center; width: 100%; }}
-                    .v-logo {{ height: 28px; width: auto; object-fit: contain; background: #fff; padding: 2px 5px; border-radius: 4px; }}
+                    .video-content {{ position: relative; z-index: 3; display: flex; flex-direction: column; height: 100%; justify-content: space-between; pointer-events: none; }}
+                    .video-header {{ display: flex; justify-content: space-between; align-items: center; width: 100%; }}
+                    .scene-indicator {{ background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 20px; font-size: 10px; color: #38bdf8; font-weight: 700; border: 1px solid rgba(56,189,248,0.3); }}
                     
-                    .v-body {{ text-align: center; margin: auto 0; }}
-                    .v-tag {{ background: #2563eb; color: #fff; font-size: 10px; font-weight: 800; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-bottom: 8px; text-transform: uppercase; }}
-                    .v-title {{ font-size: 20px; font-weight: 900; color: #ffffff; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }}
-                    .v-desc {{ font-size: 13px; color: #cbd5e1; line-height: 1.4; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }}
+                    .scene-box {{ text-align: center; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(6px); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); }}
+                    .scene-title {{ font-size: 15px; font-weight: 800; color: #38bdf8; margin-bottom: 6px; }}
+                    .scene-desc {{ font-size: 12px; color: #e2e8f0; line-height: 1.4; margin: 0; }}
 
-                    .v-controls {{ display: flex; gap: 8px; margin-top: 12px; justify-content: center; }}
-                    .ctrl-btn {{ background: #1e293b; color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }}
-                    .ctrl-btn:hover {{ background: #334155; }}
+                    .video-controls {{ display: flex; gap: 8px; margin-top: 12px; }}
+                    .ctrl-btn {{ flex: 1; background: #2563eb; color: white; border: none; padding: 8px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 12px; }}
+                    .ctrl-btn:hover {{ background: #1d4ed8; }}
 
-                    .action-download-btn {{
-                        display: block;
-                        width: 100%;
-                        max-width: 380px;
-                        margin: 12px auto 0 auto;
-                        background: linear-gradient(135deg, #2563eb, #1d4ed8);
-                        color: #ffffff;
-                        text-align: center;
-                        padding: 12px;
-                        border-radius: 8px;
-                        font-weight: 700;
-                        font-size: 13px;
-                        text-decoration: none;
-                        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
-                        border: none;
-                        cursor: pointer;
-                        transition: all 0.2s;
-                    }}
-                    .action-download-btn:hover {{ background: linear-gradient(135deg, #1d4ed8, #1e40af); }}
+                    .download-btn {{ display: block; width: 100%; background: #16a34a; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 700; text-align: center; text-decoration: none; cursor: pointer; margin-top: 12px; font-size: 13px; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3); }}
+                    .download-btn:hover {{ background: #15803d; }}
                 </style>
                 </head>
                 <body>
+                <div class="studio-wrapper">
                     <div class="tab-buttons">
-                        <button class="tab-btn active" onclick="switchTab('photo')">📸 Hikaye Kartı (Fotoğraf)</button>
-                        <button class="tab-btn" onclick="switchTab('video')">🎬 Reklam Filmi (Video)</button>
+                        <button class="tab-btn active" onclick="switchTab('photo', event)">📸 HD Fotoğraf Kartı</button>
+                        <button class="tab-btn" onclick="switchTab('video', event)">🎬 Reklam Filmi</button>
                     </div>
 
-                    <!-- FOTOĞRAF KARTI SEKMESİ -->
-                    <div id="tab-photo" class="studio-content active">
+                    <!-- FOTOĞRAF PANELİ -->
+                    <div id="photo-panel" class="content-panel active">
                         <div id="photo-card">
                             <div class="card-header">
-                                <img src="{logo1_src}" class="card-logo">
-                                <span class="card-badge">YATIRIMCI ÖZEL</span>
-                                <img src="{logo2_src}" class="card-logo">
+                                <img src="{logo1_src}" class="card-logo" alt="İstestate">
+                                <span class="badge">{badge_text}</span>
+                                <img src="{logo2_src}" class="card-logo" alt="Meriç">
                             </div>
-                            <div>
-                                <div class="card-subtitle">İSTANBUL / BEYKOZ ({mahalle_adi})</div>
-                                <div class="card-title">{sample_project_type}</div>
-                            </div>
-                            <div class="metrics-grid">
-                                <div class="metric-box">
-                                    <div class="metric-lbl">Arsa Hacmi</div>
-                                    <div class="metric-val">{toplam_donum_str}</div>
+                            <div class="card-body">
+                                <h2 class="card-title">İSTANBUL / BEYKOZ</h2>
+                                <p class="card-subtitle">{mahalle_adi} Mahallesi | Stratejik Yatırım</p>
+                                
+                                <div class="metrics-grid">
+                                    <div class="metric-box">
+                                        <div class="metric-label">Arsa Hacmi</div>
+                                        <div class="metric-val">{toplam_donum_str}</div>
+                                    </div>
+                                    <div class="metric-box">
+                                        <div class="metric-label">Bağımsız Ünite</div>
+                                        <div class="metric-val">{total_units_sum} Adet</div>
+                                    </div>
+                                    <div class="metric-box">
+                                        <div class="metric-label">Emsal İnşaat</div>
+                                        <div class="metric-val">{total_yasal_brut_insaat:,.0f} m²</div>
+                                    </div>
+                                    <div class="metric-box">
+                                        <div class="metric-label">Hedeflenen YG</div>
+                                        <div class="metric-val">%{yg_orani:.1f}</div>
+                                    </div>
                                 </div>
-                                <div class="metric-box">
-                                    <div class="metric-lbl">İmar Durumu</div>
-                                    <div class="metric-val" style="font-size: 11px;">{terk_durum_str.split(' ')[0]}</div>
-                                </div>
-                                <div class="metric-box">
-                                    <div class="metric-lbl">Bağımsız Ünite</div>
-                                    <div class="metric-val">{total_units_sum} Adet</div>
-                                </div>
-                                <div class="metric-box">
-                                    <div class="metric-lbl">Ortalama Net Alan</div>
-                                    <div class="metric-val">{avg_unit_net:,.0f} m²</div>
-                                </div>
-                            </div>
-                            <div class="highlight-box">
-                                <div class="highlight-lbl">Hedeflenen Yatırım Geri Dönüşü (YG)</div>
-                                <div class="highlight-val">%{yg_orani:.1f}</div>
                             </div>
                             <div class="card-footer">
                                 İstestate Gayrimenkul & Meriç İnşaat Emlak Kurumsal Portföy Analizi
                             </div>
                         </div>
-                        <button class="action-download-btn" onclick="downloadPhotoCard()">📥 HD Fotoğrafı İndir (Instagram / WhatsApp Hikaye)</button>
+                        <button class="download-btn" onclick="downloadPhotoCard()">📥 HD Fotoğrafı İndir (PNG - Sosyal Medya)</button>
                     </div>
 
-                    <!-- REKLAM FİLMİ VİDEO SEKMESİ -->
-                    <div id="tab-video" class="studio-content">
-                        <div id="video-stage">
-                            <!-- Sahne 1 -->
-                            <div class="v-slide active" style="background-image: url('{scene1_bg}');">
-                                <div class="v-header">
-                                    <img src="{logo1_src}" class="v-logo">
-                                    <img src="{logo2_src}" class="v-logo">
+                    <!-- VİDEO PANELİ -->
+                    <div id="video-panel" class="content-panel">
+                        <div id="video-container">
+                            <img id="scene-bg" class="video-bg" src="{scene1_bg}">
+                            <div class="video-content">
+                                <div class="video-header">
+                                    <img src="{logo1_src}" class="card-logo" alt="İstestate">
+                                    <div class="scene-indicator" id="scene-counter">Sahne 1 / 4</div>
+                                    <img src="{logo2_src}" class="card-logo" alt="Meriç">
                                 </div>
-                                <div class="v-body">
-                                    <span class="v-tag">1. Lokasyon & Arsa</span>
-                                    <div class="v-title">Beykoz {mahalle_adi}</div>
-                                    <div class="v-desc">Stratejik lokasyonda {toplam_donum_str} arsa hacmi ile yüksek katma değerli yatırım fırsatı.</div>
+                                <div class="scene-box">
+                                    <div class="scene-title" id="scene-title">1. Bölgesel Konum & Arsa Hacmi</div>
+                                    <p class="scene-desc" id="scene-desc">İstanbul Beykoz {mahalle_adi} bölgesinde {toplam_donum_str} arsa hacmine sahip prestijli geliştirme fırsatı.</p>
                                 </div>
-                                <div style="text-align:center; font-size:10px; color:#94a3b8;">{badge_text}</div>
-                            </div>
-
-                            <!-- Sahne 2 -->
-                            <div class="v-slide" style="background-image: url('{scene2_bg}');">
-                                <div class="v-header">
-                                    <img src="{logo1_src}" class="v-logo">
-                                    <img src="{logo2_src}" class="v-logo">
-                                </div>
-                                <div class="v-body">
-                                    <span class="v-tag">2. Mimari Konsept</span>
-                                    <div class="v-title">{sample_project_type}</div>
-                                    <div class="v-desc">{total_units_sum} Adet Bağımsız Bölüm, {sample_pool_mod} peyzaj ve modern yaşam alanları.</div>
-                                </div>
-                                <div style="text-align:center; font-size:10px; color:#94a3b8;">Birim Ortalama: {avg_unit_net:,.0f} m² Net</div>
-                            </div>
-
-                            <!-- Sahne 3 -->
-                            <div class="v-slide" style="background-image: url('{scene3_bg}');">
-                                <div class="v-header">
-                                    <img src="{logo1_src}" class="v-logo">
-                                    <img src="{logo2_src}" class="v-logo">
-                                </div>
-                                <div class="v-body">
-                                    <span class="v-tag">3. Finansal Projeksiyon</span>
-                                    <div class="v-title">Yüksek Kârlılık & YG</div>
-                                    <div class="v-desc">Tahmini Proje Cirosu: ${display_ciro_usd:,.0f}<br>Hedeflenen Yatırım Geri Dönüşü: %{yg_orani:.1f}</div>
-                                </div>
-                                <div style="text-align:center; font-size:10px; color:#94a3b8;">Profesyonel Geliştirme</div>
-                            </div>
-
-                            <!-- Sahne 4 -->
-                            <div class="v-slide" style="background-image: url('{scene4_bg}');">
-                                <div class="v-header">
-                                    <img src="{logo1_src}" class="v-logo">
-                                    <img src="{logo2_src}" class="v-logo">
-                                </div>
-                                <div class="v-body">
-                                    <span class="v-tag">4. İletişim & İş Ortaklığı</span>
-                                    <div class="v-title">İstestate & Meriç İnşaat</div>
-                                    <div class="v-desc">Geleceğin projelerini birlikte inşa edelim. Detaylı fizibilite raporu için bizimle iletişime geçin.</div>
-                                </div>
-                                <div style="text-align:center; font-size:10px; color:#38bdf8; font-weight:bold;">Kurumsal Portföy</div>
                             </div>
                         </div>
-
-                        <div class="v-controls">
-                            <button class="ctrl-btn" onclick="prevSlide()">◀ Önceki</button>
-                            <button class="ctrl-btn" id="play-pause-btn" onclick="togglePlay()">⏸ Durdur / Başlat</button>
-                            <button class="ctrl-btn" onclick="nextSlide()">Sonraki ▶</button>
+                        <div class="video-controls">
+                            <button class="ctrl-btn" onclick="prevScene()">◀ Önceki</button>
+                            <button class="ctrl-btn" onclick="togglePlay()" id="play-btn">Oynat ⏯</button>
+                            <button class="ctrl-btn" onclick="nextScene()">Sonraki ▶</button>
                         </div>
-
-                        <button class="action-download-btn" onclick="downloadVideoPresentation()">📥 Reklam Filmini / Sunumu İndir (Sosyal Medya MP4 / WebM)</button>
+                        <button class="download-btn" onclick="downloadVideoConcept()">📥 Reklam Filmi Konseptini İndir (Sosyal Medya Paketi)</button>
                     </div>
+                </div>
 
-                    <script>
-                        function switchTab(tabName) {{
-                            document.querySelectorAll('.studio-content').forEach(el => el.classList.remove('active'));
-                            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-                            if(tabName === 'photo') {{
-                                document.getElementById('tab-photo').classList.add('active');
-                                event.currentTarget.classList.add('active');
-                            }} else {{
-                                document.getElementById('tab-video').classList.add('active');
-                                event.currentTarget.classList.add('active');
-                            }}
+                <script>
+                    function switchTab(tab, evt) {{
+                        document.querySelectorAll('.content-panel').forEach(p => p.classList.remove('active'));
+                        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                        if(tab === 'photo') {{
+                            document.getElementById('photo-panel').classList.add('active');
+                            evt.currentTarget.classList.add('active');
+                        }} else {{
+                            document.getElementById('video-panel').classList.add('active');
+                            evt.currentTarget.classList.add('active');
                         }}
+                    }}
 
-                        let currentSlide = 0;
-                        const slides = document.querySelectorAll('.v-slide');
-                        let isPlaying = true;
-                        let slideInterval = setInterval(nextSlide, 3500);
-
-                        function showSlide(index) {{
-                            slides.forEach(s => s.classList.remove('active'));
-                            currentSlide = (index + slides.length) % slides.length;
-                            slides[currentSlide].classList.add('active');
+                    const scenes = [
+                        {{
+                            bg: "{scene1_bg}",
+                            title: "1. Bölgesel Konum & Arsa Hacmi",
+                            desc: "İstanbul Beykoz {mahalle_adi} bölgesinde {toplam_donum_str} arsa hacmine sahip prestijli geliştirme fırsatı."
+                        }},
+                        {{
+                            bg: "{scene2_bg}",
+                            title: "2. Mimari Konsept & Verimlilik",
+                            desc: "{sample_project_type} konseptiyle toplam {total_units_sum} bağımsız ünitelik yüksek verimli yapılaşma."
+                        }},
+                        {{
+                            bg: "{scene3_bg}",
+                            title: "3. Sosyal Donatı & Yaşam Alanları",
+                            desc: "{sample_pool_mod} ve peyzaj alanlarıyla zenginleştirilmiş, konforlu ve nitelikli sosyal yaşam."
+                        }},
+                        {{
+                            bg: "{scene4_bg}",
+                            title: "4. Finansal Projeksiyon & Yatırım",
+                            desc: "Tahmini ${display_ciro_usd:,.0f} ciro potansiyeli ve %{yg_orani:.1f} yatırım geri dönüş (YG) oranı."
                         }}
+                    ];
 
-                        function nextSlide() {{
-                            showSlide(currentSlide + 1);
-                        }}
+                    let currentScene = 0;
+                    let isPlaying = false;
+                    let playInterval = null;
 
-                        function prevSlide() {{
-                            showSlide(currentSlide - 1);
-                        }}
+                    function updateScene() {{
+                        const s = scenes[currentScene];
+                        document.getElementById('scene-bg').src = s.bg;
+                        document.getElementById('scene-title').textContent = s.title;
+                        document.getElementById('scene-desc').textContent = s.desc;
+                        document.getElementById('scene-counter').textContent = `Sahne ${{currentScene + 1}} / ${{scenes.length}}`;
+                    }}
 
-                        function togglePlay() {{
-                            const btn = document.getElementById('play-pause-btn');
-                            if(isPlaying) {{
-                                clearInterval(slideInterval);
-                                btn.innerText = "▶ Oynat";
-                                isPlaying = false;
-                            }} else {{
-                                slideInterval = setInterval(nextSlide, 3500);
-                                btn.innerText = "⏸ Durdur / Başlat";
-                                isPlaying = true;
-                            }}
-                        }}
+                    function nextScene() {{
+                        currentScene = (currentScene + 1) % scenes.length;
+                        updateScene();
+                    }}
 
-                        function downloadPhotoCard() {{
-                            const card = document.getElementById('photo-card');
-                            html2canvas(card, {{ scale: 3, useCORS: true, backgroundColor: null }}).then(canvas => {{
-                                const link = document.createElement('a');
-                                link.download = 'Istestate_Meric_Kurumsal_Hikaye_Karti.png';
-                                link.href = canvas.toDataURL('image/png');
-                                link.click();
-                            }});
-                        }}
+                    function prevScene() {{
+                        currentScene = (currentScene - 1 + scenes.length) % scenes.length;
+                        updateScene();
+                    }}
 
-                        function downloadVideoPresentation() {{
-                            alert("Sosyal medya reklam filmi kareleri ve görselleri tarayıcınız üzerinden yüksek kalitede paketleniyor. Paylaşım için hazır!");
-                            // Alternatif olarak tüm slaytları sırayla canvas üzerinden indirilebilir video/gif formatına hazırlama simülasyonu
-                            const card = document.getElementById('video-stage');
-                            html2canvas(card, {{ scale: 2, useCORS: true }}).then(canvas => {{
-                                const link = document.createElement('a');
-                                link.download = 'Istestate_Meric_Kurumsal_Reklam_Filmi.png';
-                                link.href = canvas.toDataURL('image/png');
-                                link.click();
-                            }});
+                    function togglePlay() {{
+                        isPlaying = !isPlaying;
+                        const btn = document.getElementById('play-btn');
+                        if(isPlaying) {{
+                            btn.textContent = "Durdur ⏸";
+                            playInterval = setInterval(nextScene, 3500);
+                        }} else {{
+                            btn.textContent = "Oynat ⏯";
+                            clearInterval(playInterval);
                         }}
-                    </script>
+                    }}
+
+                    function downloadPhotoCard() {{
+                        const card = document.getElementById('photo-card');
+                        html2canvas(card, {{ scale: 3, useCORS: true }}).then(canvas => {{
+                            const link = document.createElement('a');
+                            link.download = 'Istestate_Meric_Kurumsal_Portre_Karti.png';
+                            link.href = canvas.toDataURL('image/png');
+                            link.click();
+                        }});
+                    }}
+
+                    function downloadVideoConcept() {{
+                        const link = document.createElement('a');
+                        link.download = 'Istestate_Meric_Reklam_Filmi_Paketi.html';
+                        const blob = new Blob([document.documentElement.outerHTML], {{type: 'text/html'}});
+                        link.href = URL.createObjectURL(blob);
+                        link.click();
+                    }}
+                </script>
                 </body>
                 </html>
                 """
-
                 components.html(studio_html, height=720)
-        else:
-            st.info(
-                "Lütfen soldaki menüden en az bir imar parseli seçin veya yükleyin."
-            )
-else:
-    st.info(
-        "👈 Lütfen sol menüden İmar Durum Belgesi (PDF) yükleyin veya mevcut"
-        " arşivden parsel seçimi yapın."
-    )
