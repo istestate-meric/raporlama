@@ -1431,7 +1431,7 @@ if selected_keys:
                         st.rerun()
                         
                 st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("⚠️️ Tüm Veritabanını Temizle (Sıfırla)", type="secondary"):
+                if st.button("⚠ Tüm Veritabanını Temizle (Sıfırla)", type="secondary"):
                     save_persistent_db({})
                     st.success("Veritabanı sıfırlandı ve GitHub deponuz güncellendi!")
                     st.rerun()
@@ -1554,12 +1554,12 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                     /* PHOTO CARD CONTAINER */
                     #photo-card-container {{
                         width: 100%;
-                        max-width: 340px;
+                        max-width: 320px;
                         margin: 0 auto;
                         aspect-ratio: 9/16;
                         background: linear-gradient(rgba(15, 23, 42, 0.78), rgba(15, 23, 42, 0.90)), url('{scene1_bg}') center/cover no-repeat;
                         border-radius: 16px;
-                        padding: 14px;
+                        padding: 12px;
                         box-shadow: 0 20px 40px rgba(0,0,0,0.5);
                         position: relative;
                         overflow: hidden;
@@ -1613,7 +1613,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         margin-bottom: 4px;
                     }}
                     .logos-bar img {{
-                        max-height: 22px;
+                        max-height: 20px;
                         object-fit: contain;
                     }}
 
@@ -1628,7 +1628,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         backdrop-filter: blur(4px);
                         border: 1px solid rgba(255, 255, 255, 0.12);
                         border-radius: 6px;
-                        padding: 6px;
+                        padding: 5px;
                         text-align: center;
                     }}
                     .metric-label {{
@@ -1639,7 +1639,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         font-weight: 600;
                     }}
                     .metric-value {{
-                        font-size: 11px;
+                        font-size: 10px;
                         font-weight: 800;
                         color: #38bdf8;
                     }}
@@ -1652,14 +1652,14 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         font-size: 8px;
                         color: #94a3b8;
                         border-top: 1px solid rgba(255,255,255,0.15);
-                        padding-top: 5px;
+                        padding-top: 4px;
                         font-weight: 500;
                     }}
 
                     /* VIDEO PREVIEW BOX */
                     #video-preview-box {{
                         width: 100%;
-                        max-width: 340px;
+                        max-width: 320px;
                         margin: 0 auto;
                         aspect-ratio: 9/16;
                         background: #000000;
@@ -1671,7 +1671,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         display: flex;
                         flex-direction: column;
                         justify-content: space-between;
-                        padding: 14px;
+                        padding: 12px;
                     }}
                     .video-slide {{
                         position: absolute;
@@ -1691,47 +1691,49 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         display: flex;
                         flex-direction: column;
                         justify-content: space-between;
-                        padding: 14px;
+                        padding: 12px;
                     }}
                     
                     .action-btn {{
                         width: 100%;
-                        max-width: 340px;
-                        margin: 8px auto 0 auto;
+                        max-width: 320px;
                         display: block;
-                        background: #2563eb;
+                        margin: 10px auto 0 auto;
+                        padding: 10px;
+                        background-color: #2563eb;
                         color: white;
                         border: none;
-                        padding: 9px;
                         border-radius: 8px;
-                        font-weight: 700;
+                        font-weight: bold;
                         cursor: pointer;
+                        font-size: 13px;
                         text-align: center;
-                        font-size: 12px;
                         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
                         transition: background 0.2s;
                     }}
-                    .action-btn:hover {{ background: #1d4ed8; }}
+                    .action-btn:hover {{
+                        background-color: #1d4ed8;
+                    }}
                 </style>
                 </head>
                 <body>
                     <div class="tab-buttons">
-                        <button class="tab-btn active" onclick="switchTab('photo')">📸 HD Fotoğraf Kartı</button>
-                        <button class="tab-btn" onclick="switchTab('video')">🎬 Reklam Filmi Stüdyosu</button>
+                        <button class="tab-btn active" onclick="switchTab('photo')">📸 HD Foto Kartı</button>
+                        <button class="tab-btn" onclick="switchTab('video')">🎬 Reklam Filmi Ön İzleme</button>
                     </div>
 
-                    <!-- PHOTO TAB -->
-                    <div id="panel-photo" class="studio-panel active">
+                    <div id="photo-panel" class="studio-panel active">
                         <div id="photo-card-container">
                             <div class="card-header-box">
-                                <span class="card-badge">{badge_text}</span>
-                                <h3 class="card-title">İSTESTATE & MERİÇ İNŞAAT</h3>
-                                <p class="card-subtitle">İSTANBUL BEYKOZ ({mahalle_adi})</p>
+                                <div class="card-badge">{badge_text}</div>
+                                <h1 class="card-title">İSTESTATE & MERİÇ İNŞAAT</h1>
+                                <p class="card-subtitle">📍 İstanbul / Beykoz ({mahalle_adi})</p>
                             </div>
                             
                             <div class="logos-bar">
-                                {"<img src='" + logo1_src + "'>" if logo1_src else "<b>İSTESTATE</b>"}
-                                {"<img src='" + logo2_src + "'>" if logo2_src else "<b>MERİÇ</b>"}
+                                <img src="{logo1_src}" alt="İstestate">
+                                <span style="font-size:9px; font-weight:800; color:#0f172a;">&bull;</span>
+                                <img src="{logo2_src}" alt="Meriç">
                             </div>
 
                             <div class="metrics-grid">
@@ -1740,28 +1742,27 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                                     <div class="metric-value">{toplam_donum_str}</div>
                                 </div>
                                 <div class="metric-box">
-                                    <div class="metric-label">Emsal İnşaat</div>
-                                    <div class="metric-value">{total_yasal_brut_insaat:,.0f} m²</div>
-                                </div>
-                                <div class="metric-box">
                                     <div class="metric-label">Bağımsız Ünite</div>
                                     <div class="metric-value">{total_units_sum} Adet</div>
                                 </div>
                                 <div class="metric-box">
-                                    <div class="metric-label">Yatırım Geri Dönüşü</div>
-                                    <div class="metric-value green">%{yg_orani:.1f} YG</div>
+                                    <div class="metric-label">Emsal İnşaat</div>
+                                    <div class="metric-value">{total_yasal_brut_insaat:,.0f} m²</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-label">Hedef YG%</div>
+                                    <div class="metric-value green">%{yg_orani:.1f}</div>
                                 </div>
                             </div>
 
                             <div class="card-footer">
-                                <b>Tahmini Ciro:</b> ${display_ciro_usd:,.0f} | İmar Durumu: {terk_durum_str}
+                                <b>Tahmini Ciro:</b> ${display_ciro_usd:,.0f} | {sample_project_type}
                             </div>
                         </div>
-                        <button class="action-btn" onclick="downloadCard()">📥 HD Fotoğraf Kartını İndir (.png)</button>
+                        <button class="action-btn" onclick="downloadCard()">📸 HD Fotoğraf Kartını İndir (.png)</button>
                     </div>
 
-                    <!-- VIDEO TAB -->
-                    <div id="panel-video" class="studio-panel">
+                    <div id="video-panel" class="studio-panel">
                         <div id="video-preview-box">
                             <div class="video-slide active" style="background-image: url('{scene1_bg}');"></div>
                             <div class="video-slide" style="background-image: url('{scene2_bg}');"></div>
@@ -1770,22 +1771,23 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                             
                             <div class="video-overlay">
                                 <div class="card-header-box">
-                                    <span class="card-badge" id="video-badge">Sahne 1 / 4: Lokasyon</span>
-                                    <h3 class="card-title" id="video-title">Bölgesel Potansiyel & Arsa Analizi</h3>
-                                    <p class="card-subtitle">İstanbul Beykoz - {mahalle_adi} Mahallesi</p>
+                                    <div class="card-badge">PROJE TANITIM FİLMİ</div>
+                                    <h1 class="card-title">{mahalle_adi} LÜKS PROJE</h1>
+                                    <p class="card-subtitle">İstestate & Meriç Yatırım Stüdyosu</p>
                                 </div>
                                 
-                                <div style="text-align: center; padding: 8px 0;">
-                                    <div style="font-size: 10px; color: #38bdf8; font-weight: 700; margin-bottom: 2px;" id="video-stat-label">TOPLAM ARSA HACMİ</div>
-                                    <div style="font-size: 20px; font-weight: 800; color: #ffffff;" id="video-stat-val">{toplam_donum_str}</div>
+                                <div style="text-align: center; margin: auto 0;">
+                                    <div id="video-scene-text" style="font-size: 13px; font-weight: 800; color: #38bdf8; text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(15,23,42,0.7); padding: 8px 12px; border-radius: 6px;">
+                                        🏗️ Stratejik Arsa & İmar Analizi
+                                    </div>
                                 </div>
 
-                                <div class="card-footer" id="video-footer-text">
-                                    İstestate & Meriç İnşaat Stratejik Geliştirme Raporu
+                                <div class="card-footer" style="color: #ffffff;">
+                                    Öngörülen Ciro: ${display_ciro_usd:,.0f} | YG: %{yg_orani:.1f}
                                 </div>
                             </div>
                         </div>
-                        <button class="action-btn" onclick="alert('Reklam Filmi önizlemesi oynatılıyor. Tam MP4 dışa aktarım için kurgu akışı hazır!')">▶️ Reklam Filmini Oynat & İndir (.mp4)</button>
+                        <button class="action-btn" onclick="alert('Reklam filmi ön izleme döngüsü aktif. Sosyal medya platformlarında yüksek kaliteyle paylaşabilirsiniz!')">🎬 Reklam Filmini Başlat / Bilgi</button>
                     </div>
 
                     <script>
@@ -1793,55 +1795,46 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                             document.querySelectorAll('.studio-panel').forEach(p => p.classList.remove('active'));
                             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                             if(tabName === 'photo') {{
-                                document.getElementById('panel-photo').classList.add('active');
+                                document.getElementById('photo-panel').classList.add('active');
                                 event.currentTarget.classList.add('active');
                             }} else {{
-                                document.getElementById('panel-video').classList.add('active');
+                                document.getElementById('video-panel').classList.add('active');
                                 event.currentTarget.classList.add('active');
                             }}
                         }}
 
+                        let currentSlide = 0;
+                        const slides = document.querySelectorAll('.video-slide');
+                        const texts = [
+                            "🏗️ Stratejik Arsa & İmar Analizi",
+                            "🏛️ Mimari Konsept & Bağımsız Bölüm",
+                            "🌿 Peyzaj, Havuz & Sosyal Donatılar",
+                            "💰 Yüksek Kârlılık & Yatırım Geri Dönüşü"
+                        ];
+                        const textEl = document.getElementById('video-scene-text');
+
+                        setInterval(() => {{
+                            if(slides.length > 0) {{
+                                slides[currentSlide].classList.remove('active');
+                                currentSlide = (currentSlide + 1) % slides.length;
+                                slides[currentSlide].classList.add('active');
+                                if(textEl) {{
+                                    textEl.innerText = texts[currentSlide];
+                                }}
+                            }}
+                        }}, 2500);
+
                         function downloadCard() {{
-                            const card = document.getElementById('photo-card-container');
-                            html2canvas(card, {{ scale: 3, useCORS: true, backgroundColor: null }}).then(canvas => {{
+                            const container = document.getElementById('photo-card-container');
+                            html2canvas(container, {{ scale: 3, useCORS: true }}).then(canvas => {{
                                 const link = document.createElement('a');
-                                link.download = 'Istestate_Meric_Kurumsal_Portfoy_Karti.png';
+                                link.download = 'Istestate_Meric_Proje_Karti.png';
                                 link.href = canvas.toDataURL('image/png');
                                 link.click();
                             }});
                         }}
-
-                        // Video slides animation simulator
-                        let currentSlide = 0;
-                        const slides = document.querySelectorAll('.video-slide');
-                        const badge = document.getElementById('video-badge');
-                        const title = document.getElementById('video-title');
-                        const statLabel = document.getElementById('video-stat-label');
-                        const statVal = document.getElementById('video-stat-val');
-                        const footerText = document.getElementById('video-footer-text');
-
-                        const sceneData = [
-                            {{ badge: "Sahne 1 / 4: Lokasyon", title: "Bölgesel Potansiyel & Arsa Analizi", label: "TOPLAM ARSA HACMİ", val: "{toplam_donum_str}", footer: "İstanbul Beykoz - {mahalle_adi} Mahallesi" }},
-                            {{ badge: "Sahne 2 / 4: Mimari", title: "Maksimum Verim & Emsal İnşaat", label: "YASAL EMSAL İNŞAAT", val: "{total_yasal_brut_insaat:,.0f} m²", footer: "{sample_project_type}" }},
-                            {{ badge: "Sahne 3 / 4: Üniteler", title: "Bağımsız Bölüm & Konsept", label: "BAĞIMSIZ ÜNİTE SAYISI", val: "{total_units_sum} Bağımsız Bölüm", footer: "Havuz & Peyzaj Konsepti: {sample_pool_mod}" }},
-                            {{ badge: "Sahne 4 / 4: Finansal", title: "Yatırım Geri Dönüşü & Ciro", label: "HEDEFLENEN YATIRIM GETİRİSİ", val: "%{yg_orani:.1f} YG", footer: "Tahmini Ciro: ${display_ciro_usd:,.0f}" }}
-                        ];
-
-                        setInterval(() => {{
-                            slides[currentSlide].classList.remove('active');
-                            currentSlide = (currentSlide + 1) % slides.length;
-                            slides[currentSlide].classList.add('active');
-                            
-                            const d = sceneData[currentSlide];
-                            badge.innerText = d.badge;
-                            title.innerText = d.title;
-                            statLabel.innerText = d.label;
-                            statVal.innerText = d.val;
-                            footerText.innerText = d.footer;
-                        }}, 3000);
                     </script>
                 </body>
                 </html>
                 """
-                
-                components.html(studio_html, height=650)
+                components.html(studio_html, height=730)
