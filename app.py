@@ -1132,7 +1132,7 @@ if selected_keys:
         st.subheader("🖨 Rapor Ön İzleme ve PDF İndirme Merkezi")
         
         if not WEASYPRINT_AVAILABLE:
-            st.error("⚠️️ PDF oluşturma motoru (WeasyPrint) sisteminizde eksik. Lütfen `packages.txt` dosyasının deponuzda bulunduğundan emin olun.")
+            st.error("⚠️ PDF oluşturma motoru (WeasyPrint) sisteminizde eksik. Lütfen `packages.txt` dosyasının deponuzda bulunduğundan emin olun.")
         else:
             pdf_logo1_html = f"<div style='background-color: #ffffff; padding: 6px 10px; border-radius: 6px; display: inline-block;'><img src='data:image/png;base64,{img1_base64}' style='max-height: 38px; width: auto; vertical-align: middle;'></div>" if img1_base64 else "<b style='color:#ffffff; font-size:14px;'>İSTESTATE GAYRİMENKUL</b>"
             pdf_logo2_html = f"<div style='background-color: #ffffff; padding: 6px 10px; border-radius: 6px; display: inline-block;'><img src='data:image/png;base64,{img2_base64}' style='max-height: 38px; width: auto; vertical-align: middle;'></div>" if img2_base64 else "<b style='color:#ffffff; font-size:14px;'>MERİÇ İNŞAAT EMLAK</b>"
@@ -1440,7 +1440,7 @@ if selected_keys:
 
     with tab6:
         st.subheader("📱 Kurumsal Yatırım & Mimari Proje Geliştirme Pazarlama Stüdyosu")
-        st.markdown("Seçtiğiniz parsellerin imar metrajlarını; yatırım geri dönüşü (YG%), mimari kat ve bağımsız bölüm verimliliğini öne çıkaran, üst düzey kurumsal dil ile hazırlanmış sosyal medya hikaye kartı, **HD Fotoğraf indirme (.png)** ve **Detaylı Bilgilendirici Reklam Filmi (.webm)** üreten stüdyo:")
+        st.markdown("Seçtiğiniz parsellerin imar metrajlarını; yatırım geri dönüşü (YG%), mimari kat ve bağımsız bölüm verimliliğini öne çıkaran, üst düzey kurumsal dil ile hazırlanmış sosyal medya hikaye kartı, **HD Fotoğraf indirme (.png)** ve **Detaylı Bilgilendirici Reklam Filmi (.mp4 / .webm)** üreten stüdyo:")
 
         if active_parcel_db:
             first_p_key = list(active_parcel_db.keys())[0]
@@ -1463,299 +1463,495 @@ if selected_keys:
                 
             p_type_upper = sample_project_type.upper()
             
-            # Canvas Stüdyo Modülü Enjeksiyonu
-            studio_html = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-            <meta charset="utf-8">
-            <style>
-                .studio-container {{
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 25px;
-                    background: #0f172a;
-                    padding: 25px;
-                    border-radius: 12px;
-                    color: white;
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                }}
-                .canvas-box {{
-                    flex: 1;
-                    min-width: 340px;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                }}
-                canvas {{
-                    border-radius: 12px;
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-                    max-width: 100%;
-                    height: auto;
-                    background: #090d16;
-                }}
-                .controls-box {{
-                    flex: 1;
-                    min-width: 300px;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 15px;
-                    justify-content: center;
-                }}
-                .btn-custom {{
-                    background: linear-gradient(135deg, #2563eb, #1d4ed8);
-                    color: white;
-                    border: none;
-                    padding: 14px 20px;
-                    font-size: 15px;
-                    font-weight: 700;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    transition: all 0.2s ease;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 10px;
-                    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-                }}
-                .btn-custom:hover {{
-                    transform: translateY(-2px);
-                    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
-                }}
-                .btn-video {{
-                    background: linear-gradient(135deg, #059669, #047857);
-                    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
-                }}
-                .btn-video:hover {{
-                    box-shadow: 0 6px 16px rgba(5, 150, 105, 0.4);
-                }}
-                .status-msg {{
-                    font-size: 13px;
-                    color: #94a3b8;
-                    text-align: center;
-                    margin-top: 5px;
-                }}
-            </style>
-            </head>
-            <body>
-            <div class="studio-container">
-                <div class="canvas-box">
-                    <canvas id="marketingCanvas" width="1080" height="1920"></canvas>
-                </div>
-                <div class="controls-box">
-                    <h3 style="margin: 0; font-size: 20px; color: #38bdf8;">🎬 Kurumsal Sunum & Reklam Üretici</h3>
-                    <p style="font-size: 13px; color: #cbd5e1; margin-top: 5px;">Seçtiğiniz parsellerin mimari fizibilite sonuçları HD Görsel ve Hareketli Reklam Filmi formatında otomatik işlenmiştir.</p>
+            if "VİLLA" in p_type_upper or "VILLA" in p_type_upper:
+                scene1_bg = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1200&auto=format&fit=crop"
+                scene2_bg = "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1200&auto=format&fit=crop"
+                scene3_bg = "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1200&auto=format&fit=crop"
+                scene4_bg = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop"
+                badge_text = "✨ PRESTİJLİ VİLLA PROJESİ"
+            elif "TİCARİ" in p_type_upper or "TICARI" in p_type_upper or "OFİS" in p_type_upper:
+                scene1_bg = "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1200&auto=format&fit=crop"
+                scene2_bg = "https://images.unsplash.com/photo-1554469384-e58fac16e23a?q=80&w=1200&auto=format&fit=crop"
+                scene3_bg = "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1200&auto=format&fit=crop"
+                scene4_bg = "https://images.unsplash.com/photo-1477959858617-67f30ac78b00?q=80&w=1200&auto=format&fit=crop"
+                badge_text = "💼 STRATEJİK TİCARİ YATIRIM"
+            elif "OTEL" in p_type_upper or "TURİZM" in p_type_upper or "TURIZM" in p_type_upper:
+                scene1_bg = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop"
+                scene2_bg = "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200&auto=format&fit=crop"
+                scene3_bg = "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=1200&auto=format&fit=crop"
+                scene4_bg = "https://images.unsplash.com/photo-1571896349842-33c89424de2d?q=80&w=1200&auto=format&fit=crop"
+                badge_text = "🌴 TURİZM & OTEL KOMPLEKSİ"
+            elif "KARMA" in p_type_upper:
+                scene1_bg = "https://images.unsplash.com/photo-1577495508048-b635879837f1?q=80&w=1200&auto=format&fit=crop"
+                scene2_bg = "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1200&auto=format&fit=crop"
+                scene3_bg = "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=1200&auto=format&fit=crop"
+                scene4_bg = "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1200&auto=format&fit=crop"
+                badge_text = "🏙 PRESTİJLİ KARMA PROJE"
+            else:
+                scene1_bg = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1200&auto=format&fit=crop"
+                scene2_bg = "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1200&auto=format&fit=crop"
+                scene3_bg = "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=1200&auto=format&fit=crop"
+                scene4_bg = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop"
+                badge_text = "🏢 LÜKS KONUT GELİŞTİRME"
+
+            avg_unit_net = total_yasal_brut_insaat / total_units_sum if total_units_sum > 0 else 0.0
+            total_genel_insaat_m2 = total_yasal_brut_insaat + total_bodrum_alani
+
+            sample_caption = f"""İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT | STRATEJİK PROJE GELİŞTİRME BÜLTENİ 🏗️📊
+
+Bölgesel potansiyeli yüksek lokasyonlarda, gayrimenkul yatırımcılarımız ve arsa sahiplerimiz için katma değer üreten projeler kurgulamaya devam ediyoruz.
+
+📍 Lokasyon: İstanbul / Beykoz ({mahalle_adi} Mahallesi)
+📐 Toplam Arsa Hacmi: {toplam_donum_str} | İmar Durumu: {terk_durum_str}
+🏛️ Öngörülen Mimari Konsept: {sample_project_type} ({total_units_sum} Bağımsız Ünite)
+
+✨ Mimari Özellikler & Verimlilik:
+• Maksimum TAKS / Emsal Verimliliği ile optimize edilmiş yapılaşma.
+• Emsal İnşaat Alanı: {total_yasal_brut_insaat:,.0f} m² | Genel Toplam İnşaat: {total_genel_insaat_m2:,.0f} m²
+• Bağımsız Bölüm Yapısı: Konforlu ve üst kat net yaşam alanları ({avg_unit_net:,.1f} m²/Ünite).
+• Havuz & Peyzaj: {sample_pool_mod} konsepti ile zenginleştirilmiş ortak/müstakil sosyal donatılar.
+
+💰 Finansal Projeksiyon & Yatırım Değeri:
+• Tahmini Proje Cirosu: ${display_ciro_usd:,.0f}
+• Hedeflenen Yatırım Geri Dönüşü (YG): %{yg_orani:.1f}+
+• Yüksek Potansiyelli Proje Değeri & Stratejik Büyüme Fırsatı.
+
+Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında bilgi almak için bizimle iletişime geçebilirsiniz. 📞
+
+#İstestateGayrimenkul #Meriçİnşaat #GayrimenkulGeliştirme #ArsaYatırımı #ProjeFizibilitesi #Beykozİmar #RealEstateDevelopment #YatırımFırsatı"""
+
+            col_sm1, col_sm2 = st.columns([1, 1])
+
+            with col_sm1:
+                st.markdown("#### 📝 Kurumsal Yatırımcı Metni & Bülten (Caption Düzenleyici)")
+                st.info("YG%, yüksek potansiyel vurgusu ve teknik detaylarla zenginleştirilmiş kurumsal bülten.")
+                user_caption = st.text_area("Paylaşım Metni Düzenleyici", value=sample_caption, height=360)
+                st.code(user_caption, language="text")
+
+            with col_sm2:
+                st.markdown("#### 🎬 Müşteri Sunum Kenti & Reklam Filmi Stüdyosu (HD Foto & Video)")
+                st.markdown("Müşterilerinize direkt sunabileceğiniz **Detaylı Bilgilendirici Reklam Filmi (.webm/.mp4)** ve **Genel Özet Fotoğraf Kartı (HD .png)**:")
+
+                logo1_src = f"data:image/png;base64,{img1_base64}" if img1_base64 else ""
+                logo2_src = f"data:image/png;base64,{img2_base64}" if img2_base64 else ""
+
+                studio_html = f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                <meta charset="utf-8">
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+                <style>
+                    * {{ box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }}
+                    body {{ margin: 0; padding: 0; background-color: #0f172a; color: #ffffff; }}
+                    .tab-buttons {{ display: flex; gap: 8px; margin-bottom: 12px; }}
+                    .tab-btn {{ flex: 1; padding: 10px; border: none; background: #1e293b; color: #94a3b8; font-weight: 700; border-radius: 8px; cursor: pointer; font-size: 12px; transition: all 0.2s; }}
+                    .tab-btn.active {{ background: #2563eb; color: #ffffff; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }}
                     
-                    <button class="btn-custom" onclick="downloadHDImage()">
-                        📸 HD Fotoğraf İndir (.PNG)
-                    </button>
-                    
-                    <button class="btn-custom btn-video" id="videoBtn" onclick="generateVideo()">
-                        🎥 Reklam Filmi Oluştur & İndir (.WEBM / .MP4)
-                    </button>
-                    
-                    <div class="status-msg" id="statusText">Video oluşturmaya hazır.</div>
-                </div>
-            </div>
+                    .studio-panel {{ display: none; }}
+                    .studio-panel.active {{ display: block; }}
 
-            <script>
-                const canvas = document.getElementById('marketingCanvas');
-                const ctx = canvas.getContext('2d');
-
-                // Görsel/Animasyon Parametreleri
-                const data = {{
-                    mahalle: "{mahalle_adi}",
-                    donum: "{toplam_donum_str}",
-                    m2: "{toplam_m2:,.2f} m²",
-                    projeTipi: "{p_type_upper}",
-                    units: "{total_units_sum} Adet Bağımsız Bölüm",
-                    genelInsaat: "{(total_yasal_brut_insaat + total_bodrum_alani):,.2f} m²",
-                    yg: "%{yg_orani:.1f} YG",
-                    ciro: "${display_ciro_usd:,.2f}",
-                    logo1: "data:image/png;base64,{img1_base64}",
-                    logo2: "data:image/png;base64,{img2_base64}"
-                }};
-
-                const img1 = new Image();
-                const img2 = new Image();
-                let imagesLoaded = 0;
-
-                if(data.logo1 && data.logo1.length > 50) {{
-                    img1.src = data.logo1;
-                    img1.onload = () => {{ imagesLoaded++; drawFrame(0); }};
-                }} else {{ imagesLoaded++; }}
-
-                if(data.logo2 && data.logo2.length > 50) {{
-                    img2.src = data.logo2;
-                    img2.onload = () => {{ imagesLoaded++; drawFrame(0); }};
-                }} else {{ imagesLoaded++; }}
-
-                function drawFrame(progress) {{
-                    // Arka Plan Gradient
-                    const grad = ctx.createLinearGradient(0, 0, 1080, 1920);
-                    grad.addColorStop(0, '#0b1329');
-                    grad.addColorStop(0.5, '#0f172a');
-                    grad.addColorStop(1, '#020617');
-                    ctx.fillStyle = grad;
-                    ctx.fillRect(0, 0, 1080, 1920);
-
-                    // Dekoratif Şerit / Işık Efekti
-                    ctx.save();
-                    ctx.globalAlpha = 0.15;
-                    ctx.fillStyle = '#38bdf8';
-                    ctx.beginPath();
-                    ctx.arc(540 + Math.sin(progress * Math.PI * 2) * 100, 400, 600, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.restore();
-
-                    // Üst Header Kutusu
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-                    ctx.roundRect(60, 80, 960, 180, 20);
-                    ctx.fill();
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-                    ctx.stroke();
-
-                    // Logolar
-                    if(img1.complete && img1.naturalWidth > 0) {{
-                        ctx.drawImage(img1, 100, 120, 220, 100);
+                    .logos-bar {{
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        background: rgba(255, 255, 255, 0.95);
+                        padding: 6px 12px;
+                        border-radius: 6px;
+                        margin-bottom: 6px;
+                        width: 100%;
                     }}
-                    if(img2.complete && img2.naturalWidth > 0) {{
-                        ctx.drawImage(img2, 760, 120, 220, 100);
+                    .logos-bar img {{
+                        max-height: 22px;
+                        object-fit: contain;
                     }}
 
-                    // Başlık
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = 'bold 42px -apple-system, sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('YATIRIM & FİZİBİLİTE SUNUMU', 540, 185);
+                    #photo-card-container {{
+                        width: 100%;
+                        max-width: 340px;
+                        margin: 0 auto;
+                        aspect-ratio: 9/16;
+                        background: linear-gradient(rgba(15, 23, 42, 0.78), rgba(15, 23, 42, 0.90)), url('{scene1_bg}') center/cover no-repeat;
+                        border-radius: 16px;
+                        padding: 14px;
+                        box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+                        position: relative;
+                        overflow: hidden;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: space-between;
+                        border: 1px solid rgba(255,255,255,0.2);
+                    }}
 
-                    // Ana Bölge & Proje İsmi
-                    ctx.fillStyle = '#38bdf8';
-                    ctx.font = 'bold 56px -apple-system, sans-serif';
-                    ctx.fillText(data.mahalle + ' PROJESİ', 540, 360);
+                    .card-header-box {{
+                        background: rgba(15, 23, 42, 0.85);
+                        backdrop-filter: blur(6px);
+                        border: 1px solid rgba(255, 255, 255, 0.15);
+                        border-radius: 8px;
+                        padding: 6px 10px;
+                        text-align: center;
+                        margin-bottom: 4px;
+                    }}
+                    .card-badge {{
+                        background: #2563eb;
+                        color: #ffffff;
+                        font-size: 8px;
+                        font-weight: 800;
+                        padding: 2px 6px;
+                        border-radius: 4px;
+                        display: inline-block;
+                        letter-spacing: 0.5px;
+                        margin-bottom: 2px;
+                        text-transform: uppercase;
+                    }}
+                    .card-title {{
+                        font-size: 11px;
+                        font-weight: 800;
+                        color: #ffffff;
+                        margin: 0;
+                        letter-spacing: 0.3px;
+                    }}
+                    .card-subtitle {{
+                        font-size: 9px;
+                        color: #94a3b8;
+                        margin: 2px 0 0 0;
+                    }}
 
-                    ctx.fillStyle = '#94a3b8';
-                    ctx.font = '36px -apple-system, sans-serif';
-                    ctx.fillText(data.projeTipi, 540, 420);
+                    .metrics-grid {{
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 6px;
+                        margin-bottom: 4px;
+                    }}
+                    .metric-box {{
+                        background: rgba(30, 41, 59, 0.85);
+                        backdrop-filter: blur(4px);
+                        border: 1px solid rgba(255, 255, 255, 0.12);
+                        border-radius: 6px;
+                        padding: 6px;
+                        text-align: center;
+                    }}
+                    .metric-label {{
+                        font-size: 8px;
+                        color: #94a3b8;
+                        text-transform: uppercase;
+                        margin-bottom: 2px;
+                        font-weight: 600;
+                    }}
+                    .metric-value {{
+                        font-size: 11px;
+                        font-weight: 800;
+                        color: #38bdf8;
+                    }}
+                    .metric-value.green {{
+                        color: #4ade80;
+                    }}
 
-                    // Metraj & Bilgi Kartları (Grid Layout)
-                    drawCard(100, 500, 420, 220, 'TOPLAM ARSA ALANI', data.donum, data.m2, '#1e293b');
-                    drawCard(560, 500, 420, 220, 'BAĞIMSIZ BÖLÜM', data.units, 'Konut & Ticari Karma', '#1e293b');
+                    .card-footer {{
+                        text-align: center;
+                        font-size: 8px;
+                        color: #94a3b8;
+                        border-top: 1px solid rgba(255,255,255,0.15);
+                        padding-top: 5px;
+                        font-weight: 500;
+                    }}
 
-                    drawCard(100, 760, 420, 220, 'TOPLAM İNŞAAT ALANI', data.genelInsaat, 'Bodrum + Üst Katlar', '#1e293b');
-                    drawCard(560, 760, 420, 220, 'YATIRIM GERİ DÖNÜŞÜ', data.yg, 'Tahmini Net Kar Oranı', '#065f46');
+                    #video-preview-box {{
+                        width: 100%;
+                        max-width: 340px;
+                        margin: 0 auto;
+                        aspect-ratio: 9/16;
+                        background: #000000;
+                        border-radius: 16px;
+                        position: relative;
+                        overflow: hidden;
+                        box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+                        border: 1px solid rgba(255,255,255,0.2);
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: space-between;
+                        padding: 14px;
+                    }}
+                    .video-slide {{
+                        position: absolute;
+                        top: 0; left: 0; width: 100%; height: 100%;
+                        background-size: cover;
+                        background-position: center;
+                        opacity: 0;
+                        transition: opacity 1s ease-in-out;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: space-between;
+                        padding: 14px;
+                    }}
+                    .video-slide.active {{
+                        opacity: 1;
+                    }}
+                    .video-slide-overlay {{
+                        position: absolute;
+                        top: 0; left: 0; width: 100%; height: 100%;
+                        background: linear-gradient(rgba(15, 23, 42, 0.70), rgba(15, 23, 42, 0.88));
+                        z-index: 1;
+                    }}
+                    .slide-content {{
+                        position: relative;
+                        z-index: 2;
+                        height: 100%;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: space-between;
+                    }}
 
-                    // Büyük Ciro Kartı
-                    ctx.fillStyle = 'rgba(30, 41, 59, 0.8)';
-                    ctx.roundRect(100, 1020, 880, 260, 24);
-                    ctx.fill();
-                    ctx.strokeStyle = '#38bdf8';
-                    ctx.lineWidth = 3;
-                    ctx.stroke();
+                    .action-btn {{
+                        width: 100%;
+                        padding: 12px;
+                        border: none;
+                        border-radius: 8px;
+                        font-weight: 700;
+                        font-size: 13px;
+                        cursor: pointer;
+                        margin-top: 10px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 8px;
+                        transition: all 0.2s;
+                    }}
+                    .btn-photo {{ background: #0284c7; color: #ffffff; }}
+                    .btn-photo:hover {{ background: #0369a1; }}
+                    .btn-video {{ background: #16a34a; color: #ffffff; }}
+                    .btn-video:hover {{ background: #15803d; }}
+                    .btn-video:disabled {{ background: #475569; cursor: not-allowed; }}
+                </style>
+                </head>
+                <body>
 
-                    ctx.fillStyle = '#cbd5e1';
-                    ctx.font = 'bold 32px -apple-system, sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('TAHMİNİ PROJE BÜYÜKLÜĞÜ / CİRO', 540, 1090);
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="switchStudioTab('photo')">📸 HD Özet Fotoğraf Kartı</button>
+                    <button class="tab-btn" onclick="switchStudioTab('video')">🎬 4K Reklam Filmi Stüdyosu</button>
+                </div>
 
-                    ctx.fillStyle = '#38bdf8';
-                    ctx.font = 'bold 80px -apple-system, sans-serif';
-                    ctx.fillText(data.ciro, 540, 1200);
+                <!-- PHOTO CARD PANEL -->
+                <div id="panel-photo" class="studio-panel active">
+                    <div id="photo-card-container">
+                        <div class="logos-bar">
+                            {'<img src="' + logo1_src + '">' if logo1_src else '<b style="color:#0f172a; font-size:10px;">İSTESTATE</b>'}
+                            {'<img src="' + logo2_src + '">' if logo2_src else '<b style="color:#0f172a; font-size:10px;">MERİÇ İNŞAAT</b>'}
+                        </div>
 
-                    // Dynamic Moving Element (Video Animasyon İçin)
-                    const pulse = Math.sin(progress * Math.PI * 2) * 10;
-                    ctx.fillStyle = '#e0f2fe';
-                    ctx.font = 'bold 30px -apple-system, sans-serif';
-                    ctx.fillText('İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK', 540, 1400 + pulse);
+                        <div class="card-header-box">
+                            <span class="card-badge">{badge_text}</span>
+                            <h3 class="card-title">İSTANBUL / BEYKOZ ({mahalle_adi})</h3>
+                            <p class="card-subtitle">{toplam_donum_str} Hacimli Stratejik Arsa Portföyü</p>
+                        </div>
 
-                    // Alt Kurumsal Altbilgi
-                    ctx.fillStyle = '#64748b';
-                    ctx.font = '24px -apple-system, sans-serif';
-                    ctx.fillText('Detaylı Bilgi ve İletişim İçin Lütfen Bize Ulaşın.', 540, 1780);
-                }}
+                        <div class="metrics-grid">
+                            <div class="metric-box">
+                                <div class="metric-label">Öngörülen Ünite</div>
+                                <div class="metric-value">{total_units_sum} Bağımsız Ünite</div>
+                            </div>
+                            <div class="metric-box">
+                                <div class="metric-label">Emsal İnşaat</div>
+                                <div class="metric-value">{total_yasal_brut_insaat:,.0f} m²</div>
+                            </div>
+                            <div class="metric-box">
+                                <div class="metric-label">Tahmini Ciro</div>
+                                <div class="metric-value">${display_ciro_usd:,.0f}</div>
+                            </div>
+                            <div class="metric-box">
+                                <div class="metric-label">Hedef Kar (YG)</div>
+                                <div class="metric-value green">%{yg_orani:.1f} YG</div>
+                            </div>
+                        </div>
 
-                function drawCard(x, y, w, h, title, val1, val2, bgColor) {{
-                    ctx.save();
-                    ctx.fillStyle = bgColor;
-                    ctx.roundRect(x, y, w, h, 20);
-                    ctx.fill();
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
+                        <div class="card-footer">
+                            İstestate Gayrimenkul & Meriç İnşaat Emlak Kurumsal Sunum Kartı
+                        </div>
+                    </div>
 
-                    ctx.fillStyle = '#94a3b8';
-                    ctx.font = 'bold 22px -apple-system, sans-serif';
-                    ctx.textAlign = 'left';
-                    ctx.fillText(title, x + 30, y + 50);
+                    <button class="action-btn btn-photo" onclick="downloadPhotoCard()">
+                        📥 HD Özet Görseli İndir (.png)
+                    </button>
+                </div>
 
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = 'bold 40px -apple-system, sans-serif';
-                    ctx.fillText(val1, x + 30, y + 120);
+                <!-- VIDEO STUDIO PANEL -->
+                <div id="panel-video" class="studio-panel">
+                    <div id="video-preview-box">
+                        <!-- SLIDE 1 -->
+                        <div class="video-slide active" style="background-image: url('{scene1_bg}');" id="vslide-1">
+                            <div class="video-slide-overlay"></div>
+                            <div class="slide-content">
+                                <div class="logos-bar">
+                                    {'<img src="' + logo1_src + '">' if logo1_src else '<b style="color:#0f172a; font-size:10px;">İSTESTATE</b>'}
+                                    {'<img src="' + logo2_src + '">' if logo2_src else '<b style="color:#0f172a; font-size:10px;">MERİÇ İNŞAAT</b>'}
+                                </div>
+                                <div style="text-align:center; margin:auto 0;">
+                                    <span class="card-badge" style="font-size:10px; padding:4px 8px;">STRATEJİK ARSA PORTFÖYÜ</span>
+                                    <h2 style="font-size:16px; margin:10px 0 4px 0; font-weight:800;">İSTANBUL / BEYKOZ</h2>
+                                    <p style="font-size:12px; color:#38bdf8; font-weight:700; margin:0;">{mahalle_adi} MAHALLESİ</p>
+                                </div>
+                                <div class="card-footer">{toplam_donum_str} Hacimli Proje Sahası</div>
+                            </div>
+                        </div>
 
-                    ctx.fillStyle = '#38bdf8';
-                    ctx.font = '24px -apple-system, sans-serif';
-                    ctx.fillText(val2, x + 30, y + 170);
-                    ctx.restore();
-                }}
+                        <!-- SLIDE 2 -->
+                        <div class="video-slide" style="background-image: url('{scene2_bg}');" id="vslide-2">
+                            <div class="video-slide-overlay"></div>
+                            <div class="slide-content">
+                                <div class="logos-bar">
+                                    {'<img src="' + logo1_src + '">' if logo1_src else '<b style="color:#0f172a; font-size:10px;">İSTESTATE</b>'}
+                                    {'<img src="' + logo2_src + '">' if logo2_src else '<b style="color:#0f172a; font-size:10px;">MERİÇ İNŞAAT</b>'}
+                                </div>
+                                <div style="text-align:center; margin:auto 0;">
+                                    <span class="card-badge" style="font-size:10px; background:#0284c7;">MİMARİ GELİŞTİRME</span>
+                                    <h3 style="font-size:14px; margin:8px 0; font-weight:800;">{sample_project_type}</h3>
+                                    <div style="background:rgba(15,23,42,0.8); padding:8px; border-radius:6px; font-size:11px; border:1px solid rgba(255,255,255,0.15);">
+                                        🏛️ {total_units_sum} Bağımsız Ünite<br>
+                                        📐 Emsal Alanı: {total_yasal_brut_insaat:,.0f} m²<br>
+                                        🏊 Konsept: {sample_pool_mod}
+                                    </div>
+                                </div>
+                                <div class="card-footer">Yüksek Mimari Verimlilik</div>
+                            </div>
+                        </div>
 
-                // Canvas İlk Çizim
-                drawFrame(0);
+                        <!-- SLIDE 3 -->
+                        <div class="video-slide" style="background-image: url('{scene3_bg}');" id="vslide-3">
+                            <div class="video-slide-overlay"></div>
+                            <div class="slide-content">
+                                <div class="logos-bar">
+                                    {'<img src="' + logo1_src + '">' if logo1_src else '<b style="color:#0f172a; font-size:10px;">İSTESTATE</b>'}
+                                    {'<img src="' + logo2_src + '">' if logo2_src else '<b style="color:#0f172a; font-size:10px;">MERİÇ İNŞAAT</b>'}
+                                </div>
+                                <div style="text-align:center; margin:auto 0;">
+                                    <span class="card-badge" style="font-size:10px; background:#16a34a;">FİNANSAL PROJEKSİYON</span>
+                                    <h3 style="font-size:13px; color:#94a3b8; margin:6px 0 2px 0;">TAHMİNİ PROJE CİROSU</h3>
+                                    <h2 style="font-size:20px; color:#38bdf8; margin:0 0 10px 0; font-weight:800;">${display_ciro_usd:,.0f}</h2>
+                                    <div style="background:rgba(22,163,74,0.2); border:1px solid #16a34a; padding:6px; border-radius:6px; font-size:12px; color:#4ade80; font-weight:800;">
+                                        🎯 Hedeflenen Kar: %{yg_orani:.1f} YG
+                                    </div>
+                                </div>
+                                <div class="card-footer">Mükemmel Yatırım Geri Dönüşü</div>
+                            </div>
+                        </div>
 
-                // HD Fotoğraf İndirme
-                function downloadHDImage() {{
-                    drawFrame(0);
-                    const link = document.createElement('a');
-                    link.download = 'Musteri_Sunum_Karti_{mahalle_adi}.png';
-                    link.href = canvas.toDataURL('image/png', 1.0);
-                    link.click();
-                }}
+                        <!-- SLIDE 4 -->
+                        <div class="video-slide" style="background-image: url('{scene4_bg}');" id="vslide-4">
+                            <div class="video-slide-overlay"></div>
+                            <div class="slide-content">
+                                <div class="logos-bar">
+                                    {'<img src="' + logo1_src + '">' if logo1_src else '<b style="color:#0f172a; font-size:10px;">İSTESTATE</b>'}
+                                    {'<img src="' + logo2_src + '">' if logo2_src else '<b style="color:#0f172a; font-size:10px;">MERİÇ İNŞAAT</b>'}
+                                </div>
+                                <div style="text-align:center; margin:auto 0;">
+                                    <h2 style="font-size:16px; margin:0 0 6px 0; font-weight:800;">DETAYLI BİLGİ VE SUNUM</h2>
+                                    <p style="font-size:11px; color:#cbd5e1; margin:0 0 12px 0;">Stratejik Gayrimenkul Yatırım Hizmetleri</p>
+                                    <div style="background:#2563eb; color:#ffffff; padding:8px 12px; border-radius:6px; font-size:11px; font-weight:800; display:inline-block;">
+                                        📞 BİZİMLE İLETİŞİME GEÇİN
+                                    </div>
+                                </div>
+                                <div class="card-footer">İstestate Gayrimenkul & Meriç İnşaat Emlak Ortaklığı</div>
+                            </div>
+                        </div>
+                    </div>
 
-                // Reklam Filmi / Video Üretimi (MediaRecorder)
-                function generateVideo() {{
-                    const statusText = document.getElementById('statusText');
-                    const btn = document.getElementById('videoBtn');
-                    
-                    statusText.innerText = '🎥 Reklam filmi işleniyor ve oluşturuluyor... (Lütfen bekleyin)';
-                    btn.disabled = true;
+                    <button id="record-video-btn" class="action-btn btn-video" onclick="generateAndDownloadVideo()">
+                        🎬 Reklam Filmini Oluştur ve İndir (.webm/.mp4)
+                    </button>
+                </div>
 
-                    const stream = canvas.captureStream(30); // 30 FPS
-                    const recorder = new MediaRecorder(stream, {{ mimeType: 'video/webm;codecs=vp9' }});
-                    const chunks = [];
-
-                    recorder.ondataavailable = e => chunks.push(e.data);
-                    recorder.onstop = () => {{
-                        const blob = new Blob(chunks, {{ type: 'video/webm' }});
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'Reklam_Filmi_{mahalle_adi}.webm';
-                        a.click();
+                <script>
+                    function switchStudioTab(tab) {{
+                        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                        document.querySelectorAll('.studio-panel').forEach(p => p.classList.remove('active'));
                         
-                        statusText.innerText = '✅ Video başarıyla indirildi!';
-                        btn.disabled = false;
-                    }};
-
-                    recorder.start();
-
-                    let frame = 0;
-                    const totalFrames = 150; // 5 Saniyelik Reklam Video
-                    
-                    function anim() {{
-                        if(frame <= totalFrames) {{
-                            drawFrame(frame / totalFrames);
-                            frame++;
-                            requestAnimationFrame(anim);
+                        if(tab === 'photo') {{
+                            document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                            document.getElementById('panel-photo').classList.add('active');
                         }} else {{
-                            recorder.stop();
+                            document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                            document.getElementById('panel-video').classList.add('active');
+                            startVideoPreviewLoop();
                         }}
                     }}
-                    
-                    anim();
-                }}
-            </script>
-            </body>
-            </html>
-            """
-            components.html(studio_html, height=750)
-        else:
-            st.info("Sosyal medya stüdyosunu kullanmak için sol taraftan en az bir parsel seçin.")
+
+                    let previewInterval = null;
+                    let currentSlide = 1;
+                    function startVideoPreviewLoop() {{
+                        if(previewInterval) clearInterval(previewInterval);
+                        previewInterval = setInterval(() => {{
+                            document.querySelectorAll('.video-slide').forEach(s => s.classList.remove('active'));
+                            currentSlide = (currentSlide % 4) + 1;
+                            const nextS = document.getElementById('vslide-' + currentSlide);
+                            if(nextS) nextS.classList.add('active');
+                        }}, 2500);
+                    }}
+
+                    function downloadPhotoCard() {{
+                        const container = document.getElementById('photo-card-container');
+                        html2canvas(container, {{ scale: 3, useCORS: true, allowTaint: true }}).then(canvas => {{
+                            const link = document.createElement('a');
+                            link.download = 'Istestate_Meric_Proje_Kart_{mahalle_adi}.png';
+                            link.href = canvas.toDataURL('image/png');
+                            link.click();
+                        }});
+                    }}
+
+                    async function generateAndDownloadVideo() {{
+                        const btn = document.getElementById('record-video-btn');
+                        btn.disabled = true;
+                        btn.innerText = '⏳ Reklam Filmi Hazırlanıyor (Lütfen Bekleyin)...';
+
+                        if(previewInterval) clearInterval(previewInterval);
+
+                        const videoBox = document.getElementById('video-preview-box');
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 720;
+                        canvas.height = 1280;
+                        const ctx = canvas.getContext('2d');
+
+                        const stream = canvas.captureStream(30);
+                        let recorder;
+                        try {{
+                            recorder = new MediaRecorder(stream, {{ mimeType: 'video/webm;codecs=vp9' }});
+                        }} catch(e) {{
+                            recorder = new MediaRecorder(stream, {{ mimeType: 'video/webm' }});
+                        }}
+
+                        const chunks = [];
+                        recorder.ondataavailable = e => chunks.push(e.data);
+                        recorder.onstop = () => {{
+                            const blob = new Blob(chunks, {{ type: 'video/webm' }});
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'Istestate_Meric_Reklam_Filmi_{mahalle_adi}.webm';
+                            a.click();
+                            btn.disabled = false;
+                            btn.innerText = '🎬 Reklam Filmini Tekrar Oluştur ve İndir (.webm)';
+                            startVideoPreviewLoop();
+                        }};
+
+                        recorder.start();
+
+                        for(let i = 1; i <= 4; i++) {{
+                            document.querySelectorAll('.video-slide').forEach(s => s.classList.remove('active'));
+                            const slideEl = document.getElementById('vslide-' + i);
+                            slideEl.classList.add('active');
+
+                            const startT = Date.now();
+                            while(Date.now() - startT < 2500) {{
+                                const renderedCanvas = await html2canvas(videoBox, {{ scale: 2, useCORS: true, allowTaint: true }});
+                                ctx.drawImage(renderedCanvas, 0, 0, canvas.width, canvas.height);
+                                await new Promise(r => setTimeout(r, 40));
+                            }}
+                        }}
+
+                        recorder.stop();
+                    }}
+                </script>
+
+                </body>
+                </html>
+                """
+                components.html(studio_html, height=720)
