@@ -1537,7 +1537,7 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
 
             with col_sm2:
                 st.markdown("#### 🎬 Müşteri Sunum Kenti & Video / Fotoğraf Stüdyosu")
-                st.markdown("Seçilen veya otomatik atanan arkaplan render görselleriyle entegre ön izleme:")
+                st.markdown("Seçilen veya otomatik atanan arkaplan render görselleriyle entegre ön izleme ve indirme merkezi:")
 
                 logo1_src = f"data:image/png;base64,{img1_base64}" if img1_base64 else ""
                 logo2_src = f"data:image/png;base64,{img2_base64}" if img2_base64 else ""
@@ -1556,10 +1556,11 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                 <html>
                 <head>
                 <meta charset="utf-8">
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
                 <style>
                     * {{ box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }}
-                    body {{ background-color: #0f172a; color: #ffffff; margin: 0; padding: 10px; display: flex; justify-content: center; }}
-                    .studio-container {{ width: 100%; max-width: 420px; }}
+                    body {{ background-color: #0f172a; color: #ffffff; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }}
+                    .studio-container {{ width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; }}
                     
                     .card-frame {{
                         width: 100%;
@@ -1572,9 +1573,9 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                         position: relative;
                         overflow: hidden;
                     }}
-                    .card-frame.story {{ aspect-ratio: 9/16; max-height: 520px; }}
-                    .card-frame.square {{ aspect-ratio: 1/1; max-height: 400px; }}
-                    .card-frame.portrait {{ aspect-ratio: 4/5; max-height: 460px; }}
+                    .card-frame.story {{ aspect-ratio: 9/16; max-height: 580px; }}
+                    .card-frame.square {{ aspect-ratio: 1/1; max-height: 420px; }}
+                    .card-frame.portrait {{ aspect-ratio: 4/5; max-height: 500px; }}
                     
                     .card-overlay {{
                         position: absolute;
@@ -1628,11 +1629,27 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                     
                     .info-box {{ background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(56, 189, 248, 0.3); padding: 8px; border-radius: 6px; font-size: 9px; line-height: 1.3; color: #e2e8f0; }}
                     .footer-badge {{ text-align: center; font-size: 7px; color: #cbd5e1; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 4px; margin-top: 2px; font-weight: 600; }}
+                    
+                    .download-btn {{
+                        margin-top: 12px;
+                        background: linear-gradient(135deg, #0284c7, #0369a1);
+                        color: white;
+                        border: none;
+                        padding: 10px 16px;
+                        border-radius: 8px;
+                        font-weight: 700;
+                        font-size: 11px;
+                        cursor: pointer;
+                        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+                        width: 100%;
+                        transition: background 0.2s;
+                    }}
+                    .download-btn:hover {{ background: linear-gradient(135deg, #0369a1, #075985); }}
                 </style>
                 </head>
                 <body>
                 <div class="studio-container">
-                    <div id="card-frame" class="card-frame {aspect_class}" style="background-image: url('{active_bg_urls[0]}');">
+                    <div id="capture-card" class="card-frame {aspect_class}" style="background-image: url('{active_bg_urls[0]}');">
                         <div class="card-overlay">
                             <div>
                                 <div class="reels-progress">
@@ -1658,53 +1675,55 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                                     </div>
                                     <div class="metric-box">
                                         <div class="metric-label">İmar Durumu</div>
-                                        <div class="metric-val" style="font-size: 8px;">{terk_durum_str}</div>
+                                        <div class="metric-val" style="font-size: 8.5px;">{terk_durum_str}</div>
                                     </div>
                                 </div>
                                 <div class="info-box">
-                                    <b>Bölge Analizi:</b> {mahalle_adi} mahallesinde bulunan taşınmazlar için yüksek verimli imar ve katma değerli mimari projeksiyonlar kurgulanmıştır.
+                                    <b>Bölgesel Avantaj:</b> Beykoz lokasyonunda yüksek değerli arsa stoğu ve yatırım potansiyeli yüksek imar parselleri.
                                 </div>
                             </div>
                             
-                            <!-- Sahne 2: Mimari & İnşaat -->
+                            <!-- Sahne 2: Mimari & Yapılaşma -->
                             <div id="scene-1" class="scene-content">
                                 <div class="metrics-grid">
-                                    <div class="metric-box">
-                                        <div class="metric-label">Bağımsız Ünite</div>
-                                        <div class="metric-val">{total_units_sum} Adet</div>
-                                    </div>
                                     <div class="metric-box">
                                         <div class="metric-label">Emsal İnşaat</div>
                                         <div class="metric-val">{total_yasal_brut_insaat:,.0f} m²</div>
                                     </div>
+                                    <div class="metric-box">
+                                        <div class="metric-label">Bağımsız Ünite</div>
+                                        <div class="metric-val">{total_units_sum} Bağımsız Bölüm</div>
+                                    </div>
                                 </div>
                                 <div class="info-box">
-                                    <b>Mimari Konsept:</b> {sample_project_type} ({sample_pool_mod}). Ortalama net yaşam alanı {avg_unit_net:,.1f} m²/ünite olarak optimize edilmiştir.
+                                    <b>Mimari Konsept:</b> {sample_project_type}<br>
+                                    <b>Ortalama Ünite:</b> {avg_unit_net:,.1f} m² net yaşam alanı.
                                 </div>
                             </div>
                             
-                            <!-- Sahne 3: Finansal Projeksiyon -->
+                            <!-- Sahne 3: Finansal Projeksiyon & YG -->
                             <div id="scene-2" class="scene-content">
                                 <div class="metrics-grid">
                                     <div class="metric-box">
-                                        <div class="metric-label">Tahmini Ciro</div>
+                                        <div class="metric-label">Proje Cirosu</div>
                                         <div class="metric-val">${display_ciro_usd:,.0f}</div>
                                     </div>
                                     <div class="metric-box">
                                         <div class="metric-label">Yatırım Geri Dönüşü</div>
-                                        <div class="metric-val">~%{yg_orani:.1f} YG</div>
+                                        <div class="metric-val" style="color: #4ade80;">%{yg_orani:.1f} YG</div>
                                     </div>
                                 </div>
                                 <div class="info-box">
-                                    <b>Finansal Değer:</b> Yüksek kârlılık potansiyeli ve güçlü yatırım geri dönüşü ile yatırımcılar için cazip fırsat sunmaktadır.
+                                    <b>Stratejik Değer:</b> Yüksek kârlılık oranları ve prestijli mimari tasarım ile yatırımcılarına maksimum kazanç.
                                 </div>
                             </div>
-
-                            <div class="footer-badge">
-                                İstestate Gayrimenkul & Meriç İnşaat Emlak Stüdyosu
+                            
+                            <div>
+                                <div class="footer-badge">İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK KÜRESEL PORTFÖYÜ</div>
                             </div>
                         </div>
                     </div>
+                    <button class="download-btn" onclick="downloadCard()">📥 Hazırlanan İçeriği / Görseli İndir</button>
                 </div>
 
                 <script>
@@ -1712,54 +1731,48 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                     let currentScene = 0;
                     const totalScenes = 3;
                     const isVideo = {"true" if is_video_mode else "false"};
-                    
+
                     function showScene(index) {{
-                        for (let i = 0; i < totalScenes; i++) {{
-                            const sc = document.getElementById('scene-' + i);
-                            if (sc) {{
-                                sc.classList.remove('active');
+                        const scenes = document.querySelectorAll('.scene-content');
+                        scenes.forEach((s, idx) => {{
+                            if(idx === index) {{
+                                s.classList.add('active');
+                            }} else {{
+                                s.classList.remove('active');
                             }}
-                            const pf = document.getElementById('p' + (i + 1));
-                            if (pf) {{
-                                if (i < index) pf.style.width = '100%';
-                                else if (i === index && isVideo) pf.style.width = '100%';
-                                else pf.style.width = '0%';
+                        }});
+                        
+                        document.getElementById('capture-card').style.backgroundImage = `url('${{bgUrls[index]}}')`;
+
+                        if (isVideo) {{
+                            for(let i=0; i<totalScenes; i++) {{
+                                const fill = document.getElementById('p' + (i+1));
+                                if(i < index) fill.style.width = '100%';
+                                else if(i === index) fill.style.width = '100%';
+                                else fill.style.width = '0%';
                             }}
-                        }}
-                        const targetScene = document.getElementById('scene-' + index);
-                        if (targetScene) {{
-                            targetScene.classList.add('active');
-                        }}
-                        const frame = document.getElementById('card-frame');
-                        if (frame && bgUrls[index]) {{
-                            frame.style.backgroundImage = 'url(' + bgUrls[index] + ')';
                         }}
                     }}
 
                     if (isVideo) {{
-                        let progress = 0;
-                        const durationPerScene = 4000;
-                        const intervalTime = 40;
-                        const increment = (intervalTime / durationPerScene) * 100;
-                        
-                        setInterval(function() {{
-                            progress += increment;
-                            const currentFill = document.getElementById('p' + (currentScene + 1));
-                            if (currentFill) {{
-                                currentFill.style.width = Math.min(progress, 100) + '%';
-                            }}
-                            
-                            if (progress >= 100) {{
-                                progress = 0;
-                                currentScene = (currentScene + 1) % totalScenes;
-                                showScene(currentScene);
-                            }}
-                        }}, intervalTime);
-                    }} else {{
-                        showScene(0);
+                        setInterval(() => {{
+                            currentScene = (currentScene + 1) % totalScenes;
+                            showScene(currentScene);
+                        }, 3500);
+                    }}
+
+                    function downloadCard() {{
+                        const card = document.getElementById('capture-card');
+                        html2canvas(card, {{ scale: 2, useCORS: true, allowTaint: true }}).then(canvas => {{
+                            const link = document.createElement('a');
+                            link.download = 'Istestate_Meric_Kurumsal_Icerik_{mahalle_adi}.png';
+                            link.href = canvas.toDataURL('image/png');
+                            link.click();
+                        }});
                     }}
                 </script>
                 </body>
                 </html>
                 """
-                components.html(studio_html, height=540 if "Hikaye" in card_aspect else 450)
+
+                components.html(studio_html, height=640 if "Hikaye" in card_aspect else (560 if "Dikey" in card_aspect else 480))
