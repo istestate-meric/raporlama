@@ -1968,4 +1968,4 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
 
                 components.html(studio_html, height=720)
         else:
-            st.info("Sosyal medya stüdyosu için lütfen sol menüden parsel seçin.")
+            st.info("Sosyal medya stüdyosu için lütfen sol menüden parsel seçin.") 
