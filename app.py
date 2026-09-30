@@ -1965,7 +1965,7 @@ if selected_keys:
                 p.get("toplam_alan", 0.0) for p in active_parcel_db.values()
             )
 
-            # Arsa alanını küsüratsız şekilde dönüm cinsinden hesaplayalım
+            # Arsa alanını dönüm cinsinden hesaplayalım
             donum_tam_sayi = max(1, round(toplam_m2 / 1000.0))
             toplam_donum_str = f"{donum_tam_sayi:,} Dönüm".replace(",", ".")
 
@@ -1990,7 +1990,7 @@ if selected_keys:
 
             p_type_upper = sample_project_type.upper()
 
-            # Proje tipine göre sahneler değiştikçe arka plana yüklenecek görseller
+            # Proje tipine göre görsel arka plan seçimi
             if "VİLLA" in p_type_upper or "VILLA" in p_type_upper:
                 scene1_bg = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1200&auto=format&fit=crop"
                 scene2_bg = "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1200&auto=format&fit=crop"
@@ -2022,7 +2022,7 @@ if selected_keys:
                 scene2_bg = "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1200&auto=format&fit=crop"
                 scene3_bg = "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=1200&auto=format&fit=crop"
                 scene4_bg = "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1200&auto=format&fit=crop"
-                badge_text = "🏙️️ PRESTİJLİ KARMA PROJE"
+                badge_text = "🏙 PRESTİJLİ KARMA PROJE"
             else:
                 scene1_bg = "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1200&auto=format&fit=crop"
                 scene2_bg = "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1200&auto=format&fit=crop"
@@ -2037,7 +2037,6 @@ if selected_keys:
             )
             total_genel_insaat_m2 = total_yasal_brut_insaat + total_bodrum_alani
 
-            # Ada ve parsel bilgileri çıkarılmış kurumsal bülten metni
             sample_caption = f"""İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT | STRATEJİK PROJE GELİŞTİRME BÜLTENİ 🏗️📊
 
 Bölgesel potansiyeli yüksek lokasyonlarda, gayrimenkul yatırımcılarımız ve arsa sahiplerimiz için katma değer üreten projeler kurgulamaya devam ediyoruz.
@@ -2085,513 +2084,409 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                     " & Video)"
                 )
                 st.markdown(
-                    "Müşterilerinize direkt sunum yapabileceğiniz, **Aşama Aşama"
-                    " Reklam Filmi Videosu** veya **HD Fotoğraf Kartı (PNG)**"
-                    " olarak tek tıkla indirebileceğiniz tam donanımlı stüdyo:"
+                    "Müşterilerinize direkt sunabileceğiniz **Aşama Aşama Reklam"
+                    " Filmi Videosu** veya tüm genel fizibilite bilgilerini içeren"
+                    " **Genel Özet Fotoğraf Kartı (HD PNG)**:"
                 )
 
-                story_logo1_html = (
-                    f"<div style='background: #ffffff; padding: 6px 12px;"
-                    " border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);"
-                    " display: flex; align-items: center; justify-content:"
-                    f" center;'><img src='data:image/png;base64,{img1_base64}'"
-                    " style='max-height: 28px; width: auto; object-fit:"
-                    " contain;'></div>"
+                logo1_src = (
+                    f"data:image/png;base64,{img1_base64}"
                     if img1_base64
-                    else "<div style='background: #ffffff; padding: 6px 12px;"
-                         " border-radius: 8px; box-shadow: 0 4px 12px"
-                         " rgba(0,0,0,0.4); display: flex; align-items: center;"
-                         " justify-content: center;'><b style='font-size:12px;"
-                         " color:#0b1d3a; font-family: sans-serif;"
-                         " letter-spacing:0.5px;'>İSTESTATE</b></div>"
+                    else ""
                 )
-                story_logo2_html = (
-                    f"<div style='background: #ffffff; padding: 6px 12px;"
-                    " border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);"
-                    " display: flex; align-items: center; justify-content:"
-                    f" center;'><img src='data:image/png;base64,{img2_base64}'"
-                    " style='max-height: 28px; width: auto; object-fit:"
-                    " contain;'></div>"
+                logo2_src = (
+                    f"data:image/png;base64,{img2_base64}"
                     if img2_base64
-                    else "<div style='background: #ffffff; padding: 6px 12px;"
-                         " border-radius: 8px; box-shadow: 0 4px 12px"
-                         " rgba(0,0,0,0.4); display: flex; align-items: center;"
-                         " justify-content: center;'><b style='font-size:12px;"
-                         " color:#0b1d3a; font-family: sans-serif;"
-                         " letter-spacing:0.5px;'>MERİÇ İNŞAAT</b></div>"
+                    else ""
                 )
 
-                story_video_component_html = f"""
+                studio_html = f"""
                 <!DOCTYPE html>
                 <html>
                 <head>
                 <meta charset="utf-8">
                 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
                 <style>
-                    body {{
-                        margin: 0;
-                        padding: 0;
-                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                        background: transparent;
-                        color: #ffffff;
-                    }}
-                    .studio-wrapper {{
-                        display: flex;
-                        flex-direction: column;
-                        align-items: center;
-                        gap: 12px;
+                    * {{ box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }}
+                    body {{ margin: 0; padding: 0; background-color: #0f172a; color: #ffffff; }}
+                    .tab-buttons {{ display: flex; gap: 10px; margin-bottom: 12px; }}
+                    .tab-btn {{ flex: 1; padding: 10px; border: none; background: #1e293b; color: #94a3b8; font-weight: 700; border-radius: 8px; cursor: pointer; font-size: 13px; transition: all 0.2s; }}
+                    .tab-btn.active {{ background: #2563eb; color: #ffffff; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }}
+                    
+                    /* OVERVIEW PHOTO CARD STYLES */
+                    #photo-card-container {{
                         width: 100%;
                         max-width: 420px;
                         margin: 0 auto;
-                    }}
-                    .controls-bar {{
-                        display: flex;
-                        gap: 6px;
-                        width: 100%;
-                        justify-content: center;
-                        flex-wrap: wrap;
-                    }}
-                    .btn {{
-                        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-                        color: #ffffff;
-                        border: none;
-                        padding: 8px 12px;
-                        border-radius: 8px;
-                        font-size: 11px;
-                        font-weight: 700;
-                        cursor: pointer;
-                        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
-                        transition: all 0.2s ease;
-                        display: flex;
-                        align-items: center;
-                        gap: 4px;
-                    }}
-                    .btn:hover {{
-                        transform: translateY(-2px);
-                        box-shadow: 0 6px 18px rgba(2, 132, 199, 0.5);
-                    }}
-                    .btn-secondary {{
-                        background: #334155;
-                        box-shadow: none;
-                    }}
-                    .btn-secondary:hover {{
-                        background: #475569;
-                    }}
-                    .btn-active {{
-                        background: #38bdf8 !important;
-                        color: #0f172a !important;
-                    }}
-                    .btn-success {{
-                        background: linear-gradient(135deg, #059669 0%, #047857 100%);
-                        box-shadow: 0 4px 12px rgba(5, 150, 105, 0.35);
-                    }}
-
-                    .card-frame {{
-                        width: 360px;
-                        height: 580px;
+                        aspect-ratio: 9/16;
+                        background: linear-gradient(145deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
                         border-radius: 20px;
-                        overflow: hidden;
+                        padding: 24px;
+                        box-shadow: 0 20px 40px rgba(0,0,0,0.5);
                         position: relative;
-                        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
-                        border: 2px solid rgba(56, 189, 248, 0.4);
-                        background: #0f172a;
-                        box-sizing: border-box;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: space-between;
+                        overflow: hidden;
+                        border: 1px solid rgba(255, 255, 255, 0.15);
                     }}
-                    .card-bg {{
+                    #photo-card-container::before {{
+                        content: '';
+                        position: absolute;
+                        top: 0; left: 0; right: 0; bottom: 0;
+                        background: url('{scene1_bg}') center/cover no-repeat;
+                        opacity: 0.18;
+                        z-index: 0;
+                    }}
+                    .card-content {{ position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; justify-content: space-between; }}
+                    .card-header {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 12px; }}
+                    .card-logo {{ background: #ffffff; padding: 6px 12px; border-radius: 8px; display: flex; align-items: center; justify-content: center; height: 38px; }}
+                    .card-logo img {{ max-height: 26px; width: auto; }}
+                    .card-badge {{ background: linear-gradient(90deg, #d97706, #b45309); color: #ffffff; padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; text-align: center; margin: 12px 0 8px 0; }}
+                    .card-title {{ font-size: 16px; font-weight: 800; text-align: center; color: #f8fafc; letter-spacing: 0.5px; margin-bottom: 12px; text-transform: uppercase; }}
+                    
+                    .card-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }}
+                    .grid-box {{ background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(8px); padding: 12px; border-radius: 12px; }}
+                    .grid-box-full {{ grid-column: span 2; background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(56, 189, 248, 0.3); backdrop-filter: blur(8px); padding: 14px; border-radius: 12px; text-align: center; }}
+                    .grid-label {{ color: #94a3b8; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }}
+                    .grid-val {{ color: #38bdf8; font-size: 15px; font-weight: 800; }}
+                    .grid-val-gold {{ color: #fbbf24; font-size: 20px; font-weight: 900; }}
+                    .grid-sub {{ color: #cbd5e1; font-size: 11px; margin-top: 2px; font-weight: 500; }}
+                    
+                    .card-footer {{ text-align: center; border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 10px; font-size: 10px; color: #94a3b8; font-weight: 500; }}
+
+                    /* VIDEO PLAYER STYLES */
+                    #video-container {{
+                        width: 100%;
+                        max-width: 420px;
+                        margin: 0 auto;
+                        aspect-ratio: 9/16;
+                        background-color: #000000;
+                        border-radius: 20px;
+                        position: relative;
+                        overflow: hidden;
+                        box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+                        border: 1px solid rgba(255,255,255,0.15);
+                    }}
+                    .video-scene {{
                         position: absolute;
                         top: 0; left: 0; width: 100%; height: 100%;
                         background-size: cover;
                         background-position: center;
-                        background-repeat: no-repeat;
-                        z-index: 1;
-                        transition: background-image 0.8s ease-in-out;
-                    }}
-                    .card-overlay {{
-                        position: absolute;
-                        top: 0; left: 0; width: 100%; height: 100%;
-                        background: linear-gradient(180deg, rgba(15, 23, 42, 0.82) 0%, rgba(15, 23, 42, 0.65) 40%, rgba(15, 23, 42, 0.95) 100%);
-                        z-index: 2;
-                    }}
-                    .card-content {{
-                        position: relative;
-                        z-index: 3;
-                        width: 100%;
-                        height: 100%;
+                        opacity: 0;
+                        transition: opacity 0.8s ease-in-out, transform 4s ease-out;
+                        transform: scale(1.05);
                         padding: 20px;
                         display: flex;
                         flex-direction: column;
                         justify-content: space-between;
-                        box-sizing: border-box;
                     }}
-                    .header-logos {{
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
+                    .video-scene.active {{
+                        opacity: 1;
+                        transform: scale(1);
+                    }}
+                    .video-overlay {{
+                        position: absolute;
+                        top: 0; left: 0; width: 100%; height: 100%;
+                        background: linear-gradient(180deg, rgba(15,23,42,0.8) 0%, rgba(15,23,42,0.3) 40%, rgba(15,23,42,0.92) 100%);
+                        z-index: 1;
+                    }}
+                    .video-content {{ position: relative; z-index: 2; height: 100%; display: flex; flex-direction: column; justify-content: space-between; }}
+                    .progress-bar-container {{ display: flex; gap: 4px; width: 100%; margin-bottom: 12px; }}
+                    .progress-bar {{ flex: 1; height: 3px; background: rgba(255,255,255,0.3); border-radius: 2px; overflow: hidden; }}
+                    .progress-fill {{ height: 100%; width: 0%; background: #38bdf8; transition: width 0.1s linear; }}
+
+                    .action-btn {{
                         width: 100%;
-                    }}
-                    .scene-badge {{
-                        background: rgba(56, 189, 248, 0.2);
-                        border: 1px solid rgba(56, 189, 248, 0.5);
-                        color: #38bdf8;
-                        padding: 4px 10px;
-                        border-radius: 20px;
-                        font-size: 10px;
-                        font-weight: 800;
-                        letter-spacing: 0.5px;
-                        text-transform: uppercase;
-                        display: inline-block;
-                        margin-bottom: 8px;
-                    }}
-                    .main-info {{
-                        margin-top: auto;
-                        margin-bottom: auto;
-                    }}
-                    .title-text {{
-                        font-size: 19px;
-                        font-weight: 900;
-                        line-height: 1.25;
+                        max-width: 420px;
+                        margin: 14px auto 0 auto;
+                        padding: 12px;
+                        background: linear-gradient(90deg, #2563eb, #1d4ed8);
                         color: #ffffff;
-                        margin: 0 0 6px 0;
-                        text-shadow: 0 2px 8px rgba(0,0,0,0.6);
-                    }}
-                    .sub-text {{
-                        font-size: 12px;
-                        color: #e2e8f0;
-                        margin: 0 0 16px 0;
-                        font-weight: 500;
-                    }}
-                    .stat-box {{
-                        background: rgba(15, 23, 42, 0.75);
-                        backdrop-filter: blur(8px);
-                        border: 1px solid rgba(255, 255, 255, 0.15);
-                        border-radius: 12px;
-                        padding: 10px 14px;
-                        margin-bottom: 8px;
-                    }}
-                    .stat-label {{
-                        color: #94a3b8;
-                        font-size: 10px;
-                        font-weight: 600;
-                        text-transform: uppercase;
-                        letter-spacing: 0.5px;
-                    }}
-                    .stat-value {{
-                        color: #38bdf8;
-                        font-size: 15px;
-                        font-weight: 800;
-                        margin-top: 2px;
-                    }}
-                    .footer-bar {{
+                        border: none;
+                        border-radius: 10px;
+                        font-weight: 700;
+                        font-size: 13px;
+                        cursor: pointer;
                         display: flex;
                         align-items: center;
-                        justify-content: space-between;
-                        border-top: 1px solid rgba(255, 255, 255, 0.15);
-                        padding-top: 10px;
-                        font-size: 10px;
-                        color: #94a3b8;
+                        justify-content: center;
+                        gap: 8px;
+                        box-shadow: 0 4px 14px rgba(37,99,235,0.4);
                     }}
-                    .progress-dots {{
-                        display: flex;
-                        gap: 6px;
-                    }}
-                    .dot {{
-                        width: 8px;
-                        height: 8px;
-                        border-radius: 50%;
-                        background: rgba(255, 255, 255, 0.3);
-                        transition: all 0.3s ease;
-                    }}
-                    .dot-active {{
-                        background: #38bdf8;
-                        width: 20px;
-                        border-radius: 10px;
-                    }}
-                    #status-msg {{
-                        font-size: 11px;
-                        color: #38bdf8;
-                        font-weight: 600;
-                        text-align: center;
-                        min-height: 18px;
-                    }}
+                    .action-btn:hover {{ background: linear-gradient(90deg, #1d4ed8, #1e40af); }}
+                    .controls-bar {{ display: flex; gap: 8px; width: 100%; max-width: 420px; margin: 10px auto 0 auto; }}
+                    .ctrl-btn {{ flex: 1; padding: 10px; background: #334155; color: #ffffff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 12px; text-align: center; }}
                 </style>
                 </head>
                 <body>
-                <div class="studio-wrapper">
-                    <div class="controls-bar">
-                        <button class="btn btn-secondary btn-active" id="btn-s1" onclick="setScene(0)">Sahne 1</button>
-                        <button class="btn btn-secondary" id="btn-s2" onclick="setScene(1)">Sahne 2</button>
-                        <button class="btn btn-secondary" id="btn-s3" onclick="setScene(2)">Sahne 3</button>
-                        <button class="btn btn-secondary" id="btn-s4" onclick="setScene(3)">Sahne 4</button>
-                        <button class="btn btn-secondary" id="btn-play" onclick="togglePlay()">⏸️ Durdur</button>
-                    </div>
 
-                    <div class="card-frame" id="capture-card">
-                        <div class="card-bg" id="card-bg"></div>
-                        <div class="card-overlay"></div>
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="switchView('photo')">📸 Genel Bilgi Fotoğraf Kartı</button>
+                    <button class="tab-btn" onclick="switchView('video')">🎬 4 Sahneli Reklam Filmi</button>
+                </div>
+
+                <!-- 1. GENEL BİLGİ FOTOĞRAF KARTI VIEW -->
+                <div id="photo-view">
+                    <div id="photo-card-container">
                         <div class="card-content">
-                            <div class="header-logos">
-                                {story_logo1_html}
-                                {story_logo2_html}
-                            </div>
-
-                            <div class="main-info">
-                                <span class="scene-badge" id="scene-badge"></span>
-                                <h2 class="title-text" id="scene-title"></h2>
-                                <p class="sub-text" id="scene-sub"></p>
-                                <div id="stats-container"></div>
-                            </div>
-
-                            <div class="footer-bar">
-                                <span>İSTESTATE & MERİÇ İNŞAAT</span>
-                                <div class="progress-dots">
-                                    <div class="dot" id="dot-0"></div>
-                                    <div class="dot" id="dot-1"></div>
-                                    <div class="dot" id="dot-2"></div>
-                                    <div class="dot" id="dot-3"></div>
+                            <div>
+                                <div class="card-header">
+                                    <div class="card-logo">
+                                        {'<img src="' + logo1_src + '">' if logo1_src else '<b style="color:#0f172a; font-size:12px;">İSTESTATE</b>'}
+                                    </div>
+                                    <div class="card-logo">
+                                        {'<img src="' + logo2_src + '">' if logo2_src else '<b style="color:#0f172a; font-size:12px;">MERİÇ İNŞAAT</b>'}
+                                    </div>
                                 </div>
+                                <div class="card-badge">{badge_text}</div>
+                                <div class="card-title">PROJE GELİŞTİRME & FİZİBİLİTE ÖZETİ</div>
+                            </div>
+
+                            <div class="card-grid">
+                                <div class="grid-box">
+                                    <div class="grid-label">📍 Lokasyon</div>
+                                    <div class="grid-val">Beykoz</div>
+                                    <div class="grid-sub">{mahalle_adi} Mah.</div>
+                                </div>
+                                <div class="grid-box">
+                                    <div class="grid-label">📐 Arsa Hacmi</div>
+                                    <div class="grid-val">{toplam_donum_str}</div>
+                                    <div class="grid-sub">{toplam_m2:,.0f} m² Arsa</div>
+                                </div>
+                                <div class="grid-box">
+                                    <div class="grid-label">🏛 Konsept</div>
+                                    <div class="grid-val" style="font-size:12px;">{sample_project_type[:20]}...</div>
+                                    <div class="grid-sub">{total_units_sum} Bağımsız Ünite</div>
+                                </div>
+                                <div class="grid-box">
+                                    <div class="grid-label">🏗 İnşaat Alanı</div>
+                                    <div class="grid-val">{total_genel_insaat_m2:,.0f} m²</div>
+                                    <div class="grid-sub">Emsal: {total_yasal_brut_insaat:,.0f} m²</div>
+                                </div>
+                                <div class="grid-box-full">
+                                    <div class="grid-label">💰 Tahmini Proje Geliri & Verimlilik</div>
+                                    <div class="grid-val-gold">${display_ciro_usd:,.0f}</div>
+                                    <div class="grid-sub" style="color:#38bdf8; font-weight:700;">Hedeflenen Yatırım Dönüşü (YG): %{yg_orani:.1f}+</div>
+                                </div>
+                            </div>
+
+                            <div class="card-footer">
+                                İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT EMLAK<br>
+                                Stratejik Gayrimenkul Yatırım & Proje Geliştirme Portalı
                             </div>
                         </div>
                     </div>
 
-                    <div id="status-msg"></div>
+                    <button class="action-btn" onclick="downloadPhotoCard()">
+                        📷 Genel Bilgi Kartını Fotoğraf Olarak İndir (HD PNG)
+                    </button>
+                </div>
 
-                    <div class="controls-bar" style="margin-top: 4px;">
-                        <button class="btn" onclick="downloadHDPhoto()">📸 HD Fotoğraf Kartı İndir (.png)</button>
-                        <button class="btn btn-success" onclick="recordAndDownloadVideo()">🎬 Reklam Filmini İndir (.mp4 / .webm)</button>
+                <!-- 2. DİNAMİK REKLAM FİLMİ VIDEO VIEW -->
+                <div id="video-view" style="display: none;">
+                    <div id="video-container">
+                        <!-- Sahne 1 -->
+                        <div class="video-scene active" id="scene-0" style="background-image: url('{scene1_bg}');">
+                            <div class="video-overlay"></div>
+                            <div class="video-content">
+                                <div>
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar"><div class="progress-fill" id="pfill-0"></div></div>
+                                        <div class="progress-bar"><div class="progress-fill" id="pfill-1"></div></div>
+                                        <div class="progress-bar"><div class="progress-fill" id="pfill-2"></div></div>
+                                        <div class="progress-bar"><div class="progress-fill" id="pfill-3"></div></div>
+                                    </div>
+                                    <div class="card-header" style="border:none;">
+                                        <div class="card-logo">
+                                            {'<img src="' + logo1_src + '">' if logo1_src else '<b>İSTESTATE</b>'}
+                                        </div>
+                                        <div class="card-logo">
+                                            {'<img src="' + logo2_src + '">' if logo2_src else '<b>MERİÇ</b>'}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="margin-bottom: 30px;">
+                                    <div class="card-badge">{badge_text}</div>
+                                    <h2 style="color:#ffffff; font-size:22px; font-weight:800; margin:6px 0;">STRATEJİK ARSA YATIRIMI</h2>
+                                    <p style="color:#94a3b8; font-size:13px; margin:0;">📍 İstanbul / Beykoz ({mahalle_adi} Mah.)</p>
+                                    <div style="background:rgba(15,23,42,0.85); padding:10px 14px; border-radius:10px; margin-top:12px; border-left:3px solid #38bdf8;">
+                                        <div style="font-size:11px; color:#94a3b8;">TOPLAM ARSA HACMİ</div>
+                                        <div style="font-size:18px; font-weight:800; color:#38bdf8;">{toplam_donum_str} ({toplam_m2:,.0f} m²)</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sahne 2 -->
+                        <div class="video-scene" id="scene-1" style="background-image: url('{scene2_bg}');">
+                            <div class="video-overlay"></div>
+                            <div class="video-content">
+                                <div>
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar"><div class="progress-fill" style="width:100%;"></div></div>
+                                        <div class="progress-bar"><div class="progress-fill" id="pfill-1-b"></div></div>
+                                        <div class="progress-bar"><div class="progress-fill"></div></div>
+                                        <div class="progress-bar"><div class="progress-fill"></div></div>
+                                    </div>
+                                </div>
+                                <div style="margin-bottom: 30px;">
+                                    <div style="color:#38bdf8; font-size:12px; font-weight:700; text-transform:uppercase;">MİMARİ VİZYON</div>
+                                    <h2 style="color:#ffffff; font-size:20px; font-weight:800; margin:6px 0;">{sample_project_type}</h2>
+                                    <div style="background:rgba(15,23,42,0.85); padding:12px; border-radius:10px; margin-top:10px;">
+                                        <div style="color:#cbd5e1; font-size:12px;">• <b>{total_units_sum} Bağımsız Ünite</b> Kapasitesi</div>
+                                        <div style="color:#cbd5e1; font-size:12px; margin-top:4px;">• <b>{sample_pool_mod}</b> Konsept Donatısı</div>
+                                        <div style="color:#cbd5e1; font-size:12px; margin-top:4px;">• Ortalama <b>{avg_unit_net:,.1f} m²</b> Ünite Alanı</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sahne 3 -->
+                        <div class="video-scene" id="scene-2" style="background-image: url('{scene3_bg}');">
+                            <div class="video-overlay"></div>
+                            <div class="video-content">
+                                <div>
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar"><div class="progress-fill" style="width:100%;"></div></div>
+                                        <div class="progress-bar"><div class="progress-fill" style="width:100%;"></div></div>
+                                        <div class="progress-bar"><div class="progress-fill" id="pfill-2-b"></div></div>
+                                        <div class="progress-bar"><div class="progress-fill"></div></div>
+                                    </div>
+                                </div>
+                                <div style="margin-bottom: 30px;">
+                                    <div style="color:#fbbf24; font-size:12px; font-weight:700; text-transform:uppercase;">İMAR & YAPILAŞMA METRAJI</div>
+                                    <h2 style="color:#ffffff; font-size:20px; font-weight:800; margin:6px 0;">MÜKEMMEL VERİMLİLİK</h2>
+                                    <div class="card-grid" style="margin-top:12px;">
+                                        <div class="grid-box">
+                                            <div class="grid-label">Emsal İnşaat</div>
+                                            <div class="grid-val" style="font-size:14px;">{total_yasal_brut_insaat:,.0f} m²</div>
+                                        </div>
+                                        <div class="grid-box">
+                                            <div class="grid-label">Genel İnşaat</div>
+                                            <div class="grid-val" style="font-size:14px;">{total_genel_insaat_m2:,.0f} m²</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sahne 4 -->
+                        <div class="video-scene" id="scene-3" style="background-image: url('{scene4_bg}');">
+                            <div class="video-overlay"></div>
+                            <div class="video-content">
+                                <div>
+                                    <div class="progress-bar-container">
+                                        <div class="progress-bar"><div class="progress-fill" style="width:100%;"></div></div>
+                                        <div class="progress-bar"><div class="progress-fill" style="width:100%;"></div></div>
+                                        <div class="progress-bar"><div class="progress-fill" style="width:100%;"></div></div>
+                                        <div class="progress-bar"><div class="progress-fill" id="pfill-3-b"></div></div>
+                                    </div>
+                                </div>
+                                <div style="margin-bottom: 30px; text-align:center;">
+                                    <div style="color:#38bdf8; font-size:12px; font-weight:800; letter-spacing:1px;">FİNANSAL PROJEKSİYON</div>
+                                    <div style="font-size:28px; font-weight:900; color:#fbbf24; margin:8px 0;">${display_ciro_usd:,.0f}</div>
+                                    <div style="background:rgba(37,99,235,0.3); border:1px solid #2563eb; color:#ffffff; padding:6px 14px; border-radius:20px; font-size:12px; font-weight:700; display:inline-block; margin-bottom:14px;">
+                                        Yatırım Geri Dönüşü (YG): %{yg_orani:.1f}+
+                                    </div>
+                                    <p style="color:#cbd5e1; font-size:11px; margin-top:10px;">Detaylı Bilgi & İletişim İçin Bizimle İletişime Geçin</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="controls-bar">
+                        <button class="ctrl-btn" onclick="prevScene()">⏮ Önceki</button>
+                        <button class="ctrl-btn" id="play-pause-btn" onclick="togglePlay()">⏸ Durdur</button>
+                        <button class="ctrl-btn" onclick="nextScene()">Sonraki ⏭</button>
                     </div>
                 </div>
 
                 <script>
-                    const scenes = [
-                        {{
-                            bg: "{scene1_bg}",
-                            badge: "{badge_text}",
-                            title: "LOKASYON VE ARSA POTANSİYELİ",
-                            sub: "İstanbul / Beykoz ({mahalle_adi} Mahallesi)",
-                            stats: [
-                                {{ label: "Toplam Arsa Hacmi", val: "{toplam_donum_str}" }},
-                                {{ label: "İmar Durumu", val: "{terk_durum_str}" }}
-                            ]
-                        }},
-                        {{
-                            bg: "{scene2_bg}",
-                            badge: "🏛️ MİMARİ KONSEPT",
-                            title: "{sample_project_type.upper()}",
-                            sub: "{total_units_sum} Adet Seçkin Bağımsız Ünite",
-                            stats: [
-                                {{ label: "Emsal İnşaat Alanı", val: "{total_yasal_brut_insaat:,.0f} m²" }},
-                                {{ label: "Sosyal Donatı / Konsept", val: "{sample_pool_mod}" }}
-                            ]
-                        }},
-                        {{
-                            bg: "{scene3_bg}",
-                            badge: "✨ ALAN VERİMLİLİĞİ",
-                            title: "OPTIMİZE YAŞAM ALANLARI",
-                            sub: "{avg_unit_net:,.1f} m² / Ünite Ortalama Net Alan",
-                            stats: [
-                                {{ label: "Genel Toplam İnşaat Alanı", val: "{total_genel_insaat_m2:,.0f} m²" }},
-                                {{ label: "Mimari Verimlilik Oranı", val: "%100 Optimize Yapılaşma" }}
-                            ]
-                        }},
-                        {{
-                            bg: "{scene4_bg}",
-                            badge: "🚀 FİNANSAL PROJEKSİYON",
-                            title: "YÜKSEK YATIRIM DEĞERİ",
-                            sub: "%{yg_orani:.1f} Tahmini Yatırım Geri Dönüşü (YG)",
-                            stats: [
-                                {{ label: "Tahmini Proje Cirosu", val: "${display_ciro_usd:,.0f}" }},
-                                {{ label: "Bölgesel Büyüme Potansiyeli", val: "A+ Segment Yatırım" }}
-                            ]
-                        }}
-                    ];
-
-                    let currentSceneIdx = 0;
-                    let isPlaying = true;
-                    let timer = null;
-
-                    function renderScene(idx) {{
-                        currentSceneIdx = idx;
-                        const sc = scenes[idx];
-                        const bgEl = document.getElementById('card-bg');
-                        bgEl.style.backgroundImage = "url('" + sc.bg + "')";
-                        
-                        document.getElementById('scene-badge').innerText = sc.badge;
-                        document.getElementById('scene-title').innerText = sc.title;
-                        document.getElementById('scene-sub').innerText = sc.sub;
-
-                        let statsHTML = '';
-                        sc.stats.forEach(st => {{
-                            statsHTML += `
-                                <div class="stat-box">
-                                    <div class="stat-label">${{st.label}}</div>
-                                    <div class="stat-value">${{st.val}}</div>
-                                </div>
-                            `;
-                        }});
-                        document.getElementById('stats-container').innerHTML = statsHTML;
-
-                        for (let i = 0; i < 4; i++) {{
-                            const dot = document.getElementById('dot-' + i);
-                            const btn = document.getElementById('btn-s' + (i + 1));
-                            if (i === idx) {{
-                                dot.className = 'dot dot-active';
-                                if (btn) btn.className = 'btn btn-secondary btn-active';
-                            }} else {{
-                                dot.className = 'dot';
-                                if (btn) btn.className = 'btn btn-secondary';
-                            }}
+                    function switchView(view) {{
+                        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                        if(view === 'photo') {{
+                            document.getElementById('photo-view').style.display = 'block';
+                            document.getElementById('video-view').style.display = 'none';
+                            event.target.classList.add('active');
+                            stopVideo();
+                        }} else {{
+                            document.getElementById('photo-view').style.display = 'none';
+                            document.getElementById('video-view').style.display = 'block';
+                            event.target.classList.add('active');
+                            startVideo();
                         }}
                     }}
 
-                    function setScene(idx) {{
-                        renderScene(idx);
+                    function downloadPhotoCard() {{
+                        const container = document.getElementById('photo-card-container');
+                        html2canvas(container, {{
+                            scale: 2,
+                            useCORS: true,
+                            backgroundColor: '#0f172a'
+                        }}).then(canvas => {{
+                            const link = document.createElement('a');
+                            link.download = 'Fizibilite_Genel_Ozet_Karti.png';
+                            link.href = canvas.toDataURL('image/png');
+                            link.click();
+                        }});
+                    }}
+
+                    // VIDEO PLAYBACK SYSTEM
+                    let currentScene = 0;
+                    let isPlaying = false;
+                    let timer = null;
+                    let progressVal = 0;
+                    const sceneDuration = 4000; // 4 saniye per scene
+
+                    function showScene(idx) {{
+                        document.querySelectorAll('.video-scene').forEach((sc, i) => {{
+                            if(i === idx) sc.classList.add('active');
+                            else sc.classList.remove('active');
+                        }});
+                        currentScene = idx;
                     }}
 
                     function nextScene() {{
-                        currentSceneIdx = (currentSceneIdx + 1) % scenes.length;
-                        renderScene(currentSceneIdx);
+                        let next = (currentScene + 1) % 4;
+                        showScene(next);
                     }}
 
-                    function startAutoPlay() {{
-                        if (timer) clearInterval(timer);
-                        timer = setInterval(nextScene, 3500);
+                    function prevScene() {{
+                        let prev = (currentScene - 1 + 4) % 4;
+                        showScene(prev);
+                    }}
+
+                    function startVideo() {{
                         isPlaying = true;
-                        document.getElementById('btn-play').innerText = "⏸️ Durdur";
+                        document.getElementById('play-pause-btn').innerText = '⏸ Durdur';
+                        clearInterval(timer);
+                        timer = setInterval(() => {{
+                            nextScene();
+                        }}, sceneDuration);
                     }}
 
-                    function stopAutoPlay() {{
-                        if (timer) clearInterval(timer);
+                    function stopVideo() {{
                         isPlaying = false;
-                        document.getElementById('btn-play').innerText = "▶️ Oynat";
+                        clearInterval(timer);
+                        const btn = document.getElementById('play-pause-btn');
+                        if(btn) btn.innerText = '▶ Oynat';
                     }}
 
                     function togglePlay() {{
-                        if (isPlaying) {{
-                            stopAutoPlay();
-                        }} else {{
-                            startAutoPlay();
-                        }}
-                    }}
-
-                    // Sayfa açılışı
-                    renderScene(0);
-                    startAutoPlay();
-
-                    // HD Fotoğraf Kartı İndir
-                    function downloadHDPhoto() {{
-                        const card = document.getElementById('capture-card');
-                        const statusEl = document.getElementById('status-msg');
-                        statusEl.innerText = "⏳ HD Fotoğraf hazırlanıyor...";
-                        
-                        html2canvas(card, {{
-                            scale: 2,
-                            useCORS: true,
-                            allowTaint: true
-                        }}).then(canvas => {{
-                            const link = document.createElement('a');
-                            link.download = `Meric_Istestate_Sahne_${{currentSceneIdx + 1}}_{mahalle_adi}.png`;
-                            link.href = canvas.toDataURL('image/png');
-                            link.click();
-                            statusEl.innerText = "✅ HD Fotoğraf indirildi!";
-                            setTimeout(() => {{ statusEl.innerText = ""; }}, 3000);
-                        }}).catch(err => {{
-                            statusEl.innerText = "❌ Görsel oluşturulurken hata oluştu!";
-                            console.error(err);
-                        }});
-                    }}
-
-                    // Video Kaydı ve İndirme Motoru
-                    async function recordAndDownloadVideo() {{
-                        stopAutoPlay();
-                        const statusEl = document.getElementById('status-msg');
-                        statusEl.innerText = "🎬 Reklam Filmi hazırlanıyor...";
-
-                        const card = document.getElementById('capture-card');
-                        const width = 360 * 2;
-                        const height = 580 * 2;
-                        
-                        const recCanvas = document.createElement('canvas');
-                        recCanvas.width = width;
-                        recCanvas.height = height;
-                        const ctx = recCanvas.getContext('2d');
-
-                        const stream = recCanvas.captureStream(25);
-                        
-                        let mimeType = 'video/webm;codecs=vp9';
-                        let fileExt = 'webm';
-                        
-                        if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {{
-                            mimeType = 'video/mp4;codecs=avc1';
-                            fileExt = 'mp4';
-                        }} else if (MediaRecorder.isTypeSupported('video/mp4')) {{
-                            mimeType = 'video/mp4';
-                            fileExt = 'mp4';
-                        }} else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {{
-                            mimeType = 'video/webm;codecs=vp8';
-                            fileExt = 'webm';
-                        }}
-
-                        let recorder;
-                        try {{
-                            recorder = new MediaRecorder(stream, {{ mimeType: mimeType }});
-                        }} catch(e) {{
-                            recorder = new MediaRecorder(stream);
-                            fileExt = 'webm';
-                        }}
-
-                        const chunks = [];
-                        recorder.ondataavailable = e => {{
-                            if (e.data.size > 0) chunks.push(e.data);
-                        }};
-
-                        recorder.onstop = () => {{
-                            const blob = new Blob(chunks, {{ type: recorder.mimeType || 'video/webm' }});
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `Meric_Istestate_Reklam_Filmi_{mahalle_adi}.${{fileExt}}`;
-                            a.click();
-                            statusEl.innerText = "✅ Reklam Filmi başarıyla indirildi!";
-                            startAutoPlay();
-                            setTimeout(() => {{ statusEl.innerText = ""; }}, 4000);
-                        }};
-
-                        recorder.start();
-
-                        const sceneDuration = 2500;
-                        const framesPerScene = 20;
-
-                        for (let s = 0; s < 4; s++) {{
-                            renderScene(s);
-                            statusEl.innerText = `🎬 Reklam Filmi Kaydediliyor: Sahne ${{s + 1}} / 4...`;
-                            
-                            for (let f = 0; f < framesPerScene; f++) {{
-                                const canvasSnapshot = await html2canvas(card, {{
-                                    scale: 2,
-                                    useCORS: true,
-                                    allowTaint: true,
-                                    width: 360,
-                                    height: 580
-                                }});
-                                ctx.clearRect(0, 0, width, height);
-                                ctx.drawImage(canvasSnapshot, 0, 0, width, height);
-                                await new Promise(r => setTimeout(r, sceneDuration / framesPerScene));
-                            }}
-                        }}
-
-                        statusEl.innerText = "⚡ Video İşleniyor ve İndiriliyor...";
-                        setTimeout(() => {{
-                            recorder.stop();
-                        }}, 500);
+                        if(isPlaying) stopVideo();
+                        else startVideo();
                     }}
                 </script>
                 </body>
                 </html>
                 """
 
-                components.html(story_video_component_html, height=760)
+                components.html(studio_html, height=720, scrolling=True)
+
         else:
             st.info(
-                "Sosyal medya pazarlama kartı üretmek için sol menüden parsel"
+                "Sosyal medya ve sunum kartı oluşturmak için sol menüden parsel"
                 " seçin."
             )
