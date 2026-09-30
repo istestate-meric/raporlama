@@ -1425,7 +1425,6 @@ if selected_keys:
             "**Fotoğraf Kartı (Post/Hikaye)** veya **Video / Reels Formatı (Animasyonlu, 12+ Saniye, Farklı Arkaplanlar)** ile müşteri odaklı ve dikkat çekici şekilde hazırlayın."
         )
 
-        # Proje tipine göre otomatik uyumlu arkaplan render havuzu (en az 3 farklı arkaplan)
         def get_project_backgrounds(p_type):
             pt_up = p_type.upper()
             if "VİLLA" in pt_up or "VILLA" in pt_up:
@@ -1542,9 +1541,6 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                 else:
                     aspect_class = "portrait"
 
-                is_video_mode = "Video" in media_type
-
-                # Çok sahneli 12+ saniyelik Reels / Fotoğraf Stüdyosu HTML + JS Bileşeni
                 studio_html = f"""
                 <!DOCTYPE html>
                 <html>
@@ -1553,199 +1549,190 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
                 <style>
                     * {{ box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }}
-                    body {{ background-color: #0f172a; color: #ffffff; margin: 0; padding: 12px; }}
-                    .studio-container {{ max-width: 850px; margin: 0 auto; }}
+                    body {{ background-color: #0f172a; color: #ffffff; margin: 0; padding: 10px; display: flex; justify-content: center; }}
+                    .studio-container {{ width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; }}
                     
                     .card-frame {{
                         width: 100%;
-                        max-width: 400px;
-                        margin: 0 auto;
+                        max-width: 370px;
                         background-size: cover;
                         background-position: center;
                         border: 2px solid #38bdf8;
                         border-radius: 16px;
-                        padding: 20px;
+                        padding: 18px;
                         box-shadow: 0 20px 40px rgba(0,0,0,0.6);
                         position: relative;
                         overflow: hidden;
-                        transition: background-image 1s ease-in-out;
                     }}
-                    .card-frame.story {{ aspect-ratio: 9/16; max-width: 340px; }}
-                    .card-frame.square {{ aspect-ratio: 1/1; max-width: 400px; }}
-                    .card-frame.portrait {{ aspect-ratio: 4/5; max-width: 360px; }}
+                    .card-frame.story {{ aspect-ratio: 9/16; max-width: 310px; }}
+                    .card-frame.square {{ aspect-ratio: 1/1; max-width: 370px; }}
+                    .card-frame.portrait {{ aspect-ratio: 4/5; max-width: 340px; }}
                     
                     .card-overlay {{
                         position: absolute;
                         top: 0; left: 0; right: 0; bottom: 0;
-                        background: linear-gradient(rgba(15, 23, 42, 0.75), rgba(30, 41, 59, 0.90));
-                        padding: 20px;
+                        background: linear-gradient(rgba(15, 23, 42, 0.78), rgba(30, 41, 59, 0.92));
+                        padding: 16px;
                         display: flex;
                         flex-direction: column;
                         justify-content: space-between;
                     }}
                     
-                    .reels-progress {{
+                    .card-header {{
                         display: flex;
-                        gap: 4px;
+                        justify-content: space-between;
+                        align-items: center;
+                        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+                        padding-bottom: 8px;
+                        margin-bottom: 8px;
+                    }}
+                    .logo-img {{
+                        max-height: 24px;
+                        width: auto;
+                        object-fit: contain;
+                        background: rgba(255, 255, 255, 0.95);
+                        padding: 3px 6px;
+                        border-radius: 4px;
+                    }}
+                    
+                    .card-title {{
+                        font-size: 13px;
+                        font-weight: 800;
+                        color: #f8fafc;
+                        margin-bottom: 2px;
+                        line-height: 1.2;
+                        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+                    }}
+                    .card-subtitle {{
+                        font-size: 10px;
+                        color: #cbd5e1;
+                        margin-bottom: 8px;
+                        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+                    }}
+                    
+                    .metrics-grid {{
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 6px;
+                        margin-bottom: 6px;
+                    }}
+                    .metric-box {{
+                        background: rgba(15, 23, 42, 0.85);
+                        backdrop-filter: blur(4px);
+                        border: 1px solid rgba(255, 255, 255, 0.2);
+                        padding: 8px;
+                        border-radius: 8px;
+                        text-align: center;
+                    }}
+                    .metric-label {{
+                        font-size: 7.5px;
+                        color: #94a3b8;
+                        text-transform: uppercase;
+                        margin-bottom: 2px;
+                    }}
+                    .metric-val {{
+                        font-size: 11px;
+                        font-weight: 700;
+                        color: #38bdf8;
+                    }}
+                    
+                    .info-box {{
+                        background: rgba(15, 23, 42, 0.85);
+                        border: 1px solid rgba(56, 189, 248, 0.4);
+                        padding: 8px;
+                        border-radius: 8px;
+                        font-size: 9.5px;
+                        line-height: 1.3;
+                        color: #e2e8f0;
+                        margin-bottom: 6px;
+                    }}
+                    .footer-badge {{
+                        text-align: center;
+                        font-size: 7.5px;
+                        color: #cbd5e1;
+                        border-top: 1px dashed rgba(255,255,255,0.2);
+                        padding-top: 5px;
+                        font-weight: 600;
+                    }}
+                    
+                    .download-btn-container {{
                         width: 100%;
-                        margin-bottom: 10px;
+                        max-width: 370px;
+                        margin-top: 12px;
                     }}
-                    .progress-bar {{
-                        flex: 1;
-                        height: 3px;
-                        background: rgba(255, 255, 255, 0.3);
-                        border-radius: 2px;
-                        overflow: hidden;
-                    }}
-                    .progress-fill {{
-                        width: 0%;
-                        height: 100%;
-                        background: #38bdf8;
-                    }}
-                    .progress-fill.active {{
+                    .download-btn {{
+                        display: block;
                         width: 100%;
-                        transition: width 4s linear;
+                        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+                        color: white;
+                        border: none;
+                        padding: 12px;
+                        border-radius: 10px;
+                        font-weight: 700;
+                        cursor: pointer;
+                        text-align: center;
+                        font-size: 13px;
+                        box-shadow: 0 4px 15px rgba(2, 132, 199, 0.5);
+                        transition: all 0.2s ease;
                     }}
-                    .progress-fill.completed {{
-                        width: 100%;
+                    .download-btn:hover {{
+                        background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+                        transform: translateY(-2px);
                     }}
-
-                    .card-header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 8px; }}
-                    .logo-img {{ max-height: 26px; width: auto; object-fit: contain; background: rgba(255,255,255,0.95); padding: 3px 6px; border-radius: 4px; }}
-                    .badge {{ background: #0284c7; color: #ffffff; padding: 3px 8px; border-radius: 20px; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; }}
-                    .card-title {{ font-size: 14px; font-weight: 800; color: #f8fafc; margin-bottom: 2px; line-height: 1.2; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }}
-                    .card-subtitle {{ font-size: 10px; color: #cbd5e1; margin-bottom: 10px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }}
-                    
-                    .scene-content {{ display: none; flex-direction: column; gap: 8px; flex-grow: 1; justify-content: center; }}
-                    .scene-content.active {{ display: flex; animation: fadeIn 0.6s ease-in-out; }}
-                    
-                    @keyframes fadeIn {{
-                        from {{ opacity: 0; transform: translateY(6px); }}
-                        to {{ opacity: 1; transform: translateY(0); }}
-                    }}
-
-                    .metrics-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }}
-                    .metric-box {{ background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.2); padding: 10px; border-radius: 8px; text-align: center; }}
-                    .metric-label {{ font-size: 8px; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px; }}
-                    .metric-val {{ font-size: 12px; font-weight: 700; color: #38bdf8; }}
-                    
-                    .info-box {{ background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.4); padding: 10px; border-radius: 8px; font-size: 10px; line-height: 1.4; color: #e2e8f0; }}
-                    .footer-badge {{ text-align: center; font-size: 8px; color: #cbd5e1; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 6px; margin-top: 6px; font-weight: 600; }}
-                    
-                    .download-btn {{ display: block; width: 100%; margin-top: 12px; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; text-align: center; font-size: 12px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4); }}
-                    .download-btn:hover {{ background: linear-gradient(135deg, #0369a1 0%, #075985 100%); }}
                 </style>
                 </head>
                 <body>
                 <div class="studio-container">
                     <div id="capture-card" class="card-frame {aspect_class}" style="background-image: url('{active_bg_urls[0]}');">
                         <div class="card-overlay">
+                            <div class="card-header">
+                                <img class="logo-img" src="{logo1_src}" alt="İstestate Logo">
+                                <img class="logo-img" src="{logo2_src}" alt="Meriç Logo">
+                            </div>
                             <div>
-                                {'<div class="reels-progress"><div class="progress-bar"><div id="p1" class="progress-fill active"></div></div><div class="progress-bar"><div id="p2" class="progress-fill"></div></div><div class="progress-bar"><div id="p3" class="progress-fill"></div></div></div>' if is_video_mode else ''}
-                                
-                                <div class="card-header">
-                                    <img src="{logo1_src}" class="logo-img" alt="Logo 1">
-                                    <div class="badge">{'🎬 12s REELS VİDEO' if is_video_mode else '✨ PROFESYONEL POST'}</div>
-                                    <img src="{logo2_src}" class="logo-img" alt="Logo 2">
-                                </div>
-                                <div class="card-title">İstestate & Meriç İnşaat</div>
-                                <div class="card-subtitle">📍 İstanbul / Beykoz ({mahalle_adi} Mah.) • {toplam_donum_str}</div>
+                                <div class="card-title">İSTANBUL / BEYKOZ ({mahalle_adi})</div>
+                                <div class="card-subtitle">Stratejik Arsa & Proje Geliştirme Fizibilitesi</div>
                             </div>
-
-                            <!-- Sahneler (Video Modunda 4'er saniyeden 12 saniye döner, Post modunda hepsi görünür) -->
-                            <div class="scene-content active" id="scene-1">
-                                <div class="metrics-grid">
-                                    <div class="metric-box">
-                                        <div class="metric-label">Toplam Arsa Alanı</div>
-                                        <div class="metric-val">{toplam_m2:,.0f} m²</div>
-                                    </div>
-                                    <div class="metric-box">
-                                        <div class="metric-label">İmar Durumu</div>
-                                        <div class="metric-val">{'Net Parsel' if is_any_terkli else '%70 Net Oranlı'}</div>
-                                    </div>
+                            <div class="metrics-grid">
+                                <div class="metric-box">
+                                    <div class="metric-label">Toplam Arsa</div>
+                                    <div class="metric-val">{toplam_donum_str}</div>
                                 </div>
-                                <div class="info-box">
-                                    <b>📍 Bölgesel Konum:</b> {mahalle_adi} bölgesinde yüksek prim potansiyeline sahip stratejik arsa ve proje geliştirme sahası.
+                                <div class="metric-box">
+                                    <div class="metric-label">İnşaat Alanı</div>
+                                    <div class="metric-val">{total_yasal_brut_insaat:,.0f} m²</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-label">Bağımsız Ünite</div>
+                                    <div class="metric-val">{total_units_sum} Adet</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-label">Hedeflenen YG</div>
+                                    <div class="metric-val">%{yg_orani:.1f}</div>
                                 </div>
                             </div>
-
-                            <div class="scene-content {'active' if not is_video_mode else ''}" id="scene-2">
-                                <div class="metrics-grid">
-                                    <div class="metric-box">
-                                        <div class="metric-label">Toplam İnşaat Alanı</div>
-                                        <div class="metric-val">{total_yasal_brut_insaat:,.0f} m²</div>
-                                    </div>
-                                    <div class="metric-box">
-                                        <div class="metric-label">Bağımsız Ünite</div>
-                                        <div class="metric-val">{total_units_sum} Adet</div>
-                                    </div>
-                                </div>
-                                <div class="info-box">
-                                    <b>🏛️ Mimari Konsept:</b> {sample_project_type} ({sample_pool_mod}). Ortalama {avg_unit_net:,.1f} m² konforlu yaşam alanları.
-                                </div>
+                            <div class="info-box">
+                                <b>Konsept:</b> {sample_project_type}<br>
+                                <b>Terk Durumu:</b> {terk_durum_str}<br>
+                                <b>Tahmini Ciro:</b> ${display_ciro_usd:,.0f}
                             </div>
-
-                            <div class="scene-content {'active' if not is_video_mode else ''}" id="scene-3">
-                                <div class="metrics-grid">
-                                    <div class="metric-box">
-                                        <div class="metric-label">Tahmini Proje Cirosu</div>
-                                        <div class="metric-val">${display_ciro_usd:,.0f}</div>
-                                    </div>
-                                    <div class="metric-box">
-                                        <div class="metric-label">Hedef Yatırım YG</div>
-                                        <div class="metric-val">%{yg_orani:.1f}</div>
-                                    </div>
-                                </div>
-                                <div class="info-box">
-                                    <b>💰 Finansal Getiri:</b> Yüksek katma değerli yatırım modeli ve güçlü yatırım geri dönüş (YG) oranı.
-                                </div>
-                            </div>
-
-                            <div>
-                                <div class="footer-badge">
-                                    İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT - KURUMSAL PORTFÖY
-                                </div>
+                            <div class="footer-badge">
+                                İstestate Gayrimenkul & Meriç İnşaat Emlak
                             </div>
                         </div>
                     </div>
-
-                    <button class="download-btn" onclick="downloadCard()">📥 Hazırlanan İçeriği HD İndir (PNG / Medya)</button>
+                    
+                    <div class="download-btn-container">
+                        <button class="download-btn" onclick="downloadCard()">📥 Tasarım Görselini İndir (PNG)</button>
+                    </div>
                 </div>
 
                 <script>
-                    const bgUrls = {json.dumps(active_bg_urls)};
-                    let currentScene = 1;
-                    const totalScenes = 3;
-                    const isVideo = {"true" if is_video_mode else "false"};
-
-                    if (isVideo) {{
-                        setInterval(() => {{
-                            currentScene = (currentScene % totalScenes) + 1;
-                            
-                            // Sahneleri değiştir
-                            for (let i = 1; i <= totalScenes; i++) {{
-                                document.getElementById('scene-' + i).classList.remove('active');
-                                const p = document.getElementById('p' + i);
-                                if (p) {{
-                                    p.classList.remove('active', 'completed');
-                                    if (i < currentScene) p.classList.add('completed');
-                                }}
-                            }}
-                            
-                            document.getElementById('scene-' + currentScene).classList.add('active');
-                            const activeP = document.getElementById('p' + currentScene);
-                            if (activeP) activeP.classList.add('active');
-
-                            // Arkaplanı değiştir (12 saniyede 3 farklı arkaplan)
-                            document.getElementById('capture-card').style.backgroundImage = 'url(' + bgUrls[currentScene - 1] + ')';
-                        }}, 4000);
-                    }}
-
                     function downloadCard() {{
                         const card = document.getElementById('capture-card');
                         html2canvas(card, {{ scale: 3, useCORS: true, backgroundColor: null }}).then(canvas => {{
                             const link = document.createElement('a');
-                            link.download = 'Istestate_Meric_Sosyal_Medya_Icerik.png';
+                            link.download = 'Istestate_Meric_Proje_Karti.png';
                             link.href = canvas.toDataURL('image/png');
                             link.click();
                         }});
@@ -1754,4 +1741,4 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                 </body>
                 </html>
                 """
-                components.html(studio_html, height=640)
+                components.html(studio_html, height=725)
