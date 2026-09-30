@@ -1541,204 +1541,250 @@ Kurumsal portföyümüz ve detaylı mimari fizibilite raporlarımız hakkında b
                 else:
                     aspect_class = "portrait"
 
+                is_video_mode = "Video" in media_type
+
                 studio_html = f"""
                 <!DOCTYPE html>
                 <html>
                 <head>
                 <meta charset="utf-8">
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
                 <style>
                     * {{ box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }}
-                    body {{ background-color: #0f172a; color: #ffffff; margin: 0; padding: 10px; display: flex; justify-content: center; }}
-                    .studio-container {{ width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; }}
+                    body {{ background-color: #0f172a; color: #ffffff; margin: 0; padding: 12px; }}
+                    .studio-container {{ max-width: 850px; margin: 0 auto; }}
                     
                     .card-frame {{
                         width: 100%;
-                        max-width: 370px;
+                        max-width: 400px;
+                        margin: 0 auto;
                         background-size: cover;
                         background-position: center;
                         border: 2px solid #38bdf8;
                         border-radius: 16px;
-                        padding: 18px;
+                        padding: 20px;
                         box-shadow: 0 20px 40px rgba(0,0,0,0.6);
                         position: relative;
                         overflow: hidden;
+                        transition: background-image 1s ease-in-out;
                     }}
-                    .card-frame.story {{ aspect-ratio: 9/16; max-width: 310px; }}
-                    .card-frame.square {{ aspect-ratio: 1/1; max-width: 370px; }}
-                    .card-frame.portrait {{ aspect-ratio: 4/5; max-width: 340px; }}
+                    .card-frame.story {{ aspect-ratio: 9/16; max-width: 320px; }}
+                    .card-frame.square {{ aspect-ratio: 1/1; max-width: 380px; }}
+                    .card-frame.portrait {{ aspect-ratio: 4/5; max-width: 350px; }}
                     
                     .card-overlay {{
                         position: absolute;
                         top: 0; left: 0; right: 0; bottom: 0;
-                        background: linear-gradient(rgba(15, 23, 42, 0.78), rgba(30, 41, 59, 0.92));
-                        padding: 16px;
+                        background: linear-gradient(rgba(15, 23, 42, 0.82), rgba(30, 41, 59, 0.94));
+                        padding: 18px;
                         display: flex;
                         flex-direction: column;
                         justify-content: space-between;
                     }}
                     
-                    .card-header {{
+                    .reels-progress {{
                         display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-                        padding-bottom: 8px;
-                        margin-bottom: 8px;
-                    }}
-                    .logo-img {{
-                        max-height: 24px;
-                        width: auto;
-                        object-fit: contain;
-                        background: rgba(255, 255, 255, 0.95);
-                        padding: 3px 6px;
-                        border-radius: 4px;
-                    }}
-                    
-                    .card-title {{
-                        font-size: 13px;
-                        font-weight: 800;
-                        color: #f8fafc;
-                        margin-bottom: 2px;
-                        line-height: 1.2;
-                        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-                    }}
-                    .card-subtitle {{
-                        font-size: 10px;
-                        color: #cbd5e1;
-                        margin-bottom: 8px;
-                        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-                    }}
-                    
-                    .metrics-grid {{
-                        display: grid;
-                        grid-template-columns: 1fr 1fr;
-                        gap: 6px;
-                        margin-bottom: 6px;
-                    }}
-                    .metric-box {{
-                        background: rgba(15, 23, 42, 0.85);
-                        backdrop-filter: blur(4px);
-                        border: 1px solid rgba(255, 255, 255, 0.2);
-                        padding: 8px;
-                        border-radius: 8px;
-                        text-align: center;
-                    }}
-                    .metric-label {{
-                        font-size: 7.5px;
-                        color: #94a3b8;
-                        text-transform: uppercase;
-                        margin-bottom: 2px;
-                    }}
-                    .metric-val {{
-                        font-size: 11px;
-                        font-weight: 700;
-                        color: #38bdf8;
-                    }}
-                    
-                    .info-box {{
-                        background: rgba(15, 23, 42, 0.85);
-                        border: 1px solid rgba(56, 189, 248, 0.4);
-                        padding: 8px;
-                        border-radius: 8px;
-                        font-size: 9.5px;
-                        line-height: 1.3;
-                        color: #e2e8f0;
-                        margin-bottom: 6px;
-                    }}
-                    .footer-badge {{
-                        text-align: center;
-                        font-size: 7.5px;
-                        color: #cbd5e1;
-                        border-top: 1px dashed rgba(255,255,255,0.2);
-                        padding-top: 5px;
-                        font-weight: 600;
-                    }}
-                    
-                    .download-btn-container {{
+                        gap: 4px;
                         width: 100%;
-                        max-width: 370px;
-                        margin-top: 12px;
+                        margin-bottom: 8px;
+                        {"" if is_video_mode else "display: none;"}
                     }}
-                    .download-btn {{
-                        display: block;
-                        width: 100%;
-                        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-                        color: white;
-                        border: none;
-                        padding: 12px;
-                        border-radius: 10px;
-                        font-weight: 700;
-                        cursor: pointer;
-                        text-align: center;
-                        font-size: 13px;
-                        box-shadow: 0 4px 15px rgba(2, 132, 199, 0.5);
-                        transition: all 0.2s ease;
+                    .progress-bar {{
+                        flex: 1;
+                        height: 3px;
+                        background: rgba(255, 255, 255, 0.3);
+                        border-radius: 2px;
+                        overflow: hidden;
                     }}
-                    .download-btn:hover {{
-                        background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
-                        transform: translateY(-2px);
+                    .progress-fill {{
+                        width: 0%;
+                        height: 100%;
+                        background: #38bdf8;
+                        transition: width 0.1s linear;
                     }}
+
+                    .card-header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 6px; }}
+                    .logo-img {{ max-height: 22px; width: auto; object-fit: contain; background: rgba(255,255,255,0.95); padding: 2px 6px; border-radius: 4px; }}
+                    .badge {{ background: #0284c7; color: #ffffff; padding: 2px 8px; border-radius: 20px; font-size: 8px; font-weight: 700; letter-spacing: 0.5px; }}
+                    .card-title {{ font-size: 13px; font-weight: 800; color: #f8fafc; margin-bottom: 2px; line-height: 1.2; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }}
+                    .card-subtitle {{ font-size: 10px; color: #cbd5e1; margin-bottom: 8px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }}
+                    
+                    .scene-content {{ display: none; flex-direction: column; gap: 8px; flex-grow: 1; justify-content: center; }}
+                    .scene-content.active {{ display: flex; animation: fadeIn 0.5s ease-in-out; }}
+                    
+                    @keyframes fadeIn {{
+                        from {{ opacity: 0; transform: translateY(4px); }}
+                        to {{ opacity: 1; transform: translateY(0); }}
+                    }}
+
+                    .metrics-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }}
+                    .metric-box {{ background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.2); padding: 8px; border-radius: 6px; text-align: center; }}
+                    .metric-label {{ font-size: 7.5px; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px; }}
+                    .metric-val {{ font-size: 11px; font-weight: 700; color: #38bdf8; }}
+                    
+                    .info-box {{ background: rgba(15, 23, 42, 0.88); border: 1px solid rgba(56, 189, 248, 0.4); padding: 8px; border-radius: 6px; font-size: 9.5px; line-height: 1.3; color: #e2e8f0; }}
+                    .footer-badge {{ text-align: center; font-size: 7.5px; color: #cbd5e1; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 4px; margin-top: 4px; font-weight: 600; }}
                 </style>
                 </head>
                 <body>
                 <div class="studio-container">
-                    <div id="capture-card" class="card-frame {aspect_class}" style="background-image: url('{active_bg_urls[0]}');">
+                    <div id="card-frame" class="card-frame {aspect_class}" style="background-image: url('{active_bg_urls[0]}');">
                         <div class="card-overlay">
-                            <div class="card-header">
-                                <img class="logo-img" src="{logo1_src}" alt="İstestate Logo">
-                                <img class="logo-img" src="{logo2_src}" alt="Meriç Logo">
-                            </div>
                             <div>
+                                <div class="reels-progress">
+                                    <div class="progress-bar"><div id="p1" class="progress-fill"></div></div>
+                                    <div class="progress-bar"><div id="p2" class="progress-fill"></div></div>
+                                    <div class="progress-bar"><div id="p3" class="progress-fill"></div></div>
+                                </div>
+                                <div class="card-header">
+                                    <img src="{logo1_src}" class="logo-img" alt="Logo 1">
+                                    <span class="badge">STRATEJİK FİZİBİLİTE</span>
+                                    <img src="{logo2_src}" class="logo-img" alt="Logo 2">
+                                </div>
                                 <div class="card-title">İSTANBUL / BEYKOZ ({mahalle_adi})</div>
-                                <div class="card-subtitle">Stratejik Arsa & Proje Geliştirme Fizibilitesi</div>
+                                <div class="card-subtitle">Arsa Geliştirme & Proje Analiz Raporu</div>
                             </div>
-                            <div class="metrics-grid">
-                                <div class="metric-box">
-                                    <div class="metric-label">Toplam Arsa</div>
-                                    <div class="metric-val">{toplam_donum_str}</div>
+                            
+                            <!-- Sahne 1: Lokasyon & Arsa -->
+                            <div id="scene-0" class="scene-content active">
+                                <div class="metrics-grid">
+                                    <div class="metric-box">
+                                        <div class="metric-label">Toplam Arsa</div>
+                                        <div class="metric-val">{toplam_donum_str}</div>
+                                    </div>
+                                    <div class="metric-box">
+                                        <div class="metric-label">İmar Durumu</div>
+                                        <div class="metric-val" style="font-size: 9.5px;">{terk_durum_str}</div>
+                                    </div>
+                                    <div class="metric-box">
+                                        <div class="metric-label">Proje Konsepti</div>
+                                        <div class="metric-val" style="font-size: 9.5px;">{sample_project_type[:22]}</div>
+                                    </div>
+                                    <div class="metric-box">
+                                        <div class="metric-label">Bağımsız Ünite</div>
+                                        <div class="metric-val">{total_units_sum} Adet</div>
+                                    </div>
                                 </div>
-                                <div class="metric-box">
-                                    <div class="metric-label">İnşaat Alanı</div>
-                                    <div class="metric-val">{total_yasal_brut_insaat:,.0f} m²</div>
-                                </div>
-                                <div class="metric-box">
-                                    <div class="metric-label">Bağımsız Ünite</div>
-                                    <div class="metric-val">{total_units_sum} Adet</div>
-                                </div>
-                                <div class="metric-box">
-                                    <div class="metric-label">Hedeflenen YG</div>
-                                    <div class="metric-val">%{yg_orani:.1f}</div>
+                                <div class="info-box">
+                                    📍 <b>Lokasyon Potansiyeli:</b> Bölgenin en değerli imar parsellerinde maksimum emsal verimliliği ve yatırım fırsatı.
                                 </div>
                             </div>
-                            <div class="info-box">
-                                <b>Konsept:</b> {sample_project_type}<br>
-                                <b>Terk Durumu:</b> {terk_durum_str}<br>
-                                <b>Tahmini Ciro:</b> ${display_ciro_usd:,.0f}
+
+                            <!-- Sahne 2: Mimari & Metraj -->
+                            <div id="scene-1" class="scene-content">
+                                <div class="metrics-grid">
+                                    <div class="metric-box">
+                                        <div class="metric-label">Emsal İnşaat</div>
+                                        <div class="metric-val">{total_yasal_brut_insaat:,.0f} m²</div>
+                                    </div>
+                                    <div class="metric-box">
+                                        <div class="metric-label">Bodrum Alanı</div>
+                                        <div class="metric-val">{total_bodrum_alani:,.0f} m²</div>
+                                    </div>
+                                    <div class="metric-box">
+                                        <div class="metric-label">Toplam İnşaat</div>
+                                        <div class="metric-val">{total_genel_insaat_m2:,.0f} m²</div>
+                                    </div>
+                                    <div class="metric-box">
+                                        <div class="metric-label">Ortalama Ünite</div>
+                                        <div class="metric-val">{avg_unit_net:,.1f} m²</div>
+                                    </div>
+                                </div>
+                                <div class="info-box">
+                                    🏛️ <b>Mimari Yapı:</b> {sample_pool_mod} konsepti, ferah bahçe payları ve optimize edilmiş bağımsız bölüm planlaması.
+                                </div>
                             </div>
-                            <div class="footer-badge">
-                                İstestate Gayrimenkul & Meriç İnşaat Emlak
+
+                            <!-- Sahne 3: Finansal Projeksiyon -->
+                            <div id="scene-2" class="scene-content">
+                                <div class="metrics-grid">
+                                    <div class="metric-box" style="grid-column: span 2;">
+                                        <div class="metric-label">Tahmini Proje Cirosu</div>
+                                        <div class="metric-val" style="font-size: 14px; color: #38bdf8;">${display_ciro_usd:,.0f}</div>
+                                    </div>
+                                    <div class="metric-box" style="grid-column: span 2;">
+                                        <div class="metric-label">Hedeflenen Yatırım Geri Dönüşü (YG)</div>
+                                        <div class="metric-val" style="font-size: 14px; color: #4ade80;">%{yg_orani:.1f} Net Kar</div>
+                                    </div>
+                                </div>
+                                <div class="info-box">
+                                    💰 <b>Yatırım Değeri:</b> Güçlü ciro potansiyeli ve yüksek kârlılık oranlarıyla yatırımcılar için kaçırılmayacak fırsat.
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="footer-badge">İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT</div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="download-btn-container">
-                        <button class="download-btn" onclick="downloadCard()">📥 Tasarım Görselini İndir (PNG)</button>
                     </div>
                 </div>
 
                 <script>
-                    function downloadCard() {{
-                        const card = document.getElementById('capture-card');
-                        html2canvas(card, {{ scale: 3, useCORS: true, backgroundColor: null }}).then(canvas => {{
-                            const link = document.createElement('a');
-                            link.download = 'Istestate_Meric_Proje_Karti.png';
-                            link.href = canvas.toDataURL('image/png');
-                            link.click();
+                    const bgUrls = {json.dumps(active_bg_urls)};
+                    const isVideo = {"true" if is_video_mode else "false"};
+                    let currentScene = 0;
+                    const totalScenes = 3;
+                    const sceneDuration = 4000;
+                    
+                    const cardFrame = document.getElementById('card-frame');
+                    const scenes = [
+                        document.getElementById('scene-0'),
+                        document.getElementById('scene-1'),
+                        document.getElementById('scene-2')
+                    ];
+                    const progressFills = [
+                        document.getElementById('p1'),
+                        document.getElementById('p2'),
+                        document.getElementById('p3')
+                    ];
+
+                    function showScene(index) {{
+                        scenes.forEach((s, idx) => {{
+                            if(s) {{
+                                if(idx === index) {{
+                                    s.classList.add('active');
+                                }} else {{
+                                    s.classList.remove('active');
+                                }}
+                            }}
+                        }});
+                        
+                        if(cardFrame && bgUrls[index]) {{
+                            cardFrame.style.backgroundImage = `url('${{bgUrls[index]}}')`;
+                        }}
+
+                        progressFills.forEach((pf, idx) => {{
+                            if(pf) {{
+                                if(idx < index) {{
+                                    pf.style.transition = 'none';
+                                    pf.style.width = '100%';
+                                }} else if(idx === index && isVideo) {{
+                                    pf.style.transition = 'width ' + (sceneDuration / 1000) + 's linear';
+                                    pf.style.width = '100%';
+                                }} else {{
+                                    pf.style.transition = 'none';
+                                    pf.style.width = '0%';
+                                }}
+                            }}
                         }});
                     }}
+
+                    function runReelsLoop() {{
+                        if (!isVideo) {{
+                            showScene(0);
+                            return;
+                        }}
+                        
+                        showScene(currentScene);
+                        
+                        setTimeout(() => {{
+                            currentScene = (currentScene + 1) % totalScenes;
+                            runReelsLoop();
+                        }}, sceneDuration);
+                    }}
+
+                    runReelsLoop();
                 </script>
                 </body>
                 </html>
                 """
-                components.html(studio_html, height=725)
+                components.html(studio_html, height=520)
