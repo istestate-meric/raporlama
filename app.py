@@ -1407,7 +1407,7 @@ if selected_keys:
     # =========================================================================
     with tab6:
         st.subheader("📱 Yapay Zeka Destekli Sosyal Medya Stüdyosu")
-        st.markdown("Seçtiğiniz parsellerin imar ve mimari potansiyelini analiz ederek sosyal medya hesaplarınızda (Instagram, TikTok, WhatsApp) doğrudan paylaşabileceğiniz **.png** formatında görsel kartlar ve **.mp4** formatında dinamik dikey reklam filmleri üretin. *Not: Finansal bilgiler (fiyat, ciro, maliyet) tamamen gizlenmiş olup arazi metrajları yalnızca **dönüm** cinsinden gösterilmektedir.*[cite: 19]")
+        st.markdown("Seçtiğiniz parsellerin imar ve mimari potansiyelini analiz ederek sosyal medya hesaplarınızda (Instagram, TikTok, WhatsApp) doğrudan paylaşabileceğiniz **.png** formatında görsel kartlar ve en az 5 sahneli, logoların sabit olduğu **.mp4** formatında dinamik dikey reklam filmleri üretin. *Not: Finansal bilgiler tamamen gizlenmiş olup arazi metrajları yalnızca **dönüm** cinsinden gösterilmektedir.*")
 
         if active_parcel_db:
             first_p_key = list(active_parcel_db.keys())[0]
@@ -1415,6 +1415,7 @@ if selected_keys:
             mahalle_adi = p_sample.get("mahalle", "BİLİNMİYOR")
             toplam_m2 = sum(p.get("toplam_alan", 0.0) for p in active_parcel_db.values())
             
+            # Hassas metraj yerine dönüm cinsinden tam sayı gösterimi
             donum_tam_sayi = max(1, round(toplam_m2 / 1000.0))
             toplam_donum_str = f"Yaklaşık {donum_tam_sayi} Dönüm"
             
@@ -1473,7 +1474,7 @@ if selected_keys:
 
             # 2. YAPAY ZEKA GÖRSEL (.PNG) VE VİDEO (.MP4) İÇERİK STÜDYOSU (HTML/JS)
             st.markdown("### 2. 🎬 Canlı İndirilebilir 9:16 Medya Stüdyosu (.png & .mp4)")
-            st.markdown("Aşağıdaki sekmelerden **Fotoğraf Kartı (.png)** oluşturabilir veya **Dikey Reklam Filmini (.mp4)** tarayıcınızda canlı oluşturup indirebilirsiniz[cite: 19]:")
+            st.markdown("Aşağıdaki sekmelerden **Fotoğraf Kartı (.png)** oluşturabilir veya en az 5 sahneli, her sahnede logoların sabit olduğu **Dikey Reklam Filmini (.mp4)** tarayıcınızda canlı oluşturup indirebilirsiniz:")
 
             logo1_data = f"data:image/png;base64,{img1_base64}" if img1_base64 else ""
             logo2_data = f"data:image/png;base64,{img2_base64}" if img2_base64 else ""
@@ -1551,7 +1552,7 @@ if selected_keys:
                             </div>
                             <div>
                                 <div class="badge">Yapay Zeka Mimari Vizyonu</div>
-                                <div class="title">Bеykoz / {mahalle_adi}</div>
+                                <div class="title">Beykoz / {mahalle_adi}</div>
                                 <p class="subtitle">{sample_project_type}</p>
                             </div>
                             <div class="info-box">
@@ -1610,77 +1611,195 @@ if selected_keys:
                         }});
                     }}
 
-                    let canvas, ctx, animId;
-                    let frameCount = 0;
+                    let canvas, ctx;
+                    let animFrameId = null;
+                    let isRecording = false;
+
                     function initVideoCanvas() {{
                         canvas = document.getElementById('video-preview');
                         ctx = canvas.getContext('2d');
                         canvas.width = 360;
                         canvas.height = 640;
-                        drawFrame(0);
+                        
+                        // Canlı ön izleme döngüsü (5 sahne, her sahne 2 saniye = toplam 10 saniye döngü)
+                        if(animFrameId) cancelAnimationFrame(animFrameId);
+                        let startTime = performance.now();
+                        
+                        function loop(now) {{
+                            let elapsed = (now - startTime) / 1000;
+                            let sceneDuration = 2.0;
+                            let totalScenes = 5;
+                            let totalDuration = sceneDuration * totalScenes;
+                            let currentLoopTime = elapsed % totalDuration;
+                            let sceneIndex = Math.min(Math.floor(currentLoopTime / sceneDuration), totalScenes - 1);
+                            
+                            drawVideoScene(sceneIndex, currentLoopTime % sceneDuration);
+                            if(!isRecording) {{
+                                animFrameId = requestAnimationFrame(loop);
+                            }}
+                        }}
+                        animFrameId = requestAnimationFrame(loop);
                     }}
 
-                    function drawFrame(progress) {{
+                    function drawVideoScene(sceneIdx, sceneTime) {{
                         ctx.fillStyle = '#0f172a';
                         ctx.fillRect(0, 0, 360, 640);
 
+                        // Arka plan gradyanı
                         let grad = ctx.createLinearGradient(0, 0, 360, 640);
                         grad.addColorStop(0, '#1e1b4b');
                         grad.addColorStop(1, '#0f172a');
                         ctx.fillStyle = grad;
                         ctx.fillRect(0, 0, 360, 640);
 
-                        ctx.fillStyle = '#ffffff';
-                        ctx.font = 'bold 18px sans-serif';
+                        // HER SAHNEDE SABİT ÜST LOGO / BAŞLIK ALANI
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                        ctx.fillRect(20, 20, 320, 45);
+                        ctx.fillStyle = '#0f172a';
+                        ctx.font = 'bold 11px sans-serif';
                         ctx.textAlign = 'center';
-                        ctx.fillText('BEYKOZ / {mahalle_adi.upper()}', 180, 100);
+                        ctx.fillText('İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT', 180, 47);
 
-                        ctx.fillStyle = '#38bdf8';
-                        ctx.font = 'bold 13px sans-serif';
-                        ctx.fillText('{sample_project_type}', 180, 125);
-
-                        ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
-                        ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
-                        ctx.lineWidth = 1;
-                        ctx.beginPath();
-                        ctx.roundRect(30, 160, 300, 300, 12);
-                        ctx.fill();
-                        ctx.stroke();
-
-                        ctx.fillStyle = '#94a3b8';
-                        ctx.font = '12px sans-serif';
-                        ctx.textAlign = 'left';
-                        
-                        let yPos = 205;
-                        const items = [
-                            ["Arazi Büyüklüğü:", "{toplam_donum_str}"],
-                            ["Mimari Konsept:", "{sample_project_type}"],
-                            ["Tasarım Stili:", "{render_style}"],
-                            ["Sosyal Donatı:", "{sample_pool_mod}"]
-                        ];
-
-                        items.forEach(pair => {{
-                            ctx.fillStyle = '#94a3b8';
-                            ctx.fillText(pair[0], 55, yPos);
+                        // SAHNE İÇERİKLERİ (TOPLAM 5 SAHNE)
+                        if(sceneIdx === 0) {{
+                            // Sahne 1: Bölge ve Proje Girişi
+                            ctx.fillStyle = '#38bdf8';
+                            ctx.font = 'bold 14px sans-serif';
+                            ctx.fillText('BEYKOZ BÖLGE RAPORU', 180, 110);
                             ctx.fillStyle = '#ffffff';
-                            ctx.font = 'bold 12px sans-serif';
-                            ctx.textAlign = 'right';
-                            ctx.fillText(pair[1], 305, yPos);
-                            ctx.font = '12px sans-serif';
-                            ctx.textAlign = 'left';
-                            yPos += 55;
-                        }});
+                            ctx.font = 'bold 22px sans-serif';
+                            ctx.fillText('{mahalle_adi.upper()}', 180, 145);
+                            
+                            ctx.fillStyle = 'rgba(30, 41, 59, 0.9)';
+                            ctx.beginPath();
+                            ctx.roundRect(30, 200, 300, 260, 12);
+                            ctx.fill();
+                            
+                            ctx.fillStyle = '#94a3b8';
+                            ctx.font = '13px sans-serif';
+                            ctx.fillText('Stratejik Arsa & Proje Geliştirme', 180, 280);
+                            ctx.fillStyle = '#38bdf8';
+                            ctx.font = 'bold 16px sans-serif';
+                            ctx.fillText('{toplam_donum_str}', 180, 330);
 
-                        ctx.fillStyle = '#cbd5e1';
-                        ctx.font = '10px sans-serif';
+                        }} else if(sceneIdx === 1) {{
+                            // Sahne 2: Mimari Konsept
+                            ctx.fillStyle = '#38bdf8';
+                            ctx.font = 'bold 14px sans-serif';
+                            ctx.fillText('YAPAY ZEKA VİZYONU', 180, 110);
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = 'bold 18px sans-serif';
+                            ctx.fillText('Mimari Konsept Tasarımı', 180, 145);
+
+                            ctx.fillStyle = 'rgba(30, 41, 59, 0.9)';
+                            ctx.beginPath();
+                            ctx.roundRect(30, 200, 300, 260, 12);
+                            ctx.fill();
+
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = 'bold 14px sans-serif';
+                            ctx.fillText('{sample_project_type}', 180, 290);
+                            ctx.fillStyle = '#94a3b8';
+                            ctx.font = '12px sans-serif';
+                            ctx.fillText('Seçilen Stil: {render_style}', 180, 330);
+
+                        }} else if(sceneIdx === 2) {{
+                            // Sahne 3: Sosyal Donatılar
+                            ctx.fillStyle = '#38bdf8';
+                            ctx.font = 'bold 14px sans-serif';
+                            ctx.fillText('YAŞAM STANDARTLARI', 180, 110);
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = 'bold 18px sans-serif';
+                            ctx.fillText('Sosyal Donatı & Havuz', 180, 145);
+
+                            ctx.fillStyle = 'rgba(30, 41, 59, 0.9)';
+                            ctx.beginPath();
+                            ctx.roundRect(30, 200, 300, 260, 12);
+                            ctx.fill();
+
+                            ctx.fillStyle = '#10b981';
+                            ctx.font = 'bold 16px sans-serif';
+                            ctx.fillText('✨ {sample_pool_mod}', 180, 310);
+
+                        }} else if(sceneIdx === 3) {{
+                            // Sahne 4: Lokasyon Avantajı
+                            ctx.fillStyle = '#38bdf8';
+                            ctx.font = 'bold 14px sans-serif';
+                            ctx.fillText('LOKASYON & DEĞER', 180, 110);
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = 'bold 18px sans-serif';
+                            ctx.fillText('Yüksek Yatırım Potansiyeli', 180, 145);
+
+                            ctx.fillStyle = 'rgba(30, 41, 59, 0.9)';
+                            ctx.beginPath();
+                            ctx.roundRect(30, 200, 300, 260, 12);
+                            ctx.fill();
+
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = '13px sans-serif';
+                            ctx.fillText('Doğa ile İç İçe Premium Lokasyon', 180, 300);
+
+                        }} else if(sceneIdx === 4) {{
+                            // Sahne 5: İletişim Bilgileri (Son Sahne)
+                            ctx.fillStyle = '#38bdf8';
+                            ctx.font = 'bold 14px sans-serif';
+                            ctx.fillText('İLETİŞİME GEÇİN', 180, 100);
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = 'bold 18px sans-serif';
+                            ctx.fillText('Projelerimiz İçin Arayın', 180, 135);
+
+                            ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+                            ctx.strokeStyle = '#38bdf8';
+                            ctx.lineWidth = 2;
+                            ctx.beginPath();
+                            ctx.roundRect(30, 180, 300, 320, 12);
+                            ctx.fill();
+                            ctx.stroke();
+
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = 'bold 14px sans-serif';
+                            ctx.fillText('Umutcan K. MERİÇ', 180, 230);
+                            ctx.fillStyle = '#38bdf8';
+                            ctx.font = 'bold 14px sans-serif';
+                            ctx.fillText('0539 451 61 61', 180, 270);
+
+                            ctx.fillStyle = '#94a3b8';
+                            ctx.font = '11px sans-serif';
+                            ctx.fillText('İstestate Meriç Gayrimenkul Danışmanlık', 180, 330);
+                            ctx.fillText('Meriç İnşaat Emlak - İstanbul / Beykoz', 180, 360);
+                        }}
+
+                        // HER SAHNEDE SABİT ALT BİLGİ / LOGO BANDI
+                        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+                        ctx.fillRect(20, 580, 320, 40);
+                        ctx.fillStyle = '#38bdf8';
+                        ctx.font = 'bold 10px sans-serif';
                         ctx.textAlign = 'center';
-                        ctx.fillText('İstestate Gayrimenkul & Meriç İnşaat', 180, 580);
+                        ctx.fillText('İSTESTATE & MERİÇ İNŞAAT STÜDYOSU', 180, 605);
                     }}
 
                     function startVideoRecord() {{
                         const btn = document.getElementById('v-action-btn');
-                        btn.innerText = "⏳ Video Kodlanıyor (.mp4)...";
+                        btn.innerText = "⏳ 5 Sahneli Video Kodlanıyor (.mp4)...";
                         btn.disabled = true;
+                        isRecording = true;
+
+                        // Baştan başlatıp tam 10 saniye (5 sahne x 2 sn) kayıt alıyoruz
+                        let startTime = performance.now();
+                        let totalDurationMs = 10000;
+
+                        function recordLoop(now) {{
+                            let elapsed = now - startTime;
+                            let progress = elapsed / totalDurationMs;
+                            let sceneDuration = 2000;
+                            let sceneIdx = Math.min(Math.floor(elapsed / sceneDuration), 4);
+                            
+                            drawVideoScene(sceneIdx, elapsed % sceneDuration);
+
+                            if(elapsed < totalDurationMs) {{
+                                requestAnimationFrame(recordLoop);
+                            }}
+                        }}
 
                         const stream = canvas.captureStream(30);
                         let recorder;
@@ -1701,12 +1820,17 @@ if selected_keys:
                             a.click();
                             btn.innerText = "🎬 MP4 Video Üret & İndir (.mp4)";
                             btn.disabled = false;
+                            isRecording = false;
+                            initVideoCanvas();
                         }};
 
                         recorder.start();
+                        requestAnimationFrame(recordLoop);
                         setTimeout(() => {{
-                            recorder.stop();
-                        }}, 3000);
+                            if(recorder.state === "recording") {{
+                                recorder.stop();
+                            }}
+                        }}, totalDurationMs);
                     }}
                 </script>
             </body>
