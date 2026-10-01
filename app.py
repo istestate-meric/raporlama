@@ -1415,7 +1415,6 @@ if selected_keys:
             mahalle_adi = p_sample.get("mahalle", "BİLİNMİYOR")
             toplam_m2 = sum(p.get("toplam_alan", 0.0) for p in active_parcel_db.values())
             
-            # Hassas arazi metrajı yerine dönüm cinsinden tam sayı gösterimi
             donum_tam_sayi = max(1, round(toplam_m2 / 1000.0))
             toplam_donum_str = f"Yaklaşık {donum_tam_sayi} Dönüm"
             
@@ -1603,7 +1602,7 @@ if selected_keys:
 
                     function downloadPNG() {{
                         const card = document.getElementById('render-card');
-                        html2canvas(card, {{ scale: 2, useCORS: true } }).then(canvas => {{
+                        html2canvas(card, {{ scale: 2, useCORS: true }}).then(canvas => {{
                             const link = document.createElement('a');
                             link.download = 'Sosyal_Medya_Mimari_Gorsel_{mahalle_adi}.png';
                             link.href = canvas.toDataURL('image/png');
@@ -1625,14 +1624,12 @@ if selected_keys:
                         ctx.fillStyle = '#0f172a';
                         ctx.fillRect(0, 0, 360, 640);
 
-                        // Arka plan simülasyon gradyanı
                         let grad = ctx.createLinearGradient(0, 0, 360, 640);
                         grad.addColorStop(0, '#1e1b4b');
                         grad.addColorStop(1, '#0f172a');
                         ctx.fillStyle = grad;
                         ctx.fillRect(0, 0, 360, 640);
 
-                        // Başlık ve metinler
                         ctx.fillStyle = '#ffffff';
                         ctx.font = 'bold 18px sans-serif';
                         ctx.textAlign = 'center';
@@ -1642,7 +1639,6 @@ if selected_keys:
                         ctx.font = 'bold 13px sans-serif';
                         ctx.fillText('{sample_project_type}', 180, 125);
 
-                        // Kutu
                         ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
                         ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
                         ctx.lineWidth = 1;
