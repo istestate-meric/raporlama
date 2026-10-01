@@ -1406,7 +1406,7 @@ if selected_keys:
     # TAB 6: 🤖 YAPAY ZEKA DESTEKLİ SOSYAL MEDYA, İÇERİK & REKLAM FİLMİ STÜDYOSU
     # =========================================================================
     with tab6:
-        st.subheader("📱 Yapay Zeka Destekli Sosyal Medya & İçerik Üretim StüDYOSU")
+        st.subheader("📱 Yapay Zeka Destekli Sosyal Medya & İçerik Üretim Stüdyosu")
         st.markdown("Seçtiğiniz parsellerin mimari metrajlarını ve imar potansiyelini analiz eden; sosyal medya hesaplarınızda (Instagram Reels, LinkedIn, WhatsApp Status, TikTok) paylaşabileceğiniz **AI Metin/Bülten**, **Yapay Zeka Render Promptları** ve **Canlı Animasyonlu HD Video/Görsel (.png & .mp4)** üretim stüdyosu:")
 
         if active_parcel_db:
@@ -1516,7 +1516,6 @@ if selected_keys:
             avg_unit_net = total_yasal_brut_insaat / total_units_sum if total_units_sum > 0 else 0.0
             total_genel_insaat_m2 = total_yasal_brut_insaat + total_bodrum_alani
 
-            # Finansal veriler tamamen kaldırıldı, mimari detaylar zenginleştirildi!
             if "Prestij" in ai_tone:
                 ai_generated_caption = f"""İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT | STRATEJİK MİMARİ PROJE GELİŞTİRME BÜLTENİ 🏗️📐
 
@@ -1554,7 +1553,7 @@ Portföyümüzdeki parsel grubunun imar parametreleri ve mimari kütle yerleşim
 • Birim Net Alan: {avg_unit_net:,.1f} m² / Ünite
 • Donatı: {sample_pool_mod} ve Özel Yeşil Alan Düzenlemesi
 
-Gayrimenkullerinizin imar ve mimari potansiyelini öğrenmek için İstestate Meriç Gayrimenkul Danışmanlık. 🏗️️
+Gayrimenkullerinizin imar ve mimari potansiyelini öğrenmek için İstestate Meriç Gayrimenkul Danışmanlık. 🏗
 
 {' '.join(ai_hashtags_type)}"""
 
@@ -1690,364 +1689,429 @@ Arsanızın mimari imar potansiyelini öğrenmek için mesaj atın! 📲✨
 
                 .action-btn {{
                     width: 100%; max-width: 360px; margin: 12px auto 0 auto; display: block;
-                    padding: 12px; background: #10b981; color: white; border: none;
-                    border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer;
-                    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); transition: all 0.2s; text-align: center;
+                    padding: 12px; background: #10b981; color: #ffffff; border: none;
+                    border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 13px;
+                    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); transition: all 0.2s;
                 }}
                 .action-btn:hover {{ background: #059669; transform: translateY(-1px); }}
 
-                /* VIDEO CANVAS & CONTAINER */
-                #video-studio-wrapper {{
-                    width: 100%; max-width: 360px; margin: 0 auto; text-align: center;
+                /* VIDEO CONTAINER & CANVAS */
+                .video-preview-wrapper {{
+                    width: 360px; height: 640px; margin: 0 auto; position: relative;
+                    border-radius: 16px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+                    border: 1px solid rgba(255,255,255,0.25); background: #0f172a;
                 }}
-                canvas#reelCanvas {{
-                    width: 360px; height: 640px; border-radius: 16px;
-                    box-shadow: 0 20px 40px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.25);
-                    background: #0f172a;
+                #video-canvas {{ width: 360px; height: 640px; display: block; background: #0f172a; }}
+
+                .video-controls {{
+                    width: 360px; margin: 12px auto 0 auto; display: flex; gap: 10px; flex-direction: column;
                 }}
-                .control-box {{
-                    margin-top: 12px; display: flex; gap: 10px; justify-content: center;
+                .v-btn {{
+                    padding: 12px; border: none; border-radius: 8px; font-weight: 800;
+                    cursor: pointer; font-size: 13px; transition: all 0.2s; text-align: center;
                 }}
-                .btn-rec {{
-                    padding: 12px 18px; background: #ef4444; color: white; border: none;
-                    border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer;
-                    display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
-                }}
-                .btn-rec:hover {{ background: #dc2626; }}
+                .v-btn-primary {{ background: #3b82f6; color: #ffffff; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }}
+                .v-btn-success {{ background: #10b981; color: #ffffff; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }}
+                .v-btn:disabled {{ background: #475569; cursor: not-allowed; box-shadow: none; opacity: 0.6; }}
             </style>
             </head>
             <body>
 
                 <div class="tabs-bar">
-                    <button class="tab-btn active" onclick="switchStudio('photo')">📸 HD Fotoğraf Kartı (.png)</button>
-                    <button class="tab-btn" onclick="switchStudio('video')">🎬 9:16 Dikey Reklam Filmi (.mp4)</button>
+                    <button class="tab-btn active" onclick="switchStudioTab('photo')">🖼️ 9:16 HD Fotoğraf Kartı (.png)</button>
+                    <button class="tab-btn" onclick="switchStudioTab('video')">🎬 9:16 Dikey Reklam Filmi (.mp4)</button>
                 </div>
 
-                <!-- 1. PHOTO CARD TAB -->
+                <!-- PANEL 1: PHOTO CARD -->
                 <div id="panel-photo" class="view-panel active">
                     <div id="photo-card-target">
                         <div>
                             <div class="logos-header">
-                                {'<img src="' + logo1_src + '">' if logo1_src else '<span>İSTESTATE</span>'}
-                                {'<img src="' + logo2_src + '">' if logo2_src else '<span>MERİÇ İNŞAAT</span>'}
+                                {"<img src='" + logo1_src + "'>" if logo1_src else "<span>İSTESTATE</span>"}
+                                {"<img src='" + logo2_src + "'>" if logo2_src else "<span>MERİÇ İNŞAAT</span>"}
                             </div>
-
-                            <div style="text-align: center; margin-top: 6px;">
-                                <div class="card-badge">📐 MİMARİ İMAR VE PROJE KÜNYESİ</div>
-                                <h3 class="card-title">BEYKOZ / {mahalle_adi.upper()}</h3>
-                                <p class="card-subtitle">{sample_project_type}</p>
-                            </div>
+                            <span class="card-badge">MİMARİ GELİŞTİRME & İMAR FİZİBİLİTESİ</span>
+                            <h3 class="card-title">BEYKOZ / {mahalle_adi.upper()}</h3>
+                            <p class="card-subtitle">{toplam_donum_str} • {sample_project_type}</p>
                         </div>
 
                         <div>
                             <div class="style-box">
-                                🎨 <b>Mimari Tasarım Stili ({render_style}):</b><br>
-                                {curr_style['desc']}
+                                🎨 <b>Seçilen Render Stili:</b> {render_style}<br>
+                                <i>{curr_style['desc']}</i>
                             </div>
 
                             <div class="specs-grid">
-                                <div class="spec-row">
-                                    <span class="spec-label">Arazi Büyüklüğü:</span>
-                                    <span class="spec-val">{toplam_donum_str}</span>
-                                </div>
-                                <div class="spec-row">
-                                    <span class="spec-label">İmar Yapılaşma:</span>
-                                    <span class="spec-val">{terk_durum_str}</span>
-                                </div>
-                                <div class="spec-row">
-                                    <span class="spec-label">Toplam İnşaat Hacmi:</span>
-                                    <span class="spec-val">{total_genel_insaat_m2:,.0f} m²</span>
-                                </div>
-                                <div class="spec-row">
-                                    <span class="spec-label">Emsal Üst Kat Hacmi:</span>
-                                    <span class="spec-val">{total_yasal_brut_insaat:,.0f} m²</span>
-                                </div>
-                                <div class="spec-row">
-                                    <span class="spec-label">Bodrum Kat İmkânı:</span>
-                                    <span class="spec-val">{total_bodrum_alani:,.0f} m²</span>
-                                </div>
-                                <div class="spec-row">
-                                    <span class="spec-label">Bağımsız Bölüm:</span>
-                                    <span class="spec-val">{total_units_sum} Adet Seçkin Ünite</span>
-                                </div>
-                                <div class="spec-row">
-                                    <span class="spec-label">Birim Net Kullanım:</span>
-                                    <span class="spec-val">{avg_unit_net:,.1f} m² / Ünite</span>
-                                </div>
-                                <div class="spec-row">
-                                    <span class="spec-label">Peyzaj & Sosyal Alan:</span>
-                                    <span class="spec-val">{sample_pool_mod}</span>
-                                </div>
+                                <div class="spec-row"><span class="spec-label">Proje Konsepti</span><span class="spec-val">{sample_project_type}</span></div>
+                                <div class="spec-row"><span class="spec-label">Bağımsız Bölüm</span><span class="spec-val">{total_units_sum} Adet Seçkin Ünite</span></div>
+                                <div class="spec-row"><span class="spec-label">Genel İnşaat Hacmi</span><span class="spec-val">{total_genel_insaat_m2:,.0f} m²</span></div>
+                                <div class="spec-row"><span class="spec-label">Emsal Üst Kat Alanı</span><span class="spec-val">{total_yasal_brut_insaat:,.0f} m²</span></div>
+                                <div class="spec-row"><span class="spec-label">Kapalı Bodrum Kat</span><span class="spec-val">{total_bodrum_alani:,.0f} m²</span></div>
+                                <div class="spec-row"><span class="spec-label">Ortalama Birim Net</span><span class="spec-val">{avg_unit_net:,.1f} m² / Ünite</span></div>
+                                <div class="spec-row"><span class="spec-label">Sosyal Donatı & Havuz</span><span class="spec-val">{sample_pool_mod}</span></div>
                             </div>
                         </div>
 
                         <div class="card-footer-info">
-                            🏢 <b>İSTESTATE MERİÇ GAYRİMENKUL DANIŞMANLIK & İNŞAAT</b><br>
-                            📞 Detaylı Mimari Rapor ve Sunum İçin İletişime Geçin
+                            <b>İSTESTATE MERİÇ GAYRİMENKUL DANIŞMANLIK</b><br>
+                            Stratejik Gayrimenkul Yatırım & İmar Fizibilite Portalı
                         </div>
                     </div>
 
-                    <button class="action-btn" onclick="downloadPhotoCard()">📥 HD Fotoğraf Kartını İndir (.png)</button>
+                    <button class="action-btn" onclick="downloadPhotoCard()">📥 9:16 HD Fotoğraf Kartını İndir (.png)</button>
                 </div>
 
-                <!-- 2. VIDEO FILM TAB -->
+                <!-- PANEL 2: VIDEO ANIMATION (CANVAS-BASED RENDERER) -->
                 <div id="panel-video" class="view-panel">
-                    <div id="video-studio-wrapper">
-                        <canvas id="reelCanvas" width="720" height="1280"></canvas>
-                        
-                        <div class="control-box">
-                            <button id="recordBtn" class="btn-rec" onclick="startVideoRender()">
-                                🎥 9:16 Dikey Reklam Filmini Oluştur ve İndir (.mp4)
-                            </button>
-                        </div>
-                        <p id="videoStatus" style="font-size: 11px; color: #38bdf8; margin-top: 8px; font-weight: 600;"></p>
+                    <div class="video-preview-wrapper">
+                        <canvas id="video-canvas" width="720" height="1280"></canvas>
+                    </div>
+
+                    <div class="video-controls">
+                        <button id="record-btn" class="v-btn v-btn-primary" onclick="generateAndRecordVideo()">🎬 9:16 Canlı Animasyonlu Video Üret & MP4 İndir</button>
+                        <div id="video-status" style="text-align: center; font-size: 11px; color: #38bdf8; font-weight: 600; min-height: 18px;"></div>
                     </div>
                 </div>
 
                 <script>
-                    function switchStudio(mode) {{
+                    function switchStudioTab(tab) {{
                         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                         document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
                         
-                        if(mode === 'photo') {{
+                        if(tab === 'photo') {{
                             document.querySelectorAll('.tab-btn')[0].classList.add('active');
                             document.getElementById('panel-photo').classList.add('active');
                         }} else {{
                             document.querySelectorAll('.tab-btn')[1].classList.add('active');
                             document.getElementById('panel-video').classList.add('active');
-                            initVideoCanvas();
+                            initVideoPreview();
                         }}
                     }}
 
                     function downloadPhotoCard() {{
-                        const element = document.getElementById('photo-card-target');
-                        html2canvas(element, {{ scale: 3, useCORS: true, backgroundColor: null }}).then(canvas => {{
+                        const target = document.getElementById('photo-card-target');
+                        html2canvas(target, {{ scale: 3, useCORS: true, allowTaint: true }}).then(canvas => {{
                             const link = document.createElement('a');
-                            link.download = 'Beykoz_{mahalle_adi}_Mimari_Foto_Karti.png';
+                            link.download = 'Beykoz_MimarI_Fizibilite_Kart_9x16.png';
                             link.href = canvas.toDataURL('image/png');
                             link.click();
                         }});
                     }}
 
-                    // VIDEO CANVAS ANIMATION & RECORDER LOGIC (.mp4)
-                    let canvas, ctx;
-                    let animationFrameId;
-                    let isRecording = false;
+                    /* =================================================================
+                       CANVAS VIDEO ENGINE - EXACT PARITY WITH PHOTO CARD
+                       ================================================================= */
+                    const canvas = document.getElementById('video-canvas');
+                    const ctx = canvas.getContext('2d');
 
+                    // Load Assets
                     const bgImages = [];
-                    const imgUrls = ['{curr_style["bg1"]}', '{curr_style["bg2"]}', '{curr_style["bg3"]}'];
-                    
+                    const imgUrls = ['{curr_style['bg1']}', '{curr_style['bg2']}', '{curr_style['bg3']}'];
+                    let loadedImgCount = 0;
+
                     imgUrls.forEach((url, i) => {{
                         const img = new Image();
-                        img.crossOrigin = "anonymous";
+                        img.crossOrigin = 'anonymous';
                         img.src = url;
+                        img.onload = () => {{ loadedImgCount++; }};
                         bgImages.push(img);
                     }});
 
-                    function initVideoCanvas() {{
-                        canvas = document.getElementById('reelCanvas');
-                        ctx = canvas.getContext('2d');
-                        if(!animationFrameId) {{
-                            renderAnimationFrame(Date.now());
-                        }}
+                    const logo1Img = new Image();
+                    let logo1Loaded = false;
+                    {f"logo1Img.crossOrigin = 'anonymous'; logo1Img.src = '{logo1_src}'; logo1Img.onload = () => {{ logo1Loaded = true; }};" if logo1_src else ""}
+
+                    const logo2Img = new Image();
+                    let logo2Loaded = false;
+                    {f"logo2Img.crossOrigin = 'anonymous'; logo2Img.src = '{logo2_src}'; logo2Img.onload = () => {{ logo2Loaded = true; }};" if logo2_src else ""}
+
+                    let animationFrameId = null;
+                    let isRecording = false;
+
+                    // Helper: Draw Rounded Rect
+                    function drawRoundRect(ctx, x, y, w, h, r, fillStyle, strokeStyle, lineWidth) {{
+                        ctx.beginPath();
+                        ctx.moveTo(x + r, y);
+                        ctx.arcTo(x + w, y, x + w, y + h, r);
+                        ctx.arcTo(x + w, y + h, x, y + h, r);
+                        ctx.arcTo(x, y + h, x, y, r);
+                        ctx.arcTo(x, y, x + w, y, r);
+                        ctx.closePath();
+                        if (fillStyle) {{ ctx.fillStyle = fillStyle; ctx.fill(); }}
+                        if (strokeStyle) {{ ctx.strokeStyle = strokeStyle; ctx.lineWidth = lineWidth || 1; ctx.stroke(); }}
                     }}
 
-                    function renderAnimationFrame(timestamp) {{
-                        const durationPerScene = 3500;
-                        const totalScenes = 3;
-                        const cycleTime = (timestamp % (durationPerScene * totalScenes));
-                        const currentSceneIdx = Math.floor(cycleTime / durationPerScene);
-                        const sceneProgress = (cycleTime % durationPerScene) / durationPerScene;
+                    // Helper: Draw Text Row inside Grid
+                    function drawSpecRow(ctx, x, y, w, h, label, val) {{
+                        ctx.font = '500 21px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+                        ctx.fillStyle = '#94a3b8';
+                        ctx.textAlign = 'left';
+                        ctx.fillText(label, x, y + 22);
 
-                        ctx.fillStyle = "#0f172a";
-                        ctx.fillRect(0, 0, 720, 1280);
+                        ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+                        ctx.fillStyle = '#ffffff';
+                        ctx.textAlign = 'right';
+                        ctx.fillText(val, x + w, y + 22);
 
-                        const activeImg = bgImages[currentSceneIdx];
-                        if(activeImg && activeImg.complete && activeImg.naturalWidth !== 0) {{
+                        ctx.beginPath();
+                        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+                        ctx.lineWidth = 1.5;
+                        ctx.moveTo(x, y + h);
+                        ctx.lineTo(x + w, y + h);
+                        ctx.stroke();
+                    }}
+
+                    function renderVideoFrame(timeSec) {{
+                        const W = 720;
+                        const H = 1280;
+
+                        // 1. Dynamic Background Crossfade & Slow Zoom (Ken Burns Effect)
+                        ctx.fillStyle = '#0f172a';
+                        ctx.fillRect(0, 0, W, H);
+
+                        const totalSlides = bgImages.length;
+                        const slideDuration = 3.0; // 3 sec per slide
+                        const cycleTime = timeSec % (totalSlides * slideDuration);
+                        const slideIdx = Math.floor(cycleTime / slideDuration);
+                        const nextSlideIdx = (slideIdx + 1) % totalSlides;
+                        const slideProgress = (cycleTime % slideDuration) / slideDuration;
+
+                        const img1 = bgImages[slideIdx];
+                        const img2 = bgImages[nextSlideIdx];
+
+                        // Draw Current Slide with subtle zoom
+                        if (img1 && img1.complete && img1.naturalWidth > 0) {{
                             ctx.save();
-                            const scale = 1.0 + (sceneProgress * 0.08);
-                            ctx.translate(360, 640);
+                            const scale = 1.0 + (slideProgress * 0.08);
+                            ctx.translate(W/2, H/2);
                             ctx.scale(scale, scale);
-                            ctx.drawImage(activeImg, -360, -640, 720, 1280);
+                            ctx.globalAlpha = 1.0;
+                            
+                            // Cover fit
+                            const imgRatio = img1.width / img1.height;
+                            const canvasRatio = W / H;
+                            let renderW, renderH;
+                            if(canvasRatio > imgRatio) {{
+                                renderW = W; renderH = W / imgRatio;
+                            }} else {{
+                                renderH = H; renderW = H * imgRatio;
+                            }}
+                            ctx.drawImage(img1, -renderW/2, -renderH/2, renderW, renderH);
                             ctx.restore();
                         }}
 
-                        const grad = ctx.createLinearGradient(0, 0, 0, 1280);
-                        grad.addColorStop(0, "rgba(15, 23, 42, 0.75)");
-                        grad.addColorStop(0.5, "rgba(15, 23, 42, 0.60)");
-                        grad.addColorStop(1, "rgba(15, 23, 42, 0.90)");
-                        ctx.fillStyle = grad;
-                        ctx.fillRect(0, 0, 720, 1280);
-
-                        ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
-                        ctx.fillRect(40, 50, 640, 70);
-                        ctx.fillStyle = "#0f172a";
-                        ctx.font = "bold 26px sans-serif";
-                        ctx.textAlign = "center";
-                        ctx.fillText("İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT", 360, 95);
-
-                        ctx.save();
-                        let alpha = 1.0;
-                        if(sceneProgress < 0.15) alpha = sceneProgress / 0.15;
-                        if(sceneProgress > 0.85) alpha = (1.0 - sceneProgress) / 0.15;
-                        ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-
-                        if(currentSceneIdx === 0) {{
-                            ctx.fillStyle = "#2563eb";
-                            ctx.fillRect(210, 220, 300, 44);
-                            ctx.fillStyle = "#ffffff";
-                            ctx.font = "bold 20px sans-serif";
-                            ctx.fillText("📍 STRATEJİK LOKASYON", 360, 248);
-
-                            ctx.font = "bold 44px sans-serif";
-                            ctx.fillText("BEYKOZ / {mahalle_adi.upper()}", 360, 340);
-
-                            ctx.fillStyle = "#38bdf8";
-                            ctx.font = "bold 32px sans-serif";
-                            ctx.fillText("{sample_project_type}", 360, 400);
-
-                            ctx.fillStyle = "rgba(30, 41, 59, 0.85)";
-                            ctx.fillRect(80, 480, 560, 440);
-                            ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
-                            ctx.lineWidth = 3;
-                            ctx.strokeRect(80, 480, 560, 440);
-
-                            ctx.fillStyle = "#ffffff";
-                            ctx.font = "bold 28px sans-serif";
-                            ctx.fillText("📐 ARAZİ VE İMAR POTANSİYELİ", 360, 540);
-
-                            ctx.font = "24px sans-serif";
-                            ctx.textAlign = "left";
-                            ctx.fillText("• Arazi Hacmi: {toplam_donum_str}", 120, 620);
-                            ctx.fillText("• Yapılaşma Statüsü: {terk_durum_str}", 120, 690);
-                            ctx.fillText("• Mimari Stil: {render_style}", 120, 760);
-                            ctx.fillText("• Yeşil Alan: {sample_pool_mod}", 120, 830);
-
-                        }} else if(currentSceneIdx === 1) {{
-                            ctx.fillStyle = "#10b981";
-                            ctx.fillRect(180, 220, 360, 44);
-                            ctx.fillStyle = "#ffffff";
-                            ctx.font = "bold 20px sans-serif";
-                            ctx.fillText("🏗️ MİMARİ KAPASİTE VE METRAJLARI", 360, 248);
-
-                            ctx.font = "bold 40px sans-serif";
-                            ctx.fillText("{total_genel_insaat_m2:,.0f} m² Toplam İnşaat", 360, 340);
-
-                            ctx.fillStyle = "rgba(30, 41, 59, 0.85)";
-                            ctx.fillRect(80, 420, 560, 500);
-                            ctx.strokeStyle = "rgba(16, 185, 129, 0.4)";
-                            ctx.lineWidth = 3;
-                            ctx.strokeRect(80, 420, 560, 500);
-
-                            ctx.fillStyle = "#ffffff";
-                            ctx.font = "24px sans-serif";
-                            ctx.textAlign = "left";
-                            ctx.fillText("• Emsal Üst Kat Hacmi: {total_yasal_brut_insaat:,.0f} m²", 120, 490);
-                            ctx.fillText("• Bodrum Kat Kapasitesi: {total_bodrum_alani:,.0f} m²", 120, 570);
-                            ctx.fillText("• Bağımsız Bölüm: {total_units_sum} Seçkin Ünite", 120, 650);
-                            ctx.fillText("• Birim Net Kullanım: {avg_unit_net:,.1f} m² / Ünite", 120, 730);
-                            ctx.fillText("• Sosyal Peyzaj: {total_bahce_alani_terki:,.0f} m² Bahçe", 120, 810);
-
-                        }} else {{
-                            ctx.fillStyle = "#2563eb";
-                            ctx.fillRect(190, 220, 340, 44);
-                            ctx.fillStyle = "#ffffff";
-                            ctx.font = "bold 20px sans-serif";
-                            ctx.fillText("✨ ÖZEL TASARIM KONSEPTİ", 360, 248);
-
-                            ctx.font = "bold 38px sans-serif";
-                            ctx.fillText("{render_style}", 360, 330);
-
-                            ctx.fillStyle = "#e2e8f0";
-                            ctx.font = "22px sans-serif";
-                            ctx.textAlign = "center";
-                            ctx.fillText("{curr_style['desc']}", 360, 400);
-
-                            ctx.fillStyle = "rgba(15, 23, 42, 0.90)";
-                            ctx.fillRect(80, 480, 560, 420);
-                            ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
-                            ctx.lineWidth = 2;
-                            ctx.strokeRect(80, 480, 560, 420);
-
-                            ctx.fillStyle = "#ffffff";
-                            ctx.font = "bold 28px sans-serif";
-                            ctx.fillText("DETAYLI MİMARİ RAPOR İÇİN", 360, 560);
-                            ctx.font = "bold 32px sans-serif";
-                            ctx.fillStyle = "#38bdf8";
-                            ctx.fillText("BİZİMLE İLETİŞİME GEÇİN", 360, 620);
-
-                            ctx.fillStyle = "#ffffff";
-                            ctx.font = "22px sans-serif";
-                            ctx.fillText("İstestate Meriç Gayrimenkul Danışmanlık", 360, 720);
-                            ctx.fillText("Proje Geliştirme ve Fizibilite Yönetimi", 360, 770);
+                        // Crossfade next slide during last 0.8 seconds
+                        if (slideProgress > 0.733 && img2 && img2.complete && img2.naturalWidth > 0) {{
+                            const fadeAlpha = (slideProgress - 0.733) / 0.267;
+                            ctx.save();
+                            ctx.globalAlpha = fadeAlpha;
+                            const imgRatio = img2.width / img2.height;
+                            let renderW = W, renderH = H;
+                            if ((W/H) > imgRatio) {{ renderH = W / imgRatio; }} else {{ renderW = H * imgRatio; }}
+                            ctx.drawImage(img2, (W - renderW)/2, (H - renderH)/2, renderW, renderH);
+                            ctx.restore();
                         }}
-                        ctx.restore();
 
-                        ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-                        ctx.font = "18px sans-serif";
-                        ctx.textAlign = "center";
-                        ctx.fillText("İSTESTATE MERİÇ PROJE PORTALI • BEYKOZ", 360, 1220);
+                        // Dark Overlay Gradient
+                        const grad = ctx.createLinearGradient(0, 0, 0, H);
+                        grad.addColorStop(0, 'rgba(15, 23, 42, 0.82)');
+                        grad.addColorStop(1, 'rgba(15, 23, 42, 0.94)');
+                        ctx.fillStyle = grad;
+                        ctx.fillRect(0, 0, W, H);
 
-                        animationFrameId = requestAnimationFrame(renderAnimationFrame);
+                        // Card Container Border
+                        drawRoundRect(ctx, 20, 20, W - 40, H - 40, 32, null, 'rgba(255,255,255,0.25)', 2);
+
+                        const pX = 36; // Left Padding
+                        let curY = 36;
+
+                        // 2. LOGOS HEADER
+                        drawRoundRect(ctx, pX, curY, W - (pX * 2), 64, 16, 'rgba(255, 255, 255, 0.95)', null);
+
+                        if (logo1Loaded) {{
+                            const aspect1 = logo1Img.width / logo1Img.height;
+                            const logo1W = Math.min(180, 48 * aspect1);
+                            ctx.drawImage(logo1Img, pX + 16, curY + 8, logo1W, 48);
+                        }} else {{
+                            ctx.font = 'bold 22px -apple-system, sans-serif';
+                            ctx.fillStyle = '#0f172a';
+                            ctx.textAlign = 'left';
+                            ctx.fillText('İSTESTATE', pX + 20, curY + 40);
+                        }}
+
+                        if (logo2Loaded) {{
+                            const aspect2 = logo2Img.width / logo2Img.height;
+                            const logo2W = Math.min(180, 48 * aspect2);
+                            ctx.drawImage(logo2Img, W - pX - 16 - logo2W, curY + 8, logo2W, 48);
+                        }} else {{
+                            ctx.font = 'bold 22px -apple-system, sans-serif';
+                            ctx.fillStyle = '#0f172a';
+                            ctx.textAlign = 'right';
+                            ctx.fillText('MERİÇ İNŞAAT', W - pX - 20, curY + 40);
+                        }}
+
+                        curY += 88;
+
+                        // 3. BADGE
+                        drawRoundRect(ctx, pX, curY, 440, 32, 8, '#2563eb', null);
+                        ctx.font = 'bold 17px -apple-system, sans-serif';
+                        ctx.fillStyle = '#ffffff';
+                        ctx.textAlign = 'left';
+                        ctx.fillText('MİMARİ GELİŞTİRME & İMAR FİZİBİLİTESİ', pX + 16, curY + 22);
+
+                        curY += 52;
+
+                        // 4. TITLE & SUBTITLE
+                        ctx.font = '800 32px -apple-system, sans-serif';
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillText('BEYKOZ / {mahalle_adi.upper()}', pX, curY);
+
+                        curY += 32;
+                        ctx.font = '600 21px -apple-system, sans-serif';
+                        ctx.fillStyle = '#38bdf8';
+                        ctx.fillText('{toplam_donum_str} • {sample_project_type}', pX, curY);
+
+                        curY += 38;
+
+                        // 5. RENDER STYLE BOX
+                        drawRoundRect(ctx, pX, curY, W - (pX * 2), 80, 16, 'rgba(30, 41, 59, 0.85)', 'rgba(56, 189, 248, 0.5)', 2);
+                        ctx.font = 'bold 20px -apple-system, sans-serif';
+                        ctx.fillStyle = '#38bdf8';
+                        ctx.fillText('🎨 Render Stili: {render_style}', pX + 18, curY + 30);
+
+                        ctx.font = 'italic 18px -apple-system, sans-serif';
+                        ctx.fillStyle = '#e2e8f0';
+                        ctx.fillText('{curr_style['desc'][:50]}...', pX + 18, curY + 60);
+
+                        curY += 104;
+
+                        // 6. SPECS GRID (ANIMATED PULSE / ENTRANCE)
+                        const gridW = W - (pX * 2);
+                        const gridH = 590;
+                        drawRoundRect(ctx, pX, curY, gridW, gridH, 20, 'rgba(15, 23, 42, 0.78)', 'rgba(255, 255, 255, 0.18)', 2);
+
+                        const rowsData = [
+                            ['Proje Konsepti', '{sample_project_type}'],
+                            ['Bağımsız Bölüm', '{total_units_sum} Adet Seçkin Ünite'],
+                            ['Genel İnşaat Hacmi', '{total_genel_insaat_m2:,.0f} m²'],
+                            ['Emsal Üst Kat Alanı', '{total_yasal_brut_insaat:,.0f} m²'],
+                            ['Kapalı Bodrum Kat', '{total_bodrum_alani:,.0f} m²'],
+                            ['Ortalama Birim Net', '{avg_unit_net:,.1f} m² / Ünite'],
+                            ['Sosyal Donatı & Havuz', '{sample_pool_mod}']
+                        ];
+
+                        let rY = curY + 20;
+                        const rowH = 78;
+                        rowsData.forEach(([lbl, val]) => {{
+                            drawSpecRow(ctx, pX + 20, rY, gridW - 40, rowH - 10, lbl, val);
+                            rY += rowH;
+                        }});
+
+                        // 7. FOOTER
+                        const footerY = H - 85;
+                        ctx.beginPath();
+                        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                        ctx.lineWidth = 1.5;
+                        ctx.moveTo(pX, footerY - 20);
+                        ctx.lineTo(W - pX, footerY - 20);
+                        ctx.stroke();
+
+                        ctx.font = 'bold 20px -apple-system, sans-serif';
+                        ctx.fillStyle = '#ffffff';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('İSTESTATE MERİÇ GAYRİMENKUL DANIŞMANLIK', W / 2, footerY + 10);
+
+                        ctx.font = '500 17px -apple-system, sans-serif';
+                        ctx.fillStyle = '#94a3b8';
+                        ctx.fillText('Stratejik Gayrimenkul Yatırım & İmar Fizibilite Portalı', W / 2, footerY + 38);
                     }}
 
-                    async function startVideoRender() {{
-                        if(isRecording) return;
-                        isRecording = true;
+                    let previewStartTime = null;
+                    function initVideoPreview() {{
+                        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                        previewStartTime = performance.now();
 
-                        const btn = document.getElementById('recordBtn');
-                        const status = document.getElementById('videoStatus');
-                        btn.disabled = true;
-                        btn.style.opacity = '0.6';
-                        status.innerText = "⏳ 9:16 Dikey Reklam Filmi (.mp4) İşleniyor ve Oluşturuluyor...";
-
-                        const stream = canvas.captureStream(30);
-                        
-                        let mimeType = 'video/mp4;codecs=avc1';
-                        if (!MediaRecorder.isTypeSupported(mimeType)) {{
-                            if (MediaRecorder.isTypeSupported('video/mp4')) {{
-                                mimeType = 'video/mp4';
-                            }} else if (MediaRecorder.isTypeSupported('video/webm;codecs=h264')) {{
-                                mimeType = 'video/webm;codecs=h264';
-                            }} else {{
-                                mimeType = 'video/webm';
+                        function loop(now) {{
+                            if (!isRecording) {{
+                                const elapsed = (now - previewStartTime) / 1000.0;
+                                renderVideoFrame(elapsed);
                             }}
+                            animationFrameId = requestAnimationFrame(loop);
+                        }}
+                        animationFrameId = requestAnimationFrame(loop);
+                    }}
+
+                    // -----------------------------------------------------------------
+                    // RECORDING & MP4 GENERATION ENGINE
+                    // -----------------------------------------------------------------
+                    async function generateAndRecordVideo() {{
+                        const recordBtn = document.getElementById('record-btn');
+                        const statusDiv = document.getElementById('video-status');
+
+                        recordBtn.disabled = true;
+                        isRecording = true;
+                        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+                        statusDiv.innerText = "⚡ HD Video Kareleri İşleniyor ve Kaydediliyor... (Lütfen Bekleyin)";
+
+                        const stream = canvas.captureStream(30); // 30 FPS
+                        let mimeType = 'video/webm;codecs=vp9';
+                        if (!MediaRecorder.isTypeSupported(mimeType)) {{
+                            mimeType = 'video/webm';
                         }}
 
                         const recorder = new MediaRecorder(stream, {{
                             mimeType: mimeType,
-                            videoBitsPerSecond: 5000000
+                            videoBitsPerSecond: 6000000 // 6 Mbps High Quality
                         }});
 
                         const chunks = [];
-                        recorder.ondataavailable = e => chunks.push(e.data);
+                        recorder.ondataavailable = e => {{ if (e.data.size > 0) chunks.push(e.data); }};
 
-                        recorder.onstop = e => {{
-                            const blob = new Blob(chunks, {{ type: 'video/mp4' }});
+                        recorder.onstop = () => {{
+                            const blob = new Blob(chunks, {{ type: mimeType }});
                             const url = URL.createObjectURL(blob);
                             const a = document.createElement('a');
                             a.href = url;
-                            a.download = 'Beykoz_{mahalle_adi}_Mimari_Reklam_Filmi.mp4';
-                            document.body.appendChild(a);
+                            a.download = 'Beykoz_MimarI_Fizibilite_Reklam_Filmi_9x16.mp4';
                             a.click();
-                            document.body.removeChild(a);
 
-                            status.innerText = "✅ Reklam Filmi (.mp4) Başarıyla İndirildi!";
-                            btn.disabled = false;
-                            btn.style.opacity = '1';
+                            statusDiv.innerText = "✅ Reklam Filmi Başarıyla Oluşturuldu ve İndirildi!";
+                            recordBtn.disabled = false;
                             isRecording = false;
+                            initVideoPreview();
                         }};
 
                         recorder.start();
 
-                        setTimeout(() => {{
-                            recorder.stop();
-                        }}, 10500);
+                        // Render 9 Seconds Video exactly frame by frame
+                        const totalDuration = 9.0;
+                        const fps = 30;
+                        const totalFrames = totalDuration * fps;
+                        let frameCount = 0;
+
+                        const frameInterval = setInterval(() => {{
+                            const timeSec = frameCount / fps;
+                            renderVideoFrame(timeSec);
+                            frameCount++;
+
+                            if (frameCount >= totalFrames) {{
+                                clearInterval(frameInterval);
+                                recorder.stop();
+                            }}
+                        }}, 1000 / fps);
                     }}
+
+                    // Auto init preview on startup
+                    window.onload = () => {{
+                        initVideoPreview();
+                    }};
                 </script>
             </body>
             </html>
             """
-            components.html(studio_html_content, height=820)
+
+            components.html(studio_html_content, height=850)
+
         else:
-            st.info("Sosyal medya stüdyosunu kullanmak için lütfen sol menüden en az bir parsel seçin.")
+            st.warning("⚠️ Sosyal Medya Stüdyosunu kullanabilmek için lütfen sol menüden en az bir adet parsel seçin.")
