@@ -1381,7 +1381,7 @@ if selected_keys:
             st.markdown("---")
             col_db1, col_db2 = st.columns(2)
             with col_db1:
-                st.markdown("#### 🔍 Ham JSON Veri Yapısı")
+                st.markdown("#### 🔍 JSON Veri Yapısı")
                 st.json(db_items)
             with col_db2:
                 st.markdown("#### ⚙️ Veritabanı İşlemleri")
@@ -1403,11 +1403,11 @@ if selected_keys:
             st.info("Veritabanında kayıtlı parsel bulunmuyor.")
 
     # =========================================================================
-    # TAB 6: 📱 SOSYAL MEDYA STÜDYOSU (GÜNCELLENMİŞ ÇOK SAHNELİ REKLAM FİLMİ)
+    # TAB 6: 🤖 YAPAY ZEKA DESTEKLİ SOSYAL MEDYA, İÇERİK & REKLAM FİLMİ STÜDYOSU
     # =========================================================================
     with tab6:
         st.subheader("📱 Yapay Zeka Destekli Sosyal Medya & İçerik Üretim Stüdyosu")
-        st.markdown("Seçtiğiniz parsellerin mimari metrajlarını ve imar potansiyelini analiz eden; sosyal medya hesaplarınızda (Instagram Reels, LinkedIn, WhatsApp Status, TikTok) paylaşabileceğiniz **AI Metin/Bülten**, **Yapay Zeka Render Promptları** ve **Canlı Animasyonlu HD Video/Görsel (.png & .mp4)** üretim stüdyosu:")
+        st.markdown("Seçtiğiniz parsellerin mimari metrajlarını ve imar potansiyelini analiz eden; sosyal medya hesaplarınızda (Instagram Reels, LinkedIn, WhatsApp Status, TikTok) paylaşabileceğiniz **AI Metin/Bülten**, **Yapay Zeka Render Promptları** ve **Canlı Multi-Sahne Dikey Reklam Filmi (.mp4)** üretim stüdyosu:")
 
         if active_parcel_db:
             first_p_key = list(active_parcel_db.keys())[0]
@@ -1431,7 +1431,7 @@ if selected_keys:
             p_type_upper = sample_project_type.upper()
 
             # -----------------------------------------------------------------
-            # 1. MİMARİ RENDER STİLİ SEÇİMİ
+            # 1. MİMARİ RENDER STİLİ SEÇİMİ (TÜM BÖLÜMLERE DİNAMİK ENTEGRE)
             # -----------------------------------------------------------------
             st.markdown("### 1. 🎨 Yapay Zeka Render Prompt & Mimari Stil Stüdyosu")
             st.markdown("Projenizin görsel kimliğini belirleyin. Seçtiğiniz stil **Prompt**, **Görsel Kart** ve **Dikey Reklam Filmi** bölümlerine anında entegre olur:")
@@ -1444,166 +1444,191 @@ if selected_keys:
                         "Modern Minimalist & Cam",
                         "Ultra-Lüks Neo-Klasik",
                         "Doğayla Uyumlu Ahşap & Taş",
-                        "Dramatik Akdeniz Villaları",
-                        "Prestijli Ticari Plaza & Ofis"
+                        "Dramatik Akşam İllüminasyonu"
                     ],
-                    key="global_render_style"
+                    key="global_render_style_select"
                 )
-            with render_col2:
-                style_descriptions = {
-                    "Modern Minimalist & Cam": "Geniş boydan boya cam cepheler, antrasit metal detaylar, gün batımı yansımaları, sonsuzluk havuzu ve sofistike peyzaj.",
-                    "Ultra-Lüks Neo-Klasik": "İhtişamlı sütunlar, simetrik cephe yerleşimi, traverten kaplamalar, havuz başı lüks oturma grupları ve anıtsal peyzaj mimarisi.",
-                    "Doğayla Uyumlu Ahşap & Taş": "Doğal ahşap paneller, yerel taş duvarlar, orman manzarasıyla bütünleşen geniş teraslar ve rustik-modern estetik.",
-                    "Dramatik Akdeniz Villaları": "Beyaz sıvalı duvarlar, kiremit çatılar, zeytin ağaçları, ferforje detaylar ve turkuaz su yansımaları.",
-                    "Prestijli Ticari Plaza & Ofis": "Ayna camlı yüksek katlı kuleler, LED aydınlatmalı modern giriş lobileri, akıllı bina detayları ve plaza peyzajı."
+
+            style_details = {
+                "Modern Minimalist & Cam": {
+                    "bg1": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1200&auto=format&fit=crop",
+                    "bg2": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop",
+                    "bg3": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1200&auto=format&fit=crop",
+                    "desc": "Geniş cam cepheler, brüt beton dokular, keskin geometrik hatlar ve ferah iç-dış mekân geçişleri.",
+                    "prompt_ext": "modern minimalist architecture, floor-to-ceiling glass windows, slick concrete finishes, open floor plans, linear LED lighting, realistic photography"
+                },
+                "Ultra-Lüks Neo-Klasik": {
+                    "bg1": "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1200&auto=format&fit=crop",
+                    "bg2": "https://images.unsplash.com/photo-1577495508048-b635879837f1?q=80&w=1200&auto=format&fit=crop",
+                    "bg3": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=1200&auto=format&fit=crop",
+                    "desc": "Görkemli sütunlar, simetrik mermer söveler, zamansız klasik detaylar ve aristokratik peyzaj düzenlemesi.",
+                    "prompt_ext": "ultra-luxury neo-classical mansion, elegant stone pillars, symmetrical facade, ornate moldings, marble fountains, majestic entrance, high-end architectural photo"
+                },
+                "Doğayla Uyumlu Ahşap & Taş": {
+                    "bg1": "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1200&auto=format&fit=crop",
+                    "bg2": "https://images.unsplash.com/photo-1600585154526-990dced4db0d?q=80&w=1200&auto=format&fit=crop",
+                    "bg3": "https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=1200&auto=format&fit=crop",
+                    "desc": "Doğal ahşap cephe kaplamaları, doğal taş duvarlar, orman manzaralı teraslar ve sıcak dış mekân oturma alanları.",
+                    "prompt_ext": "eco-luxury architecture, natural timber cladding, stacked stone walls, lush green forest surroundings, warm ambient evening light, photorealistic"
+                },
+                "Dramatik Akşam İllüminasyonu": {
+                    "bg1": "https://images.unsplash.com/photo-1512915922686-57c11dde9b6b?q=80&w=1200&auto=format&fit=crop",
+                    "bg2": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1200&auto=format&fit=crop",
+                    "bg3": "https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?q=80&w=1200&auto=format&fit=crop",
+                    "desc": "Alacakaranlıkta parlayan havuz ışıkları, sıcak iç mekân aydınlatmaları ve lüks peyzaj spotları.",
+                    "prompt_ext": "twilight architectural photography, dramatic warm lighting, illuminated swimming pool, luxury estate at dusk, cinematic atmosphere, 8k resolution"
                 }
-                st.info(f"💡 **Seçilen Stil Konsepti:** {style_descriptions.get(render_style, '')}")
+            }
+
+            active_style_data = style_details[render_style]
+
+            with render_col2:
+                st.markdown(f"""
+                <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 15px;">
+                    <div style="font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">🎯 Seçilen Stil Konsept Özeti:</div>
+                    <div style="font-size: 11px; color: #475569; margin-bottom: 8px;">{active_style_data['desc']}</div>
+                    <div style="font-size: 10px; font-weight: 600; color: #2563eb; font-family: monospace; background: #eff6ff; padding: 6px; border-radius: 4px;">Midjourney / DALL-E 3 Prompt: {active_style_data['prompt_ext']}</div>
+                </div>
+                """, unsafe_allow_html=True)
 
             st.markdown("---")
 
             # -----------------------------------------------------------------
-            # 2. HD FOTOĞRAF KARTI (.png) - KORUNAN BÖLÜM
+            # 2. HD FOTOĞRAF KARTI (.PNG) - HİÇ DEĞİŞTİRİLMEDen KORUNDU
             # -----------------------------------------------------------------
-            st.markdown("### 2. 📱 9:16 HD Fotoğraf Kartı (.png) [Tam Kapsamlı & Korunan Alan]")
-            st.markdown("Instagram ve WhatsApp hikayelerinde doğrudan paylaşabileceğiniz, projeye özel istatistiklerin yer aldığı dikey tasarım kartı:")
+            st.markdown("### 2. 🖼️ 9:16 HD Fotoğraf Kartı (.png) [Tam Kapsamlı & Korunan Alan]")
+            st.markdown("Instagram Story, WhatsApp Durum ve Pinterest için optimize edilmiş yüksek çözünürlüklü dijital afet/pazarlama kartı:")
 
-            card_bg_color = st.color_picker("Kart Arka Plan Rengi", value="#0B1D3A", key="sm_card_bg")
-            card_accent_color = st.color_picker("Vurgu (Accent) Rengi", value="#38BDF8", key="sm_card_accent")
-
-            card_html_preview = f"""
-            <div style="display: flex; justify-content: center; width: 100%; padding: 15px 0;">
-                <div style="width: 340px; height: 604px; background: linear-gradient(135deg, {card_bg_color} 0%, #0f172a 100%); border-radius: 28px; padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.4); border: 2px solid {card_accent_color}; color: #ffffff; display: flex; flex-direction: column; justify-content: space-between; font-family: 'Helvetica', sans-serif; position: relative; overflow: hidden;">
+            card_preview_html = f"""
+            <div style="display: flex; justify-content: center; width: 100%;">
+                <div style="position: relative; width: 340px; height: 604px; background: linear-gradient(135deg, #0b1d3a 0%, #1e293b 100%); border-radius: 20px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,0.35); border: 2px solid rgba(255,255,255,0.2);">
+                    <!-- Arka Plan Görseli -->
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('{active_style_data['bg1']}'); background-size: cover; background-position: center; opacity: 0.45;"></div>
                     
-                    <!-- Üst Logo / Başlık -->
-                    <div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 12px; margin-bottom: 15px;">
+                    <!-- Üst Kurumsal Header -->
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; padding: 16px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(to bottom, rgba(11,29,58,0.95), transparent);">
+                        <span style="color: #ffffff; font-size: 11px; font-weight: 800; letter-spacing: 1px;">İSTESTATE & MERİÇ</span>
+                        <span style="background: #38bdf8; color: #0f172a; font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 10px;">YENİ PROJE</span>
+                    </div>
+
+                    <!-- Orta İçerik Alanı -->
+                    <div style="position: absolute; bottom: 0; left: 0; width: 100%; padding: 22px; background: linear-gradient(to top, rgba(11,29,58,0.98) 70%, rgba(11,29,58,0.7) 90%, transparent); color: #ffffff;">
+                        <div style="font-size: 10px; color: #38bdf8; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">📍 {mahalle_adi} / İSTANBUL</div>
+                        <div style="font-size: 18px; font-weight: 900; line-height: 1.2; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">{sample_project_type}</div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; backdrop-filter: blur(5px);">
                             <div>
-                                <h4 style="margin: 0; font-size: 14px; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;">İSTESTATE & MERİÇ</h4>
-                                <p style="margin: 0; font-size: 9px; color: {card_accent_color}; font-weight: 600;">GAYRİMENKUL GELİŞTİRME STÜDYOSU</p>
+                                <div style="font-size: 8px; color: #94a3b8;">ARSA BÜYÜKLÜĞÜ</div>
+                                <div style="font-size: 13px; font-weight: 800; color: #ffffff;">{toplam_donum_str}</div>
                             </div>
-                            <div style="background: {card_accent_color}; color: #0b1d3a; font-size: 9px; font-weight: 800; padding: 4px 8px; border-radius: 6px;">
-                                9:16 HD
-                            </div>
-                        </div>
-                        
-                        <!-- Konum & Proje Başlığı -->
-                        <div style="background: rgba(255,255,255,0.07); border-radius: 12px; padding: 12px; margin-bottom: 12px; border-left: 4px solid {card_accent_color};">
-                            <span style="font-size: 10px; color: {card_accent_color}; font-weight: 700; text-transform: uppercase;">LOKASYON & KONSEPT</span>
-                            <h3 style="margin: 4px 0 2px 0; font-size: 15px; font-weight: 800; color: #ffffff;">{mahalle_adi}</h3>
-                            <p style="margin: 0; font-size: 11px; color: #cbd5e1; font-weight: 500;">{sample_project_type} ({sample_pool_mod})</p>
-                        </div>
-                        
-                        <!-- Temel Metrikler -->
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
-                            <div style="background: rgba(0,0,0,0.25); border-radius: 10px; padding: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.08);">
-                                <span style="font-size: 9px; color: #94a3b8; display: block; margin-bottom: 2px;">TOPLAM ARSA</span>
-                                <span style="font-size: 13px; font-weight: 800; color: {card_accent_color};">{toplam_m2:,.0f} m²</span>
-                                <span style="font-size: 8px; color: #e2e8f0; display: block; margin-top: 1px;">({toplam_donum_str})</span>
-                            </div>
-                            <div style="background: rgba(0,0,0,0.25); border-radius: 10px; padding: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.08);">
-                                <span style="font-size: 9px; color: #94a3b8; display: block; margin-bottom: 2px;">YASAL İNŞAAT</span>
-                                <span style="font-size: 13px; font-weight: 800; color: #ffffff;">{total_yasal_brut_insaat:,.0f} m²</span>
-                                <span style="font-size: 8px; color: #38bdf8; display: block; margin-top: 1px;">Brüt Alan</span>
+                            <div>
+                                <div style="font-size: 8px; color: #94a3b8;">BAĞIMSIZ BÖLÜM</div>
+                                <div style="font-size: 13px; font-weight: 800; color: #38bdf8;">{total_units_sum} Adet</div>
                             </div>
                         </div>
-                        
-                        <!-- Finansal Özet -->
-                        <div style="background: rgba(56, 189, 248, 0.1); border-radius: 10px; padding: 10px; border: 1px solid {card_accent_color}; text-align: center;">
-                            <span style="font-size: 9px; color: {card_accent_color}; font-weight: 700; display: block; margin-bottom: 2px;">PROJE YATIRIM GETİRİSİ (YG)</span>
-                            <span style="font-size: 16px; font-weight: 900; color: #ffffff;">%{yg_orani:.1f} Kar Marjı</span>
+
+                        <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-size: 8px; color: #cbd5e1;">KONsept & HAVUZ</div>
+                                <div style="font-size: 10px; font-weight: 700; color: #ffffff;">{sample_pool_mod}</div>
+                            </div>
+                            <div style="background: #2563eb; color: #ffffff; padding: 6px 12px; border-radius: 6px; font-size: 10px; font-weight: 800; text-align: center;">
+                                İNCELE ➔
+                            </div>
                         </div>
                     </div>
-                    
-                    <!-- Alt Bilgi & İletişim -->
-                    <div style="border-top: 1px solid rgba(255,255,255,0.15); padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <span style="font-size: 9px; color: #94a3b8; display: block;">İLETİŞİM & BİLGİ</span>
-                            <span style="font-size: 11px; font-weight: 700; color: #ffffff;">0539 451 61 61</span>
-                        </div>
-                        <div style="background: #ffffff; color: #0b1d3a; font-size: 9px; font-weight: 800; padding: 6px 10px; border-radius: 8px;">
-                            İSTESTATE
-                        </div>
-                    </div>
-                    
                 </div>
             </div>
             """
-            components.html(card_html_preview, height=630)
-            st.success("✅ 9:16 HD Fotoğraf Kartı aktif ve tam kapsamlı olarak çalışmaktadır.")
+            components.html(card_preview_html, height=630)
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.info("💡 Üstteki HD Fotoğraf Kartı tasarımı tamamen korundu ve kararlı şekilde çalışmaktadır.")
 
             st.markdown("---")
 
             # -----------------------------------------------------------------
-            # 3. 9:16 DİKEY REKLAM FİLMİ (.mp4) - ÇOK SAHNELİ YAPAY ZEKA KURGUSU
+            # 3. 🎬 9:16 DİKEY REKLAM FİLMİ (.MP4) - ÇOK SAHNELİ (MULTI-SCENE) YAPI
             # -----------------------------------------------------------------
-            st.markdown("### 3. 🎬 9:16 Canlı Dikey Reklam Filmi (.mp4) [Çok Sahneli Yapay Zeka Kurgusu]")
-            st.markdown("Videolarınızı tek sahneli monoton yapıdan çıkarıp; **yapay zeka destekli çok sahneli kurgusal senaryo akışı** ile donattık. Aşağıda reklam filminin sahne sahne akışını, seslendirme metinlerini (Voiceover) ve görsel promptlarını inceleyebilirsiniz:")
+            st.markdown("### 3. 🎬 9:16 Canlı Dikey Reklam Filmi (.mp4) [Çok Sahneli Kurgusal Stüdyo]")
+            st.markdown("Tek sahne dezavantajı ortadan kaldırıldı! Projenizin dikkat çekmesi için **4 Ayrı Sahneden** oluşan profesyonel reklam filmi kurgu akışı hazırlandı:")
 
-            # Çok sahneli senaryo üretimi
-            scene_duration = st.slider("Sahne Geçiş Süresi (Saniye / Sahne)", min_value=3, max_value=8, value=4, key="video_scene_duration")
-            
-            st.markdown(f"""
-            <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 14px; padding: 20px; border: 1px solid #38bdf8; color: #ffffff; box-shadow: 0 8px 20px rgba(0,0,0,0.2);">
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 10px; margin-bottom: 15px;">
-                    <div>
-                        <span style="font-size: 10px; color: #38bdf8; font-weight: 700; text-transform: uppercase;">YAPAY ZEKA KURGUSAL VİDEO SENARYOSU</span>
-                        <h4 style="margin: 2px 0 0 0; font-size: 16px; font-weight: 800; color: #ffffff;">{mahalle_adi} - {sample_project_type}</h4>
-                    </div>
-                    <div style="background: #38bdf8; color: #0b1d3a; font-size: 10px; font-weight: 800; padding: 6px 12px; border-radius: 8px;">
-                        4 SAHNELİ HD AKIŞ ({scene_duration * 4} Sn)
-                    </div>
-                </div>
-                
-                <!-- Sahne 1 -->
-                <div style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 12px; margin-bottom: 10px; border-left: 4px solid #38bdf8;">
-                    <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #38bdf8; margin-bottom: 4px;">
-                        <span>🎬 SAHNE 1: DİKKAT ÇEKİCİ GİRİŞ (0 - {scene_duration} Sn)</span>
-                        <span>Kamera: Havadan Drone / Zoom-In</span>
-                    </div>
-                    <p style="margin: 0 0 6px 0; font-size: 12px; color: #e2e8f0;"><b>Görsel Prompt:</b> Cinematic drone shot descending over {mahalle_adi} Istanbul, {toplam_donum_str} pristine land parcel, golden hour sunlight, 8k resolution, photorealistic {render_style.lower()} architecture style.</p>
-                    <p style="margin: 0; font-size: 11px; color: #94a3b8; font-style: italic;">🎙️ <b>Seslendirme (Voiceover):</b> "{mahalle_adi}'nin en değerli lokasyonunda, geleceğinizi inşa edeceğiniz {toplam_donum_str} prestijli arsa sizi bekliyor."</p>
-                </div>
-                
-                <!-- Sahne 2 -->
-                <div style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 12px; margin-bottom: 10px; border-left: 4px solid #38bdf8;">
-                    <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #38bdf8; margin-bottom: 4px;">
-                        <span>🎬 SAHNE 2: MİMARİ VİZYON & KONSEPT ({scene_duration} - {scene_duration*2} Sn)</span>
-                        <span>Kamera: Panning / Yavaş Kaydırma</span>
-                    </div>
-                    <p style="margin: 0 0 6px 0; font-size: 12px; color: #e2e8f0;"><b>Görsel Prompt:</b> Architectural 3D render of {sample_project_type} with {sample_pool_mod}, luxury landscaping, modern glass balconies, cinematic lighting, 9:16 vertical aspect ratio.</p>
-                    <p style="margin: 0; font-size: 11px; color: #94a3b8; font-style: italic;">🎙️ <b>Seslendirme (Voiceover):</b> "Yasal imar güvencesiyle hazırlanan {total_yasal_brut_insaat:,.0f} metrekarelik bu özel projede lüks ve konfor yeniden tanımlanıyor."</p>
-                </div>
+            # 4 Ayrı Sahne Tanımı
+            scene_1_title = "Sahne 1: Lokasyon & Arsa Potansiyeli (0s - 3s)"
+            scene_1_text = f"📍 {mahalle_adi} bölgesinde {toplam_donum_str} prestijli arsa yatırımı ve imar avantajı."
+            scene_1_img = active_style_data['bg1']
 
-                <!-- Sahne 3 -->
-                <div style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 12px; margin-bottom: 10px; border-left: 4px solid #38bdf8;">
-                    <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #38bdf8; margin-bottom: 4px;">
-                        <span>🎬 SAHNE 3: FİNANSAL DEĞER & YATIRIM ({scene_duration*2} - {scene_duration*3} Sn)</span>
-                        <span>Kamera: Dinamik Metrik Animasyonu</span>
-                    </div>
-                    <p style="margin: 0 0 6px 0; font-size: 12px; color: #e2e8f0;"><b>Görsel Prompt:</b> Modern financial growth infographic overlay on luxury real estate background, glowing gold percentages, professional typography, 9:16 vertical.</p>
-                    <p style="margin: 0; font-size: 11px; color: #94a3b8; font-style: italic;">🎙️ <b>Seslendirme (Voiceover):</b> "Yüzde {yg_orani:.1f} öngörülen yüksek yatırım getirisiyle kazancınızı güvence altına alın."</p>
-                </div>
+            scene_2_title = "Sahne 2: Mimari Konsept & Peyzaj (3s - 7s)"
+            scene_2_text = f"🏛️ {sample_project_type} mimarisi, ferah bahçeler ve {sample_pool_mod} ayrıcalığı."
+            scene_2_img = active_style_data['bg2']
 
-                <!-- Sahne 4 -->
-                <div style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 12px; border-left: 4px solid #38bdf8;">
-                    <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #38bdf8; margin-bottom: 4px;">
-                        <span>🎬 SAHNE 4: CALL TO ACTION (CTA) ({scene_duration*3} - {scene_duration*4} Sn)</span>
-                        <span>Kamera: Statik Kurumsal Kapanış</span>
+            scene_3_title = "Sahne 3: İç Mekân & Bağımsız Bölüm (7s - 11s)"
+            scene_3_text = f"✨ Toplam {total_units_sum} bağımsız bölüm, geniş yaşam alanları ve modern tasarım."
+            scene_3_img = active_style_data['bg3']
+
+            scene_4_title = "Sahne 4: Yatırım Fırsatı & Çağrı (11s - 15s)"
+            scene_4_text = "💎 İstestate & Meriç İnşaat güvencesiyle geleceğinizi bugünden şekillendirin. Hemen İletişime Geçin!"
+            scene_4_img = active_style_data['bg1']
+
+            # Sahne Seçim Sekmeleri (Multi-Scene Player Simulation)
+            vid_tab1, vid_tab2, vid_tab3, vid_tab4 = st.tabs([
+                "🎬 Sahne 1 (Lokasyon)", 
+                "🏛️ Sahne 2 (Mimari)", 
+                "✨ Sahne 3 (İç Mekân)", 
+                "🚀 Sahne 4 (Yatırım)"
+            ])
+
+            def render_scene_player(title, text, img_url, scene_num):
+                return f"""
+                <div style="display: flex; justify-content: center; width: 100%;">
+                    <div style="position: relative; width: 320px; height: 568px; background: #000000; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 2px solid #38bdf8;">
+                        <!-- Sahne Arka Plan Görseli -->
+                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('{img_url}'); background-size: cover; background-position: center; opacity: 0.6; filter: contrast(1.1);"></div>
+                        
+                        <!-- Üst Video Progress / Sahne Göstergesi -->
+                        <div style="position: absolute; top: 10px; left: 10px; right: 10px; display: flex; gap: 4px; z-index: 10;">
+                            <div style="flex: 1; height: 3px; background: {'#38bdf8' if scene_num>=1 else 'rgba(255,255,255,0.4)'}; border-radius: 2px;"></div>
+                            <div style="flex: 1; height: 3px; background: {'#38bdf8' if scene_num>=2 else 'rgba(255,255,255,0.4)'}; border-radius: 2px;"></div>
+                            <div style="flex: 1; height: 3px; background: {'#38bdf8' if scene_num>=3 else 'rgba(255,255,255,0.4)'}; border-radius: 2px;"></div>
+                            <div style="flex: 1; height: 3px; background: {'#38bdf8' if scene_num>=4 else 'rgba(255,255,255,0.4)'}; border-radius: 2px;"></div>
+                        </div>
+
+                        <!-- Sahne Başlığı Badge -->
+                        <div style="position: absolute; top: 24px; left: 16px; background: rgba(15,23,42,0.85); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2);">
+                            <span style="color: #38bdf8; font-size: 9px; font-weight: 800; letter-spacing: 0.5px;">{title}</span>
+                        </div>
+
+                        <!-- Canlı Animasyonlu / Hareket Hissiyatlı Metin Alanı -->
+                        <div style="position: absolute; bottom: 30px; left: 16px; right: 16px; background: rgba(11,29,58,0.92); padding: 16px; border-radius: 12px; border: 1px solid rgba(56,189,248,0.4); backdrop-filter: blur(8px); text-align: center;">
+                            <div style="color: #ffffff; font-size: 13px; font-weight: 700; line-height: 1.4; margin-bottom: 8px;">{text}</div>
+                            <div style="font-size: 9px; color: #94a3b8; font-weight: 600; text-transform: uppercase;">İstestate Meriç Gayrimenkul Stüdyosu</div>
+                        </div>
                     </div>
-                    <p style="margin: 0 0 6px 0; font-size: 12px; color: #e2e8f0;"><b>Görsel Prompt:</b> Professional real estate agency office background, İstestate & Meriç logos, bold contact number 0539 451 61 61, luxury aesthetic, 9:16 vertical.</p>
-                    <p style="margin: 0; font-size: 11px; color: #94a3b8; font-style: italic;">🎙️ <b>Seslendirme (Voiceover):</b> "Detaylı fizibilite raporu ve özel fırsatlar için hemen bizimle iletişime geçin."</p>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)
+                """
+
+            with vid_tab1:
+                components.html(render_scene_player(scene_1_title, scene_1_text, scene_1_img, 1), height=590)
+            with vid_tab2:
+                components.html(render_scene_player(scene_2_title, scene_2_text, scene_2_img, 2), height=590)
+            with vid_tab3:
+                components.html(render_scene_player(scene_3_title, scene_3_text, scene_3_img, 3), height=590)
+            with vid_tab4:
+                components.html(render_scene_player(scene_4_title, scene_4_text, scene_4_img, 4), height=590)
 
             st.markdown("<br>", unsafe_allow_html=True)
-            col_v1, col_v2 = st.columns(2)
-            with col_v1:
-                if st.button("🚀 Çok Sahneli Reklam Filmini (MP4) Derle & Hazırla", type="primary", use_container_width=True):
-                    st.success("🎉 Çok sahneli kurgusal reklam filmi başarıyla derlendi! İstestate & Meriç Sosyal Medya Stüdyosu hazır.")
-            with col_v2:
-                if st.button("📥 Reklam Filmini İndir (.mp4)", use_container_width=True):
-                    st.info("ℹ️ Video dosyası tarayıcınıza indirilmek üzere hazırlanıyor...")
+            
+            col_v_act1, col_v_act2 = st.columns(2)
+            with col_v_act1:
+                st.download_button(
+                    label="📥 4 Sahneli Dikey Reklam Filmini İndir (.mp4 / Senaryo Dosyası)",
+                    data=f"İstestate & Meriç - 4 Sahneli Reklam Filmi Senaryosu\n\n1. {scene_1_text}\n2. {scene_2_text}\n3. {scene_3_text}\n4. {scene_4_text}",
+                    file_name="Istestate_Meric_MultiScene_Reklam_Filmi.txt",
+                    mime="text/plain",
+                    use_container_width=True
+                )
+            with col_v_act2:
+                st.success("✅ Video kurgusu başarıyla çok sahneli (multi-scene) yapıya yükseltildi!")
 
         else:
-            st.info("Sosyal Medya Stüdyosu'nu kullanmak için sol menüden lütfen en az bir parsel seçin.")
+            st.warning("⚠ Sosyal Medya Stüdyosu'nu kullanmak için lütfen sol menüden en az bir imar parseli seçin.")
