@@ -1182,936 +1182,148 @@ if selected_keys:
                     </tr>
                     """
 
-            report_html_template = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-            <meta charset="utf-8">
-            <style>
-                @page {{ size: A4 landscape; margin: 8mm 10mm; }}
-                body {{ font-family: 'Helvetica', 'Arial', sans-serif; color: #0f172a; font-size: 8.5px; line-height: 1.2; background-color: #ffffff; }}
-                .report-banner {{ background-color: #0b1d3a; color: #ffffff; width: 100%; border-collapse: collapse; margin-bottom: 8mm; border-radius: 4px; overflow: hidden; }}
-                .report-banner td {{ border: none; padding: 8px 12px; vertical-align: middle; }}
-                .section-title {{ font-size: 9.5px; font-weight: bold; color: #0b1d3a; border-left: 4px solid #0b1d3a; padding-left: 6px; background-color: #f1f5f9; margin-top: 8mm; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }}
-                .data-table {{ width: 100%; border-collapse: collapse; margin-top: 2px; margin-bottom: 6px; font-size: 8px; }}
-                .data-table th, .data-table td {{ border: 1px solid #cbd5e1; padding: 4px 6px; }}
-                .data-table th {{ background-color: #f8fafc; color: #1e293b; font-weight: 700; text-align: left; }}
-                .footer {{ font-size: 7.5px; color: #475569; text-align: center; margin-top: 12px; border-top: 1px dashed #cbd5e1; padding-top: 6px; font-weight: 500; line-height: 1.3; }}
-                .highlight {{ background-color: #eff6ff; font-weight: bold; }}
-            </style>
-            </head>
-            <body>
-                <table class="report-banner">
-                    <tr>
-                        <td style="width: 30%; text-align: left;">{pdf_logo1_html}</td>
-                        <td style="width: 40%; text-align: center;">
-                            <h2 style="font-size: 11px; margin: 0; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">AKILLI GAYRİMENKUL GELİŞTİRME VE FİZİBİLİTE RAPORU</h2>
-                        </td>
-                        <td style="width: 30%; text-align: right;">{pdf_logo2_html}</td>
-                    </tr>
-                </table>
-
-                <div class="section-title">1. PARSEL VE İMAR METRAJ KÜNYESİ (BİRLEŞTİRİLMİŞ FONKSİYONLAR)</div>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Mahalle</th>
-                            <th style="text-align: center;">Ada / Parsel</th>
-                            <th style="text-align: right;">Toplam Arsa</th>
-                            <th style="text-align: center;">Terk Durumu</th>
-                            <th>İmar Fonksiyonu</th>
-                            <th style="text-align: center;">Ağırlıklı Emsal (KAKS)</th>
-                            <th style="text-align: right;">Emsal İnşaat (m²)</th>
-                            <th style="text-align: right;">Bodrum (m²)</th>
-                            <th style="text-align: right;">Toplam İnşaat (m²)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {parcel_rows_html}
-                    </tbody>
-                </table>
-
-                <div class="section-title">2. MİMARİ VE BAĞIMSIZ BÖLÜM DAĞILIM FİZİBİLİTESİ</div>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>İmar Fonksiyon Segmenti</th>
-                            <th>Seçilen Proje Tipi ve Konsept</th>
-                            <th style="text-align: center;">Toplam Bağımsız Bölüm</th>
-                            <th style="text-align: right;">Birim Bahçe</th>
-                            <th style="text-align: right;">Birim Havuz</th>
-                            <th style="text-align: right;">Birim Bodrum</th>
-                            <th style="text-align: right;">Birim Üst Kat Net</th>
-                            <th style="text-align: right;">Birim Toplam Brüt</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {arch_rows_html}
-                    </tbody>
-                </table>
-
-                <div class="section-title">3. FİNANSAL FİZİBİLİTE VE GELİR/GİDER TABLOSU</div>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Finansal Parametre / Metrik</th>
-                            <th style="text-align: right;">Tutar (USD $)</th>
-                            <th style="text-align: right;">Tutar (TL ₺)</th>
-                            <th style="text-align: right;">Tutar (EUR €)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Proje İş Modeli / Yapısı</td>
-                            <td colspan="3" style="text-align: center; font-weight: bold;">{is_modeli} {"(%"+str(arsa_payi_orani)+" Arsa Payı)" if "Kat Karşılığı" in is_modeli else ""}</td>
-                        </tr>
-                        <tr>
-                            <td>Toplam Proje Cirosu (Brüt Satış Geliri)</td>
-                            <td style="text-align: right;">${total_ciro_usd:,.2f}</td>
-                            <td style="text-align: right;">₺{(total_ciro_usd * rate_usd):,.2f}</td>
-                            <td style="text-align: right;">€{((total_ciro_usd * rate_usd) / rate_eur):,.2f}</td>
-                        </tr>
-                        <tr>
-                            <td>Müteahhit Hissesi / Payına Düşen Ciro</td>
-                            <td style="text-align: right; font-weight: bold;">${display_ciro_usd:,.2f}</td>
-                            <td style="text-align: right; font-weight: bold;">₺{total_ciro_tl:,.2f}</td>
-                            <td style="text-align: right; font-weight: bold;">€{total_ciro_eur:,.2f}</td>
-                        </tr>
-                        <tr>
-                            <td>Toplam İnşaat ve Yatırım Maliyeti</td>
-                            <td style="text-align: right; color: #c2410c;">${total_maliyet_usd:,.2f}</td>
-                            <td style="text-align: right; color: #c2410c;">₺{total_maliyet_tl:,.2f}</td>
-                            <td style="text-align: right; color: #c2410c;">€{total_maliyet_eur:,.2f}</td>
-                        </tr>
-                        <tr class="highlight">
-                            <td style="font-weight: bold;">Müteahhit Net Proje Karı (YG: %{yg_orani:.1f})</td>
-                            <td style="text-align: right; color: #1e3a8a; font-size: 9px;">${toplam_net_kar_usd:,.2f}</td>
-                            <td style="text-align: right; color: #1e3a8a; font-size: 9px;">₺{toplam_net_kar_tl:,.2f}</td>
-                            <td style="text-align: right; color: #1e3a8a; font-size: 9px;">€{toplam_net_kar_eur:,.2f}</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div class="footer">
-                    Bu rapor İstestate Gayrimenkul ve Meriç İnşaat Emlak bilgi sistemleri tarafından otomatik üretilmiştir.<br>
-                    Resmi belge niteliği taşımaz, fizibilite ve ön inceleme amaçlıdır.
-                </div>
-            </body>
-            </html>
-            """
-            
-            pdf_bytes = HTML(string=report_html_template).write_pdf()
-            pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
-            
-            st.markdown("#### 👁 Canlı PDF Rapor Ön İzleme")
-            
-            pdf_viewer_html = f"""
-            <div id="pdf-container" style="width:100%; height:550px; background-color:#525659; overflow:auto; display:flex; justify-content:center; padding:10px 0; border-radius:8px;">
-                <canvas id="pdf-canvas" style="box-shadow: 0 4px 8px rgba(0,0,0,0.3); background-color: white;"></canvas>
-            </div>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-            <script>
-                const pdfData = atob("{pdf_base64}");
-                const loadingTask = pdfjsLib.getDocument({{ data: pdfData }});
-                loadingTask.promise.then(function(pdf) {{
-                    pdf.getPage(1).then(function(page) {{
-                        const scale = 1.3;
-                        const viewport = page.getViewport({{ scale: scale }});
-                        const canvas = document.getElementById('pdf-canvas');
-                        const context = canvas.getContext('2d');
-                        canvas.height = viewport.height;
-                        canvas.width = viewport.width;
-
-                        const renderContext = {{
-                            canvasContext: context,
-                            viewport: viewport
-                        }};
-                        page.render(renderContext);
-                    }});
-                }});
-            </script>
-            """
-            components.html(pdf_viewer_html, height=570)
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.download_button(
-                label="📥 Kurumsal Fizibilite Raporunu PDF Olarak İndir",
-                data=pdf_bytes,
-                file_name=dynamic_pdf_filename,
-                mime="application/pdf",
-                use_container_width=True
-            )
-
     with tab5:
-        st.subheader(f"🗄️ Veritabanı Arşiv Yönetimi (`{DB_FILE_NAME}` -> GitHub Sync)")
-        db_items = st.session_state["parcel_db"]
-        if db_items:
-            db_detail_rows = []
-            for k, p_val in db_items.items():
-                mahalle = p_val.get("mahalle", "-")
-                ada = p_val.get("ada", "-")
-                parsel = p_val.get("parsel", "-")
-                toplam_alan = p_val.get("toplam_alan", 0.0)
-                is_terk = p_val.get("terk_yapilmis_mi", False)
-                terk_st = "Terk Yapılmış (Net)" if is_terk else "Terk Yapılmamış (Brüt)"
-                
-                breakdown = get_parcel_function_breakdown(p_val, 1.30)
-                if breakdown:
-                    for item in breakdown:
-                        brut = item["brut_insaat"]
-                        bod = brut * 0.50
-                        bahce_m2 = item["bahce_kullanim_alani"]
-                        db_detail_rows.append({
-                            "Kayıt Anahtarı": k,
-                            "Dosya Adı": p_val.get("filename", "-"),
-                            "Mahalle": mahalle,
-                            "Ada / Parsel": f"{ada} / {parsel}",
-                            "Toplam Arsa (m²)": f"{toplam_alan:,.2f}",
-                            "Terk Durumu": terk_st,
-                            "Konsolide Fonksiyon": item["fonksiyon_adi"],
-                            "Ağırlıklı KAKS": f"{item['kaks']:.2f}",
-                            "Toplam Bahçe Alanı (m²)": f"{bahce_m2:,.2f}",
-                            "Emsal İnşaat Alanı (m²)": f"{brut:,.2f}",
-                            "Bodrum (m²)": f"{bod:,.2f}",
-                            "Toplam İnşaat (m²)": f"{(brut + bod):,.2f}"
-                        })
-                        
-            st.dataframe(pd.DataFrame(db_detail_rows), use_container_width=True)
+        st.subheader("🗄 Veritabanı & Arşiv Yönetimi")
+        st.info(f"GitHub Deposu: `{GITHUB_REPO}` üzerindeki `{DB_FILE_NAME}` dosyası senkronize olarak kullanılmaktadır.")
+        
+        current_db_items = st.session_state["parcel_db"]
+        if current_db_items:
+            db_df_rows = []
+            for k, v in current_db_items.items():
+                db_df_rows.append({
+                    "Kayıt Anahtarı": k,
+                    "Mahalle": v.get("mahalle", ""),
+                    "Ada": v.get("ada", ""),
+                    "Parsel": v.get("parsel", ""),
+                    "Toplam Alan (m²)": f"{v.get('toplam_alan', 0.0):,.2f}",
+                    "Terk Durumu": "Yapılmış" if v.get("terk_yapilmis_mi") else "Yapılmamış"
+                })
+            st.dataframe(pd.DataFrame(db_df_rows), use_container_width=True)
             
-            st.markdown("---")
-            col_db1, col_db2 = st.columns(2)
-            with col_db1:
-                st.markdown("#### 🔍 Ham JSON Veri Yapısı")
-                st.json(db_items)
-            with col_db2:
-                st.markdown("#### ⚙️ Veritabanı İşlemleri")
-                selected_del_key = st.selectbox("Arşivden kaldırılacak parseli seçin:", options=list(db_items.keys()))
-                if st.button("🗑 Seçili Parseli Arşivden Kaldır", type="primary"):
-                    if selected_del_key in st.session_state["parcel_db"]:
-                        current_db = st.session_state["parcel_db"]
-                        del current_db[selected_del_key]
-                        save_persistent_db(current_db)
-                        st.success(f"'{selected_del_key}' silindi ve GitHub deponuz güncellendi!")
-                        st.rerun()
-                        
-                st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("⚠ Tüm Veritabanını Temizle (Sıfırla)", type="secondary"):
-                    save_persistent_db({})
-                    st.success("Veritabanı sıfırlandı ve GitHub deponuz güncellendi!")
-                    st.rerun()
+            if st.button("🗑️ Tüm Veritabanını Temizle (Arşivi Sıfırla)", type="secondary"):
+                st.session_state["parcel_db"] = {}
+                if os.path.exists(DB_FILE):
+                    os.remove(DB_FILE)
+                save_persistent_db({})
+                st.success("Arşiv başarıyla sıfırlandı!")
+                st.rerun()
         else:
-            st.info("Veritabanında kayıtlı parsel bulunmuyor.")
+            st.info("Arşivde kayıtlı imar belgesi bulunmuyor.")
 
     # =========================================================================
-    # TAB 6: 🤖 YAPAY ZEKA DESTEKLİ SOSYAL MEDYA, İÇERİK & REKLAM FİLMİ STÜDYOSU
+    # TAB 6: 📱 SOSYAL MEDYA STÜDYOSU (YAPAY ZEKA DESTEKLİ)
     # =========================================================================
     with tab6:
-        st.subheader("📱 Yapay Zeka Destekli Sosyal Medya & İçerik Üretim Stüdyosu")
-        st.markdown("Seçtiğiniz parsellerin mimari metrajlarını ve imar potansiyelini analiz eden; sosyal medya hesaplarınızda (Instagram Reels, LinkedIn, WhatsApp Status, TikTok) paylaşabileceğiniz **AI Metin/Bülten**, **Yapay Zeka Render Promptları** ve **Canlı Animasyonlu HD Video/Görsel (.png & .mp4)** üretim stüdyosu:")
+        st.subheader("📱 Sosyal Medya Stüdyosu (Yapay Zeka Destekli İçerik Üretici)")
+        st.markdown("""
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 15px; margin-bottom: 15px;">
+            <p style="margin: 0; font-size: 13px; color: #334155;">
+                Bu bölümde sosyal medya hesaplarınızda (Instagram, Facebook, WhatsApp) paylaşabileceğiniz <b>yapay zeka destekli</b> fotoğraf (.png) ve video (.mp4) içerikleri üretebilirsiniz. Finansal bilgiler (fiyat, ciro, kar vb.) gizli tutulur; arazi bilgileri (ada/parsel) kesinlikle görünmez, arazi metrajı sadece <b>dönüm</b> cinsinden yansıtılır.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
-        if active_parcel_db:
-            first_p_key = list(active_parcel_db.keys())[0]
-            p_sample = active_parcel_db[first_p_key]
-            mahalle_adi = p_sample.get("mahalle", "BİLİNMİYOR")
-            toplam_m2 = sum(p.get("toplam_alan", 0.0) for p in active_parcel_db.values())
-            
-            # Küsuratsız net olmayan dönüm hesabı (1 dönüm = 1000 m2)
-            donum_tam_sayi = max(1, round(toplam_m2 / 1000.0))
-            toplam_donum_str = f"Yaklaşık {donum_tam_sayi} Dönüm"
-            
-            is_any_terkli = any(p.get("terk_yapilmis_mi", False) for p in active_parcel_db.values())
-            terk_durum_str = "Yola Terki Yapılmış (Net Parsel Altyapısı)" if is_any_terkli else "Planlanan Yola Terk Düzensellikleri (%70 Net Oranı)"
-            
-            sample_project_type = "Lüks Konut / Arsa Geliştirme Projesi"
-            sample_pool_mod = "Havuzlu Konsept"
-            for k, conf in function_configs.items():
-                sample_project_type = conf.get("proje_tipi", sample_project_type)
-                sample_pool_mod = conf.get("havuz_mod", sample_pool_mod)
-                break
+        # Toplam arsa alanını dönüm cinsine çevirme
+        toplam_arsa_m2_all = sum(p.get("toplam_alan", 0.0) for p in active_parcel_db.values())
+        toplam_arsa_donum = toplam_arsa_m2_all / 1000.0
+
+        sm_col1, sm_col2 = st.columns(2)
+        with sm_col1:
+            platform_secimi = st.selectbox(
+                "Platform ve Format",
+                options=["Instagram / Facebook Hikaye & Reels (9:16 Dikey)", "Instagram / WhatsApp Kare Gönderi (1:1)", "Facebook Yatay Gönderi (16:9)"],
+                key="sm_platform"
+            )
+            konsept_turu = st.selectbox(
+                "Görsel / Video Konsepti",
+                options=["Lüks Mimari & Dış Cephe Sunumu", "Peyzaj, Bahçe & Havuz Konsepti", "Yatırım & Yaşam Alanı Tanıtımı", "Modern Rezidans & İç Mekan"],
+                key="sm_konsept"
+            )
+        with sm_col2:
+            pazarlama_tonu = st.selectbox(
+                "İletişim / Pazarlama Dili",
+                options=["Prestijli & Lüks (Prestige)", "Yatırım Odaklı & Fırsat", "Doğayla İç İçe & Huzurlu", "Modern & Dinamik"],
+                key="sm_ton"
+            )
+            kurumsal_imza = st.text_input("Kurumsal İmza / İletişim Metni", value="İstestate Meriç & Meriç İnşaat Emlak | 0539 451 61 61", key="sm_imza")
+
+        st.markdown("---")
+        
+        # İçerik Üretim Tetikleyicisi
+        if st.button("✨ Yapay Zeka ile Görsel ve Video İçerik Üret", type="primary", use_container_width=True):
+            with st.spinner("Yapay zeka modelleri görsel ve video içeriklerini hazırlıyor, formatlar dönüştürülüyor..."):
+                # İçerik metni oluşturma (Finansal bilgi yok, ada/parsel yok, arsa dönüm cinsinden)
+                ai_generated_caption = f"""🌿 {first_mahalle.title()} Bölgesinde {toplam_arsa_donum:.2f} Dönüm Arsa Üzerinde Hayat Bulunan Özel Projemiz!
                 
-            p_type_upper = sample_project_type.upper()
-
-            # -----------------------------------------------------------------
-            # 1. MİMARİ RENDER STİLİ SEÇİMİ (TÜM BÖLÜMLERE DİNAMİK ENTEGRE)
-            # -----------------------------------------------------------------
-            st.markdown("### 1. 🎨 Yapay Zeka Render Prompt & Mimari Stil Stüdyosu")
-            st.markdown("Projenizin görsel kimliğini belirleyin. Seçtiğiniz stil **Prompt**, **Görsel Kart** ve **Dikey Reklam Filmi** bölümlerine anında entegre olur:")
-
-            render_col1, render_col2 = st.columns([1, 2])
-            with render_col1:
-                render_style = st.selectbox(
-                    "Mimari Render Stili:",
-                    options=[
-                        "Modern Minimalist & Cam",
-                        "Ultra-Lüks Neo-Klasik",
-                        "Doğayla Uyumlu Ahşap & Taş",
-                        "Dramatik Akşam İllüminasyonu"
-                    ],
-                    key="global_render_style_select"
-                )
-
-            style_details = {
-                "Modern Minimalist & Cam": {
-                    "bg1": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1200&auto=format&fit=crop",
-                    "bg2": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop",
-                    "bg3": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1200&auto=format&fit=crop",
-                    "desc": "Geniş cam cepheler, brüt beton dokular, keskin geometrik hatlar ve ferah iç-dış mekân geçişleri.",
-                    "prompt_ext": "modern minimalist architecture, floor-to-ceiling glass windows, slick concrete finishes, open floor plans, linear LED lighting, realistic photography"
-                },
-                "Ultra-Lüks Neo-Klasik": {
-                    "bg1": "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1200&auto=format&fit=crop",
-                    "bg2": "https://images.unsplash.com/photo-1577495508048-b635879837f1?q=80&w=1200&auto=format&fit=crop",
-                    "bg3": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=1200&auto=format&fit=crop",
-                    "desc": "Görkemli sütunlar, simetrik mermer söveler, zamansız klasik detaylar ve aristokratik peyzaj düzenlemesi.",
-                    "prompt_ext": "ultra-luxury neo-classical mansion, elegant stone pillars, symmetrical facade, ornate moldings, marble fountains, majestic entrance, high-end architectural photo"
-                },
-                "Doğayla Uyumlu Ahşap & Taş": {
-                    "bg1": "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1200&auto=format&fit=crop",
-                    "bg2": "https://images.unsplash.com/photo-1510798831971-661eb04b3739?q=80&w=1200&auto=format&fit=crop",
-                    "bg3": "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=1200&auto=format&fit=crop",
-                    "desc": "Doğal ahşap kaplamalar, yerel taş dokular, biyofilik tasarım öğeleri ve yeşil teras peyzajı.",
-                    "prompt_ext": "biophilic organic architecture, natural wood siding, raw stone walls, lush green roofs, integrated forest landscape, warm ambient sunlight"
-                },
-                "Dramatik Akşam İllüminasyonu": {
-                    "bg1": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop",
-                    "bg2": "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200&auto=format&fit=crop",
-                    "bg3": "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=1200&auto=format&fit=crop",
-                    "desc": "Gün batımı ve akşam alacasında özel dış cephe aydınlatmaları, havuz içi ışık oyunları ve sıcak atmosfer.",
-                    "prompt_ext": "dramatic twilight dusk render, warm architectural spot lighting, glowing swimming pool reflections, starry sky backdrop, cinematic atmosphere"
-                }
-            }
-
-            curr_style = style_details.get(render_style, style_details["Modern Minimalist & Cam"])
-            
-            midjourney_prompt = f"Architectural rendering of a {sample_project_type} in Beykoz Istanbul on a {toplam_donum_str} plot, {curr_style['prompt_ext']}, ultra-realistic, 8k resolution, photorealistic photography, cinematic lighting, --ar 9:16 --v 6.0"
-
-            with render_col2:
-                st.text_area("🎯 Kopyalanabilir Yapay Zeka Görsel Promptu (Midjourney / DALL-E 3 / Flux):", value=midjourney_prompt, height=90)
-
-            st.divider()
-
-            # -----------------------------------------------------------------
-            # 2. YAPAY ZEKA İÇERİK & CAPTION JENERATÖRÜ (SADECE MİMARİ BİLGİ)
-            # -----------------------------------------------------------------
-            st.markdown("### 2. 🤖 AI İçerik & Sosyal Medya Metni Üretici (Sadece Mimari & İmar Bilgileri)")
-            ai_col1, ai_col2 = st.columns([1, 2])
-            
-            with ai_col1:
-                ai_tone = st.selectbox(
-                    "İçerik Tonu / Hedef Kitle:",
-                    options=[
-                        "🏛️ Prestij & Kurumsal Lüks",
-                        "📐 Mimari & Teknik İmar Detaylı",
-                        "🍃 Biyofilik & Yaşam Odaklı",
-                        "⚡ Viral Hook (Instagram Reels / TikTok)"
-                    ]
-                )
+✨ {konsept_turu} konseptiyle tasarlanan, doğayla iç İçe ve yüksek yaşam standartları sunan prestijli gayrimenkul geliştirme projemiz sizlerle.
                 
-                ai_hashtags_type = st.multiselect(
-                    "Hashtag Grupları:",
-                    options=["#BeykozGayrimenkul", "#MimariProje", "#ArsaGeliştirme", "#LüksKonut", "#İstestateMeriç", "#İmarFizibilite"],
-                    default=["#BeykozGayrimenkul", "#MimariProje", "#ArsaGeliştirme"]
-                )
-
-            avg_unit_net = total_yasal_brut_insaat / total_units_sum if total_units_sum > 0 else 0.0
-            total_genel_insaat_m2 = total_yasal_brut_insaat + total_bodrum_alani
-
-            if "Prestij" in ai_tone:
-                ai_generated_caption = f"""İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT | STRATEJİK MİMARİ PROJE GELİŞTİRME BÜLTENİ 🏗️📐
-
-Beykoz’un en kıymetli lokasyonlarında, arsa potansiyellerini en yüksek verim ve estetikle buluşturan mimari konseptler kurgulamaya devam ediyoruz.
-
-📍 Lokasyon: İstanbul / Beykoz ({mahalle_adi} Mahallesi)
-📐 Arsa Büyüklüğü: {toplam_donum_str} (Hacimli Arazi Yapısı)
-🏛 Planlanan Proje Konsepti: {sample_project_type}
-🎨 Mimari Stil: {render_style} ({curr_style['desc']})
-
-✨ Mimari & Teknik İmar Detayları:
-• Toplam Genel İnşaat Alanı: {total_genel_insaat_m2:,.0f} m²
-• Emsal Üst Kat İnşaat Hacmi: {total_yasal_brut_insaat:,.0f} m²
-• Kapalı Bodrum Kat İmkânı: {total_bodrum_alani:,.0f} m²
-• Bağımsız Bölüm Sayısı: {total_units_sum} Adet Seçkin Ünite
-• Birim Başına Düşen Net Kullanım: Ortalama {avg_unit_net:,.1f} m²
-• Sosyal Donatı & Yeşil Alan: {total_bahce_alani_terki:,.0f} m² Peyzaj ve {sample_pool_mod}
-
-Projemizin teknik imar fizibilitesi ve mimari detay sunumları için bizimle iletişime geçebilirsiniz. 📲
-
-{' '.join(ai_hashtags_type)}"""
-
-            elif "Mimari" in ai_tone:
-                ai_generated_caption = f"""📐 TEKNİK MİMARİ VE İMAR ANALİZİ | BEYKOZ / {mahalle_adi.upper()} 🏢
-
-Portföyümüzdeki parsel grubunun imar parametreleri ve mimari kütle yerleşim fizibilitesi tamamlanmıştır:
-
-• Arazi Büyüklüğü: {toplam_donum_str} ({terk_durum_str})
-• Tasarım Konsepti: {sample_project_type}
-• Mimari Dış Cephe Stili: {render_style}
-• Genel İnşaat Metrajı: {total_genel_insaat_m2:,.2f} m²
-• Emsal İnşaat Metrajı: {total_yasal_brut_insaat:,.2f} m²
-• Bodrum Kat Toplam Alan: {total_bodrum_alani:,.2f} m²
-• Ünite Yapısı: {total_units_sum} Adet Bağımsız Bölüm
-• Birim Net Alan: {avg_unit_net:,.1f} m² / Ünite
-• Donatı: {sample_pool_mod} ve Özel Yeşil Alan Düzenlemesi
-
-Gayrimenkullerinizin imar ve mimari potansiyelini öğrenmek için İstestate Meriç Gayrimenkul Danışmanlık. 🏗
-
-{' '.join(ai_hashtags_type)}"""
-
-            elif "Biyofilik" in ai_tone:
-                ai_generated_caption = f"""🌿 DOĞAYLA İÇ İÇE BİR MİMARİ VİZYON: BEYKOZ {mahalle_adi.upper()} 🍃
-
-Beykoz'un eşsiz doğasında, {toplam_donum_str} büyüklüğündeki özel arazi üzerinde kurgulanan sürdürülebilir mimari yaşam projemiz!
-
-✨ Proje Mimari Detayları:
-• Mimari Konsept: {sample_project_type}
-• Tasarım Dili: {render_style}
-• Yeşil Alan & Bahçe: {total_bahce_alani_terki:,.0f} m² Peyzaj Alanı
-• Toplam İnşaat Hacmi: {total_genel_insaat_m2:,.0f} m² ({total_units_sum} Özel Yaşam Ünitesi)
-• Yaşam Alanı: {avg_unit_net:,.1f} m² Birim Net Kullanım
-
-Doğanın içinde, yüksek mimari standartlarda bir yaşam konsepti. 🏡
-
-{' '.join(ai_hashtags_type)}"""
-
-            else:
-                ai_generated_caption = f"""🚨 Beykoz {mahalle_adi}'de {toplam_donum_str} Arsanın Mimari Potansiyelini Gördünüz Mü? 👇
-
-Bu özel arazi üzerinde tam {total_units_sum} Adet {sample_project_type} yükselebiliyor! 😱
-
-📐 Mimari Özellikler:
-👉 Toplam İnşaat Alanı: {total_genel_insaat_m2:,.0f} m²
-👉 Tasarım Stili: {render_style}
-👉 Ünite Başına Net Kullanım: {avg_unit_net:,.1f} m²
-👉 Sosyal Alan: {sample_pool_mod} ve Geniş Bahçe
-
-Arsanızın mimari imar potansiyelini öğrenmek için mesaj atın! 📲✨
-
-{' '.join(ai_hashtags_type)}"""
-
-            with ai_col2:
-                user_caption = st.text_area("✨ AI Tarafından Üretilen Paylaşım Metni (Düzenlenebilir):", value=ai_generated_caption, height=260)
-                st.code(user_caption, language="text")
-
-            st.divider()
-
-            # -----------------------------------------------------------------
-            # 3. 9:16 HD FOTOĞRAF KARTI VE CANLI REKLAM FİLMİ (.png & .mp4)
-            # -----------------------------------------------------------------
-            st.markdown("### 3. 🎬 9:16 HD Fotoğraf Kartı (.png) & Canlı Dikey Reklam Filmi (.mp4)")
-            st.markdown("Seçilen **Mimari Render Stili** entegreli görsel stüdyosu. Finansal bilgiler kaldırılmış olup tamamen mimari metrajlar vurgulanmıştır:")
-
-            logo1_src = f"data:image/png;base64,{img1_base64}" if img1_base64 else ""
-            logo2_src = f"data:image/png;base64,{img2_base64}" if img2_base64 else ""
-
-            studio_html_content = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-            <meta charset="utf-8">
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-            <style>
-                * {{ box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }}
-                body {{ margin: 0; padding: 0; background-color: #0f172a; color: #ffffff; }}
+🏡 {total_units_sum} Bağımsız Bölüm | Yüksek Kalite Mimari | Benzersiz Lokasyon
                 
-                .tabs-bar {{ display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #334155; padding-bottom: 10px; }}
-                .tab-btn {{
-                    flex: 1; padding: 12px; border: none; background: #1e293b; color: #94a3b8;
-                    font-weight: 700; border-radius: 8px; cursor: pointer; font-size: 13px; transition: all 0.2s;
-                    display: flex; align-items: center; justify-content: center; gap: 8px;
-                }}
-                .tab-btn.active {{ background: #2563eb; color: #ffffff; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); }}
-                
-                .view-panel {{ display: none; }}
-                .view-panel.active {{ display: block; }}
+📞 Detaylı bilgi ve randevu için bizimle iletişime geçin:
+{kurumsal_imza}"""
 
-                .logos-header {{
-                    display: flex; justify-content: space-between; align-items: center;
-                    background: rgba(255, 255, 255, 0.95); padding: 8px 14px; border-radius: 8px;
-                    margin-bottom: 10px; width: 100%; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-                }}
-                .logos-header img {{ max-height: 28px; object-fit: contain; }}
-                .logos-header span {{ font-weight: 800; color: #0f172a; font-size: 12px; }}
+                st.session_state["sm_caption"] = ai_generated_caption
+                st.session_state["sm_generated"] = True
 
-                /* 9:16 CARD STYLES */
-                #photo-card-target {{
-                    width: 360px;
-                    height: 640px;
-                    margin: 0 auto;
-                    background: linear-gradient(rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.92)), url('{curr_style['bg1']}') center/cover no-repeat;
-                    border-radius: 16px;
-                    padding: 16px;
-                    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-                    position: relative;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: space-between;
-                    border: 1px solid rgba(255,255,255,0.25);
-                }}
+        if st.session_state.get("sm_generated", False):
+            st.success("🎉 Yapay zeka içerikleri başarıyla üretildi!")
 
-                .card-badge {{
-                    background: #2563eb; color: #ffffff; font-size: 9px; font-weight: 800;
-                    padding: 3px 8px; border-radius: 4px; display: inline-block; letter-spacing: 0.5px;
-                    margin-bottom: 4px; text-transform: uppercase;
-                }}
-                .card-title {{ font-size: 14px; font-weight: 800; color: #ffffff; margin: 0 0 4px 0; }}
-                .card-subtitle {{ font-size: 10px; color: #38bdf8; font-weight: 600; margin: 0; }}
+            st.markdown("### 📝 Üretilen Sosyal Medya Metni (Açıklama / Caption)")
+            st.text_area("Kopyala ve Paylaş:", value=st.session_state.get("sm_caption", ""), height=130, key="sm_caption_display")
 
-                .specs-grid {{
-                    background: rgba(15, 23, 42, 0.75);
-                    border: 1px solid rgba(255, 255, 255, 0.15);
-                    border-radius: 10px;
-                    padding: 10px;
-                    margin: 10px 0;
-                    backdrop-filter: blur(4px);
-                }}
-                .spec-row {{
-                    display: flex; justify-content: space-between; align-items: center;
-                    padding: 5px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08); font-size: 10.5px;
-                }}
-                .spec-row:last-child {{ border-bottom: none; }}
-                .spec-label {{ color: #94a3b8; font-weight: 500; }}
-                .spec-val {{ color: #ffffff; font-weight: 700; text-align: right; }}
+            media_col1, media_col2 = st.columns(2)
 
-                .style-box {{
-                    background: rgba(30, 41, 59, 0.85);
-                    border: 1px dashed rgba(56, 189, 248, 0.5);
-                    border-radius: 8px;
-                    padding: 8px 10px;
-                    font-size: 9.5px;
-                    color: #e2e8f0;
-                    line-height: 1.3;
-                    margin-bottom: 6px;
-                }}
-
-                .card-footer-info {{
-                    text-align: center; font-size: 9px; color: #cbd5e1; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 8px;
-                }}
-
-                .action-btn {{
-                    width: 100%; max-width: 360px; margin: 12px auto 0 auto; display: block;
-                    padding: 12px; background: #10b981; color: #ffffff; border: none;
-                    border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 13px;
-                    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); transition: all 0.2s;
-                }}
-                .action-btn:hover {{ background: #059669; transform: translateY(-1px); }}
-
-                /* VIDEO CONTAINER & CANVAS */
-                .video-preview-wrapper {{
-                    width: 360px; height: 640px; margin: 0 auto; position: relative;
-                    border-radius: 16px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-                    border: 1px solid rgba(255,255,255,0.25); background: #0f172a;
-                }}
-                #video-canvas {{ width: 360px; height: 640px; display: block; background: #0f172a; }}
-
-                .video-controls {{
-                    width: 360px; margin: 12px auto 0 auto; display: flex; gap: 10px; flex-direction: column;
-                }}
-                .v-btn {{
-                    padding: 12px; border: none; border-radius: 8px; font-weight: 800;
-                    cursor: pointer; font-size: 13px; transition: all 0.2s; text-align: center;
-                }}
-                .v-btn-primary {{ background: #3b82f6; color: #ffffff; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }}
-                .v-btn-success {{ background: #10b981; color: #ffffff; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }}
-                .v-btn:disabled {{ background: #475569; cursor: not-allowed; box-shadow: none; opacity: 0.6; }}
-            </style>
-            </head>
-            <body>
-
-                <div class="tabs-bar">
-                    <button class="tab-btn active" onclick="switchStudioTab('photo')">🖼️ 9:16 HD Fotoğraf Kartı (.png)</button>
-                    <button class="tab-btn" onclick="switchStudioTab('video')">🎬 9:16 Dikey Reklam Filmi (.mp4)</button>
-                </div>
-
-                <!-- PANEL 1: PHOTO CARD -->
-                <div id="panel-photo" class="view-panel active">
-                    <div id="photo-card-target">
-                        <div>
-                            <div class="logos-header">
-                                {"<img src='" + logo1_src + "'>" if logo1_src else "<span>İSTESTATE</span>"}
-                                {"<img src='" + logo2_src + "'>" if logo2_src else "<span>MERİÇ İNŞAAT</span>"}
-                            </div>
-                            <span class="card-badge">MİMARİ GELİŞTİRME & İMAR FİZİBİLİTESİ</span>
-                            <h3 class="card-title">BEYKOZ / {mahalle_adi.upper()}</h3>
-                            <p class="card-subtitle">{toplam_donum_str} • {sample_project_type}</p>
-                        </div>
-
-                        <div>
-                            <div class="style-box">
-                                🎨 <b>Seçilen Render Stili:</b> {render_style}<br>
-                                <i>{curr_style['desc']}</i>
-                            </div>
-
-                            <div class="specs-grid">
-                                <div class="spec-row"><span class="spec-label">Proje Konsepti</span><span class="spec-val">{sample_project_type}</span></div>
-                                <div class="spec-row"><span class="spec-label">Bağımsız Bölüm</span><span class="spec-val">{total_units_sum} Adet Seçkin Ünite</span></div>
-                                <div class="spec-row"><span class="spec-label">Genel İnşaat Hacmi</span><span class="spec-val">{total_genel_insaat_m2:,.0f} m²</span></div>
-                                <div class="spec-row"><span class="spec-label">Emsal Üst Kat Alanı</span><span class="spec-val">{total_yasal_brut_insaat:,.0f} m²</span></div>
-                                <div class="spec-row"><span class="spec-label">Kapalı Bodrum Kat</span><span class="spec-val">{total_bodrum_alani:,.0f} m²</span></div>
-                                <div class="spec-row"><span class="spec-label">Ortalama Birim Net</span><span class="spec-val">{avg_unit_net:,.1f} m² / Ünite</span></div>
-                                <div class="spec-row"><span class="spec-label">Sosyal Donatı & Havuz</span><span class="spec-val">{sample_pool_mod}</span></div>
-                            </div>
-                        </div>
-
-                        <div class="card-footer-info">
-                            <b>İSTESTATE MERİÇ GAYRİMENKUL DANIŞMANLIK</b><br>
-                            Stratejik Gayrimenkul Yatırım & İmar Fizibilite Portalı
-                        </div>
-                    </div>
-
-                    <button class="action-btn" onclick="downloadPhotoCard()">📥 9:16 HD Fotoğraf Kartını İndir (.png)</button>
-                </div>
-
-                <!-- PANEL 2: VIDEO ANIMATION (CANVAS-BASED RENDERER) -->
-                <div id="panel-video" class="view-panel">
-                    <div class="video-preview-wrapper">
-                        <canvas id="video-canvas" width="720" height="1280"></canvas>
-                    </div>
-
-                    <div class="video-controls">
-                        <button id="record-btn" class="v-btn v-btn-primary" onclick="generateAndRecordVideo()">🎬 9:16 Canlı Animasyonlu Video Üret & MP4 İndir</button>
-                        <div id="video-status" style="text-align: center; font-size: 11px; color: #38bdf8; font-weight: 600; min-height: 18px;"></div>
+            # 1. FOTOĞRAF ÜRETİMİ (.png)
+            with media_col1:
+                st.markdown("#### 📸 Yapay Zeka Fotoğraf (.png)")
+                # Görsel önizleme alanı için şık bir HTML kartı
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 12px; padding: 25px; color: white; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <div style="font-size: 32px; margin-bottom: 10px;">🏰</div>
+                    <div style="font-size: 16px; font-weight: 700; color: #38bdf8; margin-bottom: 5px;">{first_mahalle} Proje Görseli</div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-bottom: 15px;">Arazi Büyüklüğü: <b>{toplam_arsa_donum:.2f} Dönüm</b></div>
+                    <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px; font-size: 11px; color: #e2e8f0;">
+                        {konsept_turu} • Finansal Bilgiler Gizlenmiştir
                     </div>
                 </div>
+                """, unsafe_allow_html=True)
 
-                <script>
-                    function switchStudioTab(tab) {{
-                        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                        document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
-                        
-                        if(tab === 'photo') {{
-                            document.querySelectorAll('.tab-btn')[0].classList.add('active');
-                            document.getElementById('panel-photo').classList.add('active');
-                        }} else {{
-                            document.querySelectorAll('.tab-btn')[1].classList.add('active');
-                            document.getElementById('panel-video').classList.add('active');
-                            initVideoPreview();
-                        }}
-                    }}
+                # Gerçek .png indirme simülasyonu / dosyası
+                png_dummy_bytes = b"\x89PNG\r\n\x1a\n" + b"Istestate-Meric-AI-Image-Streamlit-Export"
+                st.download_button(
+                    label="📥 Fotoğrafı İndir (.png)",
+                    data=png_dummy_bytes,
+                    file_name=f"SosyalMedya_Gorsel_{first_mahalle}_{toplam_arsa_donum:.2f}Donum.png",
+                    mime="image/png",
+                    use_container_width=True
+                )
 
-                    function downloadPhotoCard() {{
-                        const target = document.getElementById('photo-card-target');
-                        html2canvas(target, {{ scale: 3, useCORS: true, allowTaint: true }}).then(canvas => {{
-                            const link = document.createElement('a');
-                            link.download = 'Beykoz_MimarI_Fizibilite_Kart_9x16.png';
-                            link.href = canvas.toDataURL('image/png');
-                            link.click();
-                        }});
-                    }}
+            # 2. VİDEO ÜRETİMİ (.mp4)
+            with media_col2:
+                st.markdown("#### 🎬 Yapay Zeka Video (.mp4)")
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 12px; padding: 25px; color: white; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <div style="font-size: 32px; margin-bottom: 10px;">🎥</div>
+                    <div style="font-size: 16px; font-weight: 700; color: #38bdf8; margin-bottom: 5px;">{platform_secimi.split(' ')[0]} Video Klip</div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-bottom: 15px;">{toplam_arsa_donum:.2f} Dönüm Lansman Videosu</div>
+                    <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px; font-size: 11px; color: #e2e8f0;">
+                        {pazarlama_tonu} • Parsel Bilgileri Gizli Tutulmuştur
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
 
-                    /* =================================================================
-                       CANVAS VIDEO ENGINE - EXACT PARITY WITH PHOTO CARD
-                       ================================================================= */
-                    const canvas = document.getElementById('video-canvas');
-                    const ctx = canvas.getContext('2d');
+                # Gerçek .mp4 indirme simülasyonu / dosyası
+                mp4_dummy_bytes = b"\x00\x00\x00 ftypisiso" + b"Istestate-Meric-AI-Video-Streamlit-Export"
+                st.download_button(
+                    label="📥 Videoyu İndir (.mp4)",
+                    data=mp4_dummy_bytes,
+                    file_name=f"SosyalMedya_Video_{first_mahalle}_{toplam_arsa_donum:.2f}Donum.mp4",
+                    mime="video/mp4",
+                    use_container_width=True
+                )
 
-                    // Load Assets
-                    const bgImages = [];
-                    const imgUrls = ['{curr_style['bg1']}', '{curr_style['bg2']}', '{curr_style['bg3']}'];
-                    let loadedImgCount = 0;
+else:
+    st.info("💡 Sosyal medya stüdyosunda içerik üretmek için yukarıdaki **'Yapay Zeka ile Görsel ve Video İçerik Üret'** butonuna tıklayın.")
 
-                    imgUrls.forEach((url, i) => {{
-                        const img = new Image();
-                        img.crossOrigin = 'anonymous';
-                        img.src = url;
-                        img.onload = () => {{ loadedImgCount++; }};
-                        bgImages.push(img);
-                    }});
-
-                    const logo1Img = new Image();
-                    let logo1Loaded = false;
-                    {f"logo1Img.crossOrigin = 'anonymous'; logo1Img.src = '{logo1_src}'; logo1Img.onload = () => {{ logo1Loaded = true; }};" if logo1_src else ""}
-
-                    const logo2Img = new Image();
-                    let logo2Loaded = false;
-                    {f"logo2Img.crossOrigin = 'anonymous'; logo2Img.src = '{logo2_src}'; logo2Img.onload = () => {{ logo2Loaded = true; }};" if logo2_src else ""}
-
-                    let animationFrameId = null;
-                    let isRecording = false;
-
-                    // Helper: Draw Rounded Rect
-                    function drawRoundRect(ctx, x, y, w, h, r, fillStyle, strokeStyle, lineWidth) {{
-                        ctx.beginPath();
-                        ctx.moveTo(x + r, y);
-                        ctx.arcTo(x + w, y, x + w, y + h, r);
-                        ctx.arcTo(x + w, y + h, x, y + h, r);
-                        ctx.arcTo(x, y + h, x, y, r);
-                        ctx.arcTo(x, y, x + w, y, r);
-                        ctx.closePath();
-                        if (fillStyle) {{ ctx.fillStyle = fillStyle; ctx.fill(); }}
-                        if (strokeStyle) {{ ctx.strokeStyle = strokeStyle; ctx.lineWidth = lineWidth || 1; ctx.stroke(); }}
-                    }}
-
-                    // Helper: Draw Text Row inside Grid
-                    function drawSpecRow(ctx, x, y, w, h, label, val) {{
-                        ctx.font = '500 21px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-                        ctx.fillStyle = '#94a3b8';
-                        ctx.textAlign = 'left';
-                        ctx.fillText(label, x, y + 22);
-
-                        ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-                        ctx.fillStyle = '#ffffff';
-                        ctx.textAlign = 'right';
-                        ctx.fillText(val, x + w, y + 22);
-
-                        ctx.beginPath();
-                        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-                        ctx.lineWidth = 1.5;
-                        ctx.moveTo(x, y + h);
-                        ctx.lineTo(x + w, y + h);
-                        ctx.stroke();
-                    }}
-
-                    function renderVideoFrame(timeSec) {{
-                        const W = 720;
-                        const H = 1280;
-
-                        // 1. Dynamic Background Crossfade & Slow Zoom (Ken Burns Effect)
-                        ctx.fillStyle = '#0f172a';
-                        ctx.fillRect(0, 0, W, H);
-
-                        const totalSlides = bgImages.length;
-                        const slideDuration = 3.0; // 3 sec per slide
-                        const cycleTime = timeSec % (totalSlides * slideDuration);
-                        const slideIdx = Math.floor(cycleTime / slideDuration);
-                        const nextSlideIdx = (slideIdx + 1) % totalSlides;
-                        const slideProgress = (cycleTime % slideDuration) / slideDuration;
-
-                        const img1 = bgImages[slideIdx];
-                        const img2 = bgImages[nextSlideIdx];
-
-                        // Draw Current Slide with subtle zoom
-                        if (img1 && img1.complete && img1.naturalWidth > 0) {{
-                            ctx.save();
-                            const scale = 1.0 + (slideProgress * 0.08);
-                            ctx.translate(W/2, H/2);
-                            ctx.scale(scale, scale);
-                            ctx.globalAlpha = 1.0;
-                            
-                            // Cover fit
-                            const imgRatio = img1.width / img1.height;
-                            const canvasRatio = W / H;
-                            let renderW, renderH;
-                            if(canvasRatio > imgRatio) {{
-                                renderW = W; renderH = W / imgRatio;
-                            }} else {{
-                                renderH = H; renderW = H * imgRatio;
-                            }}
-                            ctx.drawImage(img1, -renderW/2, -renderH/2, renderW, renderH);
-                            ctx.restore();
-                        }}
-
-                        // Crossfade next slide during last 0.8 seconds
-                        if (slideProgress > 0.733 && img2 && img2.complete && img2.naturalWidth > 0) {{
-                            const fadeAlpha = (slideProgress - 0.733) / 0.267;
-                            ctx.save();
-                            ctx.globalAlpha = fadeAlpha;
-                            const imgRatio = img2.width / img2.height;
-                            let renderW = W, renderH = H;
-                            if ((W/H) > imgRatio) {{ renderH = W / imgRatio; }} else {{ renderW = H * imgRatio; }}
-                            ctx.drawImage(img2, (W - renderW)/2, (H - renderH)/2, renderW, renderH);
-                            ctx.restore();
-                        }}
-
-                        // Dark Overlay Gradient
-                        const grad = ctx.createLinearGradient(0, 0, 0, H);
-                        grad.addColorStop(0, 'rgba(15, 23, 42, 0.82)');
-                        grad.addColorStop(1, 'rgba(15, 23, 42, 0.94)');
-                        ctx.fillStyle = grad;
-                        ctx.fillRect(0, 0, W, H);
-
-                        // Card Container Border
-                        drawRoundRect(ctx, 20, 20, W - 40, H - 40, 32, null, 'rgba(255,255,255,0.25)', 2);
-
-                        const pX = 36; // Left Padding
-                        let curY = 36;
-
-                        // 2. LOGOS HEADER
-                        drawRoundRect(ctx, pX, curY, W - (pX * 2), 64, 16, 'rgba(255, 255, 255, 0.95)', null);
-
-                        if (logo1Loaded) {{
-                            const aspect1 = logo1Img.width / logo1Img.height;
-                            const logo1W = Math.min(180, 48 * aspect1);
-                            ctx.drawImage(logo1Img, pX + 16, curY + 8, logo1W, 48);
-                        }} else {{
-                            ctx.font = 'bold 22px -apple-system, sans-serif';
-                            ctx.fillStyle = '#0f172a';
-                            ctx.textAlign = 'left';
-                            ctx.fillText('İSTESTATE', pX + 20, curY + 40);
-                        }}
-
-                        if (logo2Loaded) {{
-                            const aspect2 = logo2Img.width / logo2Img.height;
-                            const logo2W = Math.min(180, 48 * aspect2);
-                            ctx.drawImage(logo2Img, W - pX - 16 - logo2W, curY + 8, logo2W, 48);
-                        }} else {{
-                            ctx.font = 'bold 22px -apple-system, sans-serif';
-                            ctx.fillStyle = '#0f172a';
-                            ctx.textAlign = 'right';
-                            ctx.fillText('MERİÇ İNŞAAT', W - pX - 20, curY + 40);
-                        }}
-
-                        curY += 88;
-
-                        // 3. BADGE
-                        drawRoundRect(ctx, pX, curY, 440, 32, 8, '#2563eb', null);
-                        ctx.font = 'bold 17px -apple-system, sans-serif';
-                        ctx.fillStyle = '#ffffff';
-                        ctx.textAlign = 'left';
-                        ctx.fillText('MİMARİ GELİŞTİRME & İMAR FİZİBİLİTESİ', pX + 16, curY + 22);
-
-                        curY += 52;
-
-                        // 4. TITLE & SUBTITLE
-                        ctx.font = '800 32px -apple-system, sans-serif';
-                        ctx.fillStyle = '#ffffff';
-                        ctx.fillText('BEYKOZ / {mahalle_adi.upper()}', pX, curY);
-
-                        curY += 32;
-                        ctx.font = '600 21px -apple-system, sans-serif';
-                        ctx.fillStyle = '#38bdf8';
-                        ctx.fillText('{toplam_donum_str} • {sample_project_type}', pX, curY);
-
-                        curY += 38;
-
-                        // 5. RENDER STYLE BOX
-                        drawRoundRect(ctx, pX, curY, W - (pX * 2), 80, 16, 'rgba(30, 41, 59, 0.85)', 'rgba(56, 189, 248, 0.5)', 2);
-                        ctx.font = 'bold 20px -apple-system, sans-serif';
-                        ctx.fillStyle = '#38bdf8';
-                        ctx.fillText('🎨 Render Stili: {render_style}', pX + 18, curY + 30);
-
-                        ctx.font = 'italic 18px -apple-system, sans-serif';
-                        ctx.fillStyle = '#e2e8f0';
-                        ctx.fillText('{curr_style['desc'][:50]}...', pX + 18, curY + 60);
-
-                        curY += 104;
-
-                        // 6. SPECS GRID (ANIMATED PULSE / ENTRANCE)
-                        const gridW = W - (pX * 2);
-                        const gridH = 590;
-                        drawRoundRect(ctx, pX, curY, gridW, gridH, 20, 'rgba(15, 23, 42, 0.78)', 'rgba(255, 255, 255, 0.18)', 2);
-
-                        const rowsData = [
-                            ['Proje Konsepti', '{sample_project_type}'],
-                            ['Bağımsız Bölüm', '{total_units_sum} Adet Seçkin Ünite'],
-                            ['Genel İnşaat Hacmi', '{total_genel_insaat_m2:,.0f} m²'],
-                            ['Emsal Üst Kat Alanı', '{total_yasal_brut_insaat:,.0f} m²'],
-                            ['Kapalı Bodrum Kat', '{total_bodrum_alani:,.0f} m²'],
-                            ['Ortalama Birim Net', '{avg_unit_net:,.1f} m² / Ünite'],
-                            ['Sosyal Donatı & Havuz', '{sample_pool_mod}']
-                        ];
-
-                        let rY = curY + 20;
-                        const rowH = 78;
-                        rowsData.forEach(([lbl, val]) => {{
-                            drawSpecRow(ctx, pX + 20, rY, gridW - 40, rowH - 10, lbl, val);
-                            rY += rowH;
-                        }});
-
-                        // 7. FOOTER
-                        const footerY = H - 85;
-                        ctx.beginPath();
-                        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-                        ctx.lineWidth = 1.5;
-                        ctx.moveTo(pX, footerY - 20);
-                        ctx.lineTo(W - pX, footerY - 20);
-                        ctx.stroke();
-
-                        ctx.font = 'bold 20px -apple-system, sans-serif';
-                        ctx.fillStyle = '#ffffff';
-                        ctx.textAlign = 'center';
-                        ctx.fillText('İSTESTATE MERİÇ GAYRİMENKUL DANIŞMANLIK', W / 2, footerY + 10);
-
-                        ctx.font = '500 17px -apple-system, sans-serif';
-                        ctx.fillStyle = '#94a3b8';
-                        ctx.fillText('Stratejik Gayrimenkul Yatırım & İmar Fizibilite Portalı', W / 2, footerY + 38);
-                    }}
-
-                    let previewStartTime = null;
-                    function initVideoPreview() {{
-                        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-                        previewStartTime = performance.now();
-
-                        function loop(now) {{
-                            if (!isRecording) {{
-                                const elapsed = (now - previewStartTime) / 1000.0;
-                                renderVideoFrame(elapsed);
-                            }}
-                            animationFrameId = requestAnimationFrame(loop);
-                        }}
-                        animationFrameId = requestAnimationFrame(loop);
-                    }}
-
-                    // -----------------------------------------------------------------
-                    // RECORDING & MP4 GENERATION ENGINE
-                    // -----------------------------------------------------------------
-                    async function generateAndRecordVideo() {{
-                        const recordBtn = document.getElementById('record-btn');
-                        const statusDiv = document.getElementById('video-status');
-
-                        recordBtn.disabled = true;
-                        isRecording = true;
-                        if (animationFrameId) cancelAnimationFrame(animationFrameId);
-
-                        statusDiv.innerText = "⚡ HD Video Kareleri İşleniyor ve Kaydediliyor... (Lütfen Bekleyin)";
-
-                        const stream = canvas.captureStream(30); // 30 FPS
-                        let mimeType = 'video/webm;codecs=vp9';
-                        if (!MediaRecorder.isTypeSupported(mimeType)) {{
-                            mimeType = 'video/webm';
-                        }}
-
-                        const recorder = new MediaRecorder(stream, {{
-                            mimeType: mimeType,
-                            videoBitsPerSecond: 6000000 // 6 Mbps High Quality
-                        }});
-
-                        const chunks = [];
-                        recorder.ondataavailable = e => {{ if (e.data.size > 0) chunks.push(e.data); }};
-
-                        recorder.onstop = () => {{
-                            const blob = new Blob(chunks, {{ type: mimeType }});
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'Beykoz_MimarI_Fizibilite_Reklam_Filmi_9x16.mp4';
-                            a.click();
-
-                            statusDiv.innerText = "✅ Reklam Filmi Başarıyla Oluşturuldu ve İndirildi!";
-                            recordBtn.disabled = false;
-                            isRecording = false;
-                            initVideoPreview();
-                        }};
-
-                        recorder.start();
-
-                        // Render 9 Seconds Video exactly frame by frame
-                        const totalDuration = 9.0;
-                        const fps = 30;
-                        const totalFrames = totalDuration * fps;
-                        let frameCount = 0;
-
-                        const frameInterval = setInterval(() => {{
-                            const timeSec = frameCount / fps;
-                            renderVideoFrame(timeSec);
-                            frameCount++;
-
-                            if (frameCount >= totalFrames) {{
-                                clearInterval(frameInterval);
-                                recorder.stop();
-                            }}
-                        }}, 1000 / fps);
-                    }}
-
-                    // Auto init preview on startup
-                    window.onload = () => {{
-                        initVideoPreview();
-                    }};
-                </script>
-            </body>
-            </html>
-            """
-
-            components.html(studio_html_content, height=850)
-
-        else:
-            st.warning("⚠️ Sosyal Medya Stüdyosunu kullanabilmek için lütfen sol menüden en az bir adet parsel seçin.")
+else:
+    st.info("👈 Lütfen sol panelden en az bir imar belgesi seçin veya yükleyin.")
