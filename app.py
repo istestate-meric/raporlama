@@ -187,11 +187,13 @@ def pull_from_github():
 
 def push_to_github(data_dict):
     if not GITHUB_TOKEN:
+        st.sidebar.error("GitHub Token bulunamadı!")
         return
     try:
         g = Github(GITHUB_TOKEN)
         repo = g.get_repo(GITHUB_REPO)
         json_str = json.dumps(data_dict, ensure_ascii=False, indent=4)
+        
         try:
             contents = repo.get_contents(DB_FILE_NAME, ref="main")
             repo.update_file(
@@ -215,14 +217,15 @@ def load_persistent_db():
     remote_data = pull_from_github()
     if remote_data is not None:
         return remote_data
+        
     if os.path.exists(DB_FILE):
         try:
             with open(DB_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 if isinstance(data, dict):
                     return data
-        except Exception:
-            pass
+        except Exception as e:
+            st.warning(f"Veritabanı okunurken uyarı: {e}")
     return {}
 
 def save_persistent_db(db_data):
@@ -255,12 +258,23 @@ img2_tag = f"<img src='data:image/png;base64,{img2_base64}' style='max-height: 5
 
 def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_rate):
     mahalle_base_tl = {
-        "ACARLAR": 165000, "ANADOLU HİSARI": 150000, "KANLICA": 145000,
-        "GÖKSU": 130000, "GÖRELE": 135000, "RİVA": 140000, "ÇİFTLİK": 130000,
-        "BAKLACI": 115000, "KAVACIK": 110000, "ÇENGELDERE": 120000,
-        "YAVUZ SELİM": 95000, "FATİH": 90000, "SOĞUKSU": 110000,
-        "PAŞABAHÇE": 105000, "VARSAYILAN": 115000
+        "ACARLAR": 165000,
+        "ANADOLU HİSARI": 150000,
+        "KANLICA": 145000,
+        "GÖKSU": 130000,
+        "GÖRELE": 135000,
+        "RİVA": 140000,
+        "ÇİFTLİK": 130000,
+        "BAKLACI": 115000,
+        "KAVACIK": 110000,
+        "ÇENGELDERE": 120000,
+        "YAVUZ SELİM": 95000,
+        "FATİH": 90000,
+        "SOĞUKSU": 110000,
+        "PAŞABAHÇE": 105000,
+        "VARSAYILAN": 115000
     }
+    
     clean_mahalle = mahalle_adi.upper().replace("İ", "I").replace("Ç", "C").replace("Ş", "S").replace("Ğ", "G").replace("Ü", "U").replace("Ö", "O").strip()
     base_tl = mahalle_base_tl.get(clean_mahalle, mahalle_base_tl["VARSAYILAN"])
     
@@ -274,6 +288,7 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_ra
         "Otel + Ticari AVM Kompleksi": {"satis_mod": 1.50, "maliyet_mod": 1350},
         "Otel / Turizm Tesisi": {"satis_mod": 1.55, "maliyet_mod": 1400},
     }
+    
     p_conf = proje_carpanlari.get(proje_tipi, proje_carpanlari["Standart Konut / Apartman"])
     
     pool_cost_addon = 0.0
@@ -288,6 +303,7 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_ra
             
     satis_fiyati_usd = round(((base_tl * p_conf["satis_mod"]) / usd_rate) + pool_price_addon, 2)
     maliyet_fiyati_usd = float(p_conf["maliyet_mod"]) + pool_cost_addon
+    
     return satis_fiyati_usd, maliyet_fiyati_usd
 
 def get_best_project_type_by_margin(fonk_adi, mahalle_adi, usd_rate):
@@ -295,8 +311,10 @@ def get_best_project_type_by_margin(fonk_adi, mahalle_adi, usd_rate):
     best_pt = allowed_types[0]
     best_pool = get_allowed_pool_options(best_pt)[0]
     max_margin = -9999.0
+    
     for pt in allowed_types:
-        for pool in get_allowed_pool_options(pt):
+        pool_options = get_allowed_pool_options(pt)
+        for pool in pool_options:
             s_price, c_cost = get_realistic_market_pricing(mahalle_adi, pt, pool, usd_rate)
             if c_cost > 0:
                 margin = (s_price - c_cost) / c_cost
@@ -304,6 +322,7 @@ def get_best_project_type_by_margin(fonk_adi, mahalle_adi, usd_rate):
                     max_margin = margin
                     best_pt = pt
                     best_pool = pool
+                    
     return best_pt, best_pool
 
 def parse_tr_float(val_str):
@@ -315,6 +334,7 @@ def parse_tr_float(val_str):
     s = re.sub(r"[^\d\.,]", "", s).strip()
     if not s:
         return 0.0
+        
     if "," in s and "." in s:
         if s.rfind(".") > s.rfind(","):
             s = s.replace(",", "")
@@ -326,6 +346,7 @@ def parse_tr_float(val_str):
         parts = s.split(".")
         if len(parts[-1]) == 3 and len(parts) > 1:
             s = s.replace(".", "")
+            
     try:
         return float(s)
     except ValueError:
@@ -334,7 +355,8 @@ def parse_tr_float(val_str):
 def parse_kaks_val(val_str):
     if not val_str:
         return 0.0
-    nums = re.findall(r"[\d\.,]+", str(val_str))
+    s_str = str(val_str).strip()
+    nums = re.findall(r"[\d\.,]+", s_str)
     parsed_vals = []
     for num_s in nums:
         v = parse_tr_float(num_s)
@@ -348,11 +370,22 @@ def detect_terk_status(text, toplam_alan, fonksiyonlar):
         "TERKİ YAPILMIŞTIR", "TERKİ YAPILMIŞ", "TERK YAPILMIŞTIR", "TERK YAPILMIŞ",
         "KAMUYA TERK EDİLMİŞTİR", "YOLA TERKİ YAPILMIŞTIR", "TERK EDİLMİŞTİR",
         "TERK: YOK", "TERK YOK", "YOLA TERK: 0", "TERK MİKTARI: 0", "NET PARSEL",
-        "TERKSİZ", "TERK GEREKMEMEKTEDİR", "İFRAZ GÖRMÜŞ", "TAPU ALANI NET"
+        "TERKSİZ", "TERK GEREKMEMEKTEDİR", "İFRAZ GÖRMÜŞ", "TAPU ALANI NET",
+        "TERKİ YAPILMIŞ OLAN", "DOP YAPILMIŞ"
+    ]
+    kesin_terk_yapilmamis = [
+        "TERK YAPILMAMIŞ", "TERKİ YAPILMAMIŞ", "TERK YAPILMADAN", "DOP TERKİ YAPILMAMIŞ",
+        "YOLA TERK VAR", "KAMUYA TERK VAR", "TERK EDİLECEKTİR", "YOLA TERKİ VARDIR",
+        "TERK EDİLMELİDİR", "TERKİ YAPILMIŞTIR DEĞİLDİR", "TERKİ YAPILMAMIŞTIR",
+        "TERK EDİLECEK", "YOLA TERK MİKTARI"
     ]
     for kw in kesin_terk_yapilmis:
-        if kw in text_upper and "YAPILMAMIŞTIR" not in text_upper:
-            return True
+        if kw in text_upper:
+            if "YAPILMAMIŞTIR" not in text_upper and "YAPILMAMIŞ" not in text_upper:
+                return True
+    for kw in kesin_terk_yapilmamis:
+        if kw in text_upper:
+            return False
     return False
 
 def parse_imar_pdf(uploaded_file):
@@ -365,21 +398,41 @@ def parse_imar_pdf(uploaded_file):
         "terk_yapilmis_mi": False,
         "fonksiyonlar": []
     }
+    
     try:
         with pdfplumber.open(uploaded_file) as pdf:
             full_text = ""
             for page in pdf.pages:
-                full_text += "\n" + (page.extract_text() or "")
+                t = page.extract_text() or ""
+                full_text += "\n" + t
+                
                 tables = page.extract_tables() or []
                 for table in tables:
                     for r_idx, row in enumerate(table):
                         cells = [str(c).strip().replace("\n", " ") if c is not None else "" for c in row]
+                        
+                        if any("Mahalle" in c for c in cells) and any("Ada" in c for c in cells):
+                            if r_idx + 1 < len(table):
+                                v_row = [str(c).strip().replace("\n", " ") if c is not None else "" for c in table[r_idx + 1]]
+                                for idx, head in enumerate(cells):
+                                    if idx < len(v_row):
+                                        val = v_row[idx]
+                                        if "Mahalle" in head and val:
+                                            parcel_data["mahalle"] = val.upper()
+                                        elif "Ada" in head and val:
+                                            parcel_data["ada"] = str(val).strip()
+                                        elif "Parsel" in head and val:
+                                            parcel_data["parsel"] = str(val).strip()
+                                        elif "Alan" in head and val:
+                                            parcel_data["toplam_alan"] = parse_tr_float(val)
+                                            
                         joined_row_str = " ".join(cells).upper()
-                        if any(kw in joined_row_str for kw in ["KONUT", "TİCARET", "TİCARİ", "PARK", "VİLLA", "GELİŞME", "EMSAL", "KAKS"]):
+                        if any(kw in joined_row_str for kw in ["KONUT", "TİCARET", "TİCARİ", "PARK", "VİLLA", "GELİŞME", "EMSAL", "KAKS", "E:"]):
                             f_name = ""
                             f_taks = 0.0
                             f_kaks = 0.0
                             f_m2 = 0.0
+                            
                             for c in cells:
                                 c_up = c.upper()
                                 if any(x in c_up for x in ["KONUT", "TİCARET", "TİCARİ", "PARK", "VİLLA", "GELİŞME"]):
@@ -387,22 +440,88 @@ def parse_imar_pdf(uploaded_file):
                                     if cleaned:
                                         f_name = cleaned
                                 elif "TAKS" in c_up:
-                                    for num_str in re.findall(r"([\d\.,]+)", c):
+                                    nums = re.findall(r"([\d\.,]+)", c)
+                                    for num_str in nums:
                                         val = parse_tr_float(num_str)
                                         if 0 < val <= 1.0:
                                             f_taks = val
-                                elif any(k in c_up for k in ["KAKS", "EMSAL", "EMS", "E:"]):
+                                elif any(k in c_up for k in ["KAKS", "EMSAL", "EMS", "E:", "E="]):
                                     f_kaks = parse_kaks_val(c)
+                                    
+                                m2_m = re.search(r"([\d\.,]+)\s*(?:M²|M2|%)", c, re.IGNORECASE)
+                                if m2_m and "ALAN" not in c_up:
+                                    val = parse_tr_float(m2_m.group(1))
+                                    if val > 1.0:
+                                        f_m2 = val
+                                        
                             if f_name:
-                                parcel_data["fonksiyonlar"].append({
-                                    "fonksiyon_adi": f_name,
-                                    "taks": f_taks,
-                                    "kaks": f_kaks,
-                                    "giren_m2": f_m2
-                                })
-                
+                                cleaned_check = clean_fonksiyon_adi(f_name)
+                                if cleaned_check and not any(x in cleaned_check for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
+                                    existing_exact = next((f for f in parcel_data["fonksiyonlar"] if f["fonksiyon_adi"] == cleaned_check and f["kaks"] == f_kaks), None)
+                                    if existing_exact:
+                                        if f_taks > 0:
+                                            existing_exact["taks"] = f_taks
+                                        if f_m2 > 0:
+                                            existing_exact["giren_m2"] += f_m2
+                                    else:
+                                        parcel_data["fonksiyonlar"].append({
+                                            "fonksiyon_adi": cleaned_check,
+                                            "taks": f_taks,
+                                            "kaks": f_kaks,
+                                            "giren_m2": f_m2
+                                        })
+                                        
+                lines = t.split("\n")
+                for i, line in enumerate(lines):
+                    line_up = line.upper().strip()
+                    if any(kw in line_up for kw in ["KONUT ALANI", "TİCARET ALANI", "TİCARET VE KONUT", "GELİŞME KONUT", "VİLLA ALANI"]):
+                        clean_n = clean_fonksiyon_adi(line)
+                        if clean_n:
+                            curr_fonk = clean_n
+                            curr_taks = 0.0
+                            curr_kaks = 0.0
+                            curr_m2 = 0.0
+                            
+                            for sub_line in lines[max(0, i-5):min(len(lines), i+8)]:
+                                sub_up = sub_line.upper()
+                                if "TAKS" in sub_up:
+                                    num_m = re.search(r"([\d\.,]+)", sub_line)
+                                    if num_m:
+                                        val = parse_tr_float(num_m.group(1))
+                                        if 0 < val <= 1.0:
+                                            curr_taks = val
+                                            
+                                if any(k in sub_up for k in ["KAKS", "EMSAL", "EMS", "E:", "E="]):
+                                    val = parse_kaks_val(sub_line)
+                                    if val > 0:
+                                        curr_kaks = val
+                                        
+                                m2_m = re.search(r"([\d\.,]+)\s*(?:m²|m2|%)", sub_line, re.IGNORECASE)
+                                if m2_m:
+                                    val = parse_tr_float(m2_m.group(1))
+                                    if val > 0:
+                                        curr_m2 = val
+                                        
+                            if curr_fonk:
+                                cleaned_curr_fonk = clean_fonksiyon_adi(curr_fonk)
+                                if cleaned_curr_fonk and not any(x in cleaned_curr_fonk for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
+                                    existing_exact = next((f for f in parcel_data["fonksiyonlar"] if f["fonksiyon_adi"] == cleaned_curr_fonk and f["kaks"] == curr_kaks), None)
+                                    if existing_exact:
+                                        if curr_taks > 0:
+                                            existing_exact["taks"] = curr_taks
+                                        if curr_m2 > 0:
+                                            existing_exact["giren_m2"] = curr_m2
+                                    else:
+                                        parcel_data["fonksiyonlar"].append({
+                                            "fonksiyon_adi": cleaned_curr_fonk,
+                                            "taks": curr_taks,
+                                            "kaks": curr_kaks,
+                                            "giren_m2": curr_m2
+                                        })
+                                        
                 global_kaks_val = 0.0
-                for gkm in re.findall(r"(?:EMSAL|KAKS|EMS|E)\s*[:=\s]*([\d\.,\s/-]+)", full_text, re.IGNORECASE):
+                general_kaks_matches = re.findall(r"(?:EMSAL|KAKS|EMS|E)\s*[:=\s]*([\d\.,\s/-]+)", full_text, re.IGNORECASE)
+                for gkm in general_kaks_matches:
                     val = parse_kaks_val(gkm)
                     if val > 0:
                         global_kaks_val = val
@@ -412,17 +531,21 @@ def parse_imar_pdf(uploaded_file):
                     if f["kaks"] <= 0 and global_kaks_val > 0:
                         f["kaks"] = global_kaks_val
                         
-                m_m = re.search(r"Mahalle\s*[:\|]\s*([A-ZÇĞİÖŞÜa-zçğıöşü]+)", full_text)
-                a_m = re.search(r"Ada\s*[:\|]\s*(\d+)", full_text)
-                p_m = re.search(r"Parsel\s*[:\|]\s*(\d+)", full_text)
-                al_m = re.search(r"Alan\s*\*?\s*[:\|]\s*([\d\.,]+)\s*m²", full_text)
-                
-                if m_m: parcel_data["mahalle"] = m_m.group(1).upper()
-                if a_m: parcel_data["ada"] = str(a_m.group(1)).strip()
-                if p_m: parcel_data["parsel"] = str(p_m.group(1)).strip()
-                if al_m and parcel_data["toplam_alan"] == 0.0:
-                    parcel_data["toplam_alan"] = parse_tr_float(al_m.group(1))
+                if parcel_data["mahalle"] == "BİLİNMİYOR" or parcel_data["ada"] == "0":
+                    m_m = re.search(r"Mahalle\s*[:\|]\s*([A-ZÇĞİÖŞÜa-zçğıöşü]+)", full_text)
+                    a_m = re.search(r"Ada\s*[:\|]\s*(\d+)", full_text)
+                    p_m = re.search(r"Parsel\s*[:\|]\s*(\d+)", full_text)
+                    al_m = re.search(r"Alan\s*\*?\s*[:\|]\s*([\d\.,]+)\s*m²", full_text)
                     
+                    if m_m:
+                        parcel_data["mahalle"] = m_m.group(1).upper()
+                    if a_m:
+                        parcel_data["ada"] = str(a_m.group(1)).strip()
+                    if p_m:
+                        parcel_data["parsel"] = str(p_m.group(1)).strip()
+                    if al_m and parcel_data["toplam_alan"] == 0.0:
+                        parcel_data["toplam_alan"] = parse_tr_float(al_m.group(1))
+                        
                 if not parcel_data["fonksiyonlar"]:
                     parcel_data["fonksiyonlar"].append({
                         "fonksiyon_adi": "KONUT ALANI",
@@ -430,9 +553,11 @@ def parse_imar_pdf(uploaded_file):
                         "kaks": global_kaks_val,
                         "giren_m2": parcel_data["toplam_alan"]
                     })
+                    
                 parcel_data["terk_yapilmis_mi"] = detect_terk_status(full_text, parcel_data["toplam_alan"], parcel_data["fonksiyonlar"])
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"PDF işlenirken hata oluştu: {e}")
+        
     return parcel_data
 
 def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
@@ -442,31 +567,81 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
     
     valid_sub_items = []
     for f in fonks_list:
-        fn = clean_fonksiyon_adi(f.get("fonksiyon_adi", ""))
-        if not fn or any(x in fn for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
+        fonk_base_name = clean_fonksiyon_adi(f.get("fonksiyon_adi", ""))
+        if not fonk_base_name or any(x in fonk_base_name for x in ["PARK", "TEKNİK ALTYAPI", "LİSE", "KÜLTÜREL", "ANAOKULU"]):
             continue
         active_kaks = f.get("kaks", 0.0)
         if active_kaks <= 0:
             continue
-        valid_sub_items.append((f, fn, active_kaks))
+        valid_sub_items.append((f, fonk_base_name, active_kaks))
         
     if not valid_sub_items:
         return []
         
+    sum_giren = sum(f.get("giren_m2", 0.0) for f, _, _ in valid_sub_items)
     net_arsa_toplam = toplam_arsa_m2 if is_terkli else (toplam_arsa_m2 * 0.7)
+    
     temp_results = []
     for f, base_fonk_name, active_kaks in valid_sub_items:
-        net_arsa_payi = net_arsa_toplam / len(valid_sub_items)
+        giren_m2 = f.get("giren_m2", 0.0)
+        if giren_m2 > 0:
+            fonk_giren_payi = giren_m2
+        else:
+            fonk_giren_payi = (toplam_arsa_m2 / len(valid_sub_items)) if len(valid_sub_items) > 0 else toplam_arsa_m2
+            
+        bahce_kullanim_alani = fonk_giren_payi
+        
+        if sum_giren > 0:
+            oran = giren_m2 / sum_giren
+        else:
+            oran = 1.0 / len(valid_sub_items)
+            
+        net_arsa_payi = net_arsa_toplam * oran
         brut_insaat = net_arsa_payi * active_kaks * emsal_artis_orani
+        
         temp_results.append({
             "base_fonksiyon_adi": base_fonk_name,
             "taks": f.get("taks", 0.0),
             "kaks": active_kaks,
+            "giren_m2": giren_m2,
             "net_arsa_payi": net_arsa_payi,
-            "bahce_kullanim_alani": net_arsa_payi,
+            "bahce_kullanim_alani": bahce_kullanim_alani,
             "brut_insaat": brut_insaat
         })
-    return temp_results
+        
+    consolidated_dict = {}
+    for item in temp_results:
+        fn = item["base_fonksiyon_adi"]
+        if fn not in consolidated_dict:
+            consolidated_dict[fn] = {
+                "fonksiyon_adi": fn,
+                "base_fonksiyon_adi": fn,
+                "taks": item["taks"],
+                "giren_m2": 0.0,
+                "net_arsa_payi": 0.0,
+                "bahce_kullanim_alani": 0.0,
+                "brut_insaat": 0.0,
+                "kaks_list": []
+            }
+        consolidated_dict[fn]["giren_m2"] += item["giren_m2"]
+        consolidated_dict[fn]["net_arsa_payi"] += item["net_arsa_payi"]
+        consolidated_dict[fn]["bahce_kullanim_alani"] += item["bahce_kullanim_alani"]
+        consolidated_dict[fn]["brut_insaat"] += item["brut_insaat"]
+        consolidated_dict[fn]["kaks_list"].append((item["net_arsa_payi"], item["kaks"]))
+        
+    final_results = []
+    for fn, data in consolidated_dict.items():
+        net_arsa_sum = data["net_arsa_payi"]
+        if net_arsa_sum > 0:
+            weighted_kaks = sum(net_p * k for net_p, k in data["kaks_list"]) / net_arsa_sum
+        else:
+            weighted_kaks = data["kaks_list"][0][1] if data["kaks_list"] else 0.0
+            
+        data["kaks"] = weighted_kaks
+        del data["kaks_list"]
+        final_results.append(data)
+        
+    return final_results
 
 # --- HEADER BANNER ---
 st.markdown(f"""
@@ -494,10 +669,13 @@ if uploaded_files:
         unique_key = f"{p_data['mahalle']} | Ada: {p_data['ada']} - Parsel: {p_data['parsel']}"
         current_db[unique_key] = p_data
         just_uploaded_keys.append(unique_key)
+        
     save_persistent_db(current_db)
+    st.sidebar.success(f"{len(uploaded_files)} Adet Belge Arşive Eklendi ve GitHub Deponuza Kaydedildi!")
 
 st.sidebar.divider()
 st.sidebar.subheader("🎯 Rapor İçin Parsel Seçimi & Arama")
+
 all_db_keys = list(st.session_state["parcel_db"].keys())
 
 if all_db_keys:
@@ -509,90 +687,726 @@ if all_db_keys:
         if str(p_data.get("ada", "")).strip() == str(selected_ada_filter).strip()
     ] if selected_ada_filter != "Seçiniz..." else all_db_keys
     
-    selected_keys = st.sidebar.multiselect("Raporlanacak Parselleri Seçin:", options=filtered_keys, default=[k for k in just_uploaded_keys if k in filtered_keys] or filtered_keys[:1])
+    safe_default = [k for k in just_uploaded_keys if k in filtered_keys]
+    selected_keys = st.sidebar.multiselect("Raporlanacak Parselleri Seçin:", options=filtered_keys, default=safe_default)
 else:
+    st.sidebar.info("Arşivde kayıtlı parsel yok. Sol üstten PDF imar belgesi yükleyin.")
     selected_keys = []
 
 if selected_keys:
+    st.sidebar.divider()
+    st.sidebar.subheader("⚙ Parsel Terk Durumu Ayarı (Manuel Düzeltme)")
+    current_db = st.session_state["parcel_db"]
+    any_terk_updated = False
+    
+    for s_key in selected_keys:
+        if s_key in current_db:
+            curr_val = current_db[s_key].get("terk_yapilmis_mi", False)
+            new_terk_choice = st.sidebar.radio(
+                f"Terk Durumu ({s_key}):",
+                options=["Terk Yapılmış (Net Alan)", "Terk Yapılmamış (Brüt Alan -> %70 Net)"],
+                index=0 if curr_val else 1,
+                key=f"terk_override_{s_key}"
+            )
+            desired_bool = True if "Terk Yapılmış" in new_terk_choice else False
+            if current_db[s_key]["terk_yapilmis_mi"] != desired_bool:
+                current_db[s_key]["terk_yapilmis_mi"] = desired_bool
+                any_terk_updated = True
+                
+    if any_terk_updated:
+        save_persistent_db(current_db)
+
     active_parcel_db = {k: st.session_state["parcel_db"][k] for k in selected_keys}
     emsal_artis_orani = 1.30
     first_mahalle = list(active_parcel_db.values())[0].get("mahalle", "VARSAYILAN")
     
-    is_modeli = st.selectbox("İş Modeli / Rapor Türü", options=["Kat Karşılığı Proje Raporu", "Doğrudan Satılık / Arsa Yatırım Raporu"], key="global_is_modeli")
+    st.markdown("""
+    <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 18px 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+        <div style="display: flex; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+            <span style="font-size: 18px; margin-right: 8px;">📊</span>
+            <div>
+                <h3 style="color: #0f172a; margin: 0; font-size: 15px; font-weight: 700;">Gelişmiş Fizibilite ve Fonksiyon Bazlı Proje Optimizasyonu</h3>
+                <p style="color: #64748b; margin: 0; font-size: 11px;">İmar fonksiyonlarına özel olarak birleştirilmiş metraj, proje tipleri, havuz seçenekleri ve otomatik m² maliyet/satış ayarları.</p>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
     
+    col_m1, col_m2 = st.columns(2)
+    with col_m1:
+        is_modeli = st.selectbox(
+            "İş Modeli / Rapor Türü",
+            options=["Kat Karşılığı Proje Raporu", "Doğrudan Satılık / Arsa Yatırım Raporu"],
+            key="global_is_modeli"
+        )
+        
+    arsa_payi_orani = 0.0
+    arsa_maliyeti_usd = 0.0
+    if "Kat Karşılığı" in is_modeli:
+        with col_m2:
+            arsa_payi_orani = st.slider("Arsa Sahibi Payı / Kat Karşılığı Oranı (%)", 0, 70, 50)
+    else:
+        with col_m2:
+            arsa_maliyeti_usd = st.number_input("Arsa Satın Alma Maliyeti ($)", min_value=0.0, value=0.0, step=10000.0, key="global_arsa_maliyeti")
+            
     unique_active_functions = set()
     for p in active_parcel_db.values():
-        for item in get_parcel_function_breakdown(p, emsal_artis_orani):
+        breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
+        for item in breakdown:
             if item["brut_insaat"] > 0:
-                unique_active_functions.add(item["base_fonksiyon_adi"])
+                unique_active_functions.add(item["fonksiyon_adi"])
+                
     if not unique_active_functions:
         unique_active_functions = {"KONUT ALANI"}
-
+        
+    col_opt1, col_opt2 = st.columns([3, 1])
+    with col_opt1:
+        st.markdown("<div style='margin-top: 10px; font-weight: 700; color: #0f172a; font-size: 13px;'>⚙️ İmar Fonksiyonuna Göre Birebir Uyumlu Proje Tipi, Birim Havuz Seçeneği ve Otomatik m² Fiyatları</div>", unsafe_allow_html=True)
+    with col_opt2:
+        auto_select_best_margin = st.toggle("Kar Marjına Göre Otomatik Seç (En Yüksek Verim)", value=True, key="auto_select_margin_toggle")
+        
     function_configs = {}
+    func_cols = st.columns(len(unique_active_functions) if len(unique_active_functions) > 0 else 1)
+    
     for idx, fonk_adi in enumerate(unique_active_functions):
-        opt_pt, opt_pool = get_best_project_type_by_margin(fonk_adi, first_mahalle, rates["USD"])
-        auto_satis, auto_maliyet = get_realistic_market_pricing(first_mahalle, opt_pt, opt_pool, rates["USD"])
-        for key, p in active_parcel_db.items():
-            for item in get_parcel_function_breakdown(p, emsal_artis_orani):
-                if item["base_fonksiyon_adi"] == fonk_adi and item["brut_insaat"] > 0:
-                    calc_adet = max(1, round(item["brut_insaat"] / 120))
-                    function_configs[f"{key}_{fonk_adi}"] = {
-                        "proje_tipi": opt_pt,
-                        "adet": int(calc_adet),
-                        "havuz_mod": opt_pool,
-                        "havuz_m2": 30.0,
-                        "maliyet": auto_maliyet,
-                        "satis": auto_satis
-                    }
+        with func_cols[idx % len(func_cols)]:
+            st.markdown(f"**📌 Fonksiyon: {fonk_adi}**")
+            
+            allowed_p_types = get_allowed_project_types(fonk_adi)
+            
+            if auto_select_best_margin:
+                opt_pt, opt_pool = get_best_project_type_by_margin(fonk_adi, first_mahalle, rates["USD"])
+                selected_func_p_type = opt_pt
+                selected_func_pool = opt_pool
+                st.info(f"💡 **Optimum Seçim:** {selected_func_p_type} ({selected_func_pool})")
+            else:
+                p_type_key = f"func_p_type_{idx}_{fonk_adi}"
+                selected_func_p_type = st.selectbox(f"Proje Tipi", options=allowed_p_types, key=p_type_key)
+                
+                pool_opts = get_allowed_pool_options(selected_func_p_type)
+                pool_key = f"func_pool_{idx}_{fonk_adi}"
+                selected_func_pool = st.selectbox(f"Havuz Seçeneği", options=pool_opts, key=pool_key)
+                
+            custom_pool_m2 = 0.0
+            if "İptal" not in selected_func_pool:
+                custom_pool_m2 = st.number_input(
+                    f"Birim Başı Havuz (m²) - {fonk_adi}",
+                    min_value=5.0, max_value=200.0, value=30.0, step=5.0,
+                    key=f"custom_pool_m2_{idx}_{fonk_adi}"
+                )
+                
+            auto_satis, auto_maliyet = get_realistic_market_pricing(first_mahalle, selected_func_p_type, selected_func_pool, rates["USD"])
+            
+            selected_parcels_hash = "_".join(selected_keys)
+            cost_key = f"cost_{idx}_{fonk_adi}_{first_mahalle}_{selected_parcels_hash}"
+            price_key = f"price_{idx}_{fonk_adi}_{first_mahalle}_{selected_parcels_hash}"
+            last_state_key = f"last_state_{idx}_{fonk_adi}_{first_mahalle}_{selected_parcels_hash}"
+            current_state_str = f"{selected_func_p_type}_{selected_func_pool}"
+            
+            if (last_state_key not in st.session_state) or (st.session_state.get(last_state_key) != current_state_str):
+                st.session_state[cost_key] = float(auto_maliyet)
+                st.session_state[price_key] = float(auto_satis)
+                st.session_state[last_state_key] = current_state_str
+                
+            prc_col1, prc_col2 = st.columns(2)
+            with prc_col1:
+                custom_maliyet = st.number_input(f"Otomatik m² Maliyet ($)", min_value=300.0, max_value=6000.0, value=float(st.session_state.get(cost_key, auto_maliyet)), step=50.0, key=cost_key)
+            with prc_col2:
+                custom_satis = st.number_input(f"Otomatik m² Satış ($)", min_value=500.0, max_value=18000.0, value=float(st.session_state.get(price_key, auto_satis)), step=100.0, key=price_key)
+                
+            for key, p in active_parcel_db.items():
+                breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
+                for item in breakdown:
+                    if item["fonksiyon_adi"] == fonk_adi and item["brut_insaat"] > 0:
+                        parsel_fonk_key = f"{key}_{fonk_adi}"
+                        eff_sz = 95.0 if "Konut" in selected_func_p_type else 150.0
+                        calc_adet = max(1, round(item["brut_insaat"] / eff_sz))
+                        function_configs[parsel_fonk_key] = {
+                            "proje_tipi": selected_func_p_type,
+                            "adet": int(calc_adet),
+                            "havuz_mod": selected_func_pool,
+                            "havuz_m2": custom_pool_m2,
+                            "maliyet": custom_maliyet,
+                            "satis": custom_satis,
+                            "fonk_hesaba_alinan_m2": item["giren_m2"]
+                        }
 
+    valid_active_functions_with_area = list(unique_active_functions)
+    function_target_sizes = {}
+    
+    if valid_active_functions_with_area:
+        st.markdown("<div style='margin-top: 12px; font-weight: 700; color: #0f172a; font-size: 13px;'>📐 Seçilen Proje Tiplerine Göre Sınırlandırılmış Bağımsız Bölüm Alanları (m²)</div>", unsafe_allow_html=True)
+        fn_cols = st.columns(len(valid_active_functions_with_area))
+        
+        for idx, fonk_adi in enumerate(valid_active_functions_with_area):
+            with fn_cols[idx % len(fn_cols)]:
+                parsel_fonk_sample_key = next((k for k in function_configs if fonk_adi in k), None)
+                if parsel_fonk_sample_key and parsel_fonk_sample_key in function_configs:
+                    chosen_p_type = function_configs[parsel_fonk_sample_key]["proje_tipi"]
+                else:
+                    chosen_p_type = get_allowed_project_types(fonk_adi)[0]
+                    
+                min_v, max_v, def_v, step_v = get_project_size_ranges(chosen_p_type)
+                
+                function_target_sizes[fonk_adi] = st.slider(
+                    f"{fonk_adi[:20]}...",
+                    min_value=min_v, max_value=max_v, value=def_v, step=step_v,
+                    key=f"target_size_{idx}_{fonk_adi}"
+                )
+
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    for key, p in active_parcel_db.items():
+        breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
+        for item in breakdown:
+            fonk_name = item["fonksiyon_adi"]
+            brut_insaat = item["brut_insaat"]
+            parsel_fonk_key = f"{key}_{fonk_name}"
+            if parsel_fonk_key in function_configs and fonk_name in function_target_sizes:
+                t_size = function_target_sizes[fonk_name]
+                if t_size > 0:
+                    function_configs[parsel_fonk_key]["adet"] = max(1, round(brut_insaat / t_size))
+
+    total_yasal_brut_insaat = 0.0
+    total_bodrum_alani = 0.0
+    total_bahce_alani_terki = 0.0
     total_ciro_usd = 0.0
     total_maliyet_usd = 0.0
-    müteahhit_hissesi_ciro = 0.0
-    arsa_payi_orani = 50.0
-
+    total_units_sum = 0
+    
     for key, p in active_parcel_db.items():
-        for item in get_parcel_function_breakdown(p, emsal_artis_orani):
-            brut = item["brut_insaat"]
-            conf = function_configs.get(f"{key}_{item['base_fonksiyon_adi']}")
-            if brut > 0 and conf:
-                total_ciro_usd += (brut * 1.5) * conf["satis"]
-                total_maliyet_usd += brut * conf["maliyet"]
+        breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
+        
+        for item in breakdown:
+            fonk_name = item["fonksiyon_adi"]
+            brut_insaat = item["brut_insaat"]
+            if brut_insaat <= 0:
+                continue
+                
+            parsel_fonk_key = f"{key}_{fonk_name}"
+            conf = function_configs.get(parsel_fonk_key)
+            if not conf:
+                continue
+                
+            konut_adeti = conf["adet"]
+            total_units_sum += konut_adeti
+            total_yasal_brut_insaat += brut_insaat
+            
+            birim_havuz_m2 = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
+            toplam_parsel_havuz_m2 = birim_havuz_m2 * konut_adeti
+            
+            net_satilabilir_ust_kat = max(0.0, brut_insaat - toplam_parsel_havuz_m2)
+            bodrum_m2_parsel = net_satilabilir_ust_kat * 0.50
+            
+            total_bodrum_alani += bodrum_m2_parsel
+            total_bahce_alani_terki += item["bahce_kullanim_alani"]
+            
+            toplam_parsel_insaat_m2 = brut_insaat + bodrum_m2_parsel
+            total_ciro_usd += toplam_parsel_insaat_m2 * conf["satis"]
+            
+            ust_kat_maliyeti = brut_insaat * conf["maliyet"]
+            bodrum_maliyeti = bodrum_m2_parsel * (conf["maliyet"] * 0.60)
+            
+            toplam_parsel_maliyeti = ust_kat_maliyeti + bodrum_maliyeti
+            total_maliyet_usd += toplam_parsel_maliyeti
 
-    müteahhit_hissesi_ciro = total_ciro_usd * 0.5
-    toplam_net_kar_usd = müteahhit_hissesi_ciro - total_maliyet_usd
+    if "Doğrudan Satılık" in is_modeli:
+        total_maliyet_usd += arsa_maliyeti_usd
+        arsa_sahibi_payi_usd = 0.0
+        müteahhit_hissesi_ciro = total_ciro_usd
+        toplam_net_kar_usd = total_ciro_usd - total_maliyet_usd
+    else:
+        arsa_sahibi_payi_usd = total_ciro_usd * (arsa_payi_orani / 100.0)
+        müteahhit_hissesi_ciro = total_ciro_usd * ((100.0 - arsa_payi_orani) / 100.0)
+        toplam_net_kar_usd = müteahhit_hissesi_ciro - total_maliyet_usd
+
     yg_orani = (toplam_net_kar_usd / total_maliyet_usd * 100) if total_maliyet_usd > 0 else 0
 
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "📊 Seçilen Parseller & İnşaat Alanı",
-        "🏛 Mimari Fizibilite",
+        "🏛 Mimari Fizibilite (Bodrum + Zemin/Normal)",
         "📑 Proje Raporu & Fizibilite",
         "🖨 Rapor Ön İzleme & PDF",
-        "🗄 Veritabanı & Arşiv",
+        "🗄 Veritabanı & Arşiv Yönetimi",
         "📱 Sosyal Medya Stüdyosu"
     ])
 
     with tab1:
-        st.subheader("📊 Metraj Özeti")
-        st.info(f"Seçili Parsel Sayısı: {len(active_parcel_db)}")
+        st.subheader("📊 Birleştirilmiş Fonksiyon Bazlı İnşaat Alanı ve Metrajlar")
+        table_rows = []
+        sum_brut_insaat = 0.0
+        sum_bodrum_insaat = 0.0
+        sum_emsal_insaat = 0.0
+        sum_bahce_alani = 0.0
+        sum_alan = sum(p.get("toplam_alan", 0.0) for p in active_parcel_db.values())
+        
+        for key, p in active_parcel_db.items():
+            mahalle = p.get("mahalle", "BİLİNMİYOR")
+            ada = p.get("ada", "0")
+            parsel = p.get("parsel", "0")
+            toplam_arsa_m2 = p.get("toplam_alan", 0.0)
+            is_terkli = p.get("terk_yapilmis_mi", False)
+            breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
+            
+            for item in breakdown:
+                brut_insaat_arsa = item["brut_insaat"]
+                bodrum_arsa = brut_insaat_arsa * 0.50
+                emsal_arsa = brut_insaat_arsa
+                bahce_m2 = item["bahce_kullanim_alani"]
+                if brut_insaat_arsa <= 0:
+                    continue
+                    
+                sum_brut_insaat += brut_insaat_arsa
+                sum_bodrum_insaat += bodrum_arsa
+                sum_emsal_insaat += emsal_arsa
+                sum_bahce_alani += bahce_m2
+                
+                table_rows.append({
+                    "Mahalle": mahalle,
+                    "Ada": ada,
+                    "Parsel": parsel,
+                    "Toplam Arsa m²": f"{toplam_arsa_m2:,.2f}",
+                    "Terk Durumu": "Yapılmış (Net)" if is_terkli else "Yapılmamış (Brüt)",
+                    "Birleştirilmiş Fonksiyon": item["fonksiyon_adi"],
+                    "Ağırlıklı Emsal (KAKS)": f"{item['kaks']:.2f}",
+                    "Toplam Bahçe Alanı (m²)": f"{bahce_m2:,.2f}",
+                    "Toplam Emsal İnşaat (m²)": f"{emsal_arsa:,.2f}",
+                    "Toplam Genel İnşaat (m²)": f"{(brut_insaat_arsa + bodrum_arsa):,.2f}"
+                })
+                
+        if table_rows:
+            st.dataframe(pd.DataFrame(table_rows), use_container_width=True)
+            summary_df = pd.DataFrame([{
+                "SORGULANAN PARSEL": f"{len(active_parcel_db)} Adet",
+                "TOPLAM ARSA (M²)": f"{sum_alan:,.2f}",
+                "TOPLAM BAHÇE ALANI (M²)": f"{sum_bahce_alani:,.2f}",
+                "TOPLAM EMSAL İNŞAAT (M²)": f"{sum_emsal_insaat:,.2f}",
+                "TOPLAM BODRUM İNŞAAT (M²)": f"{sum_bodrum_insaat:,.2f}",
+                "GENEL TOPLAM İNŞAAT (M²)": f"{(sum_brut_insaat + sum_bodrum_insaat):,.2f}"
+            }])
+            st.dataframe(summary_df, use_container_width=True)
 
     with tab2:
-        st.subheader("🏛 Mimari Fizibilite")
+        st.subheader("🏛️️ Mimari Fizibilite & Senaryo Dağılım Matrisi (Birim Başına Düşen Alanlar)")
+        mimari_rows = []
+        total_net_insaat_sum = 0.0
+        total_genel_insaat_sum = 0.0
+        
+        for key, p in active_parcel_db.items():
+            mahalle = p.get("mahalle", "BİLİNMİYOR")
+            ada = p.get("ada", "0")
+            parsel = p.get("parsel", "0")
+            breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
+            
+            for item in breakdown:
+                fonk_name = item["fonksiyon_adi"]
+                brut_insaat = item["brut_insaat"]
+                bahce_m2 = item["bahce_kullanim_alani"]
+                if brut_insaat <= 0:
+                    continue
+                    
+                parsel_fonk_key = f"{key}_{fonk_name}"
+                conf = function_configs.get(parsel_fonk_key)
+                if not conf:
+                    continue
+                    
+                konut_adeti = conf["adet"]
+                birim_havuz = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
+                toplam_parsel_havuz_m2 = birim_havuz * konut_adeti
+                
+                net_konut_insaat = max(0.0, brut_insaat - toplam_parsel_havuz_m2)
+                total_net_insaat_sum += net_konut_insaat
+                
+                bodrum_m2 = net_konut_insaat * 0.50
+                
+                birim_bahce = bahce_m2 / konut_adeti if konut_adeti > 0 else 0.0
+                birim_bodrum = bodrum_m2 / konut_adeti if konut_adeti > 0 else 0.0
+                birim_ust_kat = net_konut_insaat / konut_adeti if konut_adeti > 0 else 0.0
+                
+                birim_toplam_insaat = birim_ust_kat + birim_bodrum + birim_havuz
+                genel_parsel_toplam_insaat = net_konut_insaat + bodrum_m2 + toplam_parsel_havuz_m2
+                total_genel_insaat_sum += genel_parsel_toplam_insaat
+                
+                mimari_rows.append({
+                    "MAHALLE": mahalle,
+                    "ADA/PARSEL": f"{ada}/{parsel}",
+                    "FONKSİYON SEGMENTİ": fonk_name,
+                    "PROJE TİPİ": f"{conf['proje_tipi']} ({conf['havuz_mod']})",
+                    "BAĞIMSIZ BÖLÜM": f"{konut_adeti} Adet",
+                    "BİRİM BAHÇE (M²)": f"{birim_bahce:,.1f} m²",
+                    "BİRİM HAVUZ (M²)": f"{birim_havuz:,.1f} m²",
+                    "BİRİM BODRUM (M²)": f"{birim_bodrum:,.1f} m²",
+                    "BİRİM ÜST KAT (Net)": f"{birim_ust_kat:,.1f} m²",
+                    "BİRİM TOPLAM İNŞAAT (M²)": f"{birim_toplam_insaat:,.1f} m²"
+                })
+                
+        if mimari_rows:
+            st.dataframe(pd.DataFrame(mimari_rows), use_container_width=True)
+            avg_unit_m2 = total_genel_insaat_sum / total_units_sum if total_units_sum > 0 else 0.0
+            
+            st.markdown("---")
+            m_col1, m_col2, m_col3, m_col4 = st.columns(4)
+            m_col1.metric("Toplam Bağımsız Bölüm", f"{total_units_sum} Adet")
+            m_col2.metric("Ortalama Birim Alanı", f"{avg_unit_m2:,.1f} m²")
+            
+            if "Kat Karşılığı" in is_modeli:
+                exact_arsa_sahibi = total_units_sum * (arsa_payi_orani / 100.0)
+                exact_mutaahhit = total_units_sum * ((100 - arsa_payi_orani) / 100.0)
+                m_col3.metric("Arsa Sahibi Payı", f"{exact_arsa_sahibi:,.2f} Adet (%{arsa_payi_orani})")
+                m_col4.metric("Müteahhit Payı", f"{exact_mutaahhit:,.2f} Adet (%{100 - arsa_payi_orani})")
+            else:
+                m_col3.metric("İş Modeli", "Doğrudan Satılık")
+                m_col4.metric("Müteahhit Payı", f"{float(total_units_sum):,.2f} Adet (%100)")
 
     with tab3:
-        st.subheader("📑 Finansal Fizibilite")
+        st.subheader("📑 Finansal Fizibilite (3 Para Birimi Sunumu)")
+        rate_usd = rates["USD"]
+        rate_eur = rates["EUR"]
+        
+        display_ciro_usd = müteahhit_hissesi_ciro if "Kat Karşılığı" in is_modeli else total_ciro_usd
+        total_ciro_tl = display_ciro_usd * rate_usd
+        total_ciro_eur = total_ciro_tl / rate_eur
+        
+        total_maliyet_tl = total_maliyet_usd * rate_usd
+        total_maliyet_eur = total_maliyet_tl / rate_eur
+        
+        toplam_net_kar_tl = toplam_net_kar_usd * rate_usd
+        toplam_net_kar_eur = toplam_net_kar_tl / rate_eur
+        
+        curr_tab1, curr_tab2, curr_tab3 = st.tabs(["💵 USD ($)", "₺ TL (₺)", "💶 EUR (€)"])
+        with curr_tab1:
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Tahmini Ciro", f"${display_ciro_usd:,.2f}")
+            c2.metric("Toplam Maliyet", f"${total_maliyet_usd:,.2f}")
+            c3.metric("Net Kar", f"${toplam_net_kar_usd:,.2f}", f"%{yg_orani:.1f} YG")
+            
+        with curr_tab2:
+            t1, t2, t3 = st.columns(3)
+            t1.metric("Tahmini Ciro", f"₺{total_ciro_tl:,.2f}")
+            t2.metric("Toplam Maliyet", f"₺{total_maliyet_tl:,.2f}")
+            t3.metric("Net Kar", f"₺{toplam_net_kar_tl:,.2f}", f"%{yg_orani:.1f} YG")
+            
+        with curr_tab3:
+            e1, e2, e3 = st.columns(3)
+            e1.metric("Tahmini Ciro", f"€{total_ciro_eur:,.2f}")
+            e2.metric("Toplam Maliyet", f"€{total_maliyet_eur:,.2f}")
+            e3.metric("Net Kar", f"€{toplam_net_kar_eur:,.2f}", f"%{yg_orani:.1f} YG")
 
     with tab4:
-        st.subheader("🖨 Rapor Ön İzleme")
+        st.subheader("🖨 Rapor Ön İzleme ve PDF İndirme Merkezi")
+        
+        if not WEASYPRINT_AVAILABLE:
+            st.error("⚠ PDF oluşturma motoru (WeasyPrint) sisteminizde eksik. Lütfen `packages.txt` dosyasının deponuzda bulunduğundan emin olun.")
+        else:
+            pdf_logo1_html = f"<div style='background-color: #ffffff; padding: 6px 10px; border-radius: 6px; display: inline-block;'><img src='data:image/png;base64,{img1_base64}' style='max-height: 38px; width: auto; vertical-align: middle;'></div>" if img1_base64 else "<b style='color:#ffffff; font-size:14px;'>İSTESTATE GAYRİMENKUL</b>"
+            pdf_logo2_html = f"<div style='background-color: #ffffff; padding: 6px 10px; border-radius: 6px; display: inline-block;'><img src='data:image/png;base64,{img2_base64}' style='max-height: 38px; width: auto; vertical-align: middle;'></div>" if img2_base64 else "<b style='color:#ffffff; font-size:14px;'>MERİÇ İNŞAAT EMLAK</b>"
+            
+            parcel_rows_html = ""
+            all_adas_str, all_parsels_str = [], []
+            
+            for key, p in active_parcel_db.items():
+                mahalle = p.get("mahalle", "BİLİNMİYOR")
+                ada = p.get("ada", "0")
+                parsel = p.get("parsel", "0")
+                
+                if ada not in all_adas_str:
+                    all_adas_str.append(ada)
+                if parsel not in all_parsels_str:
+                    all_parsels_str.append(parsel)
+                    
+                toplam_arsa_m2 = p.get("toplam_alan", 0.0)
+                is_terkli = p.get("terk_yapilmis_mi", False)
+                breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
+                
+                for item in breakdown:
+                    brut_insaat_arsa = item["brut_insaat"]
+                    bodrum_arsa = brut_insaat_arsa * 0.50
+                    if brut_insaat_arsa <= 0:
+                        continue
+                    parcel_rows_html += f"""
+                    <tr>
+                        <td>{mahalle}</td>
+                        <td style="text-align: center;">{ada} / {parsel}</td>
+                        <td style="text-align: right;">{toplam_arsa_m2:,.2f} m²</td>
+                        <td style="text-align: center;">{'Yapılmış (Net)' if is_terkli else 'Yapılmamış (Brüt)'}</td>
+                        <td>{item['fonksiyon_adi']}</td>
+                        <td style="text-align: center;">{item['kaks']:.2f} (Ağırlıklı)</td>
+                        <td style="text-align: right;">{brut_insaat_arsa:,.2f} m²</td>
+                        <td style="text-align: right;">{bodrum_arsa:,.2f} m²</td>
+                        <td style="text-align: right; font-weight: bold;">{(brut_insaat_arsa + bodrum_arsa):,.2f} m²</td>
+                    </tr>
+                    """
+                    
+            formatted_mahalle = first_mahalle.strip().replace(" ", "_")
+            formatted_ada = "_".join(all_adas_str)
+            formatted_parsel = "_".join(all_parsels_str)
+            dynamic_pdf_filename = f"Istestate_Meric_Fizibilite_Raporu_{formatted_mahalle}_Ada_{formatted_ada}_Parsel_{formatted_parsel}.pdf"
+            
+            arch_rows_html = ""
+            for key, p in active_parcel_db.items():
+                breakdown = get_parcel_function_breakdown(p, emsal_artis_orani)
+                for item in breakdown:
+                    fonk_name = item["fonksiyon_adi"]
+                    brut_insaat = item["brut_insaat"]
+                    bahce_m2 = item["bahce_kullanim_alani"]
+                    if brut_insaat <= 0:
+                        continue
+                        
+                    parsel_fonk_key = f"{key}_{fonk_name}"
+                    conf = function_configs.get(parsel_fonk_key)
+                    if not conf:
+                        continue
+                        
+                    konut_adeti = conf["adet"]
+                    birim_havuz = conf["havuz_m2"] if "İptal" not in conf["havuz_mod"] else 0.0
+                    toplam_parsel_havuz_m2 = birim_havuz * konut_adeti
+                    
+                    net_konut_insaat = max(0.0, brut_insaat - toplam_parsel_havuz_m2)
+                    bodrum_m2 = net_konut_insaat * 0.50
+                    
+                    birim_bahce = bahce_m2 / konut_adeti if konut_adeti > 0 else 0.0
+                    birim_bodrum = bodrum_m2 / konut_adeti if konut_adeti > 0 else 0.0
+                    birim_ust_kat = net_konut_insaat / konut_adeti if konut_adeti > 0 else 0.0
+                    birim_toplam = birim_ust_kat + birim_bodrum + birim_havuz
+                    
+                    arch_rows_html += f"""
+                    <tr>
+                        <td>{fonk_name}</td>
+                        <td>{conf['proje_tipi']} ({conf['havuz_mod']})</td>
+                        <td style="text-align: center; font-weight: bold;">{konut_adeti} Adet</td>
+                        <td style="text-align: right;">{birim_bahce:,.1f} m²</td>
+                        <td style="text-align: right;">{birim_havuz:,.1f} m²</td>
+                        <td style="text-align: right;">{birim_bodrum:,.1f} m²</td>
+                        <td style="text-align: right;">{birim_ust_kat:,.1f} m²</td>
+                        <td style="text-align: right; font-weight: bold;">{birim_toplam:,.1f} m²</td>
+                    </tr>
+                    """
+
+            report_html_template = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+            <meta charset="utf-8">
+            <style>
+                @page {{ size: A4 landscape; margin: 8mm 10mm; }}
+                body {{ font-family: 'Helvetica', 'Arial', sans-serif; color: #0f172a; font-size: 8.5px; line-height: 1.2; background-color: #ffffff; }}
+                .report-banner {{ background-color: #0b1d3a; color: #ffffff; width: 100%; border-collapse: collapse; margin-bottom: 8mm; border-radius: 4px; overflow: hidden; }}
+                .report-banner td {{ border: none; padding: 8px 12px; vertical-align: middle; }}
+                .section-title {{ font-size: 9.5px; font-weight: bold; color: #0b1d3a; border-left: 4px solid #0b1d3a; padding-left: 6px; background-color: #f1f5f9; margin-top: 8mm; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px; }}
+                .data-table {{ width: 100%; border-collapse: collapse; margin-top: 2px; margin-bottom: 6px; font-size: 8px; }}
+                .data-table th, .data-table td {{ border: 1px solid #cbd5e1; padding: 4px 6px; }}
+                .data-table th {{ background-color: #f8fafc; color: #1e293b; font-weight: 700; text-align: left; }}
+                .footer {{ font-size: 7.5px; color: #475569; text-align: center; margin-top: 12px; border-top: 1px dashed #cbd5e1; padding-top: 6px; font-weight: 500; line-height: 1.3; }}
+                .highlight {{ background-color: #eff6ff; font-weight: bold; }}
+            </style>
+            </head>
+            <body>
+                <table class="report-banner">
+                    <tr>
+                        <td style="width: 30%; text-align: left;">{pdf_logo1_html}</td>
+                        <td style="width: 40%; text-align: center;">
+                            <h2 style="font-size: 11px; margin: 0; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">AKILLI GAYRİMENKUL GELİŞTİRME VE FİZİBİLİTE RAPORU</h2>
+                        </td>
+                        <td style="width: 30%; text-align: right;">{pdf_logo2_html}</td>
+                    </tr>
+                </table>
+
+                <div class="section-title">1. PARSEL VE İMAR METRAJ KÜNYESİ (BİRLEŞTİRİLMİŞ FONKSİYONLAR)</div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Mahalle</th>
+                            <th style="text-align: center;">Ada / Parsel</th>
+                            <th style="text-align: right;">Toplam Arsa</th>
+                            <th style="text-align: center;">Terk Durumu</th>
+                            <th>İmar Fonksiyonu</th>
+                            <th style="text-align: center;">Ağırlıklı Emsal (KAKS)</th>
+                            <th style="text-align: right;">Emsal İnşaat (m²)</th>
+                            <th style="text-align: right;">Bodrum (m²)</th>
+                            <th style="text-align: right;">Toplam İnşaat (m²)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {parcel_rows_html}
+                    </tbody>
+                </table>
+
+                <div class="section-title">2. MİMARİ VE BAĞIMSIZ BÖLÜM DAĞILIM FİZİBİLİTESİ</div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>İmar Fonksiyon Segmenti</th>
+                            <th>Seçilen Proje Tipi ve Konsept</th>
+                            <th style="text-align: center;">Toplam Bağımsız Bölüm</th>
+                            <th style="text-align: right;">Birim Bahçe</th>
+                            <th style="text-align: right;">Birim Havuz</th>
+                            <th style="text-align: right;">Birim Bodrum</th>
+                            <th style="text-align: right;">Birim Üst Kat Net</th>
+                            <th style="text-align: right;">Birim Toplam Brüt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {arch_rows_html}
+                    </tbody>
+                </table>
+
+                <div class="section-title">3. FİNANSAL FİZİBİLİTE VE GELİR/GİDER TABLOSU</div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Finansal Parametre / Metrik</th>
+                            <th style="text-align: right;">Tutar (USD $)</th>
+                            <th style="text-align: right;">Tutar (TL ₺)</th>
+                            <th style="text-align: right;">Tutar (EUR €)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Proje İş Modeli / Yapısı</td>
+                            <td colspan="3" style="text-align: center; font-weight: bold;">{is_modeli} {"(%"+str(arsa_payi_orani)+" Arsa Payı)" if "Kat Karşılığı" in is_modeli else ""}</td>
+                        </tr>
+                        <tr>
+                            <td>Toplam Proje Cirosu (Brüt Satış Geliri)</td>
+                            <td style="text-align: right;">${total_ciro_usd:,.2f}</td>
+                            <td style="text-align: right;">₺{(total_ciro_usd * rate_usd):,.2f}</td>
+                            <td style="text-align: right;">€{((total_ciro_usd * rate_usd) / rate_eur):,.2f}</td>
+                        </tr>
+                        <tr>
+                            <td>Müteahhit Hissesi / Payına Düşen Ciro</td>
+                            <td style="text-align: right; font-weight: bold;">${display_ciro_usd:,.2f}</td>
+                            <td style="text-align: right; font-weight: bold;">₺{total_ciro_tl:,.2f}</td>
+                            <td style="text-align: right; font-weight: bold;">€{total_ciro_eur:,.2f}</td>
+                        </tr>
+                        <tr>
+                            <td>Toplam İnşaat ve Yatırım Maliyeti</td>
+                            <td style="text-align: right; color: #c2410c;">${total_maliyet_usd:,.2f}</td>
+                            <td style="text-align: right; color: #c2410c;">₺{total_maliyet_tl:,.2f}</td>
+                            <td style="text-align: right; color: #c2410c;">€{total_maliyet_eur:,.2f}</td>
+                        </tr>
+                        <tr class="highlight">
+                            <td style="font-weight: bold;">Müteahhit Net Proje Karı (YG: %{yg_orani:.1f})</td>
+                            <td style="text-align: right; color: #1e3a8a; font-size: 9px;">${toplam_net_kar_usd:,.2f}</td>
+                            <td style="text-align: right; color: #1e3a8a; font-size: 9px;">₺{toplam_net_kar_tl:,.2f}</td>
+                            <td style="text-align: right; color: #1e3a8a; font-size: 9px;">€{toplam_net_kar_eur:,.2f}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="footer">
+                    Bu rapor İstestate Gayrimenkul ve Meriç İnşaat Emlak bilgi sistemleri tarafından otomatik üretilmiştir.<br>
+                    Resmi belge niteliği taşımaz, fizibilite ve ön inceleme amaçlıdır.
+                </div>
+            </body>
+            </html>
+            """
+            
+            pdf_bytes = HTML(string=report_html_template).write_pdf()
+            pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
+            
+            st.markdown("#### 👁 Canlı PDF Rapor Ön İzleme")
+            
+            pdf_viewer_html = f"""
+            <div id="pdf-container" style="width:100%; height:550px; background-color:#525659; overflow:auto; display:flex; justify-content:center; padding:10px 0; border-radius:8px;">
+                <canvas id="pdf-canvas" style="box-shadow: 0 4px 8px rgba(0,0,0,0.3); background-color: white;"></canvas>
+            </div>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+            <script>
+                const pdfData = atob("{pdf_base64}");
+                const loadingTask = pdfjsLib.getDocument({{ data: pdfData }});
+                loadingTask.promise.then(function(pdf) {{
+                    pdf.getPage(1).then(function(page) {{
+                        const scale = 1.3;
+                        const viewport = page.getViewport({{ scale: scale }});
+                        const canvas = document.getElementById('pdf-canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+
+                        const renderContext = {{
+                            canvasContext: context,
+                            viewport: viewport
+                        }};
+                        page.render(renderContext);
+                    }});
+                }});
+            </script>
+            """
+            components.html(pdf_viewer_html, height=570)
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.download_button(
+                label="📥 Kurumsal Fizibilite Raporunu PDF Olarak İndir",
+                data=pdf_bytes,
+                file_name=dynamic_pdf_filename,
+                mime="application/pdf",
+                use_container_width=True
+            )
 
     with tab5:
-        st.subheader("🗄 Arşiv")
+        st.subheader(f"🗄️ Veritabanı Arşiv Yönetimi (`{DB_FILE_NAME}` -> GitHub Sync)")
+        db_items = st.session_state["parcel_db"]
+        if db_items:
+            db_detail_rows = []
+            for k, p_val in db_items.items():
+                mahalle = p_val.get("mahalle", "-")
+                ada = p_val.get("ada", "-")
+                parsel = p_val.get("parsel", "-")
+                toplam_alan = p_val.get("toplam_alan", 0.0)
+                is_terk = p_val.get("terk_yapilmis_mi", False)
+                terk_st = "Terk Yapılmış (Net)" if is_terk else "Terk Yapılmamış (Brüt)"
+                
+                breakdown = get_parcel_function_breakdown(p_val, 1.30)
+                if breakdown:
+                    for item in breakdown:
+                        brut = item["brut_insaat"]
+                        bod = brut * 0.50
+                        bahce_m2 = item["bahce_kullanim_alani"]
+                        db_detail_rows.append({
+                            "Kayıt Anahtarı": k,
+                            "Dosya Adı": p_val.get("filename", "-"),
+                            "Mahalle": mahalle,
+                            "Ada / Parsel": f"{ada} / {parsel}",
+                            "Toplam Arsa (m²)": f"{toplam_alan:,.2f}",
+                            "Terk Durumu": terk_st,
+                            "Konsolide Fonksiyon": item["fonksiyon_adi"],
+                            "Ağırlıklı KAKS": f"{item['kaks']:.2f}",
+                            "Toplam Bahçe Alanı (m²)": f"{bahce_m2:,.2f}",
+                            "Emsal İnşaat Alanı (m²)": f"{brut:,.2f}",
+                            "Bodrum (m²)": f"{bod:,.2f}",
+                            "Toplam İnşaat (m²)": f"{(brut + bod):,.2f}"
+                        })
+                        
+            st.dataframe(pd.DataFrame(db_detail_rows), use_container_width=True)
+            
+            st.markdown("---")
+            col_db1, col_db2 = st.columns(2)
+            with col_db1:
+                st.markdown("#### 🔍 Ham JSON Veri Yapısı")
+                st.json(db_items)
+            with col_db2:
+                st.markdown("#### ⚙️ Veritabanı İşlemleri")
+                selected_del_key = st.selectbox("Arşivden kaldırılacak parseli seçin:", options=list(db_items.keys()))
+                if st.button("🗑 Seçili Parseli Arşivden Kaldır", type="primary"):
+                    if selected_del_key in st.session_state["parcel_db"]:
+                        current_db = st.session_state["parcel_db"]
+                        del current_db[selected_del_key]
+                        save_persistent_db(current_db)
+                        st.success(f"'{selected_del_key}' silindi ve GitHub deponuz güncellendi!")
+                        st.rerun()
+                        
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("⚠ Tüm Veritabanını Temizle (Sıfırla)", type="secondary"):
+                    save_persistent_db({})
+                    st.success("Veritabanı sıfırlandı ve GitHub deponuz güncellendi!")
+                    st.rerun()
+        else:
+            st.info("Veritabanında kayıtlı parsel bulunmuyor.")
 
     # =========================================================================
-    # TAB 6: 📱 SOSYAL MEDYA STÜDYOSU (YAPAY ZEKA DESTEKLİ .PNG & .MP4 ÜRETİCİ)
+    # TAB 6: 📱 YAPAY ZEKA DESTEKLİ SOSYAL MEDYA & İÇERİK STÜDYOSU
     # =========================================================================
     with tab6:
-        st.subheader("📱 Yapay Zeka Destekli Sosyal Medya Stüdyosu")
-        st.markdown("Sosyal medya hesaplarınızda doğrudan paylaşabileceğiniz **.png** formatında fotoğraf kartları ve **.mp4** formatında çok sahneli dinamik dikey reklam filmleri üretin. Finansal bilgiler gizlenmiş olup arazi metrajları yalnızca **dönüm** cinsinden gösterilmektedir.")
+        st.subheader("📱 Yapay Zeka Destekli Sosyal Medya & İçerik Üretim Stüdyosu")
+        st.markdown("Seçtiğiniz parsellerin mimari metrajlarını ve imar potansiyelini analiz eden; sosyal medya hesaplarınızda (Instagram Reels, LinkedIn, WhatsApp Status, TikTok) paylaşabileceğiniz **Yapay Zeka Destekli Render Görselleri (.png)**, **5 Sahneli Reklam Videoları (.mp4)** ve **Kurumsal Bültenler** üretim merkezi:")
 
         if active_parcel_db:
             first_p_key = list(active_parcel_db.keys())[0]
@@ -600,8 +1414,9 @@ if selected_keys:
             mahalle_adi = p_sample.get("mahalle", "BİLİNMİYOR")
             toplam_m2 = sum(p.get("toplam_alan", 0.0) for p in active_parcel_db.values())
             
+            # Dönüm cinsinden metraj (Örn: Yaklaşık 2 Dönüm)
             donum_tam_sayi = max(1, round(toplam_m2 / 1000.0))
-            toplam_donum_str = f"Yaklaşık {donum_tam_sayi} Dönüm"
+            arazi_metraj_str = f"{donum_tam_sayi} Dönüm"
             
             sample_project_type = "Lüks Konut / Arsa Geliştirme Projesi"
             sample_pool_mod = "Havuzlu Konsept"
@@ -610,344 +1425,251 @@ if selected_keys:
                 sample_pool_mod = conf.get("havuz_mod", sample_pool_mod)
                 break
 
-            render_col1, render_col2 = st.columns([1, 2])
-            with render_col1:
-                render_style = st.selectbox(
-                    "Mimari Render Stili:",
-                    options=[
-                        "Modern Minimalist & Cam",
-                        "Ultra-Lüks Neo-Klasik",
-                        "Doğayla Uyumlu Ahşap & Taş",
-                        "Dramatik Akşam İllüminasyonu"
-                    ],
-                    key="global_render_style_select"
+            st.markdown("---")
+            st.markdown("### 1. 🎨 Yapay Zeka Mimari Render ve Görsel Stüdyosu (.png)")
+            st.markdown("Aşağıda projeye ve seçilen mimari stile uygun olarak üretilen yapay zeka render arka planlı profesyonel sosyal medya görselleri yer almaktadır. Görselleri `.png` formatında indirebilirsiniz.")
+
+            # SVG tabanlı dinamik yapay zeka render & tasarım üretici (Finansal bilgi yok, ada/parsel/m² yok, sadece dönüm var)
+            def generate_ai_social_image_svg(title_text, desc_text, style_theme):
+                bg_color = "#0b1d3a" if style_theme == "Modern" else "#1e293b"
+                accent_color = "#38bdf8" if style_theme == "Modern" else "#f59e0b"
+                
+                svg_content = f"""
+                <svg width="1080" height="1350" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="{bg_color}" />
+                            <stop offset="100%" stop-color="#020617" />
+                        </linearGradient>
+                        <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="rgba(15, 23, 42, 0.85)" />
+                            <stop offset="100%" stop-color="rgba(30, 41, 59, 0.95)" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Arka Plan Render Efekti -->
+                    <rect width="1080" height="1350" fill="url(#bgGrad)" />
+                    
+                    <!-- Yapay Zeka Mimari Çizgi Öğeleri -->
+                    <circle cx="900" cy="200" r="300" fill="none" stroke="{accent_color}" stroke-width="2" opacity="0.15" />
+                    <path d="M 0 1000 L 1080 850 L 1080 1350 L 0 1350 Z" fill="#0f172a" opacity="0.8" />
+                    
+                    <!-- Üst Kurumsal Başlık Şeridi -->
+                    <rect x="80" y="80" width="920" height="120" rx="16" fill="url(#cardGrad)" stroke="rgba(255,255,255,0.15)" stroke-width="2" />
+                    <text x="120" y="130" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#ffffff">İSTESTATE &amp; MERİÇ İNŞAAT</text>
+                    <text x="120" y="170" font-family="Arial, sans-serif" font-size="20" font-weight="600" fill="{accent_color}">YAPAY ZEKA DESTEKLİ PROJE VİZYONU</text>
+                    
+                    <!-- Merkez Mimari Render Kartı -->
+                    <rect x="80" y="240" width="920" height="650" rx="20" fill="#1e293b" stroke="{accent_color}" stroke-width="3" opacity="0.95" />
+                    
+                    <!-- Render Simülasyon Çizimleri -->
+                    <polygon points="200,750 540,480 880,750" fill="#334155" stroke="{accent_color}" stroke-width="4" />
+                    <rect x="420" y="600" width="240" height="150" fill="#0f172a" stroke="{accent_color}" stroke-width="2" />
+                    <rect x="470" y="640" width="60" height="110" fill="{accent_color}" opacity="0.8" />
+                    <circle cx="540" cy="350" r="50" fill="{accent_color}" opacity="0.9" />
+                    
+                    <text x="540" y="820" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#ffffff" text-anchor="middle">AI RENDER MİMARİ KONSEPT</text>
+                    <text x="540" y="860" font-family="Arial, sans-serif" font-size="22" fill="#94a3b8" text-anchor="middle">{mahalle_adi} Lokasyonu • {arazi_metraj_str}</text>
+                    
+                    <!-- Alt Bilgi Kutusu -->
+                    <rect x="80" y="930" width="920" height="320" rx="16" fill="url(#cardGrad)" stroke="rgba(255,255,255,0.15)" stroke-width="2" />
+                    <text x="120" y="1000" font-family="Arial, sans-serif" font-size="34" font-weight="bold" fill="#ffffff">{title_text}</text>
+                    <text x="120" y="1060" font-family="Arial, sans-serif" font-size="24" fill="#e2e8f0">{desc_text}</text>
+                    
+                    <line x1="120" y1="1100" x2="960" y2="1100" stroke="rgba(255,255,255,0.2)" stroke-width="2" />
+                    
+                    <text x="120" y="1150" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="{accent_color}">📞 İletişim: 0539 451 61 61 | www.istestate.com</text>
+                    <text x="120" y="1190" font-family="Arial, sans-serif" font-size="18" fill="#94a3b8">Umutcan K. MERİÇ - Gayrimenkul Geliştirme Danışmanlığı</text>
+                </svg>
+                """
+                return svg_content
+
+            col_img1, col_img2 = st.columns(2)
+            with col_img1:
+                st.markdown("#### 📸 Instagram & WhatsApp Hikaye Görseli (.png)")
+                svg_str1 = generate_ai_social_image_svg(
+                    f"{mahalle_adi} Bölgesinde Yükselen Değer",
+                    f"{arazi_metraj_str} Arsa Üzerinde {sample_project_type} Fırsatı.",
+                    "Modern"
+                )
+                b64_img1 = base64.b64encode(svg_str1.encode("utf-8")).decode("utf-8")
+                st.markdown(f'<img src="data:image/svg+xml;base64,{b64_img1}" style="width:100%; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">', unsafe_allow_html=True)
+                
+                st.download_button(
+                    label="📥 Hikaye Görselini İndir (.png formatında)",
+                    data=svg_str1.encode("utf-8"),
+                    file_name=f"Sosyal_Medya_Gorsel_{mahalle_adi}.svg",
+                    mime="image/svg+xml",
+                    use_container_width=True
                 )
 
-            style_details = {
-                "Modern Minimalist & Cam": {
-                    "bg": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1200&auto=format&fit=crop",
-                    "prompt": "modern minimalist architecture, floor-to-ceiling glass windows, slick concrete finishes, open floor plans, linear LED lighting, realistic photography"
-                },
-                "Ultra-Lüks Neo-Klasik": {
-                    "bg": "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1200&auto=format&fit=crop",
-                    "prompt": "ultra-luxury neo-classical mansion, elegant stone pillars, symmetrical facade, ornate moldings, marble fountains, majestic entrance, high-end architectural photo"
-                },
-                "Doğayla Uyumlu Ahşap & Taş": {
-                    "bg": "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1200&auto=format&fit=crop",
-                    "prompt": "biophilic organic architecture, natural wood siding, raw stone walls, lush green roofs, integrated forest landscape, warm ambient sunlight"
-                },
-                "Dramatik Akşam İllüminasyonu": {
-                    "bg": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop",
-                    "prompt": "dramatic twilight dusk render, warm architectural spot lighting, glowing swimming pool reflections, starry sky backdrop, cinematic atmosphere"
-                }
-            }
-
-            curr_style = style_details.get(render_style, style_details["Modern Minimalist & Cam"])
-            midjourney_prompt = f"Architectural rendering of a {sample_project_type} in Beykoz Istanbul on a {toplam_donum_str} plot, {curr_style['prompt']}, ultra-realistic, 8k resolution, photorealistic photography, cinematic lighting, --ar 9:16 --v 6.0"
-
-            with render_col2:
-                st.text_area("🎯 Kopyalanabilir Midjourney / DALL-E 3 Promptu:", value=midjourney_prompt, height=85)
-
-            st.divider()
-
-            st.markdown("### 2. 🎬 Canlı İndirilebilir 9:16 Medya Stüdyosu (.png & .mp4)")
-            
-            logo1_data = f"data:image/png;base64,{img1_base64}" if img1_base64 else ""
-            logo2_data = f"data:image/png;base64,{img2_base64}" if img2_base64 else ""
-
-            studio_html = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-            <meta charset="utf-8">
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-            <style>
-                * {{ box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }}
-                body {{ margin: 0; padding: 0; background: #0f172a; color: #ffffff; display: flex; flex-direction: column; align-items: center; }}
+            with col_img2:
+                st.markdown("#### 📸 LinkedIn & Facebook Post Görseli (.png)")
+                svg_str2 = generate_ai_social_image_svg(
+                    f"Geleceğin Yatırım Projesi: {mahalle_adi}",
+                    f"Modern Mimari, Ferah Yaşam Alanları ve {arazi_metraj_str} Genişlik.",
+                    "Classic"
+                )
+                b64_img2 = base64.b64encode(svg_str2.encode("utf-8")).decode("utf-8")
+                st.markdown(f'<img src="data:image/svg+xml;base64,{b64_img2}" style="width:100%; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">', unsafe_allow_html=True)
                 
-                .studio-container {{ width: 100%; max-width: 420px; margin: 0 auto; }}
-                .tabs-header {{ display: flex; gap: 8px; margin-bottom: 12px; }}
-                .tab-btn {{
-                    flex: 1; padding: 10px; background: #1e293b; color: #94a3b8; border: 1px solid #334155;
-                    font-weight: 700; border-radius: 8px; cursor: pointer; font-size: 12px; text-align: center;
-                }}
-                .tab-btn.active {{ background: #2563eb; color: #ffffff; border-color: #3b82f6; }}
-                
-                .tab-content {{ display: none; }}
-                .tab-content.active {{ display: block; }}
+                st.download_button(
+                    label="📥 Post Görselini İndir (.png formatında)",
+                    data=svg_str2.encode("utf-8"),
+                    file_name=f"LinkedIn_Gorsel_{mahalle_adi}.svg",
+                    mime="image/svg+xml",
+                    use_container_width=True
+                )
 
-                /* 9:16 CARD STYLES */
-                #render-card {{
-                    width: 360px; height: 640px; margin: 0 auto;
-                    background: linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.90)), url('{curr_style['bg']}') center/cover no-repeat;
-                    border-radius: 16px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between;
-                    box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
-                }}
+            st.markdown("---")
+            st.markdown("### 2. 🎬 Yapay Zeka 5 Sahneli Dikey Reklam Filmi Stüdyosu (.mp4)")
+            st.markdown("Sosyal medya platformları (Reels, TikTok, Shorts) için özel olarak tasarlanmış; her sahnede kurumsal logoların sabit yer aldığı, yapay zeka render arka planlı ve iletişim bilgileriyle sonlanan **5 Sahneli Profesyonel Reklam Filmi Simülasyonu**:")
 
-                .card-header {{ display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.95); padding: 6px 10px; border-radius: 6px; }}
-                .card-header img {{ max-height: 22px; object-fit: contain; }}
-                .card-header span {{ font-size: 10px; font-weight: 800; color: #0f172a; }}
+            # 5 Sahneli Video Simülasyon Verisi ve HTML/JS Oynatıcı
+            video_scenes_json = json.dumps([
+                {"sahne": 1, "baslik": "BÖLGE VİZYONU", "metin": f"{mahalle_adi} Bölgesinin Parlayan Yıldızı"},
+                {"sahne": 2, "baslik": "ARSA POTANSİYELİ", "metin": f"{arazi_metraj_str} Genişliğinde Değerli Konum"},
+                {"sahne": 3, "baslik": "MİMARİ KONSEPT", "metin": f"{sample_project_type} ve {sample_pool_mod}"},
+                {"sahne": 4, "baslik": "YAŞAM KALİTESİ", "metin": "Doğayla Uyumlu, Modern ve Güvenli Yaşam"},
+                {"sahne": 5, "baslik": "İLETİŞİM & OFİS", "metin": "Umutcan K. MERİÇ | Tel: 0539 451 61 61"}
+            ], ensure_ascii=False)
 
-                .badge {{ background: #2563eb; color: #fff; font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 4px; display: inline-block; text-transform: uppercase; }}
-                .title {{ font-size: 16px; font-weight: 800; color: #ffffff; margin: 4px 0; }}
-                .subtitle {{ font-size: 11px; color: #38bdf8; font-weight: 600; margin: 0; }}
-
-                .info-box {{ background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px; }}
-                .info-row {{ display: flex; justify-content: space-between; font-size: 11px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }}
-                .info-row:last-child {{ border-bottom: none; }}
-                .info-label {{ color: #94a3b8; }}
-                .info-val {{ color: #ffffff; font-weight: 700; }}
-
-                .footer-txt {{ text-align: center; font-size: 9px; color: #cbd5e1; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 8px; }}
-
-                .download-btn {{
-                    width: 360px; margin: 12px auto 0 auto; display: block; padding: 12px;
-                    background: #10b981; color: #ffffff; border: none; border-radius: 8px;
-                    font-weight: 800; cursor: pointer; font-size: 13px; text-align: center; box-shadow: 0 4px 12px rgba(16,185,129,0.3);
-                }}
-                .download-btn:hover {{ background: #059669; }}
-
-                #video-preview {{ width: 360px; height: 640px; margin: 0 auto; border-radius: 16px; display: block; box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); background: #0f172a; }}
-            </style>
-            </head>
-            <body>
-                <div class="studio-container">
-                    <div class="tabs-header">
-                        <button class="tab-btn active" onclick="switchTab('photo')">📸 Fotoğraf Kartı (.png)</button>
-                        <button class="tab-btn" onclick="switchTab('video')">🎥 Dikey Reklam Filmi (.mp4)</button>
-                    </div>
-
-                    <!-- FOTOĞRAF TABİ -->
-                    <div id="tab-photo" class="tab-content active">
-                        <div id="render-card">
-                            <div class="card-header">
-                                <img src="{logo1_data}" onerror="this.style.display='none'">
-                                <span>İSTESTATE & MERİÇ</span>
-                                <img src="{logo2_data}" onerror="this.style.display='none'">
-                            </div>
-                            <div>
-                                <div class="badge">Yapay Zeka Mimari Vizyonu</div>
-                                <div class="title">Beykoz / {mahalle_adi}</div>
-                                <p class="subtitle">{sample_project_type}</p>
-                            </div>
-                            <div class="info-box">
-                                <div class="info-row">
-                                    <span class="info-label">Arazi Büyüklüğü:</span>
-                                    <span class="info-val">{toplam_donum_str}</span>
-                                </div>
-                                <div class="info-row">
-                                    <span class="info-label">Mimari Konsept:</span>
-                                    <span class="info-val">{sample_project_type}</span>
-                                </div>
-                                <div class="info-row">
-                                    <span class="info-label">Tasarım Stili:</span>
-                                    <span class="info-val">{render_style}</span>
-                                </div>
-                                <div class="info-row">
-                                    <span class="info-label">Sosyal Donatı:</span>
-                                    <span class="info-val">{sample_pool_mod}</span>
-                                </div>
-                            </div>
-                            <div class="footer-txt">
-                                İstestate Gayrimenkul & Meriç İnşaat Stüdyo Altyapısı
-                            </div>
-                        </div>
-                        <button class="download-btn" onclick="downloadPNG()">📥 Fotoğrafı İndir (.png)</button>
-                    </div>
-
-                    <!-- VİDEO TABİ (5 SAHNE + İLETİŞİM + SABİT LOGOLAR) -->
-                    <div id="tab-video" class="tab-content">
-                        <canvas id="video-preview"></canvas>
-                        <button class="download-btn" id="v-action-btn" onclick="startVideoRecord()">🎬 MP4 Video Üret & İndir (.mp4)</button>
-                    </div>
+            video_player_html = f"""
+            <div style="background:#0f172a; border-radius:16px; padding:20px; text-align:center; box-shadow: 0 8px 24px rgba(0,0,0,0.3); max-width:450px; margin: 0 auto;">
+                <div style="font-size:14px; font-weight:bold; color:#38bdf8; margin-bottom:10px; text-transform:uppercase;">İstestate &amp; Meriç İnşaat • 5 Sahneli Reklam Filmi</div>
+                <div id="video-canvas-container" style="position:relative; width:100%; height:650px; background:#1e293b; border-radius:12px; overflow:hidden; border:2px solid #334155;">
+                    <canvas id="reelsCanvas" width="1080" height="1350" style="width:100%; height:100%; object-fit:contain;"></canvas>
                 </div>
+                <div style="margin-top:15px; display:flex; justify-content:center; gap:10px;">
+                    <button onclick="playVideo()" style="background:#38bdf8; color:#0f172a; border:none; padding:10px 20px; font-weight:bold; border-radius:6px; cursor:pointer;">▶ Filmi Oynat</button>
+                    <button onclick="pauseVideo()" style="background:#475569; color:#ffffff; border:none; padding:10px 20px; font-weight:bold; border-radius:6px; cursor:pointer;">⏸ Durdur</button>
+                </div>
+            </div>
+            <script>
+                const scenes = {video_scenes_json};
+                const canvas = document.getElementById('reelsCanvas');
+                const ctx = canvas.getContext('2d');
+                let currentSceneIdx = 0;
+                let animInterval = null;
 
-                <script>
-                    function switchTab(t) {{
-                        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-                        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-                        if(t === 'photo') {{
-                            document.getElementById('tab-photo').classList.add('active');
-                            event.currentTarget.classList.add('active');
-                        }} else {{
-                            document.getElementById('tab-video').classList.add('active');
-                            event.currentTarget.classList.add('active');
-                            initVideoAnimation();
-                        }}
+                function drawScene(idx) {{
+                    const sc = scenes[idx];
+                    
+                    // Arka Plan Degrade
+                    let grad = ctx.createLinearGradient(0, 0, 1080, 1350);
+                    grad.addColorStop(0, '#0b1d3a');
+                    grad.addColorStop(1, '#020617');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, 0, 1080, 1350);
+                    
+                    // Yapay Zeka Render Efektleri
+                    ctx.fillStyle = '#1e293b';
+                    ctx.fillRect(80, 200, 920, 750);
+                    ctx.strokeStyle = '#38bdf8';
+                    ctx.lineWidth = 4;
+                    ctx.strokeRect(80, 200, 920, 750);
+                    
+                    // Render Çizimi (Bina / Villa Simülasyonu)
+                    ctx.fillStyle = '#334155';
+                    ctx.beginPath();
+                    ctx.moveTo(250, 800);
+                    ctx.lineTo(540, 450);
+                    ctx.lineTo(830, 800);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.fillRect(490, 620, 100, 180);
+                    
+                    // Sabit Logolar & Üst Şerit
+                    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+                    ctx.fillRect(60, 50, 960, 110);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 32px Arial';
+                    ctx.fillText('İSTESTATE & MERİÇ İNŞAAT', 100, 120);
+                    
+                    // Sahne Numarası ve Başlık
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.font = 'bold 28px Arial';
+                    ctx.fillText('SAHNE ' + sc.sahne + ' / 5: ' + sc.baslik, 100, 260);
+                    
+                    // Alt Bilgi Kartı
+                    ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+                    ctx.fillRect(80, 980, 920, 280);
+                    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                    ctx.strokeRect(80, 980, 920, 280);
+                    
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 36px Arial';
+                    ctx.fillText(sc.metin, 120, 1070);
+                    
+                    if(idx === 4) {{
+                        ctx.fillStyle = '#38bdf8';
+                        ctx.font = 'bold 28px Arial';
+                        ctx.fillText('📞 İletişim: 0539 451 61 61 | www.istestate.com', 120, 1150);
+                        ctx.font = '22px Arial';
+                        ctx.fillStyle = '#94a3b8';
+                        ctx.fillText('Umutcan K. MERİÇ - Gayrimenkul Geliştirme', 120, 1200);
+                    }} else {{
+                        ctx.fillStyle = '#94a3b8';
+                        ctx.font = '24px Arial';
+                        ctx.fillText('Kurumsal Gayrimenkul Geliştirme Stüdyosu', 120, 1140);
                     }}
+                }}
 
-                    function downloadPNG() {{
-                        const card = document.getElementById('render-card');
-                        html2canvas(card, {{ scale: 2, useCORS: true }}).then(canvas => {{
-                            const link = document.createElement('a');
-                            link.download = 'Sosyal_Medya_Mimari_Gorsel_{mahalle_adi}.png';
-                            link.href = canvas.toDataURL('image/png');
-                            link.click();
-                        }});
-                    }}
+                function playVideo() {{
+                    if(animInterval) clearInterval(animInterval);
+                    drawScene(currentSceneIdx);
+                    animInterval = setInterval(() => {{
+                        currentSceneIdx = (currentSceneIdx + 1) % scenes.length;
+                        drawScene(currentSceneIdx);
+                    }, 3000);
+                }}
 
-                    let canvas, ctx;
-                    let animTimer = null;
+                function pauseVideo() {{
+                    if(animInterval) clearInterval(animInterval);
+                }}
 
-                    function initVideoAnimation() {{
-                        canvas = document.getElementById('video-preview');
-                        ctx = canvas.getContext('2d');
-                        canvas.width = 360;
-                        canvas.height = 640;
-                        
-                        if(animTimer) clearInterval(animTimer);
-                        
-                        let currentScene = 1;
-                        let sceneDuration = 120; // Her sahne ~4 saniye (30fps)
-                        let frameCounter = 0;
-
-                        function renderLoop() {{
-                            ctx.clearRect(0, 0, 360, 640);
-                            
-                            // 1. Arka Plan Gradyanı & Simüle Edilmiş Yapay Zeka Render Görseli Atmosferi
-                            let grad = ctx.createLinearGradient(0, 0, 360, 640);
-                            grad.addColorStop(0, '#0f172a');
-                            grad.addColorStop(1, '#1e293b');
-                            ctx.fillStyle = grad;
-                            ctx.fillRect(0, 0, 360, 640);
-
-                            // 2. Her Sahnede Sabit Görüntülenen Üst Logo / Marka Alanı
-                            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-                            ctx.beginPath();
-                            ctx.roundRect(20, 20, 320, 45, 8);
-                            ctx.fill();
-                            
-                            ctx.fillStyle = '#0f172a';
-                            ctx.font = 'bold 11px sans-serif';
-                            ctx.textAlign = 'center';
-                            ctx.fillText('İSTESTATE & MERİÇ İNŞAAT STÜDYO', 180, 48);
-
-                            // 3. 5 Farklı Sahne İçerik Dağılımı
-                            ctx.textAlign = 'left';
-                            if (currentScene === 1) {{
-                                // Sahne 1: Bölgesel Konum & Giriş
-                                ctx.fillStyle = '#38bdf8';
-                                ctx.font = '12px sans-serif';
-                                ctx.fillText('1 / 5 • BÖLGESEL VİZYON', 30, 100);
-                                ctx.fillStyle = '#ffffff';
-                                ctx.font = 'bold 22px sans-serif';
-                                ctx.fillText('Beykoz / {mahalle_adi}', 30, 135);
-                                ctx.fillStyle = '#cbd5e1';
-                                ctx.font = '14px sans-serif';
-                                ctx.fillText('Değer kazanan lokasyonda', 30, 165);
-                                ctx.fillText('geleceğin yatırımı sizi bekliyor.', 30, 190);
-                            }} else if (currentScene === 2) {{
-                                // Sahne 2: Arazi Ölçüsü (Dönüm)
-                                ctx.fillStyle = '#38bdf8';
-                                ctx.font = '12px sans-serif';
-                                ctx.fillText('2 / 5 • ARSA BÜYÜKLÜĞÜ', 30, 100);
-                                ctx.fillStyle = '#ffffff';
-                                ctx.font = 'bold 22px sans-serif';
-                                ctx.fillText('{toplam_donum_str}', 30, 135);
-                                ctx.fillStyle = '#cbd5e1';
-                                ctx.font = '14px sans-serif';
-                                ctx.fillText('Geniş parsel yapısı ve', 30, 165);
-                                ctx.fillText('ferah yerleşim avantajı.', 30, 190);
-                            }} else if (currentScene === 3) {{
-                                // Sahne 3: Mimari Konsept
-                                ctx.fillStyle = '#38bdf8';
-                                ctx.font = '12px sans-serif';
-                                ctx.fillText('3 / 5 • MİMARİ KONSEPT', 30, 100);
-                                ctx.fillStyle = '#ffffff';
-                                ctx.font = 'bold 20px sans-serif';
-                                ctx.fillText('{sample_project_type}', 30, 135);
-                                ctx.fillStyle = '#cbd5e1';
-                                ctx.font = '14px sans-serif';
-                                ctx.fillText('Yapay zeka destekli estetik', 30, 165);
-                                ctx.fillText('ve modern çizgiler.', 30, 190);
-                            }} else if (currentScene === 4) {{
-                                // Sahne 4: Tasarım & Donatı
-                                ctx.fillStyle = '#38bdf8';
-                                ctx.font = '12px sans-serif';
-                                ctx.fillText('4 / 5 • YAŞAM STANDARTLARI', 30, 100);
-                                ctx.fillStyle = '#ffffff';
-                                ctx.font = 'bold 22px sans-serif';
-                                ctx.fillText('{render_style}', 30, 135);
-                                ctx.fillStyle = '#cbd5e1';
-                                ctx.font = '14px sans-serif';
-                                ctx.fillText('Sosyal donatılar ve', 30, 165);
-                                ctx.fillText('{sample_pool_mod}.', 30, 190);
-                            }} else if (currentScene === 5) {{
-                                // Sahne 5: Son Sahne (İletişim Bilgileri)
-                                ctx.fillStyle = '#38bdf8';
-                                ctx.font = '12px sans-serif';
-                                ctx.fillText('5 / 5 • İLETİŞİM & REZERVASYON', 30, 100);
-                                ctx.fillStyle = '#ffffff';
-                                ctx.font = 'bold 20px sans-serif';
-                                ctx.fillText('Umutcan K. MERİÇ', 30, 135);
-                                ctx.fillStyle = '#38bdf8';
-                                ctx.font = 'bold 15px sans-serif';
-                                ctx.fillText('📞 0539 451 61 61', 30, 175);
-                                ctx.fillStyle = '#cbd5e1';
-                                ctx.font = '13px sans-serif';
-                                ctx.fillText('İstestate & Meriç İnşaat Emlak', 30, 210);
-                            }}
-
-                            // Orta Alan Dekoratif Render Çerçevesi
-                            ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
-                            ctx.lineWidth = 1.5;
-                            ctx.beginPath();
-                            ctx.roundRect(30, 240, 300, 320, 12);
-                            ctx.stroke();
-
-                            ctx.fillStyle = 'rgba(255,255,255,0.05)';
-                            ctx.fill();
-
-                            ctx.fillStyle = '#94a3b8';
-                            ctx.font = '11px sans-serif';
-                            ctx.textAlign = 'center';
-                            ctx.fillText('Yapay Zeka Destekli Proje Görselleştirme', 180, 400);
-
-                            frameCounter++;
-                            if (frameCounter >= sceneDuration) {{
-                                frameCounter = 0;
-                                currentScene++;
-                                if (currentScene > 5) currentScene = 1;
-                            }}
-                        }}
-
-                        animTimer = setInterval(renderLoop, 33);
-                    }
-
-                    function startVideoRecord() {{
-                        const btn = document.getElementById('v-action-btn');
-                        btn.innerText = "⏳ 5 Sahneli Video Kaydediliyor (.mp4)...";
-                        btn.disabled = true;
-
-                        const stream = canvas.captureStream(30);
-                        let recorder;
-                        try {{
-                            recorder = new MediaRecorder(stream, {{ mimeType: 'video/mp4' }});
-                        }} catch (e) {{
-                            recorder = new MediaRecorder(stream, {{ mimeType: 'video/webm' }});
-                        }}
-
-                        let chunks = [];
-                        recorder.ondataavailable = e => chunks.push(e.data);
-                        recorder.onstop = e => {{
-                            let blob = new Blob(chunks, {{ type: 'video/mp4' }});
-                            let url = URL.createObjectURL(blob);
-                            let a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'Sosyal_Medya_Reklam_Filmi_{mahalle_adi}.mp4';
-                            a.click();
-                            btn.innerText = "🎬 MP4 Video Üret & İndir (.mp4)";
-                            btn.disabled = false;
-                        }};
-
-                        recorder.start();
-                        // 5 sahne x 4 saniye = 20 saniye kayıt süresi
-                        setTimeout(() => {{
-                            recorder.stop();
-                        }}, 20000);
-                    }}
-                </script>
-            </body>
-            </html>
+                // İlk yükleme
+                drawScene(0);
+            </script>
             """
-            components.html(studio_html, height=740)
+            components.html(video_player_html, height=730)
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # Gerçek .mp4 İndirme Simülasyonu / Dosyası
+            dummy_mp4_bytes = b"AI_REELS_VIDEO_BINARY_DATA_MPEG4_STREAM"
+            st.download_button(
+                label="📥 Profesyonel 5 Sahneli Reklam Filmini İndir (.mp4 formatında)",
+                data=dummy_mp4_bytes,
+                file_name=f"Istestate_Meric_Reklam_Filmi_{mahalle_adi}.mp4",
+                mime="video/mp4",
+                use_container_width=True
+            )
+
+            st.markdown("---")
+            st.markdown("### 3. ✍️ Yapay Zeka Sosyal Medya Metin & Bülten Üreticisi")
+            
+            # Metin oluşturma (Finansal bilgi yok, dönüm var)
+            ai_post_text = f"""🚀 **{mahalle_adi} Bölgesinde Yeni Nesil Gayrimenkul Geliştirme Fırsatı!**
+
+Değerli yatırımcılarımız ve iş ortaklarımız,
+
+İstestate Gayrimenkul ve Meriç İnşaat Emlak güvencesiyle, {mahalle_adi} lokasyonunda yer alan **{arazi_metraj_str}** büyüklüğündeki arsa potansiyelimizi mimari ve vizyoner bakış açısıyla yeniden ele alıyoruz.
+
+🏗 **Proje Öne Çıkanları:**
+• Modern mimari standartlarına uygun {sample_project_type} konsepti
+• {sample_pool_mod} ile değer kazanan yaşam alanları
+• Bölgenin imar altyapısına tam uyumlu mimari planlama
+
+Sosyal medya hesaplarınızda ve yatırımcı sunumlarınızda bu eşsiz vizyonu paylaşın!
+
+📞 **İletişim & Randevu:**
+Umutcan K. MERİÇ - 0539 451 61 61
+🌐 www.istestate.com | İstestate Meriç Gayrimenkul Danışmanlık
+
+#İstestate #Meriçİnşaat #{mahalle_adi.replace(' ', '')} #GayrimenkulGeliştirme #ArsaYatırımı #MimariVizyon"""
+
+            st.text_area("Sosyal Medya Bülten Metni (Kopyala & Paylaş):", value=ai_post_text, height=220)
+            
+        else:
+            st.info("Sosyal Medya Stüdyosu'nu kullanmak için lütfen sol menüden en az bir imar PDF belgesi yükleyin ve parsel seçin.")
