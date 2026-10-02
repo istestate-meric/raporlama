@@ -1619,7 +1619,7 @@ Arsanızın mimari imar potansiyelini öğrenmek için mesaj atın! 📲✨
                 body {{ background-color: #0f172a; color: #ffffff; padding: 10px; min-height: 800px; }}
 
                 .studio-wrapper {{
-                    display: flex; flex-direction: column; align-items: center; gap: 15px; width: 100%; max-width: 850px; margin: 0 auto; padding-bottom: 30px;
+                    display: flex; flex-direction: column; align-items: center; gap: 15px; width: 100%; margin: 0 auto; padding-bottom: 30px;
                 }}
 
                 .tabs-header {{
