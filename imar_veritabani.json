@@ -15436,5 +15436,49 @@
                 "giren_m2": 1979.87
             }
         ]
+    },
+    "ÇİFTLİK | Ada: 1612 - Parsel: 15": {
+        "filename": "1612 Ada 15 Parsel.pdf",
+        "mahalle": "ÇİFTLİK",
+        "ada": "1612",
+        "parsel": "15",
+        "toplam_alan": 1294.6,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.3,
+                "giren_m2": 1057.89
+            }
+        ]
+    },
+    "ÇİFTLİK | Ada: 1612 - Parsel: 16": {
+        "filename": "1612 Ada 16 Parsel.pdf",
+        "mahalle": "ÇİFTLİK",
+        "ada": "1612",
+        "parsel": "16",
+        "toplam_alan": 1154.73,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.3,
+                "giren_m2": 794.69
+            }
+        ]
     }
 }
