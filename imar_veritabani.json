@@ -15480,5 +15480,27 @@
                 "giren_m2": 794.69
             }
         ]
+    },
+    "ÇİFTLİK | Ada: 1591 - Parsel: 118": {
+        "filename": "1591 Ada 118 Parsel.pdf",
+        "mahalle": "ÇİFTLİK",
+        "ada": "1591",
+        "parsel": "118",
+        "toplam_alan": 396.4,
+        "terk_yapilmis_mi": false,
+        "fonksiyonlar": [
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.0,
+                "kaks": 0.0,
+                "giren_m2": 0.0
+            },
+            {
+                "fonksiyon_adi": "KONUT ALANI",
+                "taks": 0.3,
+                "kaks": 0.3,
+                "giren_m2": 378.94
+            }
+        ]
     }
 }
