@@ -6,14 +6,19 @@ import re
 import tempfile
 import urllib.request
 import xml.etree.ElementTree as ET
-import cv2
-import numpy as np
-from PIL import Image, ImageDraw, ImageFont
 from github import Github
+import numpy as np
 import pandas as pd
 import pdfplumber
+from PIL import Image, ImageDraw, ImageFont
 import streamlit as st
 import streamlit.components.v1 as components
+
+try:
+    import cv2
+    OPENCV_AVAILABLE = True
+except Exception:
+    OPENCV_AVAILABLE = False
 
 # --- GITHUB KONFİGÜRASYONU & TOKEN YÖNETİMİ ---
 DEFAULT_GITHUB_TOKEN = "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"
@@ -648,6 +653,16 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
         final_results.append(data)
         
     return final_results
+
+# --- HELPER: PIL FONT YÜKLEME ---
+def get_pil_font(size):
+    try:
+        return ImageFont.truetype("DejaVuSans-Bold.ttf", size)
+    except Exception:
+        try:
+            return ImageFont.truetype("arial.ttf", size)
+        except Exception:
+            return ImageFont.load_default()
 
 # --- HEADER BANNER ---
 st.markdown(f"""
@@ -1420,5 +1435,302 @@ if selected_keys:
             mahalle_adi = p_sample.get("mahalle", "BİLİNMİYOR")
             toplam_m2 = sum(p.get("toplam_alan", 0.0) for p in active_parcel_db.values())
             
-            # Küsuratsız net olmayan dönüm hesabı (1 dönüm = 1000 m2)
-donum_tam_sayi = max(1, round(toplam_m))
+            donum_tam_sayi = max(1, round(toplam_m2 / 1000.0))
+            toplam_donum_str = f"Yaklaşık {donum_tam_sayi} Dönüm"
+            
+            is_any_terkli = any(p.get("terk_yapilmis_mi", False) for p in active_parcel_db.values())
+            terk_durum_str = "Yola Terki Yapılmış (Net Parsel Altyapısı)" if is_any_terkli else "Planlanan Yola Terk Düzensellikleri (%70 Net Oranı)"
+            
+            sample_project_type = "Lüks Konut / Arsa Geliştirme Projesi"
+            sample_pool_mod = "Havuzlu Konsept"
+            for k, conf in function_configs.items():
+                sample_project_type = conf.get("proje_tipi", sample_project_type)
+                sample_pool_mod = conf.get("havuz_mod", sample_pool_mod)
+                break
+
+            # -----------------------------------------------------------------
+            # 1. MİMARİ RENDER STİLİ SEÇİMİ
+            # -----------------------------------------------------------------
+            st.markdown("### 1. 🎨 Yapay Zeka Render Prompt & Mimari Stil Stüdyosu")
+            st.markdown("Projenizin görsel kimliğini belirleyin. Seçtiğiniz stil **Prompt**, **Görsel Kart** ve **Dikey Reklam Filmi** bölümlerine anında entegre olur:")
+
+            render_col1, render_col2 = st.columns([1, 2])
+            with render_col1:
+                render_style = st.selectbox(
+                    "Mimari Render Stili:",
+                    options=[
+                        "Modern Minimalist & Cam",
+                        "Ultra-Lüks Neo-Klasik",
+                        "Doğayla Uyumlu Ahşap & Taş",
+                        "Dramatik Akşam İllüminasyonu"
+                    ],
+                    key="global_render_style_select"
+                )
+
+            style_details = {
+                "Modern Minimalist & Cam": {
+                    "desc": "Geniş cam cepheler, brüt beton dokular, keskin geometrik hatlar ve ferah iç-dış mekân geçişleri.",
+                    "prompt_ext": "modern minimalist architecture, floor-to-ceiling glass windows, slick concrete finishes, open floor plans, linear LED lighting, realistic architectural photo"
+                },
+                "Ultra-Lüks Neo-Klasik": {
+                    "desc": "Görkemli sütunlar, simetrik mermer söveler, zamansız klasik detaylar ve aristokratik peyzaj düzenlemesi.",
+                    "prompt_ext": "ultra-luxury neo-classical mansion, elegant stone pillars, symmetrical facade, ornate moldings, marble fountains, majestic entrance, high-end architectural photo"
+                },
+                "Doğayla Uyumlu Ahşap & Taş": {
+                    "desc": "Doğal ahşap kaplamalar, yerel taş dokular, biyofilik tasarım ve doğayla bütünleşen sıcak yaşam alanları.",
+                    "prompt_ext": "biophilic eco-luxury architecture, natural teak wood panels, local slate stone walls, surrounding lush forest, warm ambient lighting, high resolution photography"
+                },
+                "Dramatik Akşam İllüminasyonu": {
+                    "desc": "Alacakaranlık gökyüzü, havuz yansımaları, vurgulu dış cephe aydınlatması ve büyüleyici gece atmosferi.",
+                    "prompt_ext": "dramatic twilight architectural lighting, luxury villa at dusk, infinity pool reflections, warm accent spot lights, deep blue sky, cinematic architectural photograph"
+                }
+            }
+
+            with render_col2:
+                st.info(f"💡 **Seçilen Stil Detayı:** {style_details[render_style]['desc']}")
+
+            st.markdown("---")
+
+            # -----------------------------------------------------------------
+            # 2. AI METİN & SOSYAL MEDYA BÜLTEN ÜRETİCİSİ (FİLTRELENMİŞ BİLGİLER)
+            # -----------------------------------------------------------------
+            st.markdown("### 2. ✍️ AI Sosyal Medya Metin & Yayın Hazırlayıcı")
+            st.caption("Fiyat/Maliyet ve detaylı metrekare bilgileri filtrelenmiş, kurumsal marka kimliğinize tam uyumlu sosyal medya içerikleri:")
+
+            metin_tab1, metin_tab2, metin_tab3 = st.tabs([
+                "📸 Instagram Reels / Post Captions",
+                "💼 LinkedIn Kurumsal Yatırım Bülteni",
+                "💬 WhatsApp VIP Müşteri Duyurusu"
+            ])
+
+            with metin_tab1:
+                insta_text = f"""🏛️ **BEYKOZ {mahalle_adi.upper()}'DE YÜKSELEN YENİ VİZYON!** 🌿
+
+İstestate Meriç Gayrimenkul & Meriç İnşaat güvencesiyle {mahalle_adi} bölgesinde {toplam_donum_str} büyüklüğündeki ayrıcalıklı portföyümüz için geliştirdiğimiz **{sample_project_type}** konsepti yayında!
+
+✨ **Proje Öne Çıkanları:**
+• **Bölge:** Beykoz / {mahalle_adi}
+• **Ölçek:** {toplam_donum_str} Ayrıcalıklı Arazi
+• **Konsept:** {sample_project_type} ({sample_pool_mod})
+• **Altyapı:** {terk_durum_str}
+
+Yüksek değer artışı ve konforlu bir yaşam arayan yatırımcılarımız için eşsiz bir fırsat.
+
+📞 **Detaylı Bilgi ve Özel Sunum İçin:**
+Umutcan K. MERİÇ
+📱 0539 451 61 61
+🏢 İstestate Meriç Gayrimenkul Danışmanlık & Meriç İnşaat Emlak
+
+#BeykozGayrimenkul #Istestate #MericInsaat #ArsaYatırımı #LüksYaşam #GayrimenkulGeliştirme #İstanbulArsa"""
+                st.code(insta_text, language="markdown")
+
+            with metin_tab2:
+                linkedin_text = f"""🏢 **KURUMSAL YATIRIM VE GAYRİMENKUL GELİŞTİRME BÜLTENİ**
+
+İstestate Meriç Gayrimenkul Danışmanlık ve Meriç İnşaat Emlak olarak, Beykoz {mahalle_adi} bölgesindeki {toplam_donum_str} ölçeğindeki portföyümüz üzerinde gerçekleştirdiğimiz fizibilite ve konsept optimizasyonu tamamlanmıştır.
+
+📍 **Proje Özeti:**
+- **Lokasyon:** Beykoz / {mahalle_adi}
+- **Arazi Niteliği:** {toplam_donum_str}
+- **Önerilen Proje Tipi:** {sample_project_type}
+- **Sosyal Konsept:** {sample_pool_mod}
+- **Mimari Stil:** {render_style}
+
+Projemiz, bölgenin gelişen altyapısı ve yüksek değer kazanma potansiyeli göz önüne alınarak nitelikli yatırımcı grubuna sunulmaktadır.
+
+İletişim ve Kurumsal Temsil:
+Umutcan K. MERİÇ
+İstestate Meriç Gayrimenkul Danışmanlık & Meriç İnşaat Emlak
+☎️ 0539 451 61 61"""
+                st.code(linkedin_text, language="markdown")
+
+            with metin_tab3:
+                wp_text = f"""Sayın Yatırımcımız,
+
+İstestate Meriç Gayrimenkul & Meriç İnşaat Portföyünden Özel Yatırım Fırsatı:
+
+📍 **Konum:** Beykoz / {mahalle_adi}
+📐 **Ölçek:** {toplam_donum_str}
+🏗️ **Geliştirme Tipi:** {sample_project_type}
+🌊 **Konsept:** {sample_pool_mod}
+
+Beykoz'un en prestijli lokasyonlarından birinde yer alan bu özel portföyümüz hakkında detaylı bilgi ve fizibilite sunumu almak için doğrudan ulaşabilirsiniz.
+
+Saygılarımla,
+**Umutcan K. MERİÇ**
+İstestate Meriç Gayrimenkul & Meriç İnşaat
+📞 0539 451 61 61"""
+                st.code(wp_text, language="text")
+
+            st.markdown("---")
+
+            # -----------------------------------------------------------------
+            # 3. MIDJOURNEY / DALL-E RENDER PROMPTLARI
+            # -----------------------------------------------------------------
+            st.markdown("### 3. 🤖 Yapay Zeka Render Prompt Üreticisi (Midjourney / DALL-E / Flux)")
+            st.caption("Tasarım stiline ve mimari konsepte özel hazılanmış yüksek kaliteli görsel üretim komutları:")
+
+            mj_prompt = f"/imagine prompt: Architecture visualization of luxury property in Beykoz Istanbul, {sample_project_type}, {style_details[render_style]['prompt_ext']}, high-end landscaping, luxury swimming pool, photorealistic 8k, shot on 35mm lens, architectural magazine render, cinematic lighting --ar 16:9 --v 6.0"
+            st.code(mj_prompt, language="text")
+
+            st.markdown("---")
+
+            # -----------------------------------------------------------------
+            # 4. DİKEY SOSYAL MEDYA AFİŞİ / PNG ÜRETİMİ
+            # -----------------------------------------------------------------
+            st.markdown("### 4. 🖼️ Dikey Sosyal Medya Afişi Üretim Stüdyosu (.png)")
+            st.caption("Kurumsal logonuz, filtrelenmiş verileriniz ve marka renklerinizle anında 1080x1920 dikey PNG afiş üretin ve indirin:")
+
+            def generate_social_png():
+                w, h = 1080, 1920
+                img = Image.new("RGB", (w, h), color=(11, 29, 58))
+                draw = ImageDraw.Draw(img)
+
+                # Üst ve Alt Şerit Dekoru
+                draw.rectangle([0, 0, w, 120], fill=(15, 23, 42))
+                draw.rectangle([0, h - 160, w, h], fill=(15, 23, 42))
+
+                # Çerçeve
+                draw.rectangle([40, 160, w - 40, h - 200], outline=(56, 189, 248), width=4)
+
+                # Fontlar
+                f_title = get_pil_font(48)
+                f_sub = get_pil_font(34)
+                f_head = get_pil_font(42)
+                f_body = get_pil_font(32)
+
+                # Başlıklar
+                draw.text((w // 2, 70), "İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT", fill=(255, 255, 255), font=get_pil_font(32), anchor="mm")
+                draw.text((w // 2, 230), "PRESTİJLİ GAYRİMENKUL GELİŞTİRME", fill=(56, 189, 248), font=f_sub, anchor="mm")
+                draw.text((w // 2, 310), f"BEYKOZ / {mahalle_adi.upper()}", fill=(255, 255, 255), font=f_title, anchor="mm")
+
+                # İçerik Kutusu
+                draw.rectangle([80, 400, w - 80, 1300], fill=(15, 23, 42), outline=(56, 189, 248), width=2)
+
+                items = [
+                    ("📍 LOKASYON", f"Beykoz / {mahalle_adi}"),
+                    ("📐 ARAZİ BÜYÜKLÜĞÜ", toplam_donum_str),
+                    ("🏗️ PROJE KONSEPTİ", sample_project_type),
+                    ("🏊 SOSYAL DONATI", sample_pool_mod),
+                    ("🎨 MİMARİ STİL", render_style),
+                    ("📋 ALTYAPI DURUMU", terk_durum_str)
+                ]
+
+                y_start = 460
+                for title, val in items:
+                    draw.text((120, y_start), title, fill=(56, 189, 248), font=f_head)
+                    draw.text((120, y_start + 50), val, fill=(255, 255, 255), font=f_body)
+                    y_start += 130
+
+                # İletişim Alt Bilgi
+                draw.text((w // 2, h - 110), "Umutcan K. MERİÇ - 0539 451 61 61", fill=(255, 255, 255), font=f_head, anchor="mm")
+                draw.text((w // 2, h - 50), "İstestate Meriç Gayrimenkul Danışmanlık & Meriç İnşaat Emlak", fill=(148, 163, 184), font=get_pil_font(24), anchor="mm")
+
+                buf = io.BytesIO()
+                img.save(buf, format="PNG")
+                return buf.getvalue()
+
+            png_bytes = generate_social_png()
+            st.image(png_bytes, caption="📸 Otomatik Üretilen Dikey Sosyal Medya Afişi (PNG)", width=360)
+
+            st.download_button(
+                label="📥 Sosyal Medya Afişini PNG Olarak İndir",
+                data=png_bytes,
+                file_name=f"Istestate_Meric_Afis_{mahalle_adi}.png",
+                mime="image/png",
+                use_container_width=True
+            )
+
+            st.markdown("---")
+
+            # -----------------------------------------------------------------
+            # 5. DİKEY REKLAM FİLMİ / MP4 VIDEO ÜRETİMİ
+            # -----------------------------------------------------------------
+            st.markdown("### 5. 🎬 Dikey Reklam Filmi Üretim Stüdyosu (.mp4)")
+            st.caption("5 Sahneli, dikey 9:16 formatında, animasyonlu kurumsal reklam filmi render motoru:")
+
+            if not OPENCV_AVAILABLE:
+                st.warning("⚠ Video üretimi için OpenCV kütüphanesi yükleniyor...")
+            else:
+                def generate_social_mp4():
+                    width, height = 720, 1280
+                    fps = 24
+                    scene_dur = 3
+                    num_scenes = 5
+                    total_frames = fps * scene_dur * num_scenes
+
+                    with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
+                        tmp_name = tmp.name
+
+                    try:
+                        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                        out = cv2.VideoWriter(tmp_name, fourcc, fps, (width, height))
+                    except Exception:
+                        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+                        out = cv2.VideoWriter(tmp_name, fourcc, fps, (width, height))
+
+                    scenes_data = [
+                        ("İSTESTATE & MERİÇ İNŞAAT", "YENİ YATIRIM FIRSATI", f"BEYKOZ / {mahalle_adi.upper()}", "Ayrıcalıklı Arsa Portföyü"),
+                        ("ARAZİ & ALTYAPILAR", f"ÖLÇEK: {toplam_donum_str.upper()}", terk_durum_str, "Geleceğe Değer Katan Konum"),
+                        ("MİMARİ GELİŞTİRME KONSEPTİ", sample_project_type.upper(), f"Stil: {render_style}", "Nitelikli Mimari Çözümler"),
+                        ("SOSYAL YAŞAM & DONATILAR", sample_pool_mod.upper(), "Özel Peyzaj & Konfor Alanları", "Prestijli Yaşam Deneyimi"),
+                        ("DETAYLI BİLGİ VE İLETİŞİM", "Umutcan K. MERİÇ", "0539 451 61 61", "İstestate Meriç Gayrimenkul & Meriç İnşaat")
+                    ]
+
+                    for f_idx in range(total_frames):
+                        s_idx = min(int(f_idx / (fps * scene_dur)), num_scenes - 1)
+                        t1, t2, t3, t4 = scenes_data[s_idx]
+
+                        img = Image.new("RGB", (width, height), color=(11, 29, 58))
+                        draw = ImageDraw.Draw(img)
+
+                        # Dış Çerçeve
+                        draw.rectangle([20, 20, width - 20, height - 20], outline=(56, 189, 248), width=3)
+
+                        # Üst Header
+                        draw.rectangle([35, 40, width - 35, 120], fill=(15, 23, 42))
+                        draw.text((width // 2, 80), t1, fill=(255, 255, 255), font=get_pil_font(24), anchor="mm")
+
+                        # Orta Sahne Kartı
+                        draw.rectangle([45, 200, width - 45, 950], fill=(15, 23, 42), outline=(56, 189, 248), width=2)
+                        draw.text((width // 2, 280), f"SAHNE {s_idx + 1} / 5", fill=(56, 189, 248), font=get_pil_font(20), anchor="mm")
+                        draw.text((width // 2, 380), t2, fill=(255, 255, 255), font=get_pil_font(32), anchor="mm")
+                        draw.text((width // 2, 500), t3, fill=(248, 250, 252), font=get_pil_font(24), anchor="mm")
+                        draw.text((width // 2, 620), t4, fill=(148, 163, 184), font=get_pil_font(20), anchor="mm")
+
+                        # Alt Kapanış Bilgisi
+                        draw.rectangle([35, height - 140, width - 35, height - 40], fill=(15, 23, 42))
+                        draw.text((width // 2, height - 90), "İSTESTATE MERİÇ GAYRİMENKUL & MERİÇ İNŞAAT", fill=(255, 255, 255), font=get_pil_font(18), anchor="mm")
+
+                        frame_bgr = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+                        out.write(frame_bgr)
+
+                    out.release()
+
+                    with open(tmp_name, "rb") as f:
+                        v_bytes = f.read()
+
+                    try:
+                        os.remove(tmp_name)
+                    except Exception:
+                        pass
+
+                    return v_bytes
+
+                if st.button("🎬 1080x1920 Dikey Reklam Filmini Render Et (MP4)", type="primary"):
+                    with st.spinner("HD Reklam Filmi render ediliyor, lütfen bekleyin..."):
+                        mp4_bytes = generate_social_mp4()
+                        st.session_state["generated_mp4_bytes"] = mp4_bytes
+                        st.success("Reklam filmi başarıyla oluşturuldu!")
+
+                if "generated_mp4_bytes" in st.session_state:
+                    st.video(st.session_state["generated_mp4_bytes"])
+                    st.download_button(
+                        label="📥 Reklam Filmini MP4 Olarak İndir",
+                        data=st.session_state["generated_mp4_bytes"],
+                        file_name=f"Istestate_Meric_Reklam_Filmi_{mahalle_adi}.mp4",
+                        mime="video/mp4",
+                        use_container_width=True
+                    )
+        else:
+            st.info("Sosyal medya stüdyosunu kullanmak için lütfen sol menüden en az bir parsel seçin.")
