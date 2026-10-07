@@ -281,6 +281,7 @@ def get_realistic_market_pricing(mahalle_adi, proje_tipi, havuz_secenegi, usd_ra
         "KAVACIK": 110000,
         "ÇENGELDERE": 120000,
         "YAVUZ SELİM": 95000,
+        "YAVUZSELİM": 95000,
         "FATİH": 90000,
         "SOĞUKSU": 110000,
         "PAŞABAHÇE": 105000,
@@ -1469,327 +1470,482 @@ if selected_keys:
                 )
                 
                 if sm_theme_preset == "Kurumsal Lacivert & Altın":
-                    primary_color_val = "#0b1d3a"
-                    accent_color_val = "#d97706"
-                    card_bg_val = "rgba(11, 29, 58, 0.85)"
+                    theme_colors = {
+                        "bg": "#0b1d3a",
+                        "header_bg": "#071326",
+                        "card_bg": "#132743",
+                        "card_border": "#d4af37",
+                        "accent": "#d4af37",
+                        "text_primary": "#ffffff",
+                        "text_secondary": "#cbd5e1",
+                        "text_muted": "#94a3b8",
+                        "badge_text": "#0b1d3a",
+                        "highlight_bg": "rgba(212, 175, 55, 0.15)",
+                        "footer_bg": "#071326"
+                    }
                 elif sm_theme_preset == "Koyu Mod & Zümrüt Yeşili":
-                    primary_color_val = "#0f172a"
-                    accent_color_val = "#10b981"
-                    card_bg_val = "rgba(15, 23, 42, 0.85)"
+                    theme_colors = {
+                        "bg": "#0f172a",
+                        "header_bg": "#020617",
+                        "card_bg": "#1e293b",
+                        "card_border": "#10b981",
+                        "accent": "#10b981",
+                        "text_primary": "#ffffff",
+                        "text_secondary": "#cbd5e1",
+                        "text_muted": "#94a3b8",
+                        "badge_text": "#0f172a",
+                        "highlight_bg": "rgba(16, 185, 129, 0.15)",
+                        "footer_bg": "#020617"
+                    }
                 elif sm_theme_preset == "Lüks Beyaz & Gül Altın":
-                    primary_color_val = "#1e293b"
-                    accent_color_val = "#e11d48"
-                    card_bg_val = "rgba(255, 255, 255, 0.90)"
+                    theme_colors = {
+                        "bg": "#f8fafc",
+                        "header_bg": "#ffffff",
+                        "card_bg": "#ffffff",
+                        "card_border": "#e11d48",
+                        "accent": "#e11d48",
+                        "text_primary": "#0f172a",
+                        "text_secondary": "#334155",
+                        "text_muted": "#64748b",
+                        "badge_text": "#ffffff",
+                        "highlight_bg": "rgba(225, 29, 72, 0.1)",
+                        "footer_bg": "#f1f5f9"
+                    }
                 else:
-                    cp1, cp2 = st.columns(2)
-                    with cp1:
-                        primary_color_val = st.color_picker("Ana Renk:", "#0b1d3a", key="cp_primary")
-                    with cp2:
-                        accent_color_val = st.color_picker("Vurgu Rengi:", "#d97706", key="cp_accent")
-                    card_bg_val = "rgba(11, 29, 58, 0.85)"
+                    c_bg = st.color_picker("Arka Plan Rengi:", value="#0b1d3a", key="cp_bg")
+                    c_accent = st.color_picker("Vurgu Rengi:", value="#d4af37", key="cp_accent")
+                    c_card = st.color_picker("Kart Arka Planı:", value="#132743", key="cp_card")
+                    theme_colors = {
+                        "bg": c_bg,
+                        "header_bg": c_bg,
+                        "card_bg": c_card,
+                        "card_border": c_accent,
+                        "accent": c_accent,
+                        "text_primary": "#ffffff",
+                        "text_secondary": "#cbd5e1",
+                        "text_muted": "#94a3b8",
+                        "badge_text": c_bg,
+                        "highlight_bg": "rgba(255, 255, 255, 0.1)",
+                        "footer_bg": c_bg
+                    }
 
-            st.markdown("---")
+            st.divider()
 
-            # -----------------------------------------------------------------
-            # 1. AI METİN VE SOSYAL MEDYA BÜLTENİ
-            # -----------------------------------------------------------------
-            st.markdown("### 1. ✍️ Yapay Zeka Destekli Sosyal Medya Metinleri & Bülten")
-            
-            caption_ig = f"""🌟 **{mahalle_adi}'DE GELECEĞİN PRESTİJLİ PROJESİ YÜKSELİYOR!** 🌟
+            # HELPER FOR PIL FONTS ACROSS PLATFORMS
+            def get_pil_font(size, bold=False):
+                font_candidates = [
+                    "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf",
+                    "FreeSansBold.ttf" if bold else "FreeSans.ttf",
+                    "arialbd.ttf" if bold else "arial.ttf",
+                    "Helvetica-Bold" if bold else "Helvetica",
+                    "LiberationSans-Bold.ttf" if bold else "LiberationSans-Regular.ttf"
+                ]
+                for fn in font_candidates:
+                    try:
+                        return ImageFont.truetype(fn, size)
+                    except Exception:
+                        continue
+                try:
+                    return ImageFont.load_default(size)
+                except Exception:
+                    return ImageFont.load_default()
 
-İstestate Meriç Gayrimenkul güvencesiyle, {mahalle_adi} bölgesinde yer alan {toplam_donum_str} büyüklüğündeki eşsiz arsa alanımızda {sample_project_type} konseptli yeni projemizi sunuyoruz!
-
-📍 **Proje Öne Çıkan Özellikleri:**
-• **Arazi Büyüklüğü:** {toplam_donum_str}
-• **İmar Yapısı:** {terk_durum_str}
-• **Konsept:** {sample_project_type}
-• **Sosyal Donatı:** {sample_pool_mod}
-
-💎 Doğayla iç içe, yüksek prim potansiyeline sahip bu özel gayrimenkul yatırım fırsatı hakkında detaylı bilgi ve fizibilite sunumu için bizimle iletişime geçin.
-
-📲 **İletişim & Detaylar:**
-👨‍💼 {sm_agent_name}
-🏢 {sm_firm_name}
-📞 {sm_phone}
-
-#istestate #meriçinşaat #gayrimenkulyatırım #{mahalle_adi.lower().replace(' ', '')} #arsa #lükskonut #fizibilite #yatırımfırsatı"""
-
-            caption_wa = f"""🏛️ *{mahalle_adi} - {toplam_donum_str} Prestijli Proje Alanı*
-
-• **Konsept:** {sample_project_type} ({sample_pool_mod})
-• **İmar:** {terk_durum_str}
-• **İletişim:** {sm_agent_name} - {sm_phone}
-• **Firma:** {sm_firm_name}
-
-Detaylı fizibilite ve sunum için bana ulaşabilirsiniz."""
-
-            text_tab1, text_tab2 = st.tabs(["📸 Instagram / Facebook Gönderi Metni", "💬 WhatsApp Status & Kısa Metin"])
-            with text_tab1:
-                st.code(caption_ig, language="markdown")
-            with text_tab2:
-                st.code(caption_wa, language="markdown")
-
-            st.markdown("---")
-
-            # -----------------------------------------------------------------
-            # 2. MİMARİ RENDER STİLİ VE PROMPT GENARATÖRÜ
-            # -----------------------------------------------------------------
-            st.markdown("### 2. 🎨 Yapay Zeka Render Prompt & Mimari Stil Stüdyosu")
-            
-            render_style = st.selectbox(
-                "Mimari Visual Render Stili Seçin:",
-                options=[
-                    "Modern Minimalist & Cam",
-                    "Ultra-Lüks Neo-Klasik",
-                    "Doğayla Uyumlu Ahşap & Taş",
-                    "Dramatik Akşam İllüminasyonu"
-                ],
-                key="global_render_style_select"
-            )
-
-            style_details = {
-                "Modern Minimalist & Cam": {
-                    "bg1": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1200&auto=format&fit=crop",
-                    "bg2": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop",
-                    "desc": "Geniş cam cepheler, brüt beton dokular, keskin geometrik hatlar ve ferah iç-dış mekân geçişleri.",
-                    "prompt_ext": "modern minimalist architecture, floor-to-ceiling glass windows, slick concrete finishes, open floor plans, linear LED lighting, realistic photography"
-                },
-                "Ultra-Lüks Neo-Klasik": {
-                    "bg1": "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1200&auto=format&fit=crop",
-                    "bg2": "https://images.unsplash.com/photo-1577495508048-b635879837f1?q=80&w=1200&auto=format&fit=crop",
-                    "desc": "Görkemli sütunlar, simetrik mermer söveler, zamansız klasik detaylar ve aristokratik peyzaj düzenlemesi.",
-                    "prompt_ext": "ultra-luxury neo-classical mansion, elegant stone pillars, symmetrical facade, ornate moldings, marble fountains, majestic entrance, high-end architectural photo"
-                },
-                "Doğayla Uyumlu Ahşap & Taş": {
-                    "bg1": "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1200&auto=format&fit=crop",
-                    "bg2": "https://images.unsplash.com/photo-1510798831971-661eb04b3739?q=80&w=1200&auto=format&fit=crop",
-                    "desc": "Doğal ahşap kaplamalar, yerel taş dokular, biyofilik tasarım öğeleri ve yeşil teras peyzajı.",
-                    "prompt_ext": "biophilic organic architecture, natural wood siding, raw stone walls, lush green roofs, integrated forest landscape, warm ambient sunlight"
-                },
-                "Dramatik Akşam İllüminasyonu": {
-                    "bg1": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop",
-                    "bg2": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1200&auto=format&fit=crop",
-                    "desc": "Büyüleyici gün batımı gökyüzü, havuz başı özel spot aydınlatmaları ve sıcak gece atmosferi.",
-                    "prompt_ext": "architectural twilight exterior render, warm indoor ambient lighting glowing through big glass walls, luxurious infinity pool reflections, dusk blue sky, octane render 8k"
-                }
-            }
-
-            curr_style = style_details.get(render_style, style_details["Modern Minimalist & Cam"])
-            
-            generated_ai_prompt = f"Photorealistic 8k architectural render of a {sample_project_type} located in {mahalle_adi} Istanbul, surrounded by peaceful nature, {curr_style['prompt_ext']}, high-end real estate presentation, photorealistic lighting --ar 9:16 --v 6.0"
-            
-            st.info(f"💡 **Tasarım Konsepti:** {curr_style['desc']}")
-            st.markdown("**Midjourney / DALL-E / Flux Mimari Prompt:**")
-            st.code(generated_ai_prompt, language="text")
-
-            st.markdown("---")
+            def wrap_text(text, font, max_width, draw):
+                words = text.split()
+                lines = []
+                current_line = []
+                for word in words:
+                    test_line = ' '.join(current_line + [word])
+                    bbox = draw.textbbox((0, 0), test_line, font=font)
+                    w = bbox[2] - bbox[0]
+                    if w <= max_width:
+                        current_line.append(word)
+                    else:
+                        if current_line:
+                            lines.append(' '.join(current_line))
+                            current_line = [word]
+                        else:
+                            lines.append(word)
+                            current_line = []
+                if current_line:
+                    lines.append(' '.join(current_line))
+                return lines
 
             # -----------------------------------------------------------------
-            # 3. CANLI SOSYAL MEDYA GÖRSEL KARTI & YÜKSEK ÇÖZÜNÜRLÜKLÜ PNG ÜRETİMİ
+            # PIL HD PNG POSTER OLUŞTURMA MOTORU (1080 x 1920)
             # -----------------------------------------------------------------
-            st.markdown("### 3. 🖼️ Sistemde Düzenlenebilir Canlı Sosyal Medya Kartı (PNG)")
-            
-            # Canlı HTML Ön İzleme Kartı
-            preview_card_html = f"""
-            <div style="background-image: url('{curr_style['bg1']}'); background-size: cover; background-position: center; width: 100%; max-width: 420px; height: 680px; border-radius: 16px; margin: 0 auto; padding: 25px 20px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; font-family: 'Helvetica', sans-serif; box-shadow: 0 12px 28px rgba(0,0,0,0.35); position: relative; overflow: hidden; border: 2px solid rgba(255,255,255,0.2);">
-                <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0.85) 100%); z-index: 1;"></div>
+            def create_social_media_poster(headline, subtitle, badge, firm_name, agent_name, phone, mahalle, donum_str, terk_str, project_type, total_units, colors):
+                W, H = 1080, 1920
+                img = Image.new("RGBA", (W, H), colors["bg"])
+                draw = ImageDraw.Draw(img)
+
+                # Header bg
+                draw.rectangle([0, 0, W, 220], fill=colors["header_bg"])
+
+                # Logolar
+                logo1_path = os.path.join(BASE_DIR, "istestate_logo.png")
+                logo2_path = os.path.join(BASE_DIR, "meric_insaat_emlak_logo.png")
+
+                if os.path.exists(logo1_path):
+                    try:
+                        l1 = Image.open(logo1_path).convert("RGBA")
+                        l1.thumbnail((320, 120), Image.Resampling.LANCZOS)
+                        img.paste(l1, (50, 110 - l1.height // 2), l1.split()[3])
+                    except Exception:
+                        pass
+                else:
+                    font_logo = get_pil_font(32, bold=True)
+                    draw.text((50, 90), "İSTESTATE", fill=colors["accent"], font=font_logo)
+
+                if os.path.exists(logo2_path):
+                    try:
+                        l2 = Image.open(logo2_path).convert("RGBA")
+                        l2.thumbnail((320, 120), Image.Resampling.LANCZOS)
+                        img.paste(l2, (W - 50 - l2.width, 110 - l2.height // 2), l2.split()[3])
+                    except Exception:
+                        pass
+                else:
+                    font_logo = get_pil_font(32, bold=True)
+                    draw.text((W - 350, 90), "MERİÇ İNŞAAT", fill=colors["accent"], font=font_logo)
+
+                # Çizgi
+                draw.line([(50, 220), (W - 50, 220)], fill=colors["accent"], width=3)
+
+                # Rozet
+                font_badge = get_pil_font(28, bold=True)
+                bbox_b = draw.textbbox((0, 0), badge.upper(), font=font_badge)
+                bw = bbox_b[2] - bbox_b[0] + 40
+                bh = bbox_b[3] - bbox_b[1] + 24
+                bx = (W - bw) // 2
+                by = 280
+                draw.rounded_rectangle([bx, by, bx + bw, by + bh], radius=12, fill=colors["accent"])
+                draw.text((bx + 20, by + 10), badge.upper(), fill=colors["badge_text"], font=font_badge)
+
+                # Ana Başlık
+                font_head = get_pil_font(48, bold=True)
+                head_lines = wrap_text(headline, font_head, W - 120, draw)
+                curr_y = by + bh + 45
+                for line in head_lines:
+                    bbox_l = draw.textbbox((0, 0), line, font=font_head)
+                    lw = bbox_l[2] - bbox_l[0]
+                    draw.text(((W - lw) // 2, curr_y), line, fill=colors["text_primary"], font=font_head)
+                    curr_y += 62
+
+                # Alt Başlık
+                font_sub = get_pil_font(30, bold=False)
+                sub_lines = wrap_text(subtitle, font_sub, W - 140, draw)
+                curr_y += 10
+                for line in sub_lines:
+                    bbox_l = draw.textbbox((0, 0), line, font=font_sub)
+                    lw = bbox_l[2] - bbox_l[0]
+                    draw.text(((W - lw) // 2, curr_y), line, fill=colors["text_secondary"], font=font_sub)
+                    curr_y += 42
+
+                # Ana Bilgi Kartı
+                card_y0 = curr_y + 40
+                card_h = 750
+                card_x0, card_x1 = 60, W - 60
+                draw.rounded_rectangle([card_x0, card_y0, card_x1, card_y0 + card_h], radius=24, fill=colors["card_bg"], outline=colors["card_border"], width=2)
+
+                # Kart Başlığı
+                font_card_title = get_pil_font(36, bold=True)
+                draw.text((card_x0 + 40, card_y0 + 40), "📌 PROJE & ARAZİ DETAYLARI", fill=colors["accent"], font=font_card_title)
+                draw.line([(card_x0 + 40, card_y0 + 95), (card_x1 - 40, card_y0 + 95)], fill=colors["card_border"], width=2)
+
+                metrics = [
+                    ("📍 Lokasyon / Bölge", f"{mahalle} / İSTANBUL"),
+                    ("📐 Arazi Büyüklüğü", donum_str),
+                    ("📜 İmar Statusu", terk_str),
+                    ("🏗️ Proje Tipi / Konsept", project_type),
+                    ("🏘️ Planlanan Bağımsız Bölüm", f"{total_units} Adet Ünite / Konut")
+                ]
+
+                font_m_lbl = get_pil_font(26, bold=False)
+                font_m_val = get_pil_font(32, bold=True)
+                m_y = card_y0 + 120
+                for lbl, val in metrics:
+                    draw.text((card_x0 + 40, m_y), lbl, fill=colors["text_muted"], font=font_m_lbl)
+                    m_y += 35
+                    draw.text((card_x0 + 40, m_y), val, fill=colors["text_primary"], font=font_m_val)
+                    m_y += 80
+
+                # Dekoratif Vurgu
+                banner_y = card_y0 + card_h + 40
+                draw.rounded_rectangle([60, banner_y, W - 60, banner_y + 110], radius=16, fill=colors["highlight_bg"], outline=colors["accent"], width=2)
+                font_hl = get_pil_font(30, bold=True)
+                hl_txt = "⭐ YÜKSEK YATIRIM DEĞERİ & EŞSİZ KONUM ⭐"
+                bbox_hl = draw.textbbox((0, 0), hl_txt, font=font_hl)
+                draw.text(((W - (bbox_hl[2] - bbox_hl[0])) // 2, banner_y + 35), hl_txt, fill=colors["accent"], font=font_hl)
+
+                # İletişim Footer
+                footer_y0 = H - 240
+                draw.rectangle([0, footer_y0, W, H], fill=colors["footer_bg"])
+                draw.line([(0, footer_y0), (W, footer_y0)], fill=colors["accent"], width=4)
+
+                font_firm = get_pil_font(34, bold=True)
+                font_agent = get_pil_font(30, bold=True)
+                font_phone = get_pil_font(36, bold=True)
+
+                draw.text((60, footer_y0 + 35), firm_name, fill=colors["text_primary"], font=font_firm)
+                draw.text((60, footer_y0 + 95), f"👤 {agent_name}", fill=colors["text_secondary"], font=font_agent)
+
+                bbox_p = draw.textbbox((0, 0), f"📞 {phone}", font=font_phone)
+                pw = bbox_p[2] - bbox_p[0]
+                draw.text((W - 60 - pw, footer_y0 + 95), f"📞 {phone}", fill=colors["accent"], font=font_phone)
+
+                return img
+
+            # -----------------------------------------------------------------
+            # 9:16 MP4 VİDEO OLUŞTURMA MOTORU (OPENCV + PIL)
+            # -----------------------------------------------------------------
+            def create_social_media_video(headline, subtitle, badge, firm_name, agent_name, phone, mahalle, donum_str, terk_str, project_type, total_units, colors):
+                W, H = 1080, 1920
+                fps = 30
+                scene_duration = 2.5 # saniye
+                scene_frames = int(fps * scene_duration)
+                fade_frames = 15 # Geçiş efekti karesi
+
+                # 5 Adet Sahne Görseli Üret
+                scenes = []
+
+                # Sahne 1: Giriş / Lansman
+                s1 = Image.new("RGBA", (W, H), colors["bg"])
+                d1 = ImageDraw.Draw(s1)
+                d1.rectangle([0, 0, W, 220], fill=colors["header_bg"])
+                d1.rounded_rectangle([140, 500, W-140, 580], radius=15, fill=colors["accent"])
+                font_b = get_pil_font(34, bold=True)
+                d1.text((180, 520), badge.upper(), fill=colors["badge_text"], font=font_b)
+                font_h = get_pil_font(52, bold=True)
+                h_lines = wrap_text(headline, font_h, W - 140, d1)
+                sy = 650
+                for line in h_lines:
+                    bbox = d1.textbbox((0, 0), line, font=font_h)
+                    d1.text(((W - (bbox[2] - bbox[0])) // 2, sy), line, fill=colors["text_primary"], font=font_h)
+                    sy += 70
+                font_s = get_pil_font(32, bold=False)
+                d1.text((100, sy + 30), subtitle, fill=colors["text_secondary"], font=font_s)
+                scenes.append(s1)
+
+                # Sahne 2: Arazi & Lokasyon
+                s2 = Image.new("RGBA", (W, H), colors["bg"])
+                d2 = ImageDraw.Draw(s2)
+                d2.rectangle([0, 0, W, 220], fill=colors["header_bg"])
+                d2.rounded_rectangle([80, 450, W-80, 1250], radius=24, fill=colors["card_bg"], outline=colors["card_border"], width=3)
+                font_ct = get_pil_font(42, bold=True)
+                d2.text((120, 500), "📍 LOKASYON & ARAZİ METRAJI", fill=colors["accent"], font=font_ct)
+                d2.line([(120, 570), (W-120, 570)], fill=colors["card_border"], width=2)
+                font_v1 = get_pil_font(36, bold=True)
+                font_l1 = get_pil_font(28, bold=False)
+                d2.text((120, 620), "Bölge / Mahalle:", fill=colors["text_muted"], font=font_l1)
+                d2.text((120, 660), f"{mahalle} / İSTANBUL", fill=colors["text_primary"], font=font_v1)
+                d2.text((120, 780), "Arazi Büyüklüğü:", fill=colors["text_muted"], font=font_l1)
+                d2.text((120, 820), donum_str, fill=colors["text_primary"], font=font_v1)
+                d2.text((120, 940), "İmar Statüsü:", fill=colors["text_muted"], font=font_l1)
+                d2.text((120, 980), terk_str, fill=colors["text_primary"], font=font_v1)
+                scenes.append(s2)
+
+                # Sahne 3: Mimari Potansiyel
+                s3 = Image.new("RGBA", (W, H), colors["bg"])
+                d3 = ImageDraw.Draw(s3)
+                d3.rectangle([0, 0, W, 220], fill=colors["header_bg"])
+                d3.rounded_rectangle([80, 450, W-80, 1250], radius=24, fill=colors["card_bg"], outline=colors["card_border"], width=3)
+                d3.text((120, 500), "🏗️ MİMARİ POTANSİYEL", fill=colors["accent"], font=font_ct)
+                d3.line([(120, 570), (W-120, 570)], fill=colors["card_border"], width=2)
+                d3.text((120, 620), "Öngörülen Proje Tipi:", fill=colors["text_muted"], font=font_l1)
+                d3.text((120, 660), project_type, fill=colors["text_primary"], font=font_v1)
+                d3.text((120, 780), "Planlanan Bağımsız Bölüm:", fill=colors["text_muted"], font=font_l1)
+                d3.text((120, 820), f"{total_units} Adet Ünite / Konut", fill=colors["text_primary"], font=font_v1)
+                d3.text((120, 940), "Konsept Özellikleri:", fill=colors["text_muted"], font=font_l1)
+                d3.text((120, 980), f"{sample_pool_mod} & Özel Peyzaj", fill=colors["text_primary"], font=font_v1)
+                scenes.append(s3)
+
+                # Sahne 4: Yaşam & Prestij
+                s4 = Image.new("RGBA", (W, H), colors["bg"])
+                d4 = ImageDraw.Draw(s4)
+                d4.rectangle([0, 0, W, 220], fill=colors["header_bg"])
+                d4.rounded_rectangle([100, 500, W-100, 1100], radius=24, fill=colors["card_bg"], outline=colors["accent"], width=3)
+                font_p = get_pil_font(44, bold=True)
+                d4.text((150, 600), "🌿 LÜKS & DOĞAYLA İÇ İÇE", fill=colors["accent"], font=font_p)
+                d4.text((150, 720), "⭐ Yüksek Prim Potansiyeli", fill=colors["text_primary"], font=font_v1)
+                d4.text((150, 820), "⭐ Özel Mimari Tasarım", fill=colors["text_primary"], font=font_v1)
+                d4.text((150, 920), "⭐ Prestijli Lokasyon", fill=colors["text_primary"], font=font_v1)
+                scenes.append(s4)
+
+                # Sahne 5: Kapanış & İletişim
+                s5 = Image.new("RGBA", (W, H), colors["bg"])
+                d5 = ImageDraw.Draw(s5)
+                d5.rectangle([0, 0, W, 220], fill=colors["header_bg"])
+                d5.rounded_rectangle([80, 450, W-80, 1200], radius=24, fill=colors["card_bg"], outline=colors["accent"], width=3)
+                font_f = get_pil_font(38, bold=True)
+                d5.text((120, 550), firm_name, fill=colors["text_primary"], font=font_f)
+                d5.line([(120, 630), (W-120, 630)], fill=colors["accent"], width=2)
+                d5.text((120, 700), f"👤 {agent_name}", fill=colors["text_secondary"], font=font_v1)
+                d5.text((120, 800), f"📞 {phone}", fill=colors["accent"], font=font_f)
+                d5.rounded_rectangle([140, 950, W-140, 1070], radius=20, fill=colors["accent"])
+                d5.text((180, 990), "DETAYLI BİLGİ İÇİN ARAYIN", fill=colors["badge_text"], font=get_pil_font(32, bold=True))
+                scenes.append(s5)
+
+                # Ortak Logo Eklemesi (Tüm Sahneler için)
+                logo1_path = os.path.join(BASE_DIR, "istestate_logo.png")
+                logo2_path = os.path.join(BASE_DIR, "meric_insaat_emlak_logo.png")
+
+                for sc in scenes:
+                    if os.path.exists(logo1_path):
+                        try:
+                            l1 = Image.open(logo1_path).convert("RGBA")
+                            l1.thumbnail((300, 110), Image.Resampling.LANCZOS)
+                            sc.paste(l1, (50, 110 - l1.height // 2), l1.split()[3])
+                        except Exception:
+                            pass
+                    if os.path.exists(logo2_path):
+                        try:
+                            l2 = Image.open(logo2_path).convert("RGBA")
+                            l2.thumbnail((300, 110), Image.Resampling.LANCZOS)
+                            sc.paste(l2, (W - 50 - l2.width, 110 - l2.height // 2), l2.split()[3])
+                        except Exception:
+                            pass
+
+                # Temp File için VideoWriter Hazırla
+                temp_video = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
+                temp_video_path = temp_video.name
+                temp_video.close()
+
+                fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                out = cv2.VideoWriter(temp_video_path, fourcc, fps, (W, H))
+
+                # Frame'leri Oluştur ve Geçişler İle Yaz
+                for idx, sc in enumerate(scenes):
+                    rgb_sc = sc.convert("RGB")
+                    np_sc = np.array(rgb_sc)[:, :, ::-1] # BGR conversion
+
+                    # Normal kareler
+                    for _ in range(scene_frames - fade_frames):
+                        out.write(np_sc)
+
+                    # Bir sonraki sahneye yumuşak geçiş
+                    if idx < len(scenes) - 1:
+                        next_sc = scenes[idx + 1].convert("RGB")
+                        np_next = np.array(next_sc)[:, :, ::-1]
+                        for f_i in range(fade_frames):
+                            alpha = f_i / float(fade_frames)
+                            blended = cv2.addWeighted(np_sc, 1.0 - alpha, np_next, alpha, 0)
+                            out.write(blended)
+                    else:
+                        for _ in range(fade_frames):
+                            out.write(np_sc)
+
+                out.release()
+                return temp_video_path
+
+            # TAB ALTINDAKİ BÖLÜMLER
+            col_preview, col_content = st.columns([1, 1])
+
+            with col_preview:
+                st.markdown("### 🖼️ Canlı 9:16 HD Görsel & Video Üreticisi")
                 
-                <!-- HEADER LOGOLAR -->
-                <div style="position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.92); padding: 8px 14px; border-radius: 10px; backdrop-filter: blur(8px);">
-                    <div style="height: 32px;">{img1_tag}</div>
-                    <div style="height: 32px;">{img2_tag}</div>
-                </div>
-
-                <!-- ORTA İÇERİK KARTI -->
-                <div style="position: relative; z-index: 2; background: {card_bg_val}; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 18px 16px; color: #ffffff; backdrop-filter: blur(10px);">
-                    <span style="background: {accent_color_val}; color: #ffffff; font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">{sm_badge}</span>
-                    <h2 style="font-size: 18px; font-weight: 800; margin: 10px 0 6px 0; color: #ffffff; line-height: 1.2;">{sm_headline}</h2>
-                    <p style="font-size: 11px; color: #e2e8f0; margin: 0 0 12px 0;">{sm_subtitle}</p>
-                    
-                    <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px;">
-                        <div>📍 <b>Konum:</b> Beykoz / {mahalle_adi}</div>
-                        <div>📐 <b>Alan:</b> {toplam_donum_str}</div>
-                        <div>🏗️ <b>Tip:</b> {sample_project_type[:18]}..</div>
-                        <div>📜 <b>İmar:</b> {terk_durum_str[:18]}..</div>
-                    </div>
-                </div>
-
-                <!-- FOOTER İLETİŞİM -->
-                <div style="position: relative; z-index: 2; background: #ffffff; border-radius: 10px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
-                    <div>
-                        <div style="font-size: 11px; font-weight: 800; color: {primary_color_val};">{sm_agent_name}</div>
-                        <div style="font-size: 9px; color: #64748b;">{sm_firm_name}</div>
-                    </div>
-                    <div style="background: {accent_color_val}; color: #ffffff; font-size: 12px; font-weight: 800; padding: 6px 12px; border-radius: 6px; font-family: monospace;">
-                        📞 {sm_phone}
-                    </div>
-                </div>
-            </div>
-            """
-            
-            c_preview, c_generate = st.columns([1, 1])
-            with c_preview:
-                st.markdown("#### 👁 Kart Ön İzleme")
-                components.html(preview_card_html, height=710)
-
-            with c_generate:
-                st.markdown("#### 📥 PNG İndirme İşlemi")
-                st.markdown("Yukarıda özelleştirdiğiniz parametrelerle tam çözünürlüklü 1080x1920 (9:16) yüksek kaliteli **PNG Görsel Kartı** oluşturun:")
+                # PNG Poster Ü ret
+                poster_img = create_social_media_poster(
+                    sm_headline, sm_subtitle, sm_badge, sm_firm_name, sm_agent_name, sm_phone,
+                    mahalle_adi, toplam_donum_str, terk_durum_str, sample_project_type, total_units_sum, theme_colors
+                )
                 
-                def create_real_png_card():
-                    # 1080x1920 Yüksek Çözünürlüklü Tuval
-                    img = Image.new("RGB", (1080, 1920), color=(15, 23, 42))
-                    draw = ImageDraw.Draw(img)
-                    
-                    # Gradient Arka Plan Çizimi
-                    for y in range(1920):
-                        r = int(15 + (y / 1920) * 20)
-                        g = int(23 + (y / 1920) * 35)
-                        b = int(42 + (y / 1920) * 50)
-                        draw.line([(0, y), (1080, y)], fill=(r, g, b))
-                    
-                    # Üst Logolar Paneli Arka Planı
-                    draw.rectangle([60, 80, 1020, 200], fill=(255, 255, 255), outline=(203, 213, 225), width=2)
-                    
-                    # Vurgu Kutuları & Çerçeve
-                    draw.rectangle([60, 600, 1020, 1450], fill=(11, 29, 58), outline=(217, 119, 6), width=4)
-                    
-                    # Rozet Metni
-                    draw.rectangle([90, 640, 450, 710], fill=(217, 119, 6))
-                    draw.text((110, 655), sm_badge.upper(), fill=(255, 255, 255))
-                    
-                    # Başlıklar
-                    draw.text((90, 750), sm_headline[:35], fill=(255, 255, 255))
-                    draw.text((90, 820), sm_subtitle[:45], fill=(226, 232, 240))
-                    
-                    # Detay Satırları
-                    draw.line([(90, 900), (990, 900)], fill=(255, 255, 255), width=2)
-                    draw.text((90, 950), f"Konum: Beykoz / {mahalle_adi}", fill=(255, 255, 255))
-                    draw.text((90, 1030), f"Arazi Büyüklüğü: {toplam_donum_str}", fill=(255, 255, 255))
-                    draw.text((90, 1110), f"Proje Konsepti: {sample_project_type}", fill=(255, 255, 255))
-                    draw.text((90, 1190), f"İmar Yapısı: {terk_durum_str}", fill=(255, 255, 255))
-                    
-                    # Alt İletişim Bandı
-                    draw.rectangle([60, 1700, 1020, 1840], fill=(255, 255, 255))
-                    draw.text((90, 1730), sm_agent_name, fill=(11, 29, 58))
-                    draw.text((90, 1780), sm_firm_name, fill=(100, 116, 139))
-                    draw.rectangle([650, 1730, 990, 1810], fill=(217, 119, 6))
-                    draw.text((670, 1750), f"TEL: {sm_phone}", fill=(255, 255, 255))
-                    
-                    buf = io.BytesIO()
-                    img.save(buf, format="PNG")
-                    return buf.getvalue()
-
-                png_bytes_data = create_real_png_card()
+                buf = io.BytesIO()
+                poster_img.save(buf, format="PNG")
+                buf.seek(0)
+                
+                st.image(buf, caption="Üretilen 9:16 HD Sosyal Medya Posteri", use_container_width=True)
                 
                 st.download_button(
-                    label="📥 Yüksek Çözünürlüklü (1080x1920) PNG Kartı İndir",
-                    data=png_bytes_data,
-                    file_name=f"Istestate_Meric_Sosyal_Medya_{mahalle_adi}.png",
+                    label="📥 9:16 HD Görseli PNG Olarak İndir",
+                    data=buf.getvalue(),
+                    file_name=f"Social_Media_Poster_{mahalle_adi}.png",
                     mime="image/png",
                     use_container_width=True
                 )
 
-            st.markdown("---")
+                st.divider()
 
-            # -----------------------------------------------------------------
-            # 4. CANLI 5 SAHNELİ 9:16 DİKEY MP4 REKLAM FİLMİ ÜRETİMİ
-            # -----------------------------------------------------------------
-            st.markdown("### 4. 🎬 Gerçek 5 Sahneli 9:16 MP4 Dikey Reklam Filmi Üreticisi")
-            st.markdown("Instagram Reels, TikTok ve WhatsApp Status için otomatik olarak hazırlanan **5 Sahneli HD Dikey MP4 Video** mekanizması:")
-
-            st.markdown("""
-            * **1. Sahne (Açılış):** Marka Logoları & Proje Başlığı (`{sm_headline}`)
-            * **2. Sahne (Mimari Strateji):** Mimari Render Konsepti (`{render_style}`)
-            * **3. Sahne (Arazi Künyesi):** {mahalle_adi} / {toplam_donum_str}
-            * **4. Sahne (Yaşam & Sosyal):** {sample_pool_mod} & Yeşil Alanlar
-            * **5. Sahne (Kapanış & İletişim):** {sm_agent_name} - {sm_phone}
-            """)
-
-            def generate_mp4_video():
-                # 1080x1920 çözünürlük, 30 FPS, Toplam 10 saniye (5 Sahne x 2 Sn = 300 Frame)
-                width, height = 1080, 1920
-                fps = 30
-                seconds_per_scene = 2
-                frames_per_scene = fps * seconds_per_scene
-                
-                with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmpfile:
-                    temp_video_path = tmpfile.name
-
-                if CV2_AVAILABLE:
-                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                    out = cv2.VideoWriter(temp_video_path, fourcc, fps, (width, height))
-
-                    scenes_text = [
-                        ("1. YENİ PROJE LANSMANI", sm_headline, f"Beykoz / {mahalle_adi}"),
-                        ("2. MİMARİ KONSEPT", f"Stil: {render_style}", sample_project_type),
-                        ("3. ARAZİ BİLGİLERİ", f"Büyüklük: {toplam_donum_str}", terk_durum_str),
-                        ("4. SOSYAL YAŞAM", sample_pool_mod, "Peyzaj & Geniş Bahçe Kullanımı"),
-                        ("5. İLETİŞİM & DETAYLAR", sm_agent_name, f"Tel: {sm_phone} | {sm_firm_name}")
-                    ]
-
-                    for scene_idx, (tag, title_txt, sub_txt) in enumerate(scenes_text):
-                        for f_i in range(frames_per_scene):
-                            # Tuval Oluştur (Renksiz NumPy matrisi)
-                            frame = np.zeros((height, width, 3), dtype=np.uint8)
-                            
-                            # Sahne bazlı kademeli renk geçişi
-                            b_val = int(30 + (scene_idx * 15))
-                            g_val = int(20 + (scene_idx * 10))
-                            r_val = int(10 + (scene_idx * 5))
-                            frame[:] = (b_val, g_val, r_val)
-                            
-                            # Opaklık Animasyonu
-                            alpha = min(1.0, f_i / 15.0) if f_i < 15 else min(1.0, (frames_per_scene - f_i) / 15.0)
-                            
-                            # Metin Çizimleri (OpenCV Fontu)
-                            cv2.rectangle(frame, (80, 100), (1000, 220), (255, 255, 255), -1)
-                            cv2.putText(frame, "ISTESTATE | MERIC INSAAT", (120, 170), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (11, 29, 58), 4)
-                            
-                            cv2.rectangle(frame, (80, 700), (1000, 1300), (58, 29, 11), -1)
-                            cv2.putText(frame, tag, (120, 800), cv2.FONT_HERSHEY_SIMPLEX, 1.3, (6, 119, 217), 3)
-                            cv2.putText(frame, title_txt[:30], (120, 920), cv2.FONT_HERSHEY_SIMPLEX, 1.6, (255, 255, 255), 4)
-                            cv2.putText(frame, sub_txt[:35], (120, 1040), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (226, 232, 240), 3)
-                            
-                            cv2.rectangle(frame, (80, 1680), (1000, 1820), (255, 255, 255), -1)
-                            cv2.putText(frame, f"Iletisim: {sm_phone}", (120, 1760), cv2.FONT_HERSHEY_SIMPLEX, 1.4, (11, 29, 58), 4)
-                            
-                            out.write(frame)
-
-                    out.release()
-
-                    with open(temp_video_path, "rb") as vf:
-                        v_bytes = vf.read()
-                    
-                    try:
-                        os.remove(temp_video_path)
-                    except Exception:
-                        pass
-                        
-                    return v_bytes
+                # Video Üretim Butonu
+                st.markdown("### 🎬 9:16 MP4 Reklam Filmi Üretimi")
+                if not CV2_AVAILABLE:
+                    st.warning("⚠️ OpenCV (cv2) kütüphanesi eksik olduğu için MP4 video motoru devre dışı.")
                 else:
-                    return b""
+                    if st.button("🚀 9:16 MP4 Reklam Filmini Hazırla & Oluştur", type="primary", use_container_width=True):
+                        with st.spinner("9:16 Dikey Reklam Filmi Üretiliyor (Sahneler & Geçiş Efektleri Render Ediliyor)..."):
+                            video_path = create_social_media_video(
+                                sm_headline, sm_subtitle, sm_badge, sm_firm_name, sm_agent_name, sm_phone,
+                                mahalle_adi, toplam_donum_str, terk_durum_str, sample_project_type, total_units_sum, theme_colors
+                            )
+                            
+                            with open(video_path, "rb") as vf:
+                                video_bytes = vf.read()
+                                
+                            st.session_state["generated_video_bytes"] = video_bytes
+                            st.success("✅ 9:16 MP4 Reklam Filmi Başarıyla Üretildi!")
 
-            if CV2_AVAILABLE:
-                video_bytes = generate_mp4_video()
+                    if "generated_video_bytes" in st.session_state:
+                        st.video(st.session_state["generated_video_bytes"])
+                        st.download_button(
+                            label="📥 9:16 Reklam Filmini MP4 Olarak İndir",
+                            data=st.session_state["generated_video_bytes"],
+                            file_name=f"Social_Media_Video_{mahalle_adi}.mp4",
+                            mime="video/mp4",
+                            use_container_width=True
+                        )
+
+            with col_content:
+                st.markdown("### 📝 AI İçerik, Metin & Prompt Bülteni")
                 
-                col_v1, col_v2 = st.columns(2)
-                with col_v1:
-                    st.video(video_bytes)
-                with col_v2:
-                    st.success("✅ 9:16 HD MP4 Reklam Filmi Başarıyla Üretildi!")
-                    st.download_button(
-                        label="🎬 9:16 MP4 Reklam Filmini İndir",
-                        data=video_bytes,
-                        file_name=f"Istestate_Meric_Reklam_Filmi_{mahalle_adi}.mp4",
-                        mime="video/mp4",
-                        use_container_width=True
-                    )
-            else:
-                st.warning("⚠ Video üretimi için sisteminizde OpenCV kütüphanesi yapılandırılıyor.")
+                tab_c1, tab_c2, tab_c3 = st.tabs(["📲 Instagram & TikTok", "💼 LinkedIn & Kurumsal", "🤖 AI Render Promptları"])
+                
+                with tab_c1:
+                    insta_caption = f"""✨ **{mahalle_adi.upper()}'DE PRESTİJLİ PROJE FIRSATI!** ✨
 
-        else:
-            st.info("Sosyal medya stüdyosunu kullanmak için lütfen sol menüden en az bir parsel seçin.")
+📍 **Konum:** Istanbul / {mahalle_adi}
+📐 **Büyüklük:** {toplam_donum_str}
+📜 **İmar Statüsü:** {terk_durum_str}
+🏗️ **Proje Tipi:** {sample_project_type}
+🏘️ **Kapasite:** {total_units_sum} Adet Bağımsız Bölüm
+
+Doğayla iç içe, yüksek prim potansiyeline sahip bu özel arazi fizibilitesi tamamlanmış olup lansmana hazırdır. 🌿🏡
+
+Detaylı bilgi ve randevu için iletişime geçebilirsiniz.
+
+📲 **İletişim:** {sm_phone}
+🏢 **{sm_firm_name}**
+👤 **{sm_agent_name}**
+
+#gayrimenkul #istanbulgayrimenkul #{mahalle_adi.lower().replace(' ', '')} #arsa #yatirim #fizibilite #mimariprojeler #istestate #mericinsaat
+"""
+                    st.text_area("Instagram / TikTok Paylaşım Metni:", value=insta_caption, height=380)
+
+                with tab_c2:
+                    linkedin_caption = f"""🏢 **KURUMSAL GAYRİMENKUL GELİŞTİRME DANIŞMANLIĞI**
+
+İstanbul'un değer kazanan bölgesi **{mahalle_adi}** sınırlarında yer alan {toplam_donum_str} büyüklüğündeki arazimiz için hazırladığımız **Gelişmiş Mimari ve Finansal Fizibilite Raporu** tamamlanmıştır.
+
+📊 **Proje Künyesi:**
+- **Lokasyon:** Istanbul / {mahalle_adi}
+- **Arazi Büyüklüğü:** {toplam_donum_str}
+- **İmar Uyumu:** {terk_durum_str}
+- **Hedeflenen Konsept:** {sample_project_type} ({total_units_sum} Ünite)
+
+Yatırımcılar ve inşaat firmaları için optimum kat karşılığı ve özkaynak yatırım modelleri analiz edilmiştir.
+
+💼 **Geliştirici & Danışmanlık:**
+{sm_firm_name}
+Danışman: {sm_agent_name}
+☎️ {sm_phone}
+"""
+                    st.text_area("LinkedIn / Kurumsal Paylaşım Metni:", value=linkedin_caption, height=380)
+
+                with tab_c3:
+                    prompt_1 = f"Photorealistic 8k architectural render of a luxury {sample_project_type} in {mahalle_adi} Istanbul, surrounded by lush green pine forest, modern glass facade, private swimming pool, sunset lighting, cinematic composition, archdaily style --ar 9:16 --v 6.0"
+                    prompt_2 = f"Ultra-detailed aerial architectural visualization of {total_units_sum} high-end modern villas, elegant landscape design, stone and wood exterior textures, clear blue sky, luxury residential masterplan --ar 9:16 --style raw"
+                    
+                    st.markdown("**Midjourney / DALL-E 3 Görsel Promptları:**")
+                    st.code(prompt_1, language="text")
+                    st.code(prompt_2, language="text")
 
 else:
-    st.info("👈 Lütfen sol taraftaki menüden geçerli bir imar belgesi yükleyin veya kayıtlı parsellerden seçim yapın.")
+    st.info("👆 Lütfen sol menüden raporlanacak parselleri seçiniz.")
