@@ -8,17 +8,25 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from github import Github
 import numpy as np
+from PIL import Image, ImageDraw, ImageFont
 import pandas as pd
 import pdfplumber
-from PIL import Image, ImageDraw, ImageFont
 import streamlit as st
 import streamlit.components.v1 as components
 
+# OpenCV kütüphanesinin kontrolü
 try:
     import cv2
-    OPENCV_AVAILABLE = True
+    CV2_AVAILABLE = True
 except Exception:
-    OPENCV_AVAILABLE = False
+    CV2_AVAILABLE = False
+
+# WeasyPrint kütüphanesinin import kontrolü
+try:
+    from weasyprint import CSS, HTML
+    WEASYPRINT_AVAILABLE = True
+except Exception:
+    WEASYPRINT_AVAILABLE = False
 
 # --- GITHUB KONFİGÜRASYONU & TOKEN YÖNETİMİ ---
 DEFAULT_GITHUB_TOKEN = "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"
@@ -33,16 +41,9 @@ else:
 GITHUB_REPO = "istestate-meric/raporlama"
 DB_FILE_NAME = "imar_veritabani.json"
 
-# WeasyPrint kütüphanesinin import kontrolü
-try:
-    from weasyprint import CSS, HTML
-    WEASYPRINT_AVAILABLE = True
-except Exception:
-    WEASYPRINT_AVAILABLE = False
-
 # --- SAYFA YAPILANDIRMASI ---
 st.set_page_config(
-    page_title="Fizibilite Portalı",
+    page_title="Fizibilite & Sosyal Medya Portalı",
     page_icon="🏢",
     layout="wide",
 )
@@ -78,7 +79,7 @@ rates = get_live_exchange_rates()
 # --- ÖZEL KURUMSAL STİL ---
 st.markdown("""
 <style>
-    .stSelectbox, .stNumberInput, .stSlider {
+    .stSelectbox, .stNumberInput, .stSlider, .stTextInput, .stColorPicker {
         background-color: #ffffff;
         border-radius: 6px;
     }
@@ -653,16 +654,6 @@ def get_parcel_function_breakdown(p, emsal_artis_orani=1.30):
         final_results.append(data)
         
     return final_results
-
-# --- HELPER: PIL FONT YÜKLEME ---
-def get_pil_font(size):
-    try:
-        return ImageFont.truetype("DejaVuSans-Bold.ttf", size)
-    except Exception:
-        try:
-            return ImageFont.truetype("arial.ttf", size)
-        except Exception:
-            return ImageFont.load_default()
 
 # --- HEADER BANNER ---
 st.markdown(f"""
@@ -1313,7 +1304,7 @@ if selected_keys:
                 </table>
 
                 <div class="footer">
-                    Bu rapor İstestate Gayrimenkul ve Meriç İnşaat Emlak bilgi sistemleri tarafından otomatik üretilmiştir.<br>
+                    Bu rapor İstestate Gayrimenkul ve Meriç İnşaat Emlak bilgi sistemleri tarafından otomatik üretılmıştır.<br>
                     Resmi belge niteliği taşımaz, fizibilite ve ön inceleme amaçlıdır.
                 </div>
             </body>
@@ -1423,11 +1414,11 @@ if selected_keys:
             st.info("Veritabanında kayıtlı parsel bulunmuyor.")
 
     # =========================================================================
-    # TAB 6: 🤖 YAPAY ZEKA DESTEKLİ SOSYAL MEDYA, İÇERİK & REKLAM FİLMİ STÜDYOSU
+    # TAB 6: 📱 YAPAY ZEKA DESTEKLİ SOSYAL MEDYA, İÇERİK & REKLAM FİLMİ STÜDYOSU
     # =========================================================================
     with tab6:
         st.subheader("📱 Yapay Zeka Destekli Sosyal Medya & İçerik Üretim Stüdyosu")
-        st.markdown("Seçtiğiniz parsellerin mimari metrajlarını ve imar potansiyelini analiz eden; sosyal medya hesaplarınızda (Instagram Reels, LinkedIn, WhatsApp Status, TikTok) paylaşabileceğiniz **AI Metin/Bülten**, **Yapay Zeka Render Promptları** ve **Canlı Animasyonlu HD Video/Görsel (.png & .mp4)** üretim stüdyosu:")
+        st.markdown("Seçtiğiniz parsellerin mimari metrajlarını ve imar potansiyelini analiz eden; sosyal medya hesaplarınızda (Instagram Reels, LinkedIn, WhatsApp Status, TikTok) paylaşabileceğiniz **AI Metin/Bülten**, **Yapay Zeka Render Promptları** ve **Sistemde Müdahale Edilebilir HD Görsel (.png) & 9:16 MP4 Reklam Filmi** üretim stüdyosu:")
 
         if active_parcel_db:
             first_p_key = list(active_parcel_db.keys())[0]
@@ -1435,11 +1426,12 @@ if selected_keys:
             mahalle_adi = p_sample.get("mahalle", "BİLİNMİYOR")
             toplam_m2 = sum(p.get("toplam_alan", 0.0) for p in active_parcel_db.values())
             
+            # Kurumsal Filtreleme: Metrekare yerine Dönüm hesabı (1 dönüm = 1000 m2)
             donum_tam_sayi = max(1, round(toplam_m2 / 1000.0))
             toplam_donum_str = f"Yaklaşık {donum_tam_sayi} Dönüm"
             
             is_any_terkli = any(p.get("terk_yapilmis_mi", False) for p in active_parcel_db.values())
-            terk_durum_str = "Yola Terki Yapılmış (Net Parsel Altyapısı)" if is_any_terkli else "Planlanan Yola Terk Düzensellikleri (%70 Net Oranı)"
+            terk_durum_str = "Yola Terki Yapılmış Net Parsel" if is_any_terkli else "Planlanan İmar Net Arsa Potansiyeli"
             
             sample_project_type = "Lüks Konut / Arsa Geliştirme Projesi"
             sample_pool_mod = "Havuzlu Konsept"
@@ -1449,288 +1441,355 @@ if selected_keys:
                 break
 
             # -----------------------------------------------------------------
-            # 1. MİMARİ RENDER STİLİ SEÇİMİ
+            # CANLI SİSTEM MÜDAHALE VE TASARIM ÖZELLEŞTİRME PANELİ
             # -----------------------------------------------------------------
-            st.markdown("### 1. 🎨 Yapay Zeka Render Prompt & Mimari Stil Stüdyosu")
-            st.markdown("Projenizin görsel kimliğini belirleyin. Seçtiğiniz stil **Prompt**, **Görsel Kart** ve **Dikey Reklam Filmi** bölümlerine anında entegre olur:")
+            st.markdown("""
+            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 10px 0; color: #0f172a;">🛠️ Sosyal Medya Tasarım & Kurumsal Müdahale Paneli</h4>
+                <p style="font-size: 12px; color: #64748b; margin-bottom: 12px;">Sistem üzerindeki tüm görsel kart, renk, metin ve marka bilgilerine müdahale edebilir, tasarımı anında güncelleyebilirsiniz.</p>
+            </div>
+            """, unsafe_allow_html=True)
 
-            render_col1, render_col2 = st.columns([1, 2])
-            with render_col1:
-                render_style = st.selectbox(
-                    "Mimari Render Stili:",
-                    options=[
-                        "Modern Minimalist & Cam",
-                        "Ultra-Lüks Neo-Klasik",
-                        "Doğayla Uyumlu Ahşap & Taş",
-                        "Dramatik Akşam İllüminasyonu"
-                    ],
-                    key="global_render_style_select"
+            des_col1, des_col2, des_col3 = st.columns(3)
+            with des_col1:
+                sm_headline = st.text_input("Ana Görsel Başlığı:", value=f"{mahalle_adi}'DE PRESTİJLİ PROJE FIRSATI", key="sm_headline_input")
+                sm_subtitle = st.text_input("Alt Başlık / Slogan:", value="Doğayla İç İçe Lüks Yaşam & Yüksek Yatırım Değeri", key="sm_subtitle_input")
+                sm_badge = st.text_input("Vurgu Rozet Metni:", value="Özel Lansman Projesi", key="sm_badge_input")
+
+            with des_col2:
+                sm_firm_name = st.text_input("Firma Ünvanı:", value="İstestate Meriç Gayrimenkul Danışmanlık", key="sm_firm_input")
+                sm_agent_name = st.text_input("Danışman Adı Soyadı:", value="Umutcan K. MERİÇ", key="sm_agent_input")
+                sm_phone = st.text_input("İletişim Telefonu:", value="0539 451 61 61", key="sm_phone_input")
+
+            with des_col3:
+                sm_theme_preset = st.selectbox(
+                    "Tema & Renk Paleti Preset:",
+                    options=["Kurumsal Lacivert & Altın", "Koyu Mod & Zümrüt Yeşili", "Lüks Beyaz & Gül Altın", "Özel Renk Seçimi"],
+                    key="sm_theme_preset_select"
                 )
+                
+                if sm_theme_preset == "Kurumsal Lacivert & Altın":
+                    primary_color_val = "#0b1d3a"
+                    accent_color_val = "#d97706"
+                    card_bg_val = "rgba(11, 29, 58, 0.85)"
+                elif sm_theme_preset == "Koyu Mod & Zümrüt Yeşili":
+                    primary_color_val = "#0f172a"
+                    accent_color_val = "#10b981"
+                    card_bg_val = "rgba(15, 23, 42, 0.85)"
+                elif sm_theme_preset == "Lüks Beyaz & Gül Altın":
+                    primary_color_val = "#1e293b"
+                    accent_color_val = "#e11d48"
+                    card_bg_val = "rgba(255, 255, 255, 0.90)"
+                else:
+                    cp1, cp2 = st.columns(2)
+                    with cp1:
+                        primary_color_val = st.color_picker("Ana Renk:", "#0b1d3a", key="cp_primary")
+                    with cp2:
+                        accent_color_val = st.color_picker("Vurgu Rengi:", "#d97706", key="cp_accent")
+                    card_bg_val = "rgba(11, 29, 58, 0.85)"
+
+            st.markdown("---")
+
+            # -----------------------------------------------------------------
+            # 1. AI METİN VE SOSYAL MEDYA BÜLTENİ
+            # -----------------------------------------------------------------
+            st.markdown("### 1. ✍️ Yapay Zeka Destekli Sosyal Medya Metinleri & Bülten")
+            
+            caption_ig = f"""🌟 **{mahalle_adi}'DE GELECEĞİN PRESTİJLİ PROJESİ YÜKSELİYOR!** 🌟
+
+İstestate Meriç Gayrimenkul güvencesiyle, {mahalle_adi} bölgesinde yer alan {toplam_donum_str} büyüklüğündeki eşsiz arsa alanımızda {sample_project_type} konseptli yeni projemizi sunuyoruz!
+
+📍 **Proje Öne Çıkan Özellikleri:**
+• **Arazi Büyüklüğü:** {toplam_donum_str}
+• **İmar Yapısı:** {terk_durum_str}
+• **Konsept:** {sample_project_type}
+• **Sosyal Donatı:** {sample_pool_mod}
+
+💎 Doğayla iç içe, yüksek prim potansiyeline sahip bu özel gayrimenkul yatırım fırsatı hakkında detaylı bilgi ve fizibilite sunumu için bizimle iletişime geçin.
+
+📲 **İletişim & Detaylar:**
+👨‍💼 {sm_agent_name}
+🏢 {sm_firm_name}
+📞 {sm_phone}
+
+#istestate #meriçinşaat #gayrimenkulyatırım #{mahalle_adi.lower().replace(' ', '')} #arsa #lükskonut #fizibilite #yatırımfırsatı"""
+
+            caption_wa = f"""🏛️ *{mahalle_adi} - {toplam_donum_str} Prestijli Proje Alanı*
+
+• **Konsept:** {sample_project_type} ({sample_pool_mod})
+• **İmar:** {terk_durum_str}
+• **İletişim:** {sm_agent_name} - {sm_phone}
+• **Firma:** {sm_firm_name}
+
+Detaylı fizibilite ve sunum için bana ulaşabilirsiniz."""
+
+            text_tab1, text_tab2 = st.tabs(["📸 Instagram / Facebook Gönderi Metni", "💬 WhatsApp Status & Kısa Metin"])
+            with text_tab1:
+                st.code(caption_ig, language="markdown")
+            with text_tab2:
+                st.code(caption_wa, language="markdown")
+
+            st.markdown("---")
+
+            # -----------------------------------------------------------------
+            # 2. MİMARİ RENDER STİLİ VE PROMPT GENARATÖRÜ
+            # -----------------------------------------------------------------
+            st.markdown("### 2. 🎨 Yapay Zeka Render Prompt & Mimari Stil Stüdyosu")
+            
+            render_style = st.selectbox(
+                "Mimari Visual Render Stili Seçin:",
+                options=[
+                    "Modern Minimalist & Cam",
+                    "Ultra-Lüks Neo-Klasik",
+                    "Doğayla Uyumlu Ahşap & Taş",
+                    "Dramatik Akşam İllüminasyonu"
+                ],
+                key="global_render_style_select"
+            )
 
             style_details = {
                 "Modern Minimalist & Cam": {
+                    "bg1": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1200&auto=format&fit=crop",
+                    "bg2": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop",
                     "desc": "Geniş cam cepheler, brüt beton dokular, keskin geometrik hatlar ve ferah iç-dış mekân geçişleri.",
-                    "prompt_ext": "modern minimalist architecture, floor-to-ceiling glass windows, slick concrete finishes, open floor plans, linear LED lighting, realistic architectural photo"
+                    "prompt_ext": "modern minimalist architecture, floor-to-ceiling glass windows, slick concrete finishes, open floor plans, linear LED lighting, realistic photography"
                 },
                 "Ultra-Lüks Neo-Klasik": {
+                    "bg1": "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1200&auto=format&fit=crop",
+                    "bg2": "https://images.unsplash.com/photo-1577495508048-b635879837f1?q=80&w=1200&auto=format&fit=crop",
                     "desc": "Görkemli sütunlar, simetrik mermer söveler, zamansız klasik detaylar ve aristokratik peyzaj düzenlemesi.",
                     "prompt_ext": "ultra-luxury neo-classical mansion, elegant stone pillars, symmetrical facade, ornate moldings, marble fountains, majestic entrance, high-end architectural photo"
                 },
                 "Doğayla Uyumlu Ahşap & Taş": {
-                    "desc": "Doğal ahşap kaplamalar, yerel taş dokular, biyofilik tasarım ve doğayla bütünleşen sıcak yaşam alanları.",
-                    "prompt_ext": "biophilic eco-luxury architecture, natural teak wood panels, local slate stone walls, surrounding lush forest, warm ambient lighting, high resolution photography"
+                    "bg1": "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1200&auto=format&fit=crop",
+                    "bg2": "https://images.unsplash.com/photo-1510798831971-661eb04b3739?q=80&w=1200&auto=format&fit=crop",
+                    "desc": "Doğal ahşap kaplamalar, yerel taş dokular, biyofilik tasarım öğeleri ve yeşil teras peyzajı.",
+                    "prompt_ext": "biophilic organic architecture, natural wood siding, raw stone walls, lush green roofs, integrated forest landscape, warm ambient sunlight"
                 },
                 "Dramatik Akşam İllüminasyonu": {
-                    "desc": "Alacakaranlık gökyüzü, havuz yansımaları, vurgulu dış cephe aydınlatması ve büyüleyici gece atmosferi.",
-                    "prompt_ext": "dramatic twilight architectural lighting, luxury villa at dusk, infinity pool reflections, warm accent spot lights, deep blue sky, cinematic architectural photograph"
+                    "bg1": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop",
+                    "bg2": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1200&auto=format&fit=crop",
+                    "desc": "Büyüleyici gün batımı gökyüzü, havuz başı özel spot aydınlatmaları ve sıcak gece atmosferi.",
+                    "prompt_ext": "architectural twilight exterior render, warm indoor ambient lighting glowing through big glass walls, luxurious infinity pool reflections, dusk blue sky, octane render 8k"
                 }
             }
 
-            with render_col2:
-                st.info(f"💡 **Seçilen Stil Detayı:** {style_details[render_style]['desc']}")
+            curr_style = style_details.get(render_style, style_details["Modern Minimalist & Cam"])
+            
+            generated_ai_prompt = f"Photorealistic 8k architectural render of a {sample_project_type} located in {mahalle_adi} Istanbul, surrounded by peaceful nature, {curr_style['prompt_ext']}, high-end real estate presentation, photorealistic lighting --ar 9:16 --v 6.0"
+            
+            st.info(f"💡 **Tasarım Konsepti:** {curr_style['desc']}")
+            st.markdown("**Midjourney / DALL-E / Flux Mimari Prompt:**")
+            st.code(generated_ai_prompt, language="text")
 
             st.markdown("---")
 
             # -----------------------------------------------------------------
-            # 2. AI METİN & SOSYAL MEDYA BÜLTEN ÜRETİCİSİ (FİLTRELENMİŞ BİLGİLER)
+            # 3. CANLI SOSYAL MEDYA GÖRSEL KARTI & YÜKSEK ÇÖZÜNÜRLÜKLÜ PNG ÜRETİMİ
             # -----------------------------------------------------------------
-            st.markdown("### 2. ✍️ AI Sosyal Medya Metin & Yayın Hazırlayıcı")
-            st.caption("Fiyat/Maliyet ve detaylı metrekare bilgileri filtrelenmiş, kurumsal marka kimliğinize tam uyumlu sosyal medya içerikleri:")
+            st.markdown("### 3. 🖼️ Sistemde Düzenlenebilir Canlı Sosyal Medya Kartı (PNG)")
+            
+            # Canlı HTML Ön İzleme Kartı
+            preview_card_html = f"""
+            <div style="background-image: url('{curr_style['bg1']}'); background-size: cover; background-position: center; width: 100%; max-width: 420px; height: 680px; border-radius: 16px; margin: 0 auto; padding: 25px 20px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; font-family: 'Helvetica', sans-serif; box-shadow: 0 12px 28px rgba(0,0,0,0.35); position: relative; overflow: hidden; border: 2px solid rgba(255,255,255,0.2);">
+                <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0.85) 100%); z-index: 1;"></div>
+                
+                <!-- HEADER LOGOLAR -->
+                <div style="position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.92); padding: 8px 14px; border-radius: 10px; backdrop-filter: blur(8px);">
+                    <div style="height: 32px;">{img1_tag}</div>
+                    <div style="height: 32px;">{img2_tag}</div>
+                </div>
 
-            metin_tab1, metin_tab2, metin_tab3 = st.tabs([
-                "📸 Instagram Reels / Post Captions",
-                "💼 LinkedIn Kurumsal Yatırım Bülteni",
-                "💬 WhatsApp VIP Müşteri Duyurusu"
-            ])
+                <!-- ORTA İÇERİK KARTI -->
+                <div style="position: relative; z-index: 2; background: {card_bg_val}; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 18px 16px; color: #ffffff; backdrop-filter: blur(10px);">
+                    <span style="background: {accent_color_val}; color: #ffffff; font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">{sm_badge}</span>
+                    <h2 style="font-size: 18px; font-weight: 800; margin: 10px 0 6px 0; color: #ffffff; line-height: 1.2;">{sm_headline}</h2>
+                    <p style="font-size: 11px; color: #e2e8f0; margin: 0 0 12px 0;">{sm_subtitle}</p>
+                    
+                    <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px;">
+                        <div>📍 <b>Konum:</b> Beykoz / {mahalle_adi}</div>
+                        <div>📐 <b>Alan:</b> {toplam_donum_str}</div>
+                        <div>🏗️ <b>Tip:</b> {sample_project_type[:18]}..</div>
+                        <div>📜 <b>İmar:</b> {terk_durum_str[:18]}..</div>
+                    </div>
+                </div>
 
-            with metin_tab1:
-                insta_text = f"""🏛️ **BEYKOZ {mahalle_adi.upper()}'DE YÜKSELEN YENİ VİZYON!** 🌿
+                <!-- FOOTER İLETİŞİM -->
+                <div style="position: relative; z-index: 2; background: #ffffff; border-radius: 10px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                    <div>
+                        <div style="font-size: 11px; font-weight: 800; color: {primary_color_val};">{sm_agent_name}</div>
+                        <div style="font-size: 9px; color: #64748b;">{sm_firm_name}</div>
+                    </div>
+                    <div style="background: {accent_color_val}; color: #ffffff; font-size: 12px; font-weight: 800; padding: 6px 12px; border-radius: 6px; font-family: monospace;">
+                        📞 {sm_phone}
+                    </div>
+                </div>
+            </div>
+            """
+            
+            c_preview, c_generate = st.columns([1, 1])
+            with c_preview:
+                st.markdown("#### 👁 Kart Ön İzleme")
+                components.html(preview_card_html, height=710)
 
-İstestate Meriç Gayrimenkul & Meriç İnşaat güvencesiyle {mahalle_adi} bölgesinde {toplam_donum_str} büyüklüğündeki ayrıcalıklı portföyümüz için geliştirdiğimiz **{sample_project_type}** konsepti yayında!
+            with c_generate:
+                st.markdown("#### 📥 PNG İndirme İşlemi")
+                st.markdown("Yukarıda özelleştirdiğiniz parametrelerle tam çözünürlüklü 1080x1920 (9:16) yüksek kaliteli **PNG Görsel Kartı** oluşturun:")
+                
+                def create_real_png_card():
+                    # 1080x1920 Yüksek Çözünürlüklü Tuval
+                    img = Image.new("RGB", (1080, 1920), color=(15, 23, 42))
+                    draw = ImageDraw.Draw(img)
+                    
+                    # Gradient Arka Plan Çizimi
+                    for y in range(1920):
+                        r = int(15 + (y / 1920) * 20)
+                        g = int(23 + (y / 1920) * 35)
+                        b = int(42 + (y / 1920) * 50)
+                        draw.line([(0, y), (1080, y)], fill=(r, g, b))
+                    
+                    # Üst Logolar Paneli Arka Planı
+                    draw.rectangle([60, 80, 1020, 200], fill=(255, 255, 255), outline=(203, 213, 225), width=2)
+                    
+                    # Vurgu Kutuları & Çerçeve
+                    draw.rectangle([60, 600, 1020, 1450], fill=(11, 29, 58), outline=(217, 119, 6), width=4)
+                    
+                    # Rozet Metni
+                    draw.rectangle([90, 640, 450, 710], fill=(217, 119, 6))
+                    draw.text((110, 655), sm_badge.upper(), fill=(255, 255, 255))
+                    
+                    # Başlıklar
+                    draw.text((90, 750), sm_headline[:35], fill=(255, 255, 255))
+                    draw.text((90, 820), sm_subtitle[:45], fill=(226, 232, 240))
+                    
+                    # Detay Satırları
+                    draw.line([(90, 900), (990, 900)], fill=(255, 255, 255), width=2)
+                    draw.text((90, 950), f"Konum: Beykoz / {mahalle_adi}", fill=(255, 255, 255))
+                    draw.text((90, 1030), f"Arazi Büyüklüğü: {toplam_donum_str}", fill=(255, 255, 255))
+                    draw.text((90, 1110), f"Proje Konsepti: {sample_project_type}", fill=(255, 255, 255))
+                    draw.text((90, 1190), f"İmar Yapısı: {terk_durum_str}", fill=(255, 255, 255))
+                    
+                    # Alt İletişim Bandı
+                    draw.rectangle([60, 1700, 1020, 1840], fill=(255, 255, 255))
+                    draw.text((90, 1730), sm_agent_name, fill=(11, 29, 58))
+                    draw.text((90, 1780), sm_firm_name, fill=(100, 116, 139))
+                    draw.rectangle([650, 1730, 990, 1810], fill=(217, 119, 6))
+                    draw.text((670, 1750), f"TEL: {sm_phone}", fill=(255, 255, 255))
+                    
+                    buf = io.BytesIO()
+                    img.save(buf, format="PNG")
+                    return buf.getvalue()
 
-✨ **Proje Öne Çıkanları:**
-• **Bölge:** Beykoz / {mahalle_adi}
-• **Ölçek:** {toplam_donum_str} Ayrıcalıklı Arazi
-• **Konsept:** {sample_project_type} ({sample_pool_mod})
-• **Altyapı:** {terk_durum_str}
-
-Yüksek değer artışı ve konforlu bir yaşam arayan yatırımcılarımız için eşsiz bir fırsat.
-
-📞 **Detaylı Bilgi ve Özel Sunum İçin:**
-Umutcan K. MERİÇ
-📱 0539 451 61 61
-🏢 İstestate Meriç Gayrimenkul Danışmanlık & Meriç İnşaat Emlak
-
-#BeykozGayrimenkul #Istestate #MericInsaat #ArsaYatırımı #LüksYaşam #GayrimenkulGeliştirme #İstanbulArsa"""
-                st.code(insta_text, language="markdown")
-
-            with metin_tab2:
-                linkedin_text = f"""🏢 **KURUMSAL YATIRIM VE GAYRİMENKUL GELİŞTİRME BÜLTENİ**
-
-İstestate Meriç Gayrimenkul Danışmanlık ve Meriç İnşaat Emlak olarak, Beykoz {mahalle_adi} bölgesindeki {toplam_donum_str} ölçeğindeki portföyümüz üzerinde gerçekleştirdiğimiz fizibilite ve konsept optimizasyonu tamamlanmıştır.
-
-📍 **Proje Özeti:**
-- **Lokasyon:** Beykoz / {mahalle_adi}
-- **Arazi Niteliği:** {toplam_donum_str}
-- **Önerilen Proje Tipi:** {sample_project_type}
-- **Sosyal Konsept:** {sample_pool_mod}
-- **Mimari Stil:** {render_style}
-
-Projemiz, bölgenin gelişen altyapısı ve yüksek değer kazanma potansiyeli göz önüne alınarak nitelikli yatırımcı grubuna sunulmaktadır.
-
-İletişim ve Kurumsal Temsil:
-Umutcan K. MERİÇ
-İstestate Meriç Gayrimenkul Danışmanlık & Meriç İnşaat Emlak
-☎️ 0539 451 61 61"""
-                st.code(linkedin_text, language="markdown")
-
-            with metin_tab3:
-                wp_text = f"""Sayın Yatırımcımız,
-
-İstestate Meriç Gayrimenkul & Meriç İnşaat Portföyünden Özel Yatırım Fırsatı:
-
-📍 **Konum:** Beykoz / {mahalle_adi}
-📐 **Ölçek:** {toplam_donum_str}
-🏗️ **Geliştirme Tipi:** {sample_project_type}
-🌊 **Konsept:** {sample_pool_mod}
-
-Beykoz'un en prestijli lokasyonlarından birinde yer alan bu özel portföyümüz hakkında detaylı bilgi ve fizibilite sunumu almak için doğrudan ulaşabilirsiniz.
-
-Saygılarımla,
-**Umutcan K. MERİÇ**
-İstestate Meriç Gayrimenkul & Meriç İnşaat
-📞 0539 451 61 61"""
-                st.code(wp_text, language="text")
+                png_bytes_data = create_real_png_card()
+                
+                st.download_button(
+                    label="📥 Yüksek Çözünürlüklü (1080x1920) PNG Kartı İndir",
+                    data=png_bytes_data,
+                    file_name=f"Istestate_Meric_Sosyal_Medya_{mahalle_adi}.png",
+                    mime="image/png",
+                    use_container_width=True
+                )
 
             st.markdown("---")
 
             # -----------------------------------------------------------------
-            # 3. MIDJOURNEY / DALL-E RENDER PROMPTLARI
+            # 4. CANLI 5 SAHNELİ 9:16 DİKEY MP4 REKLAM FİLMİ ÜRETİMİ
             # -----------------------------------------------------------------
-            st.markdown("### 3. 🤖 Yapay Zeka Render Prompt Üreticisi (Midjourney / DALL-E / Flux)")
-            st.caption("Tasarım stiline ve mimari konsepte özel hazılanmış yüksek kaliteli görsel üretim komutları:")
+            st.markdown("### 4. 🎬 Gerçek 5 Sahneli 9:16 MP4 Dikey Reklam Filmi Üreticisi")
+            st.markdown("Instagram Reels, TikTok ve WhatsApp Status için otomatik olarak hazırlanan **5 Sahneli HD Dikey MP4 Video** mekanizması:")
 
-            mj_prompt = f"/imagine prompt: Architecture visualization of luxury property in Beykoz Istanbul, {sample_project_type}, {style_details[render_style]['prompt_ext']}, high-end landscaping, luxury swimming pool, photorealistic 8k, shot on 35mm lens, architectural magazine render, cinematic lighting --ar 16:9 --v 6.0"
-            st.code(mj_prompt, language="text")
+            st.markdown("""
+            * **1. Sahne (Açılış):** Marka Logoları & Proje Başlığı (`{sm_headline}`)
+            * **2. Sahne (Mimari Strateji):** Mimari Render Konsepti (`{render_style}`)
+            * **3. Sahne (Arazi Künyesi):** {mahalle_adi} / {toplam_donum_str}
+            * **4. Sahne (Yaşam & Sosyal):** {sample_pool_mod} & Yeşil Alanlar
+            * **5. Sahne (Kapanış & İletişim):** {sm_agent_name} - {sm_phone}
+            """)
 
-            st.markdown("---")
+            def generate_mp4_video():
+                # 1080x1920 çözünürlük, 30 FPS, Toplam 10 saniye (5 Sahne x 2 Sn = 300 Frame)
+                width, height = 1080, 1920
+                fps = 30
+                seconds_per_scene = 2
+                frames_per_scene = fps * seconds_per_scene
+                
+                with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmpfile:
+                    temp_video_path = tmpfile.name
 
-            # -----------------------------------------------------------------
-            # 4. DİKEY SOSYAL MEDYA AFİŞİ / PNG ÜRETİMİ
-            # -----------------------------------------------------------------
-            st.markdown("### 4. 🖼️ Dikey Sosyal Medya Afişi Üretim Stüdyosu (.png)")
-            st.caption("Kurumsal logonuz, filtrelenmiş verileriniz ve marka renklerinizle anında 1080x1920 dikey PNG afiş üretin ve indirin:")
+                if CV2_AVAILABLE:
+                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                    out = cv2.VideoWriter(temp_video_path, fourcc, fps, (width, height))
 
-            def generate_social_png():
-                w, h = 1080, 1920
-                img = Image.new("RGB", (w, h), color=(11, 29, 58))
-                draw = ImageDraw.Draw(img)
-
-                # Üst ve Alt Şerit Dekoru
-                draw.rectangle([0, 0, w, 120], fill=(15, 23, 42))
-                draw.rectangle([0, h - 160, w, h], fill=(15, 23, 42))
-
-                # Çerçeve
-                draw.rectangle([40, 160, w - 40, h - 200], outline=(56, 189, 248), width=4)
-
-                # Fontlar
-                f_title = get_pil_font(48)
-                f_sub = get_pil_font(34)
-                f_head = get_pil_font(42)
-                f_body = get_pil_font(32)
-
-                # Başlıklar
-                draw.text((w // 2, 70), "İSTESTATE GAYRİMENKUL & MERİÇ İNŞAAT", fill=(255, 255, 255), font=get_pil_font(32), anchor="mm")
-                draw.text((w // 2, 230), "PRESTİJLİ GAYRİMENKUL GELİŞTİRME", fill=(56, 189, 248), font=f_sub, anchor="mm")
-                draw.text((w // 2, 310), f"BEYKOZ / {mahalle_adi.upper()}", fill=(255, 255, 255), font=f_title, anchor="mm")
-
-                # İçerik Kutusu
-                draw.rectangle([80, 400, w - 80, 1300], fill=(15, 23, 42), outline=(56, 189, 248), width=2)
-
-                items = [
-                    ("📍 LOKASYON", f"Beykoz / {mahalle_adi}"),
-                    ("📐 ARAZİ BÜYÜKLÜĞÜ", toplam_donum_str),
-                    ("🏗️ PROJE KONSEPTİ", sample_project_type),
-                    ("🏊 SOSYAL DONATI", sample_pool_mod),
-                    ("🎨 MİMARİ STİL", render_style),
-                    ("📋 ALTYAPI DURUMU", terk_durum_str)
-                ]
-
-                y_start = 460
-                for title, val in items:
-                    draw.text((120, y_start), title, fill=(56, 189, 248), font=f_head)
-                    draw.text((120, y_start + 50), val, fill=(255, 255, 255), font=f_body)
-                    y_start += 130
-
-                # İletişim Alt Bilgi
-                draw.text((w // 2, h - 110), "Umutcan K. MERİÇ - 0539 451 61 61", fill=(255, 255, 255), font=f_head, anchor="mm")
-                draw.text((w // 2, h - 50), "İstestate Meriç Gayrimenkul Danışmanlık & Meriç İnşaat Emlak", fill=(148, 163, 184), font=get_pil_font(24), anchor="mm")
-
-                buf = io.BytesIO()
-                img.save(buf, format="PNG")
-                return buf.getvalue()
-
-            png_bytes = generate_social_png()
-            st.image(png_bytes, caption="📸 Otomatik Üretilen Dikey Sosyal Medya Afişi (PNG)", width=360)
-
-            st.download_button(
-                label="📥 Sosyal Medya Afişini PNG Olarak İndir",
-                data=png_bytes,
-                file_name=f"Istestate_Meric_Afis_{mahalle_adi}.png",
-                mime="image/png",
-                use_container_width=True
-            )
-
-            st.markdown("---")
-
-            # -----------------------------------------------------------------
-            # 5. DİKEY REKLAM FİLMİ / MP4 VIDEO ÜRETİMİ
-            # -----------------------------------------------------------------
-            st.markdown("### 5. 🎬 Dikey Reklam Filmi Üretim Stüdyosu (.mp4)")
-            st.caption("5 Sahneli, dikey 9:16 formatında, animasyonlu kurumsal reklam filmi render motoru:")
-
-            if not OPENCV_AVAILABLE:
-                st.warning("⚠ Video üretimi için OpenCV kütüphanesi yükleniyor...")
-            else:
-                def generate_social_mp4():
-                    width, height = 720, 1280
-                    fps = 24
-                    scene_dur = 3
-                    num_scenes = 5
-                    total_frames = fps * scene_dur * num_scenes
-
-                    with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
-                        tmp_name = tmp.name
-
-                    try:
-                        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-                        out = cv2.VideoWriter(tmp_name, fourcc, fps, (width, height))
-                    except Exception:
-                        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-                        out = cv2.VideoWriter(tmp_name, fourcc, fps, (width, height))
-
-                    scenes_data = [
-                        ("İSTESTATE & MERİÇ İNŞAAT", "YENİ YATIRIM FIRSATI", f"BEYKOZ / {mahalle_adi.upper()}", "Ayrıcalıklı Arsa Portföyü"),
-                        ("ARAZİ & ALTYAPILAR", f"ÖLÇEK: {toplam_donum_str.upper()}", terk_durum_str, "Geleceğe Değer Katan Konum"),
-                        ("MİMARİ GELİŞTİRME KONSEPTİ", sample_project_type.upper(), f"Stil: {render_style}", "Nitelikli Mimari Çözümler"),
-                        ("SOSYAL YAŞAM & DONATILAR", sample_pool_mod.upper(), "Özel Peyzaj & Konfor Alanları", "Prestijli Yaşam Deneyimi"),
-                        ("DETAYLI BİLGİ VE İLETİŞİM", "Umutcan K. MERİÇ", "0539 451 61 61", "İstestate Meriç Gayrimenkul & Meriç İnşaat")
+                    scenes_text = [
+                        ("1. YENİ PROJE LANSMANI", sm_headline, f"Beykoz / {mahalle_adi}"),
+                        ("2. MİMARİ KONSEPT", f"Stil: {render_style}", sample_project_type),
+                        ("3. ARAZİ BİLGİLERİ", f"Büyüklük: {toplam_donum_str}", terk_durum_str),
+                        ("4. SOSYAL YAŞAM", sample_pool_mod, "Peyzaj & Geniş Bahçe Kullanımı"),
+                        ("5. İLETİŞİM & DETAYLAR", sm_agent_name, f"Tel: {sm_phone} | {sm_firm_name}")
                     ]
 
-                    for f_idx in range(total_frames):
-                        s_idx = min(int(f_idx / (fps * scene_dur)), num_scenes - 1)
-                        t1, t2, t3, t4 = scenes_data[s_idx]
-
-                        img = Image.new("RGB", (width, height), color=(11, 29, 58))
-                        draw = ImageDraw.Draw(img)
-
-                        # Dış Çerçeve
-                        draw.rectangle([20, 20, width - 20, height - 20], outline=(56, 189, 248), width=3)
-
-                        # Üst Header
-                        draw.rectangle([35, 40, width - 35, 120], fill=(15, 23, 42))
-                        draw.text((width // 2, 80), t1, fill=(255, 255, 255), font=get_pil_font(24), anchor="mm")
-
-                        # Orta Sahne Kartı
-                        draw.rectangle([45, 200, width - 45, 950], fill=(15, 23, 42), outline=(56, 189, 248), width=2)
-                        draw.text((width // 2, 280), f"SAHNE {s_idx + 1} / 5", fill=(56, 189, 248), font=get_pil_font(20), anchor="mm")
-                        draw.text((width // 2, 380), t2, fill=(255, 255, 255), font=get_pil_font(32), anchor="mm")
-                        draw.text((width // 2, 500), t3, fill=(248, 250, 252), font=get_pil_font(24), anchor="mm")
-                        draw.text((width // 2, 620), t4, fill=(148, 163, 184), font=get_pil_font(20), anchor="mm")
-
-                        # Alt Kapanış Bilgisi
-                        draw.rectangle([35, height - 140, width - 35, height - 40], fill=(15, 23, 42))
-                        draw.text((width // 2, height - 90), "İSTESTATE MERİÇ GAYRİMENKUL & MERİÇ İNŞAAT", fill=(255, 255, 255), font=get_pil_font(18), anchor="mm")
-
-                        frame_bgr = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
-                        out.write(frame_bgr)
+                    for scene_idx, (tag, title_txt, sub_txt) in enumerate(scenes_text):
+                        for f_i in range(frames_per_scene):
+                            # Tuval Oluştur (Renksiz NumPy matrisi)
+                            frame = np.zeros((height, width, 3), dtype=np.uint8)
+                            
+                            # Sahne bazlı kademeli renk geçişi
+                            b_val = int(30 + (scene_idx * 15))
+                            g_val = int(20 + (scene_idx * 10))
+                            r_val = int(10 + (scene_idx * 5))
+                            frame[:] = (b_val, g_val, r_val)
+                            
+                            # Opaklık Animasyonu
+                            alpha = min(1.0, f_i / 15.0) if f_i < 15 else min(1.0, (frames_per_scene - f_i) / 15.0)
+                            
+                            # Metin Çizimleri (OpenCV Fontu)
+                            cv2.rectangle(frame, (80, 100), (1000, 220), (255, 255, 255), -1)
+                            cv2.putText(frame, "ISTESTATE | MERIC INSAAT", (120, 170), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (11, 29, 58), 4)
+                            
+                            cv2.rectangle(frame, (80, 700), (1000, 1300), (58, 29, 11), -1)
+                            cv2.putText(frame, tag, (120, 800), cv2.FONT_HERSHEY_SIMPLEX, 1.3, (6, 119, 217), 3)
+                            cv2.putText(frame, title_txt[:30], (120, 920), cv2.FONT_HERSHEY_SIMPLEX, 1.6, (255, 255, 255), 4)
+                            cv2.putText(frame, sub_txt[:35], (120, 1040), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (226, 232, 240), 3)
+                            
+                            cv2.rectangle(frame, (80, 1680), (1000, 1820), (255, 255, 255), -1)
+                            cv2.putText(frame, f"Iletisim: {sm_phone}", (120, 1760), cv2.FONT_HERSHEY_SIMPLEX, 1.4, (11, 29, 58), 4)
+                            
+                            out.write(frame)
 
                     out.release()
 
-                    with open(tmp_name, "rb") as f:
-                        v_bytes = f.read()
-
+                    with open(temp_video_path, "rb") as vf:
+                        v_bytes = vf.read()
+                    
                     try:
-                        os.remove(tmp_name)
+                        os.remove(temp_video_path)
                     except Exception:
                         pass
-
+                        
                     return v_bytes
+                else:
+                    return b""
 
-                if st.button("🎬 1080x1920 Dikey Reklam Filmini Render Et (MP4)", type="primary"):
-                    with st.spinner("HD Reklam Filmi render ediliyor, lütfen bekleyin..."):
-                        mp4_bytes = generate_social_mp4()
-                        st.session_state["generated_mp4_bytes"] = mp4_bytes
-                        st.success("Reklam filmi başarıyla oluşturuldu!")
-
-                if "generated_mp4_bytes" in st.session_state:
-                    st.video(st.session_state["generated_mp4_bytes"])
+            if CV2_AVAILABLE:
+                video_bytes = generate_mp4_video()
+                
+                col_v1, col_v2 = st.columns(2)
+                with col_v1:
+                    st.video(video_bytes)
+                with col_v2:
+                    st.success("✅ 9:16 HD MP4 Reklam Filmi Başarıyla Üretildi!")
                     st.download_button(
-                        label="📥 Reklam Filmini MP4 Olarak İndir",
-                        data=st.session_state["generated_mp4_bytes"],
+                        label="🎬 9:16 MP4 Reklam Filmini İndir",
+                        data=video_bytes,
                         file_name=f"Istestate_Meric_Reklam_Filmi_{mahalle_adi}.mp4",
                         mime="video/mp4",
                         use_container_width=True
                     )
+            else:
+                st.warning("⚠ Video üretimi için sisteminizde OpenCV kütüphanesi yapılandırılıyor.")
+
         else:
             st.info("Sosyal medya stüdyosunu kullanmak için lütfen sol menüden en az bir parsel seçin.")
+
+else:
+    st.info("👈 Lütfen sol taraftaki menüden geçerli bir imar belgesi yükleyin veya kayıtlı parsellerden seçim yapın.")
