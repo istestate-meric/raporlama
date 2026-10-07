@@ -1421,4 +1421,4 @@ if selected_keys:
             toplam_m2 = sum(p.get("toplam_alan", 0.0) for p in active_parcel_db.values())
             
             # Küsuratsız net olmayan dönüm hesabı (1 dönüm = 1000 m2)
-donum_tam_sayi = max(1, round(toplam_m2 / 1000))
+donum_tam_sayi = max(1, round(toplam_m))
