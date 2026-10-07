@@ -4,3 +4,10 @@ pandas
 pdfplumber
 PyGithub
 openai>=1.0.0
+
+streamlit>=1.30.0
+Pillow>=10.0.0
+imageio>=2.30.0
+imageio-ffmpeg>=0.4.8
+numpy>=1.24.0
+requests>=2.31.0
